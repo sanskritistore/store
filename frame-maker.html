@@ -27,6 +27,7 @@
 .tab.on{background:#8E2A32;color:#fff;border-color:#8E2A32}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
 .chips .chip{padding:9px 16px}
+.sicon{display:inline-block;width:17px;height:17px;border:2.2px solid currentColor;vertical-align:-3px;margin-right:5px}
 .tpls{display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:8px;margin-top:6px}
 .tpl{border:1.5px solid #E3D7C3;border-radius:10px;background:#fff;padding:8px 6px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px}
 .tpl span{width:34px;height:44px;border-radius:4px;display:block}
@@ -113,11 +114,20 @@
    <div class="mform">
     <div class="step">3️⃣ Details भरें</div>
     <label>Frame का नाम *</label><input id="fname" placeholder="जैसे: रॉयल गोल्डन">
-    <label>Photo window का shape</label>
-    <select id="fshape"><option value="rect">चौकोर (सीधे किनारे)</option><option value="rounded">गोल किनारे</option>
-     <option value="oval">ओवल</option><option value="circle">गोल (circle)</option><option value="heart">दिल ❤️</option></select>
-    <label>Size ratio</label>
-    <select id="fratio"><option value="2:3">Portrait 2:3 (4×6, 12×18…)</option><option value="3:2">Landscape 3:2</option><option value="1:1">Square 1:1</option></select>
+    <label>Photo का shape — जो चुनोगे, photo वैसी ही कटेगी</label>
+    <input type="hidden" id="fshape" value="rect">
+    <div class="chips" id="gshape">
+     <button class="chip on" data-s="rect"><span class="sicon"></span>चौकोर</button>
+     <button class="chip" data-s="rounded"><span class="sicon" style="border-radius:5px"></span>हल्के कोने</button>
+     <button class="chip" data-s="oval"><span class="sicon" style="border-radius:50%;width:24px"></span>ओवल</button>
+     <button class="chip" data-s="circle"><span class="sicon" style="border-radius:50%"></span>पूरा गोल ⭕</button>
+     <button class="chip" data-s="heart">❤️ दिल</button></div>
+    <label>Size ratio — चुनते ही stage उसी आकार का हो जाएगा</label>
+    <input type="hidden" id="fratio" value="2:3">
+    <div class="chips" id="pratio">
+     <button class="chip on" data-r="2:3">📄 पोर्ट्रेट 2:3</button>
+     <button class="chip" data-r="3:2">🖼️ लैंडस्केप 3:2</button>
+     <button class="chip" data-r="1:1">⬜ स्क्वायर 1:1</button></div>
     <label>शुरुआती कीमत (₹, सबसे छोटे size की)</label><input id="fbase" type="number" value="499">
     <label>Rating (दिखने के लिए)</label><input id="frate" type="number" step="0.1" min="3" max="5" value="4.6">
     <div style="display:grid;gap:10px;margin-top:18px">
@@ -166,7 +176,11 @@
   shapeCss(demo)}
  function fromInputs(){W={x:+$('#wx').value||0,y:+$('#wy').value||0,w:+$('#ww').value||10,h:+$('#wh').value||10};draw()}
  ['wx','wy','ww','wh'].forEach(id=>$('#'+id).oninput=fromInputs);
- $('#fshape').onchange=()=>shapeCss(demo);
+ $$('#gshape .chip').forEach(c=>c.onclick=()=>{$$('#gshape .chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');
+  $('#fshape').value=c.dataset.s;shapeCss(demo);shapeCss(winbox)});
+ function setRatioChip(v){$('#fratio').value=v;$$('#pratio .chip').forEach(x=>x.classList.toggle('on',x.dataset.r===v));
+  const p=v.split(':');stg.style.aspectRatio=p[0]+'/'+p[1];draw()}
+ $$('#pratio .chip').forEach(c=>c.onclick=()=>setRatioChip(c.dataset.r));
  function pt(e){const r=stg.getBoundingClientRect();
   return {x:Math.min(100,Math.max(0,(e.clientX-r.left)/r.width*100)),y:Math.min(100,Math.max(0,(e.clientY-r.top)/r.height*100))}}
  stg.addEventListener('pointerdown',e=>{dragging=pt(e);stg.setPointerCapture(e.pointerId)});
@@ -181,7 +195,7 @@
    $('#fi').src=ev.target.result;stg.style.display='block';$('#stghint').style.display='block';
    stg.style.aspectRatio=im.naturalWidth+'/'+im.naturalHeight;
    const a=im.naturalWidth/im.naturalHeight;
-   $('#fratio').value=Math.abs(a-1)<0.12?'1:1':(a<1?'2:3':'3:2');
+   setRatioChip(Math.abs(a-1)<0.12?'1:1':(a<1?'2:3':'3:2'));
    $('#dimg').src=CFG.frames.demo[1%CFG.frames.demo.length];draw();
    toast('अब photo की जगह drag करके चुनें 👆')};im.src=ev.target.result};rd.readAsDataURL(f)};
  /* --- save --- */
@@ -193,7 +207,7 @@
   try{const fd=new FormData();
    fd.append('name',name);fd.append('shape',$('#fshape').value);
    fd.append('ratio',$('#fratio').value);
-   const im=$('#fi');fd.append('ar',im.naturalWidth+'/'+im.naturalHeight);
+   fd.append('ar',$('#fratio').value.replace(':','/'));
    fd.append('base',+$('#fbase').value||499);fd.append('rating',+$('#frate').value||4.5);
    fd.append('window',JSON.stringify({x:W.x,y:W.y,w:W.w,h:W.h}));
    fd.append('img_file',imgFile,'frame.png');
