@@ -129,6 +129,13 @@
    <div>
     <div class="step">1️⃣ Frame की PNG upload करें (बीच transparent)</div>
     <label class="up">📤 Frame image चुनें<input type="file" id="ff" accept="image/png,image/*" hidden></label>
+    <div style="display:flex;gap:10px;align-items:center;margin-top:10px;background:#fff;border:1.5px dashed #d8c8ac;border-radius:12px;padding:10px">
+     <img id="fsampth" style="width:54px;height:54px;object-fit:cover;border-radius:10px;display:none;border:1px solid #eee">
+     <div style="flex:1"><b style="font-size:14px">📸 Sample photo (optional)</b><br>
+     <small style="color:#8a7a5f">card पर photo की जगह यही दिखेगी — अपने आप WebP बनेगी</small></div>
+     <button class="btn btn-o" id="fsampb" type="button" style="flex:none">चुनें</button>
+    </div>
+    <input type="file" id="fsamp" accept="image/*" hidden>
     <p class="hint">💡 Frame की सीधी photo खींचो या Canva/Photoshop से border PNG बनाओ — बीच का हिस्सा खाली (transparent) होना चाहिए।</p>
     <div class="stg" id="stg" style="display:none">
      <div class="demo" id="demo"><img id="dimg" alt=""></div>
@@ -251,7 +258,12 @@
   if(W.w<3)W.w=3;if(W.h<3)W.h=3;draw()});
  stg.addEventListener('pointerup',()=>dragging=null);
  /* --- frame image upload --- */
- let imgFile=null;
+ let imgFile=null,sampFile=null;
+ $('#fsampb').onclick=()=>$('#fsamp').click();
+ $('#fsamp').onchange=async e=>{const f=e.target.files[0];if(!f)return;
+  const kb0=Math.round(f.size/1024);sampFile=await toWebP(f);
+  const th=$('#fsampth');th.src=URL.createObjectURL(sampFile);th.style.display='block';
+  toast('📸 sample तैयार: '+kb0+'KB → '+Math.round(sampFile.size/1024)+'KB ✅')};
  async function toWebP(file){return new Promise(res=>{const im=new Image();im.onload=()=>{
   const cv=document.createElement('canvas');cv.width=im.naturalWidth;cv.height=im.naturalHeight;
   cv.getContext('2d').drawImage(im,0,0);URL.revokeObjectURL(im.src);
@@ -281,6 +293,7 @@
    fd.append('base',+$('#fbase').value||499);fd.append('rating',+$('#frate').value||4.5);
    fd.append('window',JSON.stringify({x:W.x,y:W.y,w:W.w,h:W.h}));
    fd.append('img_file',imgFile,'frame.webp');
+   if(sampFile)fd.append('sample_file',sampFile,'sample.webp');
    const r=await fetch(B+'/store/frames',{method:'POST',headers:hdr(),body:fd});
    if(r.status===401||r.status===403){toast('login expire — दोबारा login करें');localStorage.removeItem('sk_adm_tok');location.reload();return}
    if(!r.ok)throw new Error('HTTP '+r.status);
