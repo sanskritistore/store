@@ -1,7 +1,7 @@
 const CFG={};
 async function loadCfg(){
  const [site,cats,prods,frames]=await Promise.all(
-  ['site','categories','products','frames'].map(n=>fetch('config/'+n+'.json').then(r=>r.json())));
+  ['site','categories','products','frames'].map(n=>fetch('config/'+n+'.json?v=2').then(r=>r.json())));
  CFG.site=site;CFG.cats=cats;CFG.prods=prods;CFG.frames=frames;
 }
 const fmt=n=>'₹'+Math.round(n).toLocaleString('en-IN');
