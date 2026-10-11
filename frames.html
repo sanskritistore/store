@@ -25,7 +25,7 @@
   const d1=f.samp||sampOf(f),d2=f.samp?d1:demos[(i+3)%demos.length];
   if(f.draw){const winImgs=f.draw.windows.map((w,wi)=>wi===0?sampOf(f):demos[(i+wi)%demos.length]);
    return `<a class="fcard card" href="preview.html?frame=${f.id}">
-   <div class="fr" style="aspect-ratio:${f.ar};${frDrawBg(f)}">${frDrawHTML(f,winImgs)}</div>
+   <div class="fr" style="aspect-ratio:${f.ar};${frDrawBg(f)}">${frDrawHTML(f,winImgs)}${glareHTML(f)}</div>
    ${f.badge?`<span class="badge">${f.badge}</span>`:''}
    <h4>${f.name}</h4><div class="rt">⭐ ${f.rating}</div>
    <div class="from">${fmt(f.base)} से शुरू</div>
@@ -35,7 +35,7 @@
   return `<a class="fcard card" href="preview.html?frame=${f.id}">
    <div class="fr ${f.img?'':'shp-'+f.shape} ${f.style} ${rtClass(f.ratio)}" ${ar}>${f.img?`<img class="fr-img" src="${f.img}" alt="">`:''}<div class="fr-photo" ${win}>
     <img src="${d1}" data-a="${d1}" data-b="${d2}" alt="${f.name}" style="${sampPosCss(f)}">
-    <div class="es" style="opacity:0"><b>📷</b>अपनी फोटो<br>यहाँ लगाएँ</div></div></div>
+    <div class="es" style="opacity:0"><b>📷</b>अपनी फोटो<br>यहाँ लगाएँ</div></div>${glareHTML(f)}</div>
    ${f.badge?`<span class="badge">${f.badge}</span>`:''}
    <h4>${f.name}</h4><div class="rt">⭐ ${f.rating}</div>
    <div class="from">${fmt(f.base)} से शुरू</div>
