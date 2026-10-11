@@ -54,7 +54,7 @@
   <div class="topbar" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin:18px 0">
    <h2 style="margin:0">🖼️ Frame Maker</h2>
    <a class="btn btn-o" href="admin.html">🖨️ ऑर्डर Admin</a></div>
-  <div style="font-size:11px;color:#B0A48F;text-align:right;margin-bottom:4px">v11.10-रात-2 <span id="jsok"></span></div>
+  <div style="font-size:11px;color:#B0A48F;text-align:right;margin-bottom:4px">v11.10-रात-5 <span id="jsok"></span></div>
   <div class="tabbar">
    <button class="tab on" data-t="gen">🎨 Generator (fast)</button>
    <button class="tab" data-t="png">📤 अपनी PNG से</button>
@@ -150,6 +150,7 @@
     <div class="stg" id="stg" style="display:none">
      <div class="demo" id="demo"><img id="dimg" alt=""></div>
      <img class="fi" id="fi" alt="frame">
+     <div class="glare" id="mglare" style="display:none"></div>
      <div class="winbox" id="winbox"></div>
     </div>
     <div id="stghint" style="display:none">
@@ -278,7 +279,14 @@
   const di=$('#dimg');di.style.objectPosition=mx+'% '+my+'%';
   di.style.transform='scale('+z+')';di.style.transformOrigin=mx+'% '+my+'%'}
  ['pz','pmx','pmy'].forEach(id=>$('#'+id).oninput=applyPos);
- $('#gfile').onchange=e=>{const f=e.target.files[0];$('#gname').textContent=f?'— ✅ '+f.name:''};
+ let glareURL='assets/glare.png?v=2';
+ function updGlare(){const g=$('#mglare');if(!g)return;
+  if(!$('#gon').checked){g.style.display='none';return}
+  g.style.display='block';g.style.opacity=(+$('#gop').value||55)/100;
+  g.style.backgroundImage=`url('${glareURL}')`;g.style.backgroundPosition=(+$('#gx').value||30)+'% 0'}
+ ['gon','gop','gx'].forEach(id=>$('#'+id).oninput=updGlare);
+ $('#gfile').onchange=e=>{const f=e.target.files[0];$('#gname').textContent=f?'— ✅ '+f.name:'';
+  if(f){const rd=new FileReader();rd.onload=ev=>{glareURL=ev.target.result;updGlare()};rd.readAsDataURL(f)}else{glareURL='assets/glare.png?v=2';updGlare()}};
  function custVal(p){return 'custom:'+[p+'ctl',p+'ctr',p+'cbr',p+'cbl'].map(i=>$('#'+i).value).join(',')}
  function custWire(prefix,hidden,after){
   ['ctl','ctr','cbr','cbl'].forEach(k=>{const el=$('#'+prefix+k);if(!el)return;
@@ -355,7 +363,7 @@
   const kb1=Math.round(imgFile.size/1024);
   toast('📦 WebP बन गया: '+kb0+'KB → '+kb1+'KB — site हल्की रहेगी ✅');
   const rd=new FileReader();rd.onload=ev=>{const im=new Image();im.onload=()=>{
-   $('#fi').src=ev.target.result;stg.style.display='block';$('#stghint').style.display='block';
+   $('#fi').src=ev.target.result;stg.style.display='block';$('#stghint').style.display='block';updGlare();
    stg.style.aspectRatio=im.naturalWidth+'/'+im.naturalHeight;
    const a=im.naturalWidth/im.naturalHeight;
    setRatioChip(Math.abs(a-1)<0.12?'1:1':(a<1?'2:3':'3:2'));
