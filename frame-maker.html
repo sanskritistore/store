@@ -64,13 +64,13 @@
      <button class="chip on" data-r="2:3">पोर्ट्रेट 2:3</button>
      <button class="chip" data-r="3:2">लैंडस्केप 3:2</button>
      <button class="chip" data-r="1:1">स्क्वायर 1:1</button></div>
-    <div class="step">2️⃣ Template चुनें (एक click = ready)</div>
+    <div class="step" style="margin-top:10px">3️⃣ Template चुनें (एक click = ready)</div>
     <div class="tpls" id="gtpls"></div>
     <div class="step">👀 Live preview</div>
     <div class="fr" id="gstg"></div>
    </div>
    <div class="mform">
-    <div class="step">3️⃣ अपने हिसाब से बदलें</div>
+    <div class="step">4️⃣ अपने हिसाब से बदलें</div>
     <label>Photo shape</label>
     <select id="gshape"><option value="rect">चौकोर</option><option value="rounded">गोल किनारे</option>
      <option value="oval">ओवल</option><option value="circle">गोल</option><option value="heart">दिल ❤️</option></select>
@@ -78,13 +78,13 @@
     <select id="glay"><option value="1">1 photo</option><option value="2H">2 photos — साथ-साथ</option>
      <option value="2V">2 photos — ऊपर-नीचे</option><option value="3">3 photos</option><option value="4">4 photos — चौकोर</option></select>
     <label>बाहरी border: चौड़ाई <b id="gb1v">9</b>% + रंग</label>
-    <div class="crow"><input type="range" id="gb1w" min="3" max="16" step="0.5" value="9"><input type="color" id="gb1c" value="#5a3a1c"></div>
+    <div class="crow"><input type="range" id="gb1w" min="0" max="16" step="0.5" value="9"><input type="color" id="gb1c" value="#5a3a1c"></div>
     <label class="crow" style="font-weight:700;font-size:14px"><input type="checkbox" id="gb2on" checked style="width:auto"> अंदरूनी border (dual) <b id="gb2v">2.5</b>%</label>
     <div class="crow"><input type="range" id="gb2w" min="0.5" max="6" step="0.5" value="2.5"><input type="color" id="gb2c" value="#C9A24A"></div>
     <label>अंदरूनी background रंग</label>
     <input type="color" id="gbgc" value="#f5efe2">
     <label>Frame का नाम *</label><input id="gname" placeholder="जैसे: क्लासिक लकड़ी 12×18">
-    <label>शुरुआती कीमत (₹)</label><input id="gbase" type="number" value="399">
+    <label>शुरुआती कीमत (₹) <span class="hint" id="gbasehint">सबसे छोटे size की</span></label><input id="gbase" type="number" value="399">
     <label>Rating</label><input id="grate" type="number" step="0.1" min="3" max="5" value="4.6">
     <div style="display:grid;gap:10px;margin-top:16px">
      <button class="btn btn-p btn-b" id="gsave">💾 Frame Save — तुरंत live</button>
@@ -206,7 +206,7 @@
  /* --- existing frames --- */
  async function listFrames(){
   try{const r=await fetch(B+'/store/frames');const j=await r.json();
-   $('#exfr').innerHTML=j.length?j.map(f=>`<span class="chipx">${f.name} <small>(${f.ratio})</small><button data-del="${f.id.replace('fr-c','')}">🗑️</button></span>`).join(''):'<span class="hint">अभी कोई custom frame नहीं — पहला बनाओ! 👆</span>';
+   $('#exfr').innerHTML=j.length?j.map(f=>`<span class="chipx">${f.ptype==='acrylic'?'💎':f.ptype==='album'?'📖':'🖼️'} ${f.name} <small>(${f.ratio})</small><button data-del="${f.id.replace('fr-c','')}">🗑️</button></span>`).join(''):'<span class="hint">अभी कोई custom frame नहीं — पहला बनाओ! 👆</span>';
    $$('#exfr [data-del]').forEach(b=>b.onclick=async()=>{if(!confirm('यह frame हटा दें?'))return;
     await fetch(B+'/store/frames/'+b.dataset.del,{method:'DELETE',headers:hdr()});listFrames()});
   }catch(e){$('#exfr').innerHTML='<span class="hint">list नहीं खुली</span>'}}
@@ -232,6 +232,12 @@
   if(!$('#gname').value)$('#gname').value=t.n;
   gPrev()});
  $$('#gratio .chip').forEach(c=>c.onclick=()=>{$$('#gratio .chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');gPrev()});
+ $$('#gpage .chip').forEach(c=>c.onclick=()=>{$$('#gpage .chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');gPrev()});
+ $$('#gptype .chip').forEach(c=>c.onclick=()=>{$$('#gptype .chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');
+  const p=c.dataset.p,isAlb=p==='album';
+  $('#gratio').style.display=isAlb?'none':'flex';$('#gpage').style.display=isAlb?'flex':'none';
+  $('#gbasehint').textContent=isAlb?'इस page layout के print की':'सबसे छोटे size की';
+  gPrev()});
  function gWins(){const lay=$('#glay').value,sh=$('#gshape').value;
   const m=+$('#gb1w').value+($('#gb2on').checked?+$('#gb2w').value:0)+1.5,g=2.2;
   const I={x:m,y:m,w:100-2*m,h:100-2*m},R=[];
@@ -246,19 +252,22 @@
  function gDraw(){const d={b1:{w:+$('#gb1w').value,c:$('#gb1c').value},bg:$('#gbgc').value,windows:gWins()};
   if($('#gb2on').checked)d.b2={w:+$('#gb2w').value,c:$('#gb2c').value};
   return d}
+ function gAR(){const p=$('#gptype .on').dataset.p;
+  return p==='album'?$('#gpage .on').dataset.ar:$('#gratio .on').dataset.r.replace(':','/')}
  function gPrev(){$('#gb1v').textContent=$('#gb1w').value;$('#gb2v').textContent=$('#gb2w').value;
-  const ratio=$('#gratio .on').dataset.r,st=$('#gstg');
-  st.style.aspectRatio=ratio.replace(':','/');st.style.background=$('#gb1c').value;
+  const st=$('#gstg');
+  st.style.aspectRatio=gAR();st.style.background=$('#gb1c').value;
   st.innerHTML=frDrawHTML({draw:gDraw()},CFG.frames.demo)}
  ['gshape','glay','gb1w','gb1c','gb2on','gb2w','gb2c','gbgc'].forEach(id=>$('#'+id).oninput=gPrev);
  $('#gsave').onclick=async()=>{
   const name=$('#gname').value.trim();
   if(!name){toast('frame का नाम लिखें');return}
-  const ratio=$('#gratio .on').dataset.r,d=gDraw();
+  const ptype=$('#gptype .on').dataset.p,d=gDraw();
+  const ratio=ptype==='album'?'album':$('#gratio .on').dataset.r;
   const btn=$('#gsave');btn.disabled=true;btn.textContent='⏳ save हो रहा…';
   try{const fd=new FormData();
    fd.append('name',name);fd.append('shape',d.windows[0].shape);
-   fd.append('ratio',ratio);fd.append('ar',ratio.replace(':','/'));
+   fd.append('ratio',ratio);fd.append('ar',gAR());fd.append('ptype',ptype);
    fd.append('base',+$('#gbase').value||399);fd.append('rating',+$('#grate').value||4.5);
    fd.append('window',JSON.stringify(d.windows[0]));
    fd.append('draw',JSON.stringify(d));

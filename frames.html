@@ -40,7 +40,7 @@
    <div class="from">${fmt(f.base)} से शुरू</div>
    <span class="btn btn-p">अभी बनाएं</span></a>`}
  function render(flt){
-  const fs=CFG.frames.frames.filter(f=>flt==='all'||grp(f)===flt);
+  const fs=CFG.frames.frames.filter(f=>(!f.ptype||f.ptype==='frame')&&(flt==='all'||grp(f)===flt));
   $('#list').innerHTML=fs.map((f,i)=>card(f,i)).join('');
   $$('#list .fr-photo, #list .fr-win').forEach((ph,i)=>{
    const img=ph.querySelector('img'),es=ph.querySelector('.es');if(!img)return;let st=i%3;

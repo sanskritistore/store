@@ -18,7 +18,7 @@ function toast(t){const d=document.createElement('div');d.textContent=t;
 /* ---- shell (header/footer single source) ---- */
 function shell(active){
  const nav=[['index.html','होम','home'],['category.html?c=oils','कच्ची घानी तेल','oils'],
-  ['category.html?c=spices','मसाले','spices'],['frames.html','🖼️ फोटो फ्रेम','frames'],
+  ['category.html?c=spices','मसाले','spices'],['frames.html','🖼️ फोटो फ्रेम','frames'],['acrylic.html','💎 Acrylic','acrylic'],
   ['category.html?c=handicraft','हैंडीक्राफ्ट','handicraft'],['category.html?c=cyber','साइबर सेवाएँ','cyber']];
  $('#hd').innerHTML=`<div class="wrap"><div class="hd-in">
   <a class="logo" href="index.html">${CFG.site.name}<span>STORES & DIGITAL</span></a>
