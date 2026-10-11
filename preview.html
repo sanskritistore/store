@@ -7,7 +7,7 @@
 <header id="hd"></header>
 <section class="pv wrap">
  <div class="stage" id="stage">
-  <div class="fr" id="fr"><div class="fr-photo"><img id="phbg" alt=""><img id="ph" alt="आपकी फोटो"></div></div>
+  <div class="fr" id="fr"><div class="fr-photo"><div id="phold" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:#f7f2e6;color:#8a7a5c;text-align:center"><div style="font-size:34px;opacity:.65">📷</div><div style="font-size:14px;font-weight:800;line-height:1.5">अपनी फोटो<br>यहाँ लगाएँ</div><div style="font-size:11px;color:#b39c7d">ऊपर upload button दबाएँ</div></div><img id="phbg" alt="" style="visibility:hidden"><img id="ph" alt="आपकी फोटो" style="visibility:hidden"></div></div>
  </div>
  <div class="pnl">
   <h2 id="fname" style="font-size:24px"></h2>
@@ -110,7 +110,7 @@
  if(F.draw){fr.style.background=F.draw.b1.c;
   fr.innerHTML=frDrawHTML(F,CFG.frames.demo.slice(0,F.draw.windows.length));
   const w0=fr.querySelector('.fr-win[data-win="0"]');
-  w0.innerHTML='<img id="phbg" alt=""><img id="ph" alt="आपकी फोटो">';
+  w0.innerHTML='<div id="phold" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:#f7f2e6;color:#8a7a5c;text-align:center"><div style="font-size:34px;opacity:.65">📷</div><div style="font-size:14px;font-weight:800;line-height:1.5">अपनी फोटो<br>यहाँ लगाएँ</div><div style="font-size:11px;color:#b39c7d">ऊपर upload button दबाएँ</div></div><img id="phbg" alt="" style="visibility:hidden"><img id="ph" alt="आपकी फोटो" style="visibility:hidden">';
   F.draw.windows.forEach((w,i)=>{if(i===0)return;
    const el=fr.querySelector(`.fr-win[data-win="${i}"]`);
    const up=document.createElement('button');up.className='wup';up.textContent='📷';up.title='इस जगह photo डालें';
@@ -121,7 +121,7 @@
     inp.click()};
    el.appendChild(up)})}
  $('#fname').textContent=F.name;$('#frate').textContent='⭐ '+F.rating+' • '+F.en+' • '+cfg.ratios[F.ratio].name;
- $('#ph').src=cfg.demo[0];$('#phbg').src=cfg.demo[0];
+ /* शुरुआत में demo photo नहीं — window में 📷 placeholder (Dev: heart ke andr upload your Photo aana chahiye) */
  document.title='संस्कृति — '+F.name;
  function apply(){$('#ph').style.transform=`translate(${x}%,${y}%) scale(${z}) rotate(${r}deg)`;
   const bg=$('#phbg');if(bg)bg.style.opacity=z<0.995?1:0;
@@ -170,13 +170,13 @@
   btn.style.display='block';btn.disabled=true;
   try{const im=await enhanceImg(curImg,m=>btn.textContent=m);
    if(!im){toast('photo पहले से काफी बड़ी है 👍')}
-   else{curImg=im;$('#ph').src=im.src;$('#phbg').src=im.src;apply();quality();
+   else{curImg=im;const p1=$('#ph');p1.src=im.src;p1.style.visibility='visible';const pb=$('#phbg');pb.src=im.src;pb.style.visibility='visible';$('#phold')?.remove();apply();quality();
     toast('✅ HD हो गई! अब print ज़्यादा साफ आएगा')}}
   catch(e){toast('कुछ गड़बड़ — दोबारा दबाएँ')}
   btn.disabled=false;hdBusy=false;quality()}
  $('#hdb').onclick=runHD;
  $('#file').onchange=e=>{const f=e.target.files[0];if(!f)return;
-  const rd=new FileReader();rd.onload=ev=>{const im=new Image();im.onload=()=>{curImg=im;$('#ph').src=ev.target.result;$('#phbg').src=ev.target.result;quality();
+  const rd=new FileReader();rd.onload=ev=>{const im=new Image();im.onload=()=>{curImg=im;const p2=$('#ph');p2.src=ev.target.result;p2.style.visibility='visible';const pb2=$('#phbg');pb2.src=ev.target.result;pb2.style.visibility='visible';$('#phold')?.remove();quality();
    const qb=$('#qb');if(qb.className.includes('bad')){toast('photo छोटी है — अपने आप HD बना रहे हैं ✨');runHD()}};im.src=ev.target.result};rd.readAsDataURL(f)};
  $('#zoom').oninput=e=>{z=+e.target.value;apply();quality()};
  $('#mx').oninput=e=>{x=+e.target.value;apply()};
