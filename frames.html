@@ -22,7 +22,7 @@
  const demos=CFG.frames.demo;const SAMP=CFG.frames.samples||{};
  const sampOf=f=>SAMP[f.shape]||SAMP[(f.shape||'').startsWith('custom:')?'custom':'default']||demos[0];
  function card(f,i){
-  const d1=f.samp||sampOf(f),d2=demos[(i+3)%demos.length];
+  const d1=f.samp||sampOf(f),d2=f.samp?d1:demos[(i+3)%demos.length];
   if(f.draw){const winImgs=f.draw.windows.map((w,wi)=>wi===0?sampOf(f):demos[(i+wi)%demos.length]);
    return `<a class="fcard card" href="preview.html?frame=${f.id}">
    <div class="fr" style="aspect-ratio:${f.ar};${frDrawBg(f)}">${frDrawHTML(f,winImgs)}</div>
