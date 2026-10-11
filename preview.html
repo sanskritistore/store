@@ -62,7 +62,40 @@
  let z=1,x=0,y=0,r=0,size=SIZES[Math.min(3,SIZES.length-1)],th=cfg.thickness[0],curImg=null;
  const fr=$('#fr');fr.className='fr shp-'+F.shape+' '+F.style+' '+rtClass(F.ratio);
  if(F.ar)fr.style.aspectRatio=F.ar;
- if(F.img){const bi=document.createElement('img');bi.className='fr-img';bi.src=F.img;fr.prepend(bi)}
+ /* 🔪 white-knockout: frame PNG के बाहर का solid white अपने आप transparent (किनारों से अंदर flood) —
+    ताकि wall दिखे + shadow carving की असली shape पर पड़े। design के अंदर का white सुरक्षित। (11-10, Dev का rule:
+    हर frame = अंदर transparent + बाहर solid white; shadow software लगाएगा) */
+ async function knockWhite(url){
+  try{
+   const blob=await (await fetch(url)).blob();
+   const im=await createImageBitmap(blob);
+   const w=im.width,h=im.height;if(w*h>9e6)return url; // 9MP से बड़ा = skip (safety)
+   const c=document.createElement('canvas');c.width=w;c.height=h;
+   const g=c.getContext('2d',{willReadFrequently:true});g.drawImage(im,0,0);
+   const d=g.getImageData(0,0,w,h),px=d.data;
+   const isW=i=>px[i]>236&&px[i+1]>236&&px[i+2]>236&&px[i+3]>8;
+   const vis=new Uint8Array(w*h),st=[];
+   const seed=p=>{if(!vis[p]&&isW(p*4)){vis[p]=1;st.push(p)}};
+   for(let x=0;x<w;x++){seed(x);seed((h-1)*w+x)}
+   for(let y=0;y<h;y++){seed(y*w);seed(y*w+w-1)}
+   while(st.length){const p=st.pop(),x=p%w,y=(p-x)/w;
+    if(x>0&&!vis[p-1]&&isW((p-1)*4)){vis[p-1]=1;st.push(p-1)}
+    if(x<w-1&&!vis[p+1]&&isW((p+1)*4)){vis[p+1]=1;st.push(p+1)}
+    if(y>0&&!vis[p-w]&&isW((p-w)*4)){vis[p-w]=1;st.push(p-w)}
+    if(y<h-1&&!vis[p+w]&&isW((p+w)*4)){vis[p+w]=1;st.push(p+w)}}
+   if(!vis.some(v=>v))return url; // बाहर white नहीं (जैसे 001) — जैसा है वैसा
+   for(let p=0;p<w*h;p++)if(vis[p])px[p*4+3]=0;
+   // हल्का halo साफ़: हटे हुए pixel के पड़ोसी ज़्यादा हल्के हो तो वे भी हटाओ
+   for(let p=0;p<w*h;p++){if(vis[p])continue;const i=p*4;
+    if(px[i]>222&&px[i+1]>222&&px[i+2]>222){const x=p%w,y=(p-x)/w;
+     if((x>0&&vis[p-1])||(x<w-1&&vis[p+1])||(y>0&&vis[p-w])||(y<h-1&&vis[p+w]))px[i+3]=0}}
+   g.putImageData(d,0,0);
+   const out=await new Promise(r=>c.toBlob(r,'image/png'));
+   return URL.createObjectURL(out);
+  }catch(e){return url}
+ }
+ if(F.img){const bi=document.createElement('img');bi.className='fr-img';
+  knockWhite(F.img).then(u=>{bi.src=u});fr.prepend(bi)}
  if(F.window){const fp=fr.querySelector('.fr-photo');
   fp.style.right='auto';fp.style.bottom='auto';
   fp.style.left=F.window.x+'%';fp.style.top=F.window.y+'%';
