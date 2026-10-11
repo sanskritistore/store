@@ -15,6 +15,7 @@
   <label class="up" style="margin-top:12px">📤 अपनी फोटो अपलोड करें
    <input type="file" id="file" accept="image/*" hidden></label>
   <div class="qbadge" id="qb"></div>
+  <button class="btn btn-o btn-b" id="hd" style="display:none;margin-top:8px">✨ HD बनाओ</button>
   <h3>फोटो सेट करें</h3>
   <div class="ctl"><label>Zoom <span id="zv"></span> <small style="color:#8a7a5f">— 100% से कम = पूरी फोटो, किनारे blur</small></label><input type="range" id="zoom" min="0.3" max="3" step="0.01" value="1"></div>
   <div class="ctl"><label>बाएँ ↔ दाएँ</label><input type="range" id="mx" min="-50" max="50" value="0"></div>
@@ -102,7 +103,32 @@
    d=Math.min(curImg.naturalWidth/(size.w*wk*z),curImg.naturalHeight/(size.h*hk*z))}
   if(d>=300){q.className='qbadge ok';q.textContent='✅ बढ़िया quality — '+size.label+' में एकदम साफ print आएगा'}
   else if(d>=200){q.className='qbadge warn';q.textContent='⚠️ ठीक-ठाक quality ('+Math.round(d)+' DPI) — छोटे size में बेहतर रहेगा'}
-  else{q.className='qbadge bad';q.textContent='❌ फोटो छोटी है ('+Math.round(d)+' DPI) — इस size में धुंधला आएगा। छोटा size चुनें या दूसरी फोटो डालें'}}
+  else{q.className='qbadge bad';q.textContent='❌ फोटो छोटी है ('+Math.round(d)+' DPI) — इस size में धुंधला आएगा। ✨ HD बनाओ दबाएँ या छोटा size चुनें'}
+  const hd=$('#hd');
+  if(curImg&&d<280&&curImg.naturalWidth<5500){hd.style.display='block';
+   hd.textContent='✨ HD बनाओ — एक click में photo 2x बड़ी + तेज़ (अभी '+Math.round(d)+' DPI)'}
+  else hd.style.display='none'}
+ /* ✨ HD engine — photo 2x बड़ी (high-quality resample) + unsharp तेज़; सब browser में, server नहीं (11-10) */
+ function unsh(d,amt){const w=d.width,h=d.height,s=d.data,o=new Uint8ClampedArray(s);
+  for(let y=1;y<h-1;y++){let i=(y*w+1)*4;for(let x=1;x<w-1;x++,i+=4){
+   for(let k=0;k<3;k++){const v=o[i+k],b=(o[i-4+k]+o[i+4+k]+o[i-w*4+k]+o[i+w*4+k])*0.25;
+    s[i+k]=v+amt*(v-b)}}}return d}
+ async function enhanceImg(img){
+  let t=Math.min(2,Math.sqrt(30e6/(img.naturalWidth*img.naturalHeight))); // max 30MP (phone safe)
+  if(t<1.15)return null;
+  const c=document.createElement('canvas');c.width=Math.round(img.naturalWidth*t);c.height=Math.round(img.naturalHeight*t);
+  const g=c.getContext('2d');g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';
+  g.drawImage(img,0,0,c.width,c.height);
+  try{g.putImageData(unsh(g.getImageData(0,0,c.width,c.height),0.45),0,0)}catch(e){}
+  const im=new Image();await new Promise(r=>{im.onload=r;im.src=c.toDataURL('image/jpeg',0.94)});
+  return im}
+ $('#hd').onclick=async()=>{if(!curImg)return;const btn=$('#hd');btn.disabled=true;btn.textContent='⏳ HD बन रही है… (2-5 सेकंड)';
+  try{const im=await enhanceImg(curImg);
+   if(!im){toast('photo पहले से काफी बड़ी है 👍');btn.disabled=false;quality();return}
+   curImg=im;$('#ph').src=im.src;$('#phbg').src=im.src;apply();quality();
+   toast('✅ HD हो गई! अब print ज़्यादा साफ आएगा')}
+  catch(e){toast('कुछ गड़बड़ — दोबारा कोशिश करें')}
+  btn.disabled=false;quality()};
  $('#file').onchange=e=>{const f=e.target.files[0];if(!f)return;
   const rd=new FileReader();rd.onload=ev=>{const im=new Image();im.onload=()=>{curImg=im;$('#ph').src=ev.target.result;$('#phbg').src=ev.target.result;quality()};im.src=ev.target.result};rd.readAsDataURL(f)};
  $('#zoom').oninput=e=>{z=+e.target.value;apply();quality()};
