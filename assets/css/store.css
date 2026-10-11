@@ -175,8 +175,7 @@ input[type=range]{width:100%;accent-color:var(--brand);height:34px}
 .shp-arch .fr-photo,.shp-arch .fr-win{-webkit-mask:var(--arch) center/100% 100% no-repeat;mask:var(--arch) center/100% 100% no-repeat}
 .shp-scallop .fr-photo,.shp-scallop .fr-win{-webkit-mask:var(--scallop) center/100% 100% no-repeat;mask:var(--scallop) center/100% 100% no-repeat}
 
-/* 💎 acrylic glass reflection — खिड़की की झलक (11-10, Dev: window reflection चाहिए) */
+/* 💎 acrylic glass reflection — Dev की असली window PNG (11-10) */
 .glare{position:absolute;inset:0;pointer-events:none;z-index:5;
- background:linear-gradient(112deg,transparent 38%,rgba(255,255,255,.34) 42.5%,rgba(255,255,255,.10) 47%,transparent 51%),
- linear-gradient(112deg,transparent 58%,rgba(255,255,255,.22) 62%,rgba(255,255,255,.05) 66%,transparent 70%);
- mix-blend-mode:screen}
+ background:url('../glare.png') top left/cover no-repeat;
+ mix-blend-mode:screen;opacity:.95}
