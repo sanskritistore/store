@@ -79,7 +79,7 @@ function pngMaskCss(f){
  const x=Math.max(0,Math.min(+f.window.x||0,100-w)),y=Math.max(0,Math.min(+f.window.y||0,100-h));
  const mw=(10000/w).toFixed(2),mh=(10000/h).toFixed(2);
  const px=(w>=99.9?0:(x/(100-w)*100)).toFixed(2),py=(h>=99.9?0:(y/(100-h)*100)).toFixed(2);
- return `-webkit-mask-image:url("${f.img}");mask-image:url("${f.img}");-webkit-mask-size:${mw}% ${mh}%;mask-size:${mw}% ${mh}%;-webkit-mask-position:${px}% ${py}%;mask-position:${px}% ${py}%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;`;
+ return `-webkit-mask-image:url('${f.img}');mask-image:url('${f.img}');-webkit-mask-size:${mw}% ${mh}%;mask-size:${mw}% ${mh}%;-webkit-mask-position:${px}% ${py}%;mask-position:${px}% ${py}%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;`;
 }
 /* sample photo की सही position (zoom/x/y) card पर */
 function sampPosCss(f){
