@@ -69,7 +69,7 @@ async function loadCustomFrames(){
     if(!r.ok)return;
     const cf=await r.json();
     const base=location.pathname.replace(/[^/]*$/,'');
-    CFG.frames.frames=CFG.frames.frames.concat(cf.map(f=>({...f,img:BACKEND()+f.img,samp:f.samp?BACKEND()+f.samp:'',custom:true})));
+    CFG.frames.frames=CFG.frames.frames.concat(cf.map(f=>({...f,img:BACKEND()+f.img,samp:f.samp?BACKEND()+f.samp:'',glare:f.glare?BACKEND()+f.glare:'',custom:true})));
   }catch(e){/* backend न मिले तो static frames ही */}}
 
 /* === PNG-as-shape (11-10, Dev rule): photo dropdown से नहीं, PNG की असली transparency से कटे === */
@@ -82,11 +82,15 @@ function pngMaskCss(f){
  return `-webkit-mask-image:url('${f.img}');mask-image:url('${f.img}');-webkit-mask-size:${mw}% ${mh}%;mask-size:${mw}% ${mh}%;-webkit-mask-position:${px}% ${py}%;mask-position:${px}% ${py}%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;`;
 }
 /* sample photo की सही position (zoom/x/y) card पर */
-function glareStyle(f){ /* 🪟 per-frame reflection: on/off + चमक + जगह (11-10, Dev) */
- if(!f.glare_set)return '';
- try{const g=JSON.parse(f.glare_set);
-  if(!g.on)return 'display:none;';
-  return `opacity:${(g.op/100).toFixed(2)};background-position:${g.x}% 0;`}catch(e){return ''}}
+function glareStyle(f){ /* 🪟 per-frame reflection: on/off + चमक + जगह + अपनी PNG (11-10, Dev) */
+ let g={};
+ if(f.glare_set){try{g=JSON.parse(f.glare_set)}catch(e){}}
+ if(g.on===0)return 'display:none;';
+ let st='';
+ if(f.glare)st+=`background-image:url('${f.glare}${f.glare.includes('?')?'&':'?'}v=${g.gv||1}');`;
+ if(g.op)st+=`opacity:${(g.op/100).toFixed(2)};`;
+ if(g.x!==undefined)st+=`background-position:${g.x}% 0;`;
+ return st}
 function sampPosCss(f){
  if(!f||!f.samp_pos)return '';
  try{const p=JSON.parse(f.samp_pos);if(!p)return '';
