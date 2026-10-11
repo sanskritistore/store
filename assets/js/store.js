@@ -72,6 +72,23 @@ async function loadCustomFrames(){
     CFG.frames.frames=CFG.frames.frames.concat(cf.map(f=>({...f,img:BACKEND()+f.img,samp:f.samp?BACKEND()+f.samp:'',custom:true})));
   }catch(e){/* backend न मिले तो static frames ही */}}
 
+/* === PNG-as-shape (11-10, Dev rule): photo dropdown से नहीं, PNG की असली transparency से कटे === */
+function pngMaskCss(f){
+ if(!f||!f.img||!f.window)return '';
+ const w=+f.window.w,h=+f.window.h;if(!(w>0.5&&h>0.5))return '';
+ const x=Math.max(0,Math.min(+f.window.x||0,100-w)),y=Math.max(0,Math.min(+f.window.y||0,100-h));
+ const mw=(10000/w).toFixed(2),mh=(10000/h).toFixed(2);
+ const px=(w>=99.9?0:(x/(100-w)*100)).toFixed(2),py=(h>=99.9?0:(y/(100-h)*100)).toFixed(2);
+ return `-webkit-mask-image:url("${f.img}");mask-image:url("${f.img}");-webkit-mask-size:${mw}% ${mh}%;mask-size:${mw}% ${mh}%;-webkit-mask-position:${px}% ${py}%;mask-position:${px}% ${py}%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;`;
+}
+/* sample photo की सही position (zoom/x/y) card पर */
+function sampPosCss(f){
+ if(!f||!f.samp_pos)return '';
+ try{const p=JSON.parse(f.samp_pos);if(!p)return '';
+  const z=(p.z||100)/100,mx=p.mx!=null?p.mx:50,my=p.my!=null?p.my:50;
+  return `object-position:${mx}% ${my}%;transform:scale(${z});transform-origin:${mx}% ${my}%;`}catch(e){return ''}
+}
+
 /* === Ratio helpers (11-10) === */
 function rtClass(r){return 'rt-'+r.replace(':','')}
 function sizesFor(fcfg,frame){return (fcfg.ratios[frame.ratio]||Object.values(fcfg.ratios)[0]).sizes}

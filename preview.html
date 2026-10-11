@@ -63,6 +63,8 @@
  const fr=$('#fr');fr.className='fr shp-'+(F.shape&&F.shape.startsWith('custom:')?'custom':F.shape)+' '+F.style+' '+rtClass(F.ratio);
  if(F.shape&&F.shape.startsWith('custom:')){const v=F.shape.slice(7).split(',').map(n=>n+'%').join(' ');
   const fp=fr.querySelector('.fr-photo');if(fp)fp.style.borderRadius=v}
+ /* 🔑 PNG-as-shape: PNG frame हो तो photo PNG की असली transparency से कटे — dropdown shape से कोई फर्क नहीं (11-10, Dev rule) */
+ if(F.img&&F.window){const fp=fr.querySelector('.fr-photo');if(fp)fp.style.cssText+=pngMaskCss(F)}
  if(F.ar)fr.style.aspectRatio=F.ar;
  /* 🔪 white-knockout: frame PNG के बाहर का solid white अपने आप transparent (किनारों से अंदर flood) —
     ताकि wall दिखे + shadow carving की असली shape पर पड़े। design के अंदर का white सुरक्षित। (11-10, Dev का rule:
@@ -200,7 +202,8 @@
  function dims(dpi){const b=Math.round((CFG.site.bleed_mm||3)/25.4*dpi);
   const wk=F.draw?1:(F.window?F.window.w/100:1),hk=F.draw?1:(F.window?F.window.h/100:1);
   return {W:Math.round(size.w*wk*dpi)+2*b,H:Math.round(size.h*hk*dpi)+2*b}}
- function renderPrint(img){let dpi=CFG.site.dpi||300,d=dims(dpi);
+ const corsImg=u=>new Promise(r=>{const i=new Image();i.crossOrigin='anonymous';i.onload=()=>r(i);i.onerror=()=>r(null);i.src=u});
+ async function renderPrint(img){let dpi=CFG.site.dpi||300,d=dims(dpi);
   if(d.W*d.H>110e6){dpi=240;d=dims(dpi)}if(d.W*d.H>110e6){dpi=200;d=dims(dpi)}
   const c=document.createElement('canvas');c.width=d.W;c.height=d.H;const g=c.getContext('2d');
   g.fillStyle='#fff';g.fillRect(0,0,d.W,d.H);
@@ -222,6 +225,17 @@
     else{g.drawImage(im,(ww-im.naturalWidth*sc)/2,(wh-im.naturalHeight*sc)/2,im.naturalWidth*sc,im.naturalHeight*sc)}
     g.restore()});
    return{c,dpi}}
+  if(F.img&&F.window){ /* PNG frame: photo PNG की असली shape में कटे (alpha mask) */
+   const wx=d.W*F.window.x/100,wy=d.H*F.window.y/100,ww=d.W*F.window.w/100,wh=d.H*F.window.h/100;
+   g.save();g.beginPath();g.rect(wx,wy,ww,wh);g.clip();
+   const s2=Math.max(ww/img.naturalWidth,wh/img.naturalHeight);
+   if(z<1){g.save();g.filter='blur('+Math.max(10,Math.round(ww*0.02))+'px) brightness(1.04)';
+    g.drawImage(img,(ww-img.naturalWidth*s2)/2,(wh-img.naturalHeight*s2)/2,img.naturalWidth*s2,img.naturalHeight*s2);g.restore()}
+   g.translate(wx+ww/2+x/100*ww,wy+wh/2+y/100*wh);g.scale(z,z);g.rotate(r*Math.PI/180);
+   g.drawImage(img,-img.naturalWidth*s2/2,-img.naturalHeight*s2/2,img.naturalWidth*s2,img.naturalHeight*s2);
+   const fim=await corsImg(F.img);
+   if(fim){g.globalCompositeOperation='destination-in';g.drawImage(fim,0,0,d.W,d.H)}
+   g.restore();return{c,dpi}}
   g.save();
   shapePath(g,F.shape,d.W,d.H);g.clip();
   const s=Math.max(d.W/img.naturalWidth,d.H/img.naturalHeight);

@@ -158,12 +158,20 @@
       <div><label style="font-size:12px">ऊपर %</label><input id="wy" type="number" value="12"></div>
       <div><label style="font-size:12px">चौड़ाई %</label><input id="ww" type="number" value="76"></div>
       <div><label style="font-size:12px">ऊँचाई %</label><input id="wh" type="number" value="76"></div>
+     </div>
+     <div style="margin-top:10px;background:#fff;border:1px solid #e8dcc8;border-radius:12px;padding:10px">
+      <b style="font-size:13px">🖼️ Photo को set करें — card में ऐसे ही दिखेगी</b>
+      <div style="display:flex;gap:12px;margin-top:6px;font-size:12px;flex-wrap:wrap">
+       <label style="flex:1;min-width:105px">🔍 Zoom<input type="range" id="pz" min="100" max="250" value="100" style="width:100%"></label>
+       <label style="flex:1;min-width:105px">↔️ बाएँ-दाएँ<input type="range" id="pmx" min="0" max="100" value="50" style="width:100%"></label>
+       <label style="flex:1;min-width:105px">↕️ ऊपर-नीचे<input type="range" id="pmy" min="0" max="100" value="50" style="width:100%"></label>
+      </div>
      </div></div>
    </div>
    <div class="mform">
     <div class="step">3️⃣ Details भरें</div>
     <label>Frame का नाम *</label><input id="fname" placeholder="जैसे: रॉयल गोल्डन">
-    <label>Photo का shape — जो चुनोगे, photo वैसी ही कटेगी</label>
+    <label>Photo का shape <small style="color:#8a6a4a">— असली कटाई आपकी PNG से अपने आप होगी ✅ (यह सिर्फ listing group के लिए)</small></label>
     <input type="hidden" id="fshape" value="rect">
     <select id="pshapeSel" class="inp">
      <option value="rect">Square</option>
@@ -239,12 +247,18 @@
   if(m){el.style.webkitMask=m;el.style.mask=m;el.style.borderRadius='0'}
   else{el.style.webkitMask='';el.style.mask='';
    el.style.borderRadius=s.startsWith('custom:')?s.slice(7).split(',').map(v=>v+'%').join(' '):(s==='rounded')?'14px':(s==='oval'||s==='circle')?'50%':'0'}}
- function draw(){['x','y','w','h'].forEach(k=>{W[k]=Math.round(W[k]*10)/10});
+ function draw(){W.w=Math.min(Math.max(+W.w||10,3),100);W.h=Math.min(Math.max(+W.h||10,3),100);
+  W.x=Math.min(Math.max(+W.x||0,0),100-W.w);W.y=Math.min(Math.max(+W.y||0,0),100-W.h);
+  ['x','y','w','h'].forEach(k=>{W[k]=Math.round(W[k]*10)/10});
   $('#wx').value=W.x;$('#wy').value=W.y;$('#ww').value=W.w;$('#wh').value=W.h;
   [demo,winbox].forEach(el=>{el.style.left=W.x+'%';el.style.top=W.y+'%';el.style.width=W.w+'%';el.style.height=W.h+'%'});
   shapeCss(demo)}
  function fromInputs(){W={x:+$('#wx').value||0,y:+$('#wy').value||0,w:+$('#ww').value||10,h:+$('#wh').value||10};draw()}
  ['wx','wy','ww','wh'].forEach(id=>$('#'+id).oninput=fromInputs);
+ function applyPos(){const z=(+$('#pz').value||100)/100,mx=+$('#pmx').value,my=+$('#pmy').value;
+  const di=$('#dimg');di.style.objectPosition=mx+'% '+my+'%';
+  di.style.transform='scale('+z+')';di.style.transformOrigin=mx+'% '+my+'%'}
+ ['pz','pmx','pmy'].forEach(id=>$('#'+id).oninput=applyPos);
  function custVal(p){return 'custom:'+[p+'ctl',p+'ctr',p+'cbr',p+'cbl'].map(i=>$('#'+i).value).join(',')}
  function custWire(prefix,hidden,after){
   ['ctl','ctr','cbr','cbl'].forEach(k=>{const el=$('#'+prefix+k);if(!el)return;
@@ -266,21 +280,45 @@
   W={x:Math.min(dragging.x,p.x),y:Math.min(dragging.y,p.y),w:Math.abs(p.x-dragging.x),h:Math.abs(p.y-dragging.y)};
   if(W.w<3)W.w=3;if(W.h<3)W.h=3;draw()});
  stg.addEventListener('pointerup',()=>dragging=null);
+ /* PNG की अंदरूनी transparent जगह = photo window — अपने आप पकड़ो (11-10, Dev: "meri png ki shape wahi aaye") */
+ function autoWindow(im){try{
+  const M=640,sc=Math.min(1,M/Math.max(im.naturalWidth,im.naturalHeight));
+  const w=Math.max(60,Math.round(im.naturalWidth*sc)),h=Math.max(60,Math.round(im.naturalHeight*sc));
+  const c=document.createElement('canvas');c.width=w;c.height=h;
+  const g=c.getContext('2d',{willReadFrequently:true});g.drawImage(im,0,0,w,h);
+  const d=g.getImageData(0,0,w,h).data,seen=new Uint8Array(w*h),st=[];
+  const tr=p=>d[p*4+3]<16,push=p=>{if(!seen[p]&&tr(p)){seen[p]=1;st.push(p)}};
+  for(let x=0;x<w;x++){push(x);push((h-1)*w+x)}
+  for(let y=0;y<h;y++){push(y*w);push(y*w+w-1)}
+  while(st.length){const p=st.pop(),x=p%w,y=(p/w)|0;
+   if(x>0)push(p-1);if(x<w-1)push(p+1);if(y>0)push(p-w);if(y<h-1)push(p+w)}
+  let x0=w,y0=h,x1=-1,y1=-1,n=0;
+  for(let p=0;p<w*h;p++){if(tr(p)&&!seen[p]){n++;const x=p%w,y=(p/w)|0;
+   if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}}
+  if(n<w*h*0.005||x1<0)return null;
+  return {x:+(x0/w*100).toFixed(1),y:+(y0/h*100).toFixed(1),w:+((x1-x0+1)/w*100).toFixed(1),h:+((y1-y0+1)/h*100).toFixed(1)}
+ }catch(e){return null}}
  /* --- frame image upload --- */
  let imgFile=null,sampFile=null;
  $('#cvb').onclick=()=>$('#cvf').click();
  $('#cvf').onchange=async e=>{const f=e.target.files[0];if(!f)return;
   $('#cvinfo').innerHTML='⏳ बन रही…';const blob=await toWebP(f);
-  const th=$('#cvth');th.src=URL.createObjectURL(blob);th.style.display='block';
+  const th=$('#cvth');const a=$('#cvd');
+  if(blob.size>=f.size*0.98){ // WebP उल्टा बड़ी बनी — original ही बेहतर (Dev का 5.jpg मामला, 11-10)
+   th.src=URL.createObjectURL(f);th.style.display='block';
+   $('#cvinfo').innerHTML='<b style="font-size:13px">'+f.name+'</b><br><small>यह photo पहले से हल्की है — WebP बड़ी बनती है, <b>original ही रखो</b> 👍</small>';
+   a.href=URL.createObjectURL(f);a.download=f.name;a.style.display='inline-block';e.target.value='';return}
+  th.src=URL.createObjectURL(blob);th.style.display='block';
   const save=Math.max(1,Math.round(100-blob.size/f.size*100));
   $('#cvinfo').innerHTML='<b style="font-size:13px">'+f.name+'</b><br><small>'+Math.round(f.size/1024)+'KB → <b>'+Math.round(blob.size/1024)+'KB</b> — '+save+'% हल्की 🎉</small>';
-  const a=$('#cvd');a.href=URL.createObjectURL(blob);a.download=f.name.replace(/\.[^.]+$/,'')+'.webp';a.style.display='inline-block';
+  a.href=URL.createObjectURL(blob);a.download=f.name.replace(/\.[^.]+$/,'')+'.webp';a.style.display='inline-block';
   e.target.value=''};
  $('#fsampb').onclick=()=>$('#fsamp').click();
  $('#fsamp').onchange=async e=>{const f=e.target.files[0];if(!f)return;
   const kb0=Math.round(f.size/1024);sampFile=await toWebP(f);
   const th=$('#fsampth');th.src=URL.createObjectURL(sampFile);th.style.display='block';
-  toast('📸 sample तैयार: '+kb0+'KB → '+Math.round(sampFile.size/1024)+'KB ✅')};
+  $('#dimg').src=URL.createObjectURL(sampFile);applyPos(); // sample stage में भी दिखे
+  toast('📸 sample तैयार: '+kb0+'KB → '+Math.round(sampFile.size/1024)+'KB ✅ — नीचे stage में देखो, sliders से set करो')};
  async function toWebP(file){return new Promise(res=>{const im=new Image();im.onload=()=>{
   const cv=document.createElement('canvas');cv.width=im.naturalWidth;cv.height=im.naturalHeight;
   cv.getContext('2d').drawImage(im,0,0);URL.revokeObjectURL(im.src);
@@ -295,8 +333,10 @@
    stg.style.aspectRatio=im.naturalWidth+'/'+im.naturalHeight;
    const a=im.naturalWidth/im.naturalHeight;
    setRatioChip(Math.abs(a-1)<0.12?'1:1':(a<1?'2:3':'3:2'));
-   $('#dimg').src=CFG.frames.demo[1%CFG.frames.demo.length];draw();
-   toast('अब photo की जगह drag करके चुनें 👆')};im.src=ev.target.result};rd.readAsDataURL(imgFile)};
+   $('#dimg').src=CFG.frames.demo[1%CFG.frames.demo.length];applyPos();
+   const aw=autoWindow(im);
+   if(aw){W=aw;draw();toast('✅ Photo की जगह PNG से अपने आप मिल गई!')}
+   else{draw();toast('अब photo की जगह drag करके चुनें 👆')}};im.src=ev.target.result};rd.readAsDataURL(imgFile)};
  /* --- save --- */
  $('#fsave').onclick=async()=>{
   const name=$('#fname').value.trim();
@@ -310,7 +350,8 @@
    fd.append('base',+$('#fbase').value||499);fd.append('rating',+$('#frate').value||4.5);
    fd.append('window',JSON.stringify({x:W.x,y:W.y,w:W.w,h:W.h}));
    fd.append('img_file',imgFile,'frame.webp');
-   if(sampFile)fd.append('sample_file',sampFile,'sample.webp');
+   if(sampFile){fd.append('sample_file',sampFile,'sample.webp');
+    fd.append('sample_settings',JSON.stringify({z:+$('#pz').value||100,mx:+$('#pmx').value||50,my:+$('#pmy').value||50}))}
    const r=await fetch(B+'/store/frames',{method:'POST',headers:hdr(),body:fd});
    if(r.status===401||r.status===403){toast('login expire — दोबारा login करें');localStorage.removeItem('sk_adm_tok');location.reload();return}
    if(!r.ok)throw new Error('HTTP '+r.status);
