@@ -283,8 +283,9 @@
  ['pz','pmx','pmy'].forEach(id=>$('#'+id).oninput=applyPos);
  let glareURL='';
  function defGlareURL(){ /* stage ratio के हिसाब से default window PNG (Dev 11-10) */
-  const t=(stg.style.aspectRatio||'1/1').replace(' ','');
-  const k=t==='2/3'?'2x3':t==='3/2'?'3x2':'1x1';
+  const t=(stg.style.aspectRatio||'1/1').replace(/\s/g,'').split('/');
+  let r=1;if(t.length===2&&+t[1])r=(+t[0])/(+t[1]);
+  const k=Math.abs(r-2/3)<0.15?'2x3':Math.abs(r-3/2)<0.15?'3x2':'1x1';
   return `assets/glare-${k}.png?v=1`}
  function updGlare(){const g=$('#mglare');if(!g)return;
   if(!$('#gon').checked){g.style.display='none';return}
