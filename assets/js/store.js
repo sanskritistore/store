@@ -88,7 +88,7 @@ function glareWin(f,side){ /* glare_set से एक खिड़की की 
  if(g.on===0)return null;
  let w=g[side];
  if(!w&&side==='L'&&(g.op!==undefined||g.x!==undefined))w=g; /* flat → L */
- if(!w)w=side==='L'?{on:1,op:60,x:8,y:10,s:100}:{on:1,op:55,x:70,y:8,s:70};
+ if(!w)w=side==='L'?{on:1,op:60,x:6,y:12,s:45}:{on:1,op:55,x:80,y:8,s:36};
  if(w.on===0)return null;
  return w}
 function glareStyle(f,side){ /* 🪟 दो-खिड़की reflection (11-10 रात-8, Dev): L/R अलग PNG + position + आकार */
@@ -99,8 +99,10 @@ function glareStyle(f,side){ /* 🪟 दो-खिड़की reflection (11-10
  if(custom)st+=`background-image:url('${custom}${custom.includes('?')?'&':'?'}v=${gv}');`;
  else st+=`background-image:url('assets/glare-${side}.png?v=3');`;
  if(w.op)st+=`opacity:${(w.op/100).toFixed(2)};`;
- st+=`background-position:${w.x===undefined?30:w.x}% ${w.y||0}%;`;
- if(w.s&&w.s!==100)st+=`background-size:${w.s}% auto;`;
+ const px=w.x===undefined?(side==='L'?6:80):w.x;
+ st+=`background-position:${px}% ${w.y===undefined?10:w.y}%;`;
+ const sz=w.s!==undefined?w.s:(custom?100:(side==='L'?45:36));
+ if(sz!==100)st+=`background-size:${sz}% auto;`;
  return st}
 function glareHTML(f){return `<div class="glare" style="${glareStyle(f,'L')}"></div><div class="glare" style="${glareStyle(f,'R')}"></div>`}
 function sampPosCss(f){
