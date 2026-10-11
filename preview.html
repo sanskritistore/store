@@ -3,7 +3,7 @@
 <title>संस्कृति — फ्रेम preview</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪔</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/store.css?v=2"></head><body>
+<link rel="stylesheet" href="assets/css/store.css?v=3"></head><body>
 <header id="hd"></header>
 <section class="pv wrap">
  <div class="stage" id="stage">
@@ -15,7 +15,7 @@
   <label class="up" style="margin-top:12px">📤 अपनी फोटो अपलोड करें
    <input type="file" id="file" accept="image/*" hidden></label>
   <div class="qbadge" id="qb"></div>
-  <button class="btn btn-o btn-b" id="hd" style="display:none;margin-top:8px">✨ HD बनाओ</button>
+  <button class="btn btn-o btn-b" id="hdb" style="display:none;margin-top:8px">✨ HD बनाओ</button>
   <h3>फोटो सेट करें</h3>
   <div class="ctl"><label>Zoom <span id="zv"></span> <small style="color:#8a7a5f">— 100% से कम = पूरी फोटो, किनारे blur</small></label><input type="range" id="zoom" min="0.3" max="3" step="0.01" value="1"></div>
   <div class="ctl"><label>बाएँ ↔ दाएँ</label><input type="range" id="mx" min="-50" max="50" value="0"></div>
@@ -28,7 +28,7 @@
   <div class="pricebox"><div><span class="p" id="pr"></span> <s id="mrp"></s>
    <div class="m">प्रिंट + फ्रेम + पैकिंग शामिल</div></div></div>
   <div style="display:grid;gap:10px">
-   <button class="btn btn-p btn-b" id="order">✅ ऑर्डर करें — HD print file हमें मिल जाएगी</button>
+   <button class="btn btn-p btn-b" id="order">✅ ऑर्डर करें — print file हमें मिल जाएगी</button>
    <button class="btn btn-o btn-b" id="add">🛒 कार्ट में डालें</button>
    <a class="btn btn-wa btn-b" id="ord" target="_blank">📱 WhatsApp पर पूछें</a></div>
   <p class="note">ऑर्डर करते ही आपकी सेट की हुई फोटो <b>4K print quality</b> में हमारी team को मिल जाती है — वही print होकर acrylic में लगेगी 🖨️</p>
@@ -104,7 +104,7 @@
   if(d>=300){q.className='qbadge ok';q.textContent='✅ बढ़िया quality — '+size.label+' में एकदम साफ print आएगा'}
   else if(d>=200){q.className='qbadge warn';q.textContent='⚠️ ठीक-ठाक quality ('+Math.round(d)+' DPI) — छोटे size में बेहतर रहेगा'}
   else{q.className='qbadge bad';q.textContent='❌ फोटो छोटी है ('+Math.round(d)+' DPI) — इस size में धुंधला आएगा। ✨ HD बनाओ दबाएँ या छोटा size चुनें'}
-  const hd=$('#hd');
+  const hd=$('#hdb');
   if(curImg&&d<280&&curImg.naturalWidth<5500){hd.style.display='block';
    hd.textContent='✨ HD बनाओ — एक click में photo 2x बड़ी + तेज़ (अभी '+Math.round(d)+' DPI)'}
   else hd.style.display='none'}
@@ -128,7 +128,7 @@
   const im=new Image();await new Promise((r,j)=>{im.onload=r;im.onerror=j;im.src=URL.createObjectURL(blob)});
   return im}
  let hdBusy=false;
- async function runHD(){if(!curImg||hdBusy)return;hdBusy=true;const btn=$('#hd');
+ async function runHD(){if(!curImg||hdBusy)return;hdBusy=true;const btn=$('#hdb');
   btn.style.display='block';btn.disabled=true;
   try{const im=await enhanceImg(curImg,m=>btn.textContent=m);
    if(!im){toast('photo पहले से काफी बड़ी है 👍')}
@@ -136,7 +136,7 @@
     toast('✅ HD हो गई! अब print ज़्यादा साफ आएगा')}}
   catch(e){toast('कुछ गड़बड़ — दोबारा दबाएँ')}
   btn.disabled=false;hdBusy=false;quality()}
- $('#hd').onclick=runHD;
+ $('#hdb').onclick=runHD;
  $('#file').onchange=e=>{const f=e.target.files[0];if(!f)return;
   const rd=new FileReader();rd.onload=ev=>{const im=new Image();im.onload=()=>{curImg=im;$('#ph').src=ev.target.result;$('#phbg').src=ev.target.result;quality();
    const qb=$('#qb');if(qb.className.includes('bad')){toast('photo छोटी है — अपने आप HD बना रहे हैं ✨');runHD()}};im.src=ev.target.result};rd.readAsDataURL(f)};
