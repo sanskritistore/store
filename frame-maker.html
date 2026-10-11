@@ -136,6 +136,7 @@
      <button class="btn btn-o" id="fsampb" type="button" style="flex:none">चुनें</button>
     </div>
     <input type="file" id="fsamp" accept="image/*" hidden>
+    <input type="file" id="exsamp" accept="image/*" hidden>
     <p class="hint">💡 Frame की सीधी photo खींचो या Canva/Photoshop से border PNG बनाओ — बीच का हिस्सा खाली (transparent) होना चाहिए।</p>
     <div class="stg" id="stg" style="display:none">
      <div class="demo" id="demo"><img id="dimg" alt=""></div>
@@ -301,11 +302,17 @@
   }catch(e){console.error(e);toast('save नहीं हुआ — फिर कोशिश करें')}
   btn.disabled=false;btn.textContent='💾 Frame Save करें — तुरंत live'};
  /* --- existing frames --- */
+ let sampTarget=null;
+ $('#exsamp').onchange=async e=>{const f=e.target.files[0];if(!f||!sampTarget)return;
+  const blob=await toWebP(f);const fd=new FormData();fd.append('sample_file',blob,'sample.webp');
+  const r=await fetch(B+'/store/frames/'+sampTarget+'/sample',{method:'POST',headers:hdr(),body:fd});
+  toast(r.ok?'📸 sample photo लग गई ✅':'sample नहीं लगी');e.target.value='';sampTarget=null};
  async function listFrames(){
   try{const r=await fetch(B+'/store/frames');const j=await r.json();
-   $('#exfr').innerHTML=j.length?j.map(f=>`<span class="chipx">${f.ptype==='acrylic'?'💎':f.ptype==='album'?'📖':'🖼️'} ${f.name} <small>(${f.ratio})</small><button data-del="${f.id.replace('fr-c','')}">🗑️</button></span>`).join(''):'<span class="hint">अभी कोई custom frame नहीं — पहला बनाओ! 👆</span>';
+   $('#exfr').innerHTML=j.length?j.map(f=>`<span class="chipx">${f.ptype==='acrylic'?'💎':f.ptype==='album'?'📖':'🖼️'} ${f.name} <small>(${f.ratio})</small><button data-samp="${f.id.replace('fr-c','')}" title="sample photo लगाओ">📸</button><button data-del="${f.id.replace('fr-c','')}">🗑️</button></span>`).join(''):'<span class="hint">अभी कोई custom frame नहीं — पहला बनाओ! 👆</span>';
    $$('#exfr [data-del]').forEach(b=>b.onclick=async()=>{if(!confirm('यह frame हटा दें?'))return;
     await fetch(B+'/store/frames/'+b.dataset.del,{method:'DELETE',headers:hdr()});listFrames()});
+   $$('#exfr [data-samp]').forEach(b=>b.onclick=()=>{sampTarget=b.dataset.samp;$('#exsamp').click()});
   }catch(e){$('#exfr').innerHTML='<span class="hint">list नहीं खुली</span>'}}
 
  /* ============ Generator tab ============ */
