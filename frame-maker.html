@@ -84,16 +84,18 @@
     <label>Photo shape — photo वैसी ही कटेगी</label>
     <input type="hidden" id="gshape" value="rect">
     <select id="gshapeSel" class="inp">
-     <option value="rect">चौकोर</option>
-     <option value="rounded">हल्के कोने</option>
-     <option value="oval">ओवल</option>
-     <option value="circle">पूरा गोल ⭕</option>
-     <option value="heart">दिल ❤️</option>
-     <option value="bean">बीन 🫘</option>
-     <option value="egg">अंडा 🥚</option>
-     <option value="arch">मेहराब 🕌</option>
-     <option value="scallop">लहरिया किनारा 🌸</option>
-     <option value="custom">✏️ Custom — खुद shape बनाओ</option>
+     <option value="rect">Square</option>
+     <option value="rounded">Rounded</option>
+     <option value="oval">Oval</option>
+     <option value="circle">Circle ⭕</option>
+     <option value="heart">Heart ❤️</option>
+     <option value="bean">Bean 🫘</option>
+     <option value="egg">Egg 🥚</option>
+     <option value="arch">Arch (Mehrab) 🕌</option>
+     <option value="scallop">Scallop 🌸</option>
+     <option value="portrait">Portrait (खड़ा box)</option>
+     <option value="landscape">Landscape (आड़ा box)</option>
+     <option value="custom">✏️ Custom — Make Your Own</option>
     </select>
     <div id="gcustbox" style="display:none;background:#fff8ef;border:1.5px dashed #d8b878;border-radius:10px;padding:10px;margin-top:6px">
      <div style="display:flex;gap:10px;align-items:center">
@@ -148,16 +150,18 @@
     <label>Photo का shape — जो चुनोगे, photo वैसी ही कटेगी</label>
     <input type="hidden" id="fshape" value="rect">
     <select id="pshapeSel" class="inp">
-     <option value="rect">चौकोर</option>
-     <option value="rounded">हल्के कोने</option>
-     <option value="oval">ओवल</option>
-     <option value="circle">पूरा गोल ⭕</option>
-     <option value="heart">दिल ❤️</option>
-     <option value="bean">बीन 🫘</option>
-     <option value="egg">अंडा 🥚</option>
-     <option value="arch">मेहराब 🕌</option>
-     <option value="scallop">लहरिया किनारा 🌸</option>
-     <option value="custom">✏️ Custom — खुद shape बनाओ</option>
+     <option value="rect">Square</option>
+     <option value="rounded">Rounded</option>
+     <option value="oval">Oval</option>
+     <option value="circle">Circle ⭕</option>
+     <option value="heart">Heart ❤️</option>
+     <option value="bean">Bean 🫘</option>
+     <option value="egg">Egg 🥚</option>
+     <option value="arch">Arch (Mehrab) 🕌</option>
+     <option value="scallop">Scallop 🌸</option>
+     <option value="portrait">Portrait (खड़ा box)</option>
+     <option value="landscape">Landscape (आड़ा box)</option>
+     <option value="custom">✏️ Custom — Make Your Own</option>
     </select>
     <div id="pcustbox" style="display:none;background:#fff8ef;border:1.5px dashed #d8b878;border-radius:10px;padding:10px;margin-top:6px">
      <div style="display:flex;gap:10px;align-items:center">
@@ -230,8 +234,9 @@
   ['ctl','ctr','cbr','cbl'].forEach(k=>{const el=$('#'+prefix+k);if(!el)return;
    el.oninput=()=>{const v=custVal(prefix);$(hidden).value=v;
     const pv=$('#'+prefix+'cprev');if(pv)pv.style.borderRadius=v.slice(7).split(',').map(x=>x+'%').join(' ');after()}})}
- $('#pshapeSel').onchange=e=>{const v=e.target.value;
+ $('#pshapeSel').onchange=e=>{let v=e.target.value;
   $('#pcustbox').style.display=v==='custom'?'block':'none';
+  if(v==='portrait'||v==='landscape'){setRatioChip(v==='portrait'?'2:3':'3:2');v='rect'}
   $('#fshape').value=v==='custom'?custVal('p'):v;
   shapeCss(demo);shapeCss(winbox)};
  custWire('p','#fshape',()=>{shapeCss(demo);shapeCss(winbox)});
@@ -306,7 +311,11 @@
   $('#gshapeSel').value=isC?'custom':v;
   $('#gcustbox').style.display=isC?'block':'none';
   $('#gshape').value=isC&&v!=='custom'?v:(isC?custVal('g'):v)}
- $('#gshapeSel').onchange=e=>{gShapeSync(e.target.value);gPrev()};
+ $('#gshapeSel').onchange=e=>{const v=e.target.value;
+  if(v==='portrait'||v==='landscape'){const want=v==='portrait'?'2:3':'3:2';
+   $$('#gratio .chip').forEach(x=>x.classList.toggle('on',x.dataset.r===want));
+   gShapeSync('rect')}else gShapeSync(v);
+  gPrev()};
  custWire('g','#gshape',gPrev);
  $$('#gratio .chip').forEach(c=>c.onclick=()=>{$$('#gratio .chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');gPrev()});
  $$('#gpage .chip').forEach(c=>c.onclick=()=>{$$('#gpage .chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');gPrev()});
