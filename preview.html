@@ -108,29 +108,38 @@
   if(curImg&&d<280&&curImg.naturalWidth<5500){hd.style.display='block';
    hd.textContent='✨ HD बनाओ — एक click में photo 2x बड़ी + तेज़ (अभी '+Math.round(d)+' DPI)'}
   else hd.style.display='none'}
- /* ✨ HD engine — photo 2x बड़ी (high-quality resample) + unsharp तेज़; सब browser में, server नहीं (11-10) */
+ /* ✨ HD engine v2 — हल्का (toBlob, ≤16MP), phone पर freeze नहीं; हर step की progress दिखती है (11-10) */
+ const tick=()=>new Promise(r=>setTimeout(r,30)); // UI को साँस लेने दो
  function unsh(d,amt){const w=d.width,h=d.height,s=d.data,o=new Uint8ClampedArray(s);
   for(let y=1;y<h-1;y++){let i=(y*w+1)*4;for(let x=1;x<w-1;x++,i+=4){
    for(let k=0;k<3;k++){const v=o[i+k],b=(o[i-4+k]+o[i+4+k]+o[i-w*4+k]+o[i+w*4+k])*0.25;
     s[i+k]=v+amt*(v-b)}}}return d}
- async function enhanceImg(img){
-  let t=Math.min(2,Math.sqrt(30e6/(img.naturalWidth*img.naturalHeight))); // max 30MP (phone safe)
-  if(t<1.15)return null;
+ async function enhanceImg(img,prog){
+  const t=Math.min(2,Math.sqrt(16e6/(img.naturalWidth*img.naturalHeight))); // ≤16MP — phone safe
+  if(t<1.12)return null;
+  prog('⏳ 1/3 — photo बड़ी हो रही है…');await tick();
   const c=document.createElement('canvas');c.width=Math.round(img.naturalWidth*t);c.height=Math.round(img.naturalHeight*t);
   const g=c.getContext('2d');g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';
   g.drawImage(img,0,0,c.width,c.height);
+  prog('⏳ 2/3 — तेज़ (sharpen) हो रही है…');await tick();
   try{g.putImageData(unsh(g.getImageData(0,0,c.width,c.height),0.45),0,0)}catch(e){}
-  const im=new Image();await new Promise(r=>{im.onload=r;im.src=c.toDataURL('image/jpeg',0.94)});
+  prog('⏳ 3/3 — तैयार हो रही है…');await tick();
+  const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',0.92));
+  const im=new Image();await new Promise((r,j)=>{im.onload=r;im.onerror=j;im.src=URL.createObjectURL(blob)});
   return im}
- $('#hd').onclick=async()=>{if(!curImg)return;const btn=$('#hd');btn.disabled=true;btn.textContent='⏳ HD बन रही है… (2-5 सेकंड)';
-  try{const im=await enhanceImg(curImg);
-   if(!im){toast('photo पहले से काफी बड़ी है 👍');btn.disabled=false;quality();return}
-   curImg=im;$('#ph').src=im.src;$('#phbg').src=im.src;apply();quality();
-   toast('✅ HD हो गई! अब print ज़्यादा साफ आएगा')}
-  catch(e){toast('कुछ गड़बड़ — दोबारा कोशिश करें')}
-  btn.disabled=false;quality()};
+ let hdBusy=false;
+ async function runHD(){if(!curImg||hdBusy)return;hdBusy=true;const btn=$('#hd');
+  btn.style.display='block';btn.disabled=true;
+  try{const im=await enhanceImg(curImg,m=>btn.textContent=m);
+   if(!im){toast('photo पहले से काफी बड़ी है 👍')}
+   else{curImg=im;$('#ph').src=im.src;$('#phbg').src=im.src;apply();quality();
+    toast('✅ HD हो गई! अब print ज़्यादा साफ आएगा')}}
+  catch(e){toast('कुछ गड़बड़ — दोबारा दबाएँ')}
+  btn.disabled=false;hdBusy=false;quality()}
+ $('#hd').onclick=runHD;
  $('#file').onchange=e=>{const f=e.target.files[0];if(!f)return;
-  const rd=new FileReader();rd.onload=ev=>{const im=new Image();im.onload=()=>{curImg=im;$('#ph').src=ev.target.result;$('#phbg').src=ev.target.result;quality()};im.src=ev.target.result};rd.readAsDataURL(f)};
+  const rd=new FileReader();rd.onload=ev=>{const im=new Image();im.onload=()=>{curImg=im;$('#ph').src=ev.target.result;$('#phbg').src=ev.target.result;quality();
+   const qb=$('#qb');if(qb.className.includes('bad')){toast('photo छोटी है — अपने आप HD बना रहे हैं ✨');runHD()}};im.src=ev.target.result};rd.readAsDataURL(f)};
  $('#zoom').oninput=e=>{z=+e.target.value;apply();quality()};
  $('#mx').oninput=e=>{x=+e.target.value;apply()};
  $('#my').oninput=e=>{y=+e.target.value;apply()};
