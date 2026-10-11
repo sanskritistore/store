@@ -90,7 +90,7 @@ function glareWin(f,side){ /* glare_set से एक खिड़की की 
  if(!w&&side==='L'&&(g.op!==undefined||g.x!==undefined))w=g; /* flat → L */
  if(!w){const pa=isPortrait(f);
   w=side==='L'
-   ?(pa?{on:1,op:70,x:17,y:35,s:49,kx:-5,ky:7,h:182}:{on:1,op:70,x:2,y:6,s:30,kx:0,ky:0,h:100})
+   ?(pa?{on:1,op:70,x:2,y:35,s:30,kx:-5,ky:7,h:182}:{on:1,op:70,x:2,y:6,s:30,kx:0,ky:0,h:100})
    :(pa?{on:1,op:60,x:92,y:10,s:22,kx:0,ky:0,h:100}:{on:1,op:60,x:92,y:10,s:22,kx:0,ky:0,h:100})}
  if(w.on===0)return null;
  return w}

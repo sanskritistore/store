@@ -54,7 +54,7 @@
   <div class="topbar" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin:18px 0">
    <h2 style="margin:0">🖼️ Frame Maker</h2>
    <a class="btn btn-o" href="admin.html">🖨️ ऑर्डर Admin</a></div>
-  <div style="font-size:11px;color:#B0A48F;text-align:right;margin-bottom:4px">v11.10-रात-13 <span id="jsok"></span></div>
+  <div style="font-size:11px;color:#B0A48F;text-align:right;margin-bottom:4px">v11.10-रात-14 <span id="jsok"></span></div>
   <div class="tabbar">
    <button class="tab on" data-t="gen">🎨 Generator (fast)</button>
    <button class="tab" data-t="png">📤 अपनी PNG से</button>
@@ -248,7 +248,7 @@
  </div>
 </section>
 <footer id="ft"></footer>
-<script src="assets/js/store.js?v=15"></script>
+<script src="assets/js/store.js?v=16"></script>
 <script>(async()=>{await loadCfg();shell('');
  const B=BACKEND()+'/api/v1';
  let tok=localStorage.getItem('sk_adm_tok')||'';
@@ -297,7 +297,7 @@
   di.style.transform='scale('+z+')';di.style.transformOrigin=mx+'% '+my+'%'}
  ['pz','pmx','pmy'].forEach(id=>$('#'+id).oninput=applyPos);
  /* दो-खिड़की reflection state (Dev 11-10 रात-8): L/R अलग settings + अलग PNG */
- let GS={L:{on:1,op:70,x:17,y:35,s:49,kx:-5,ky:7,h:182},R:{on:1,op:60,x:92,y:10,s:22,kx:0,ky:0,h:100}}; /* SS20 exact (pixel-measured) */
+ let GS={L:{on:1,op:70,x:2,y:35,s:30,kx:-5,ky:7,h:182},R:{on:1,op:60,x:92,y:10,s:22,kx:0,ky:0,h:100}}; /* SS20 matched (live fit test) */
  let curG='L';
  let glareURL={L:'',R:''};
  function loadGSliders(){const w=GS[curG];
