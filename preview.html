@@ -63,8 +63,9 @@
  const fr=$('#fr');fr.className='fr shp-'+(F.shape&&F.shape.startsWith('custom:')?'custom':F.shape)+' '+F.style+' '+rtClass(F.ratio);
  if(F.shape&&F.shape.startsWith('custom:')){const v=F.shape.slice(7).split(',').map(n=>n+'%').join(' ');
   const fp=fr.querySelector('.fr-photo');if(fp)fp.style.borderRadius=v}
- /* 🔑 PNG-as-shape: PNG frame हो तो photo PNG की असली transparency से कटे — dropdown shape से कोई फर्क नहीं (11-10, Dev rule) */
- if(F.img&&F.window){const fp=fr.querySelector('.fr-photo');if(fp)fp.style.cssText+=pngMaskCss(F)}
+ /* 🔑 PNG-as-shape: PNG frame पर कोई CSS shape/mask नहीं — ऊपर पड़ी असली PNG ही photo को उसकी transparency से दिखाएगी (11-10, Dev rule) */
+ if(F.img){const fp=fr.querySelector('.fr-photo');
+  if(fp){fp.style.webkitMask='none';fp.style.mask='none';fp.style.borderRadius='0';fr.classList.forEach(c=>{if(c.startsWith('shp-'))fr.classList.remove(c)})}}
  if(F.ar)fr.style.aspectRatio=F.ar;
  /* 🔪 white-knockout: frame PNG के बाहर का solid white अपने आप transparent (किनारों से अंदर flood) —
     ताकि wall दिखे + shadow carving की असली shape पर पड़े। design के अंदर का white सुरक्षित। (11-10, Dev का rule:
@@ -234,7 +235,7 @@
    g.translate(wx+ww/2+x/100*ww,wy+wh/2+y/100*wh);g.scale(z,z);g.rotate(r*Math.PI/180);
    g.drawImage(img,-img.naturalWidth*s2/2,-img.naturalHeight*s2/2,img.naturalWidth*s2,img.naturalHeight*s2);
    const fim=await corsImg(F.img);
-   if(fim){g.globalCompositeOperation='destination-in';g.drawImage(fim,0,0,d.W,d.H)}
+   if(fim){g.globalCompositeOperation='destination-out';g.drawImage(fim,0,0,d.W,d.H)}
    g.restore();return{c,dpi}}
   g.save();
   shapePath(g,F.shape,d.W,d.H);g.clip();
