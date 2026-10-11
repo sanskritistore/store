@@ -63,8 +63,9 @@
  if(F.ar)fr.style.aspectRatio=F.ar;
  if(F.img){const bi=document.createElement('img');bi.className='fr-img';bi.src=F.img;fr.prepend(bi)}
  if(F.window){const fp=fr.querySelector('.fr-photo');
+  fp.style.right='auto';fp.style.bottom='auto';
   fp.style.left=F.window.x+'%';fp.style.top=F.window.y+'%';
-  fp.style.width=F.window.w+'%';fp.style.height=F.window.h+'%';fp.style.inset='auto'}
+  fp.style.width=F.window.w+'%';fp.style.height=F.window.h+'%'}
  $('#fname').textContent=F.name;$('#frate').textContent='⭐ '+F.rating+' • '+F.en+' • '+cfg.ratios[F.ratio].name;
  $('#ph').src=cfg.demo[0];
  document.title='संस्कृति — '+F.name;
