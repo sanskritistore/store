@@ -167,18 +167,6 @@
        <label style="flex:1;min-width:105px">↔️ बाएँ-दाएँ<input type="range" id="pmx" min="0" max="100" value="50" style="width:100%"></label>
        <label style="flex:1;min-width:105px">↕️ ऊपर-नीचे<input type="range" id="pmy" min="0" max="100" value="50" style="width:100%"></label>
       </div>
-      <div style="margin-top:10px;border-top:1px dashed #E3D7C3;padding-top:8px">
-       <b style="font-size:13px">🪟 Reflection (acrylic चमक) — frame के हिसाब से set करें</b>
-       <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;margin-top:4px"><input type="checkbox" id="gon" checked> Reflection चालू</label>
-       <div style="display:flex;gap:12px;margin-top:6px;font-size:12px;flex-wrap:wrap">
-        <label style="flex:1;min-width:105px">✨ चमक<input type="range" id="gop" min="10" max="100" value="55" style="width:100%"></label>
-        <label style="flex:1;min-width:105px">↔️ जगह<input type="range" id="gx" min="0" max="100" value="30" style="width:100%"></label>
-       </div>
-       <label class="upbox" style="margin-top:8px;display:block;padding:10px" id="gbox">
-        <input type="file" id="gfile" accept="image/png,image/webp,image/jpeg" hidden>
-        <div style="font-size:12.5px">🪟 <b>अपनी reflection PNG</b> (optional) — नहीं दोगे तो default खिड़की चलेगी <span id="gname" style="color:#7A5A34"></span></div>
-       </label>
-      </div>
      </div></div>
    </div>
    <div class="mform">
@@ -222,7 +210,20 @@
     <div style="display:grid;gap:10px;margin-top:18px">
      <button class="btn btn-p btn-b" id="fsave">💾 Frame Save करें — तुरंत live</button>
      <a class="btn btn-o btn-b" href="frames.html" target="_blank">👀 Frames page पर देखें</a></div>
-    <div class="step">आपके बनाए frames</div>
+      <div style="margin-top:14px;background:#fff;border:1px solid #e8dcc8;border-radius:12px;padding:10px">
+   <b style="font-size:13px">🪟 Reflection (acrylic चमक) — frame के हिसाब से set करें</b>
+   <div class="hint" style="margin:2px 0 6px">नए frame के साथ save होगी; पुराने frame पर लगाने के लिए: यहाँ set करो → नीचे list में उस frame का 🪟 button दबाओ</div>
+   <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;margin-top:4px"><input type="checkbox" id="gon" checked> Reflection चालू</label>
+   <div style="display:flex;gap:12px;margin-top:6px;font-size:12px;flex-wrap:wrap">
+    <label style="flex:1;min-width:105px">✨ चमक<input type="range" id="gop" min="10" max="100" value="55" style="width:100%"></label>
+    <label style="flex:1;min-width:105px">↔️ जगह<input type="range" id="gx" min="0" max="100" value="30" style="width:100%"></label>
+   </div>
+   <label class="upbox" style="margin-top:8px;display:block;padding:10px" id="gbox">
+    <input type="file" id="gfile" accept="image/png,image/webp,image/jpeg" hidden>
+    <div style="font-size:12.5px">🪟 <b>अपनी reflection PNG चुनें</b> (optional) — नहीं दोगे तो default खिड़की चलेगी <span id="gname" style="color:#7A5A34;font-weight:700"></span></div>
+   </label>
+  </div>
+<div class="step">आपके बनाए frames</div>
     <div class="exfr" id="exfr"><span class="hint">लoad…</span></div>
    </div>
   </div></div>
