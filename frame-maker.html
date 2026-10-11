@@ -135,6 +135,14 @@
      <small style="color:#8a7a5f">card पर photo की जगह यही दिखेगी — अपने आप WebP बनेगी</small></div>
      <button class="btn btn-o" id="fsampb" type="button" style="flex:none">चुनें</button>
     </div>
+    <div style="display:flex;gap:10px;align-items:center;margin-top:8px;background:#f4faf4;border:1.5px dashed #a8c8a8;border-radius:12px;padding:10px">
+     <img id="cvth" style="width:54px;height:54px;object-fit:cover;border-radius:10px;display:none;border:1px solid #eee">
+     <div style="flex:1" id="cvinfo"><b style="font-size:14px">🔄 JPG → WebP Converter</b><br>
+     <small style="color:#6a7a5f">कोई भी photo चुनो → WebP बनेगी → ⬇️ download कर लो</small></div>
+     <button class="btn btn-o" id="cvb" type="button" style="flex:none">चुनें</button>
+     <a class="btn btn-p" id="cvd" style="display:none;flex:none;text-decoration:none">⬇️ WebP</a>
+    </div>
+    <input type="file" id="cvf" accept="image/*" hidden>
     <input type="file" id="fsamp" accept="image/*" hidden>
     <input type="file" id="exsamp" accept="image/*" hidden>
     <p class="hint">💡 Frame की सीधी photo खींचो या Canva/Photoshop से border PNG बनाओ — बीच का हिस्सा खाली (transparent) होना चाहिए।</p>
@@ -260,6 +268,14 @@
  stg.addEventListener('pointerup',()=>dragging=null);
  /* --- frame image upload --- */
  let imgFile=null,sampFile=null;
+ $('#cvb').onclick=()=>$('#cvf').click();
+ $('#cvf').onchange=async e=>{const f=e.target.files[0];if(!f)return;
+  $('#cvinfo').innerHTML='⏳ बन रही…';const blob=await toWebP(f);
+  const th=$('#cvth');th.src=URL.createObjectURL(blob);th.style.display='block';
+  const save=Math.max(1,Math.round(100-blob.size/f.size*100));
+  $('#cvinfo').innerHTML='<b style="font-size:13px">'+f.name+'</b><br><small>'+Math.round(f.size/1024)+'KB → <b>'+Math.round(blob.size/1024)+'KB</b> — '+save+'% हल्की 🎉</small>';
+  const a=$('#cvd');a.href=URL.createObjectURL(blob);a.download=f.name.replace(/\.[^.]+$/,'')+'.webp';a.style.display='inline-block';
+  e.target.value=''};
  $('#fsampb').onclick=()=>$('#fsamp').click();
  $('#fsamp').onchange=async e=>{const f=e.target.files[0];if(!f)return;
   const kb0=Math.round(f.size/1024);sampFile=await toWebP(f);
