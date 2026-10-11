@@ -82,14 +82,20 @@ function pngMaskCss(f){
  return `-webkit-mask-image:url('${f.img}');mask-image:url('${f.img}');-webkit-mask-size:${mw}% ${mh}%;mask-size:${mw}% ${mh}%;-webkit-mask-position:${px}% ${py}%;mask-position:${px}% ${py}%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;`;
 }
 /* sample photo की सही position (zoom/x/y) card पर */
-function glareStyle(f){ /* 🪟 per-frame reflection: on/off + चमक + जगह + अपनी PNG (11-10, Dev) */
+function glareKey(ar){ /* ratio → PNG key: 2/3, 3/2, 1/1 */
+ const t=(ar||'').replace(':','/');
+ if(t==='2/3')return '2x3'; if(t==='3/2')return '3x2'; if(t==='1/1')return '1x1';
+ return ''}
+function glareStyle(f){ /* 🪟 per-frame reflection: on/off + चमक + जगह(x/y) + आकार(s) + ratio-wise PNG + अपनी PNG (11-10, Dev) */
  let g={};
  if(f.glare_set){try{g=JSON.parse(f.glare_set)}catch(e){}}
  if(g.on===0)return 'display:none;';
  let st='';
  if(f.glare)st+=`background-image:url('${f.glare}${f.glare.includes('?')?'&':'?'}v=${g.gv||1}');`;
+ else{const k=glareKey(f.ar);if(k)st+=`background-image:url('assets/glare-${k}.png?v=1');`}
  if(g.op)st+=`opacity:${(g.op/100).toFixed(2)};`;
- if(g.x!==undefined)st+=`background-position:${g.x}% 0;`;
+ if(g.x!==undefined||g.y!==undefined)st+=`background-position:${g.x===undefined?30:g.x}% ${g.y||0}%;`;
+ if(g.s&&g.s!==100)st+=`background-size:${g.s}% auto;`;
  return st}
 function sampPosCss(f){
  if(!f||!f.samp_pos)return '';
