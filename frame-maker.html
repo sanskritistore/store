@@ -72,9 +72,14 @@
    </div>
    <div class="mform">
     <div class="step">4️⃣ अपने हिसाब से बदलें</div>
-    <label>Photo shape</label>
-    <select id="gshape"><option value="rect">चौकोर</option><option value="rounded">गोल किनारे</option>
-     <option value="oval">ओवल</option><option value="circle">गोल</option><option value="heart">दिल ❤️</option></select>
+    <label>Photo shape — photo वैसी ही कटेगी</label>
+    <input type="hidden" id="gshape" value="rect">
+    <div class="chips" id="gshapec">
+     <button class="chip on" data-s="rect"><span class="sicon"></span>चौकोर</button>
+     <button class="chip" data-s="rounded"><span class="sicon" style="border-radius:5px"></span>हल्के कोने</button>
+     <button class="chip" data-s="oval"><span class="sicon" style="border-radius:50%;width:24px"></span>ओवल</button>
+     <button class="chip" data-s="circle"><span class="sicon" style="border-radius:50%"></span>पूरा गोल ⭕</button>
+     <button class="chip" data-s="heart">❤️ दिल</button></div>
     <label>कितनी photos (collage)</label>
     <select id="glay"><option value="1">1 photo</option><option value="2H">2 photos — साथ-साथ</option>
      <option value="2V">2 photos — ऊपर-नीचे</option><option value="3">3 photos</option><option value="4">4 photos — चौकोर</option></select>
@@ -116,7 +121,7 @@
     <label>Frame का नाम *</label><input id="fname" placeholder="जैसे: रॉयल गोल्डन">
     <label>Photo का shape — जो चुनोगे, photo वैसी ही कटेगी</label>
     <input type="hidden" id="fshape" value="rect">
-    <div class="chips" id="gshape">
+    <div class="chips" id="pshape">
      <button class="chip on" data-s="rect"><span class="sicon"></span>चौकोर</button>
      <button class="chip" data-s="rounded"><span class="sicon" style="border-radius:5px"></span>हल्के कोने</button>
      <button class="chip" data-s="oval"><span class="sicon" style="border-radius:50%;width:24px"></span>ओवल</button>
@@ -176,7 +181,7 @@
   shapeCss(demo)}
  function fromInputs(){W={x:+$('#wx').value||0,y:+$('#wy').value||0,w:+$('#ww').value||10,h:+$('#wh').value||10};draw()}
  ['wx','wy','ww','wh'].forEach(id=>$('#'+id).oninput=fromInputs);
- $$('#gshape .chip').forEach(c=>c.onclick=()=>{$$('#gshape .chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');
+ $$('#pshape .chip').forEach(c=>c.onclick=()=>{$$('#pshape .chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');
   $('#fshape').value=c.dataset.s;shapeCss(demo);shapeCss(winbox)});
  function setRatioChip(v){$('#fratio').value=v;$$('#pratio .chip').forEach(x=>x.classList.toggle('on',x.dataset.r===v));
   const p=v.split(':');stg.style.aspectRatio=p[0]+'/'+p[1];draw()}
@@ -242,9 +247,11 @@
  $$('#gtpls .tpl').forEach(b=>b.onclick=()=>{const t=TPLS[b.dataset.i];
   $('#gb1w').value=t.b1.w;$('#gb1c').value=t.b1.c;
   $('#gb2on').checked=!!t.b2;if(t.b2){$('#gb2w').value=t.b2.w;$('#gb2c').value=t.b2.c}
-  $('#gbgc').value=t.bg;$('#gshape').value=t.shape;$('#glay').value=t.lay;
+  $('#gbgc').value=t.bg;gShapeSync(t.shape);$('#glay').value=t.lay;
   if(!$('#gname').value)$('#gname').value=t.n;
   gPrev()});
+ function gShapeSync(v){$('#gshape').value=v;$$('#gshapec .chip').forEach(x=>x.classList.toggle('on',x.dataset.s===v))}
+ $$('#gshapec .chip').forEach(c=>c.onclick=()=>{gShapeSync(c.dataset.s);gPrev()});
  $$('#gratio .chip').forEach(c=>c.onclick=()=>{$$('#gratio .chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');gPrev()});
  $$('#gpage .chip').forEach(c=>c.onclick=()=>{$$('#gpage .chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');gPrev()});
  $$('#gptype .chip').forEach(c=>c.onclick=()=>{$$('#gptype .chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');
