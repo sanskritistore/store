@@ -286,7 +286,7 @@
   const t=(stg.style.aspectRatio||'1/1').replace(/\s/g,'').split('/');
   let r=1;if(t.length===2&&+t[1])r=(+t[0])/(+t[1]);
   const k=Math.abs(r-2/3)<0.15?'2x3':Math.abs(r-3/2)<0.15?'3x2':'1x1';
-  return `assets/glare-${k}.png?v=1`}
+  return `assets/glare-${k}.png?v=2`}
  function updGlare(){const g=$('#mglare');if(!g)return;
   if(!$('#gon').checked){g.style.display='none';return}
   g.style.display='block';g.style.opacity=(+$('#gop').value||55)/100;

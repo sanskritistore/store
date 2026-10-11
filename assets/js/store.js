@@ -92,7 +92,7 @@ function glareStyle(f){ /* 🪟 per-frame reflection: on/off + चमक + ज�
  if(g.on===0)return 'display:none;';
  let st='';
  if(f.glare)st+=`background-image:url('${f.glare}${f.glare.includes('?')?'&':'?'}v=${g.gv||1}');`;
- else{const k=glareKey(f.ar);if(k)st+=`background-image:url('assets/glare-${k}.png?v=1');`}
+ else{const k=glareKey(f.ar);if(k)st+=`background-image:url('assets/glare-${k}.png?v=2');`}
  if(g.op)st+=`opacity:${(g.op/100).toFixed(2)};`;
  if(g.x!==undefined||g.y!==undefined)st+=`background-position:${g.x===undefined?30:g.x}% ${g.y||0}%;`;
  if(g.s&&g.s!==100)st+=`background-size:${g.s}% auto;`;
