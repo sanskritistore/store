@@ -54,7 +54,7 @@
   <div class="topbar" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin:18px 0">
    <h2 style="margin:0">🖼️ Frame Maker</h2>
    <a class="btn btn-o" href="admin.html">🖨️ ऑर्डर Admin</a></div>
-  <div style="font-size:11px;color:#B0A48F;text-align:right;margin-bottom:4px">v11.10-रात-8 <span id="jsok"></span></div>
+  <div style="font-size:11px;color:#B0A48F;text-align:right;margin-bottom:4px">v11.10-रात-9 <span id="jsok"></span></div>
   <div class="tabbar">
    <button class="tab on" data-t="gen">🎨 Generator (fast)</button>
    <button class="tab" data-t="png">📤 अपनी PNG से</button>
@@ -226,6 +226,8 @@
     <label style="flex:1;min-width:105px">↔️ बाएँ-दाएँ<input type="range" id="gx" min="0" max="100" value="2" style="width:100%"></label>
     <label style="flex:1;min-width:105px">↕️ ऊपर-नीचे<input type="range" id="gy" min="0" max="100" value="6" style="width:100%"></label>
     <label style="flex:1;min-width:105px">🔍 आकार (zoom)<input type="range" id="gs" min="15" max="300" value="30" style="width:100%"></label>
+    <label style="flex:1;min-width:105px">📐 झुकाव ↔️<input type="range" id="gkx" min="-30" max="30" value="0" style="width:100%"></label>
+    <label style="flex:1;min-width:105px">📐 झुकाव ↕️<input type="range" id="gky" min="-20" max="20" value="0" style="width:100%"></label>
    </div>
    <div style="display:flex;gap:8px;margin-top:8px">
     <label class="upbox" style="flex:1;display:block;padding:10px" id="gboxL">
@@ -245,7 +247,7 @@
  </div>
 </section>
 <footer id="ft"></footer>
-<script src="assets/js/store.js?v=10"></script>
+<script src="assets/js/store.js?v=11"></script>
 <script>(async()=>{await loadCfg();shell('');
  const B=BACKEND()+'/api/v1';
  let tok=localStorage.getItem('sk_adm_tok')||'';
@@ -294,11 +296,11 @@
   di.style.transform='scale('+z+')';di.style.transformOrigin=mx+'% '+my+'%'}
  ['pz','pmx','pmy'].forEach(id=>$('#'+id).oninput=applyPos);
  /* दो-खिड़की reflection state (Dev 11-10 रात-8): L/R अलग settings + अलग PNG */
- let GS={L:{on:1,op:60,x:2,y:6,s:30},R:{on:1,op:50,x:92,y:10,s:22}};
+ let GS={L:{on:1,op:70,x:2,y:6,s:30,kx:0,ky:0},R:{on:1,op:60,x:92,y:10,s:22,kx:0,ky:0}};
  let curG='L';
  let glareURL={L:'',R:''};
  function loadGSliders(){const w=GS[curG];
-  $('#gwon').checked=w.on;$('#gop').value=w.op;$('#gx').value=w.x;$('#gy').value=w.y;$('#gs').value=w.s;
+  $('#gwon').checked=w.on;$('#gop').value=w.op;$('#gx').value=w.x;$('#gy').value=w.y;$('#gs').value=w.s;$('#gkx').value=w.kx||0;$('#gky').value=w.ky||0;
   $('#gwont').textContent=curG==='L'?'बाएँ खिड़की दिखाएँ':'दाएँ खिड़की दिखाएँ'}
  function selG(side){curG=side;
   $('#gselL').className='btn '+(side==='L'?'btn-p':'btn-o');
@@ -308,13 +310,15 @@
  function applyGlareDiv(el,side){const w=GS[side];
   if(!$('#gon').checked||!w.on){el.style.display='none';return}
   el.style.display='block';el.style.opacity=(w.op/100).toFixed(2);
-  el.style.backgroundImage=`url('${glareURL[side]||('assets/glare-'+side+'.png?v=3')}')`;
+  el.style.backgroundImage=`url('${glareURL[side]||('assets/glare-'+side+'.png?v=4')}')`;
   el.style.backgroundPosition=w.x+'% '+w.y+'%';
-  el.style.backgroundSize=w.s===100?'cover':w.s+'% auto'}
+  el.style.backgroundSize=w.s===100?'cover':w.s+'% auto';
+  const kx=w.kx||0,ky=w.ky||0;
+  el.style.transform=(kx||ky)?`skew(${-kx}deg,${ky}deg)`:'none'}
  function updGlare(){const a=$('#mglareL'),b=$('#mglareR');if(!a)return;
   applyGlareDiv(a,'L');applyGlareDiv(b,'R')}
  ['gon'].forEach(id=>$('#'+id).oninput=updGlare);
- [['gwon','on'],['gop','op'],['gx','x'],['gy','y'],['gs','s']].forEach(([id,k])=>{
+ [['gwon','on'],['gop','op'],['gx','x'],['gy','y'],['gs','s'],['gkx','kx'],['gky','ky']].forEach(([id,k])=>{
   $('#'+id).oninput=e=>{GS[curG][k]=k==='on'?(e.target.checked?1:0):+e.target.value;updGlare()}});
  [['gfileL','L'],['gfileR','R']].forEach(([id,side])=>{
   $('#'+id).onchange=e=>{const f=e.target.files[0];$('#gname'+side).textContent=f?'— ✅ '+f.name:'';
