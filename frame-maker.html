@@ -223,9 +223,9 @@
    <label style="display:flex;align-items:center;gap:6px;font-size:12px;margin-top:6px"><input type="checkbox" id="gwon" checked style="width:auto;flex:none;margin:0"> <span id="gwont">यह खिड़की दिखाएँ</span></label>
    <div style="display:flex;gap:12px;margin-top:6px;font-size:12px;flex-wrap:wrap">
     <label style="flex:1;min-width:105px">✨ चमक<input type="range" id="gop" min="10" max="100" value="60" style="width:100%"></label>
-    <label style="flex:1;min-width:105px">↔️ बाएँ-दाएँ<input type="range" id="gx" min="0" max="100" value="8" style="width:100%"></label>
-    <label style="flex:1;min-width:105px">↕️ ऊपर-नीचे<input type="range" id="gy" min="0" max="100" value="10" style="width:100%"></label>
-    <label style="flex:1;min-width:105px">🔍 आकार (zoom)<input type="range" id="gs" min="40" max="300" value="100" style="width:100%"></label>
+    <label style="flex:1;min-width:105px">↔️ बाएँ-दाएँ<input type="range" id="gx" min="0" max="100" value="2" style="width:100%"></label>
+    <label style="flex:1;min-width:105px">↕️ ऊपर-नीचे<input type="range" id="gy" min="0" max="100" value="6" style="width:100%"></label>
+    <label style="flex:1;min-width:105px">🔍 आकार (zoom)<input type="range" id="gs" min="15" max="300" value="30" style="width:100%"></label>
    </div>
    <div style="display:flex;gap:8px;margin-top:8px">
     <label class="upbox" style="flex:1;display:block;padding:10px" id="gboxL">
@@ -294,7 +294,7 @@
   di.style.transform='scale('+z+')';di.style.transformOrigin=mx+'% '+my+'%'}
  ['pz','pmx','pmy'].forEach(id=>$('#'+id).oninput=applyPos);
  /* दो-खिड़की reflection state (Dev 11-10 रात-8): L/R अलग settings + अलग PNG */
- let GS={L:{on:1,op:60,x:6,y:12,s:45},R:{on:1,op:55,x:80,y:8,s:36}};
+ let GS={L:{on:1,op:60,x:2,y:6,s:30},R:{on:1,op:50,x:92,y:10,s:22}};
  let curG='L';
  let glareURL={L:'',R:''};
  function loadGSliders(){const w=GS[curG];
