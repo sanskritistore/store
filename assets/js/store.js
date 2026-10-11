@@ -88,16 +88,22 @@ function glareWin(f,side){ /* glare_set से एक खिड़की की 
  if(g.on===0)return null;
  let w=g[side];
  if(!w&&side==='L'&&(g.op!==undefined||g.x!==undefined))w=g; /* flat → L */
- if(!w)w=side==='L'?{on:1,op:70,x:2,y:6,s:30,kx:0,ky:0}:{on:1,op:60,x:92,y:10,s:22,kx:0,ky:0};
+ if(!w){const pa=isPortrait(f);
+  w=side==='L'
+   ?(pa?{on:1,op:78,x:12,y:34,s:38,kx:3,ky:17,h:184}:{on:1,op:70,x:2,y:6,s:30,kx:0,ky:0,h:100})
+   :(pa?{on:1,op:65,x:88,y:20,s:30,kx:-3,ky:17,h:150}:{on:1,op:60,x:92,y:10,s:22,kx:0,ky:0,h:100})}
  if(w.on===0)return null;
  return w}
+function isPortrait(f){ /* ar "2/3" या "3600/5400" — h>w = खड़ा (Dev SS20 default) */
+ const t=(f.ar||'').split(/[/:]/).map(Number);
+ return t.length===2&&t[0]&&t[1]?t[1]>t[0]:false}
 function glareStyle(f,side){ /* 🪟 दो-खिड़की reflection (11-10 रात-8, Dev): L/R अलग PNG + position + आकार */
  const w=glareWin(f,side);if(!w)return 'display:none;';
  const gv=w.gv||1;
  const custom=side==='L'?f.glare:f.glare2;
  let st='';
  if(custom)st+=`background-image:url('${custom}${custom.includes('?')?'&':'?'}v=${gv}');`;
- else st+=`background-image:url('assets/glare-${side}.png?v=4');`;
+ else st+=`background-image:url('assets/glare-${side}.png?v=5');`;
  if(w.op)st+=`opacity:${(w.op/100).toFixed(2)};`;
  const px=w.x===undefined?(side==='L'?6:80):w.x;
  st+=`background-position:${px}% ${w.y===undefined?10:w.y}%;`;
