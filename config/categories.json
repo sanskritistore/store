@@ -1,0 +1,7 @@
+[
+ {"id":"oils","name":"कच्ची घानी तेल","en":"Cold-Pressed Oils","img":"https://picsum.photos/seed/oilcat/600/400","desc":"लकड़ी की घानी से बिना गर्मी के निकाला गया शुद्ध तेल"},
+ {"id":"spices","name":"हाथ के कुटे मसाले","en":"Hand-ground Spices","img":"https://picsum.photos/seed/spicecat/600/400","desc":"बुज़ुर्गों के तरीक़े से धीरे-धीरे कुटे असली मसाले"},
+ {"id":"frames","name":"फोटो फ्रेम","en":"Custom Photo Frames","img":"https://picsum.photos/seed/framecat/600/400","desc":"अपनी फोटो अपलोड करें, live preview देखें","custom":true},
+ {"id":"handicraft","name":"हैंडीक्राफ्ट","en":"Handicrafts","img":"https://picsum.photos/seed/hccat/600/400","desc":"भारतीय कारीगरों के हाथ का बना घर का साज-सज्जा"},
+ {"id":"cyber","name":"साइबर सेवाएँ","en":"Cyber Services","img":"https://picsum.photos/seed/cybercat/600/400","desc":"प्रिंटिंग, फोटो, लैमिनेशन, ऑनलाइन फॉर्म — सब एक जगह"}
+]

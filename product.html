@@ -1,0 +1,31 @@
+<!DOCTYPE html><html lang="hi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#8E2A32">
+<title>संस्कृति — product</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪔</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/store.css"></head><body>
+<header id="hd"></header>
+<section class="pd wrap" id="pg"></section>
+<footer id="ft"></footer>
+<script src="assets/js/store.js"></script>
+<script>(async()=>{await loadCfg();shell('');
+ const p=CFG.prods.find(x=>x.id===qp('id'))||CFG.prods[0];
+ document.title='संस्कृति — '+p.name;let q=1;
+ const off=Math.round((1-p.price/p.mrp)*100);
+ $('#pg').innerHTML=`<img class="big" src="${p.img}" alt="${p.name}">
+ <div><span class="badge" style="position:static">${p.badge||'शुद्ध'}</span>
+  <h1 style="font-size:26px;margin:8px 0 2px">${p.name}</h1>
+  <div class="rt">⭐ ${p.rating} • ${p.en}</div>
+  <div class="pricebox"><div><span class="p">${fmt(p.price)}</span> <s>${fmt(p.mrp)}</s></div>
+   <span style="color:var(--wa);font-weight:800">${off}% छूट</span></div>
+  <h3 style="font-size:15px;margin-bottom:8px">मात्रा</h3>
+  <div class="qty"><button id="m">−</button><b id="qv">1</b><button id="pl">+</button></div>
+  <div style="display:grid;gap:10px;margin-top:18px">
+   <button class="btn btn-p btn-b" id="add">🛒 कार्ट में डालें</button>
+   <a class="btn btn-wa btn-b" id="buy" target="_blank">📱 WhatsApp पर ऑर्डर करें</a></div>
+  <p class="note">✅ शुद्धता की गारंटी • 🚚 तेज़ डिलीवरी • 💵 COD उपलब्ध</p></div>`;
+ $('#m').onclick=()=>{q=Math.max(1,q-1);$('#qv').textContent=q};
+ $('#pl').onclick=()=>{q++;$('#qv').textContent=q};
+ $('#add').onclick=()=>{const c=cartGet();c.push({t:'p',id:p.id,qty:q});cartSet(c);toast('कार्ट में जुड़ गया! 🛒')};
+ $('#buy').onclick=e=>{e.target.href=wa(`नमस्ते! मुझे ऑर्डर करना है:\n\n▪️ ${p.name}\n🔢 मात्रा: ${q}\n💰 कीमत: ${fmt(p.price*q)}\n\nमेरा नाम-पता इसी chat में भेज रहा हूँ।`)};
+})();</script></body></html>

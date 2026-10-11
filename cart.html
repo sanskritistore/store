@@ -1,0 +1,37 @@
+<!DOCTYPE html><html lang="hi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#8E2A32">
+<title>संस्कृति — कार्ट</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪔</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/store.css"></head><body>
+<header id="hd"></header>
+<section class="sec wrap" style="max-width:640px;padding-bottom:80px">
+ <h2>आपका कार्ट 🛒</h2><p class="sub">ऑर्डर WhatsApp पर पूरा होगा</p>
+ <div id="list"></div>
+ <div id="tot"></div>
+ <a class="btn btn-wa btn-b" id="ord" target="_blank" style="display:none">📱 WhatsApp पर ऑर्डर करें</a>
+ <a class="btn btn-o btn-b" href="index.html" style="margin-top:10px">← खरीदारी जारी रखें</a>
+</section>
+<footer id="ft"></footer>
+<script src="assets/js/store.js"></script>
+<script>(async()=>{await loadCfg();shell('');
+ function render(){
+  const c=cartGet();
+  if(!c.length){$('#list').innerHTML=`<div class="empty"><div style="font-size:52px">🛒</div>
+   <h3>कार्ट खाली है</h3><p>कुछ अच्छा चुनें!</p></div>`;$('#tot').innerHTML='';$('#ord').style.display='none';return}
+  let tot=0,lines=[];
+  $('#list').innerHTML=c.map((it,i)=>{
+   let name,pr,th='';
+   if(it.t==='p'){const p=CFG.prods.find(x=>x.id===it.id);if(!p)return'';name=p.name;pr=p.price*it.qty;th=p.img;lines.push(`▪️ ${name} × ${it.qty} = ${fmt(pr)}`)}
+   else{const f=CFG.frames.frames.find(x=>x.id===it.fid);name=f.name+' ('+it.size+', '+it.th+'mm)';pr=it.price*it.qty;th=CFG.frames.demo[0];lines.push(`▪️ ${name} = ${fmt(pr)}`)}
+   tot+=pr;
+   return `<div class="citem"><img class="th" src="${th}"><div><h4>${name}</h4>
+    <div class="p">${fmt(pr)}</div><div class="rt">मात्रा: ${it.qty}</div></div>
+    <span class="rm" data-i="${i}">🗑️</span></div>`}).join('');
+  $('#tot').innerHTML=`<div class="total"><span>कुल</span><span>${fmt(tot)}</span></div>`;
+  const o=$('#ord');o.style.display='block';
+  o.href=wa('नमस्ते! मेरा ऑर्डर:\n\n'+lines.join('\n')+'\n\n💰 कुल: '+fmt(tot)+'\n\nमेरा नाम-पता इसी chat में भेज रहा हूँ।');
+  $$('.rm').forEach(b=>b.onclick=()=>{const cc=cartGet();cc.splice(+b.dataset.i,1);cartSet(cc);render()});
+ }
+ render();
+})();</script></body></html>

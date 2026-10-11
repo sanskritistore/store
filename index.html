@@ -1,0 +1,28 @@
+<!DOCTYPE html><html lang="hi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#8E2A32">
+<title>संस्कृति — तेल, मसाले, फोटो फ्रेम</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪔</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/store.css"></head><body>
+<header id="hd"></header>
+<section class="hero wrap">
+ <h1>परंपरा की <em>शुद्धता</em>,<br>डिजिटल सुविधा के साथ</h1>
+ <p>लकड़ी की घानी का तेल, हाथ के कुटे मसाले, और आपकी फोटो वाले प्रीमियम फ्रेम — सब कुछ एक ही जगह।</p>
+ <div class="hero-btns"><a class="btn btn-p" href="frames.html">🖼️ अपना फ्रेम बनाएं</a>
+ <a class="btn btn-o" href="category.html?c=oils">तेल-मसाले देखें</a></div>
+ <div class="trust"><span>🚚 तेज़ डिलीवरी</span><span>💯 शुद्धता की गारंटी</span><span>📱 WhatsApp ऑर्डर</span></div>
+</section>
+<section class="sec wrap"><h2>हमारी दुकान</h2><p class="sub">कैटेगरी चुनें</p>
+ <div class="grid cats" id="cats"></div></section>
+<section class="sec wrap"><div class="banner">
+ <div><h2>अपनी फोटो → प्रीमियम फ्रेम</h2><p>फ्रेम चुनें → फोटो अपलोड करें → live preview देखें → ऑर्डर करें। ₹299 से शुरू।</p></div>
+ <a class="btn btn-w" href="frames.html">अभी बनाएं →</a></div></section>
+<section class="sec wrap"><h2>लोकप्रिय products</h2><p class="sub">ग्राहकों की पसंद</p>
+ <div class="grid" id="feat"></div></section>
+<footer id="ft"></footer>
+<script src="assets/js/store.js"></script>
+<script>(async()=>{await loadCfg();shell('home');
+ $('#cats').innerHTML=CFG.cats.map(c=>`<a class="cat card" href="${c.custom?'frames.html':'category.html?c='+c.id}">
+  <img src="${c.img}" alt="${c.name}" loading="lazy"><div class="cat-t"><h3>${c.name}</h3><p>${c.en}</p></div></a>`).join('');
+ $('#feat').innerHTML=CFG.prods.filter(p=>p.badge).concat(CFG.prods.filter(p=>!p.badge)).slice(0,4).map(pCard).join('');
+})();</script></body></html>

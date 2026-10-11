@@ -1,0 +1,10 @@
+[
+ {"id":"oil-sarso-1l","cat":"oils","name":"सरसों का तेल — 1 लीटर","en":"Mustard Oil","price":340,"mrp":399,"img":"https://picsum.photos/seed/sarso/600/450","rating":4.8,"badge":"बेस्टसेलर"},
+ {"id":"oil-moongfali-1l","cat":"oils","name":"मूँगफली का तेल — 1 लीटर","en":"Groundnut Oil","price":430,"mrp":499,"img":"https://picsum.photos/seed/moongfali/600/450","rating":4.7},
+ {"id":"oil-til-500","cat":"oils","name":"तिल का तेल — 500 ml","en":"Sesame Oil","price":290,"mrp":340,"img":"https://picsum.photos/seed/til/600/450","rating":4.6},
+ {"id":"ms-garam-100","cat":"spices","name":"गरम मसाला — 100g","en":"Garam Masala","price":95,"mrp":120,"img":"https://picsum.photos/seed/garam/600/450","rating":4.9,"badge":"शुद्ध"},
+ {"id":"ms-haldi-200","cat":"spices","name":"हल्दी पाउडर — 200g","en":"Turmeric","price":65,"mrp":85,"img":"https://picsum.photos/seed/haldi/600/450","rating":4.8},
+ {"id":"ms-mirch-100","cat":"spices","name":"लाल मिर्च पाउडर — 100g","en":"Red Chilli","price":75,"mrp":95,"img":"https://picsum.photos/seed/mirch/600/450","rating":4.7},
+ {"id":"hc-diye-12","cat":"handicraft","name":"मिट्टी के दिए — 12 का सेट","en":"Clay Diya Set","price":249,"mrp":320,"img":"https://picsum.photos/seed/diye/600/450","rating":4.6},
+ {"id":"hc-wall-art","cat":"handicraft","name":"हाथ-पेंटेड वॉल हैंगिंग","en":"Wall Hanging","price":599,"mrp":799,"img":"https://picsum.photos/seed/wallart/600/450","rating":4.5,"badge":"नया"}
+]
