@@ -179,3 +179,5 @@ input[type=range]{width:100%;accent-color:var(--brand);height:34px}
 .glare{position:absolute;inset:0;pointer-events:none;z-index:5;
  background:url('../glare.png?v=2') top left/cover no-repeat;
  mix-blend-mode:screen;opacity:.95}
+
+.glare-clip{position:absolute;inset:0;overflow:hidden;border-radius:inherit;pointer-events:none;z-index:4}

@@ -115,7 +115,8 @@ function glareStyle(f,side){ /* 🪟 दो-खिड़की reflection (11-10
  if(hh!==100)tf.push(`scaleY(${(hh/100).toFixed(2)})`);
  if(tf.length)st+=`transform:${tf.join(' ')};`;
  return st}
-function glareHTML(f){return `<div class="glare" style="${glareStyle(f,'L')}"></div><div class="glare" style="${glareStyle(f,'R')}"></div>`}
+function glareHTML(f){return `<div class="glare-clip">${glareDiv(f,'L')}${glareDiv(f,'R')}</div>`}
+function glareDiv(f,side){return `<div class="glare" style="${glareStyle(f,side)}"></div>`}
 function sampPosCss(f){
  if(!f||!f.samp_pos)return '';
  try{const p=JSON.parse(f.samp_pos);if(!p)return '';
