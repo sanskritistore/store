@@ -22,6 +22,19 @@
 .exfr .chipx{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #E3D7C3;border-radius:10px;padding:8px 12px;font-weight:700}
 .exfr button{border:0;background:#FDECEA;color:#B3261E;border-radius:8px;padding:4px 8px;cursor:pointer}
 .hint{font-size:13px;color:#7a6a5f;margin-top:6px;line-height:1.5}
+.tabbar{display:flex;gap:8px;margin-bottom:14px}
+.tab{flex:1;padding:11px;border:1.5px solid #E3D7C3;border-radius:12px;background:#fff;font:inherit;font-weight:700;cursor:pointer}
+.tab.on{background:#8E2A32;color:#fff;border-color:#8E2A32}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chips .chip{padding:9px 16px}
+.tpls{display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:8px;margin-top:6px}
+.tpl{border:1.5px solid #E3D7C3;border-radius:10px;background:#fff;padding:8px 6px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px}
+.tpl span{width:34px;height:44px;border-radius:4px;display:block}
+.tpl:hover{border-color:#8E2A32}
+.crow{display:flex;gap:10px;align-items:center}
+.crow input[type=range]{flex:1}
+.crow input[type=color]{width:52px;height:38px;padding:2px;border:1.5px solid #E3D7C3;border-radius:8px;background:#fff}
+#gstg{width:min(300px,100%);margin:10px auto;box-shadow:0 6px 18px rgba(90,60,20,.15);border-radius:4px}
 </style></head><body>
 <header id="hd"></header>
 <section class="wrap" id="app">
@@ -40,7 +53,45 @@
   <div class="topbar" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin:18px 0">
    <h2 style="margin:0">🖼️ Frame Maker</h2>
    <a class="btn btn-o" href="admin.html">🖨️ ऑर्डर Admin</a></div>
-  <div class="mk">
+  <div class="tabbar">
+   <button class="tab on" data-t="gen">🎨 Generator (fast)</button>
+   <button class="tab" data-t="png">📤 अपनी PNG से</button>
+  </div>
+  <div id="genWrap"><div class="mk">
+   <div>
+    <div class="step">1️⃣ Ratio चुनें</div>
+    <div class="chips" id="gratio">
+     <button class="chip on" data-r="2:3">पोर्ट्रेट 2:3</button>
+     <button class="chip" data-r="3:2">लैंडस्केप 3:2</button>
+     <button class="chip" data-r="1:1">स्क्वायर 1:1</button></div>
+    <div class="step">2️⃣ Template चुनें (एक click = ready)</div>
+    <div class="tpls" id="gtpls"></div>
+    <div class="step">👀 Live preview</div>
+    <div class="fr" id="gstg"></div>
+   </div>
+   <div class="mform">
+    <div class="step">3️⃣ अपने हिसाब से बदलें</div>
+    <label>Photo shape</label>
+    <select id="gshape"><option value="rect">चौकोर</option><option value="rounded">गोल किनारे</option>
+     <option value="oval">ओवल</option><option value="circle">गोल</option><option value="heart">दिल ❤️</option></select>
+    <label>कितनी photos (collage)</label>
+    <select id="glay"><option value="1">1 photo</option><option value="2H">2 photos — साथ-साथ</option>
+     <option value="2V">2 photos — ऊपर-नीचे</option><option value="3">3 photos</option><option value="4">4 photos — चौकोर</option></select>
+    <label>बाहरी border: चौड़ाई <b id="gb1v">9</b>% + रंग</label>
+    <div class="crow"><input type="range" id="gb1w" min="3" max="16" step="0.5" value="9"><input type="color" id="gb1c" value="#5a3a1c"></div>
+    <label class="crow" style="font-weight:700;font-size:14px"><input type="checkbox" id="gb2on" checked style="width:auto"> अंदरूनी border (dual) <b id="gb2v">2.5</b>%</label>
+    <div class="crow"><input type="range" id="gb2w" min="0.5" max="6" step="0.5" value="2.5"><input type="color" id="gb2c" value="#C9A24A"></div>
+    <label>अंदरूनी background रंग</label>
+    <input type="color" id="gbgc" value="#f5efe2">
+    <label>Frame का नाम *</label><input id="gname" placeholder="जैसे: क्लासिक लकड़ी 12×18">
+    <label>शुरुआती कीमत (₹)</label><input id="gbase" type="number" value="399">
+    <label>Rating</label><input id="grate" type="number" step="0.1" min="3" max="5" value="4.6">
+    <div style="display:grid;gap:10px;margin-top:16px">
+     <button class="btn btn-p btn-b" id="gsave">💾 Frame Save — तुरंत live</button>
+     <a class="btn btn-o btn-b" href="frames.html" target="_blank">👀 Frames page पर देखें</a></div>
+   </div>
+  </div></div>
+  <div id="pngWrap" style="display:none"><div class="mk">
    <div>
     <div class="step">1️⃣ Frame की PNG upload करें (बीच transparent)</div>
     <label class="up">📤 Frame image चुनें<input type="file" id="ff" accept="image/png,image/*" hidden></label>
@@ -75,7 +126,7 @@
     <div class="step">आपके बनाए frames</div>
     <div class="exfr" id="exfr"><span class="hint">लoad…</span></div>
    </div>
-  </div>
+  </div></div>
  </div>
 </section>
 <footer id="ft"></footer>
@@ -159,4 +210,63 @@
    $$('#exfr [data-del]').forEach(b=>b.onclick=async()=>{if(!confirm('यह frame हटा दें?'))return;
     await fetch(B+'/store/frames/'+b.dataset.del,{method:'DELETE',headers:hdr()});listFrames()});
   }catch(e){$('#exfr').innerHTML='<span class="hint">list नहीं खुली</span>'}}
+
+ /* ============ Generator tab ============ */
+ $$('.tab').forEach(t=>t.onclick=()=>{$$('.tab').forEach(x=>x.classList.remove('on'));t.classList.add('on');
+  $('#genWrap').style.display=t.dataset.t==='gen'?'block':'none';
+  $('#pngWrap').style.display=t.dataset.t==='gen'?'none':'block'});
+ const TPLS=[
+  {n:'क्लासिक लकड़ी',b1:{w:9,c:'#5a3a1c'},b2:{w:2.5,c:'#C9A24A'},bg:'#f5efe2',shape:'rect',lay:'1'},
+  {n:'ब्लैक-गोल्ड dual',b1:{w:8,c:'#191919'},b2:{w:3,c:'#C9A24A'},bg:'#101010',shape:'rect',lay:'1'},
+  {n:'रॉयल मैरून-गोल्ड',b1:{w:9,c:'#8E2A32'},b2:{w:3,c:'#E3B94E'},bg:'#fdf6ec',shape:'rect',lay:'1'},
+  {n:'दिल वाला ❤️',b1:{w:8,c:'#B23A48'},b2:{w:2.5,c:'#f3d27a'},bg:'#fff5f5',shape:'heart',lay:'1'},
+  {n:'ओवल क्लासिक',b1:{w:9,c:'#4a2e14'},b2:{w:2.5,c:'#d8b878'},bg:'#f8f1e4',shape:'oval',lay:'1'},
+  {n:'Collage जोड़ी',b1:{w:7,c:'#3a2410'},b2:{w:2,c:'#C9A24A'},bg:'#f5efe2',shape:'rect',lay:'2H'},
+  {n:'Collage चार',b1:{w:7,c:'#8E2A32'},b2:{w:2,c:'#E3B94E'},bg:'#fdf6ec',shape:'rect',lay:'4'},
+  {n:'Minimal सफेद',b1:{w:5,c:'#efe9dc'},b2:{w:1.2,c:'#c9bfa8'},bg:'#ffffff',shape:'rounded',lay:'1'}];
+ $('#gtpls').innerHTML=TPLS.map((t,i)=>`<button class="tpl" data-i="${i}"><span style="background:linear-gradient(135deg,${t.b1.c} 55%,${(t.b2||t.b1).c})"></span>${t.n}</button>`).join('');
+ $$('#gtpls .tpl').forEach(b=>b.onclick=()=>{const t=TPLS[b.dataset.i];
+  $('#gb1w').value=t.b1.w;$('#gb1c').value=t.b1.c;
+  $('#gb2on').checked=!!t.b2;if(t.b2){$('#gb2w').value=t.b2.w;$('#gb2c').value=t.b2.c}
+  $('#gbgc').value=t.bg;$('#gshape').value=t.shape;$('#glay').value=t.lay;
+  if(!$('#gname').value)$('#gname').value=t.n;
+  gPrev()});
+ $$('#gratio .chip').forEach(c=>c.onclick=()=>{$$('#gratio .chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');gPrev()});
+ function gWins(){const lay=$('#glay').value,sh=$('#gshape').value;
+  const m=+$('#gb1w').value+($('#gb2on').checked?+$('#gb2w').value:0)+1.5,g=2.2;
+  const I={x:m,y:m,w:100-2*m,h:100-2*m},R=[];
+  if(lay==='1')R.push({x:I.x,y:I.y,w:I.w,h:I.h,shape:sh});
+  else if(lay==='2H'){const w=(I.w-g)/2;R.push({x:I.x,y:I.y,w:w,h:I.h,shape:sh},{x:I.x+w+g,y:I.y,w:w,h:I.h,shape:sh})}
+  else if(lay==='2V'){const h=(I.h-g)/2;R.push({x:I.x,y:I.y,w:I.w,h:h,shape:sh},{x:I.x,y:I.y+h+g,w:I.w,h:h,shape:sh})}
+  else if(lay==='3'){const wl=(I.w-g)*0.58,wr=I.w-g-wl,hh=(I.h-g)/2;
+   R.push({x:I.x,y:I.y,w:wl,h:I.h,shape:sh},{x:I.x+wl+g,y:I.y,w:wr,h:hh,shape:sh},{x:I.x+wl+g,y:I.y+hh+g,w:wr,h:hh,shape:sh})}
+  else{const w=(I.w-g)/2,h=(I.h-g)/2;
+   R.push({x:I.x,y:I.y,w:w,h:h,shape:sh},{x:I.x+w+g,y:I.y,w:w,h:h,shape:sh},{x:I.x,y:I.y+h+g,w:w,h:h,shape:sh},{x:I.x+w+g,y:I.y+h+g,w:w,h:h,shape:sh})}
+  return R}
+ function gDraw(){const d={b1:{w:+$('#gb1w').value,c:$('#gb1c').value},bg:$('#gbgc').value,windows:gWins()};
+  if($('#gb2on').checked)d.b2={w:+$('#gb2w').value,c:$('#gb2c').value};
+  return d}
+ function gPrev(){$('#gb1v').textContent=$('#gb1w').value;$('#gb2v').textContent=$('#gb2w').value;
+  const ratio=$('#gratio .on').dataset.r,st=$('#gstg');
+  st.style.aspectRatio=ratio.replace(':','/');st.style.background=$('#gb1c').value;
+  st.innerHTML=frDrawHTML({draw:gDraw()},CFG.frames.demo)}
+ ['gshape','glay','gb1w','gb1c','gb2on','gb2w','gb2c','gbgc'].forEach(id=>$('#'+id).oninput=gPrev);
+ $('#gsave').onclick=async()=>{
+  const name=$('#gname').value.trim();
+  if(!name){toast('frame का नाम लिखें');return}
+  const ratio=$('#gratio .on').dataset.r,d=gDraw();
+  const btn=$('#gsave');btn.disabled=true;btn.textContent='⏳ save हो रहा…';
+  try{const fd=new FormData();
+   fd.append('name',name);fd.append('shape',d.windows[0].shape);
+   fd.append('ratio',ratio);fd.append('ar',ratio.replace(':','/'));
+   fd.append('base',+$('#gbase').value||399);fd.append('rating',+$('#grate').value||4.5);
+   fd.append('window',JSON.stringify(d.windows[0]));
+   fd.append('draw',JSON.stringify(d));
+   const r=await fetch(B+'/store/frames',{method:'POST',headers:hdr(),body:fd});
+   if(r.status===401||r.status===403){toast('login expire — दोबारा login करें');localStorage.removeItem('sk_adm_tok');location.reload();return}
+   if(!r.ok)throw new Error('HTTP '+r.status);
+   toast('🎉 Frame live हो गया!');listFrames();
+  }catch(e){console.error(e);toast('save नहीं हुआ — फिर कोशिश करें')}
+  btn.disabled=false;btn.textContent='💾 Frame Save — तुरंत live'};
+ gPrev();
 })();</script></body></html>

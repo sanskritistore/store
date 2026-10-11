@@ -43,6 +43,24 @@ function pCard(p){return `<a class="prod card" href="product.html?id=${p.id}">
  <div class="prod-t"><h4>${p.name}</h4><div class="pr">${fmt(p.price)}<s>${fmt(p.mrp)}</s></div>
  <div class="rt">⭐ ${p.rating} • ${p.en}</div></div></a>`}
 
+/* === Drawn frames (Generator) — बिना PNG के बने frames: borders + windows + collage === */
+function shapeClipCss(sh){
+ if(sh==='rounded')return 'border-radius:6%';
+ if(sh==='oval'||sh==='circle')return 'border-radius:50%';
+ if(sh==='heart')return '-webkit-mask:var(--heart) center/100% 100% no-repeat;mask:var(--heart) center/100% 100% no-repeat';
+ return ''}
+function frDrawHTML(f,photos){
+ /* draw = {b1:{w,c}, b2:{w,c}?, bg?, windows:[{x,y,w,h,shape}]} — photos: per-window image urls */
+ const d=f.draw;if(!d)return'';
+ let h='';
+ if(d.b2)h+=`<div style="position:absolute;inset:${d.b1.w}%;background:${d.b2.c}"></div>`;
+ if(d.bg)h+=`<div style="position:absolute;inset:${d.b1.w+(d.b2?d.b2.w:0)}%;background:${d.bg}"></div>`;
+ d.windows.forEach((w,i)=>{
+  const ph=photos&&photos[i%photos.length];
+  h+=`<div class="fr-win" data-win="${i}" style="position:absolute;left:${w.x}%;top:${w.y}%;width:${w.w}%;height:${w.h}%;overflow:hidden;${shapeClipCss(w.shape)}">${ph?`<img src="${ph}" style="width:100%;height:100%;object-fit:cover;display:block" alt="">`:''}</div>`});
+ return h}
+function frDrawBg(f){return f.draw?`background:${f.draw.b1.c}`:''}
+
 /* === Custom frames merge — backend से owner-made frames (11-10 Frame Maker) === */
 async function loadCustomFrames(){
   try{const r=await fetch(BACKEND()+'/api/v1/store/frames');

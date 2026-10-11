@@ -66,6 +66,21 @@
   fp.style.right='auto';fp.style.bottom='auto';
   fp.style.left=F.window.x+'%';fp.style.top=F.window.y+'%';
   fp.style.width=F.window.w+'%';fp.style.height=F.window.h+'%'}
+ /* Generator (drawn) frame — borders + windows; window 0 = main photo, बाकी = collage slots */
+ const extraImgs={};
+ if(F.draw){fr.style.background=F.draw.b1.c;
+  fr.innerHTML=frDrawHTML(F,CFG.frames.demo.slice(0,F.draw.windows.length));
+  const w0=fr.querySelector('.fr-win[data-win="0"]');
+  w0.innerHTML='<img id="ph" alt="आपकी फोटो">';
+  F.draw.windows.forEach((w,i)=>{if(i===0)return;
+   const el=fr.querySelector(`.fr-win[data-win="${i}"]`);
+   const up=document.createElement('button');up.className='wup';up.textContent='📷';up.title='इस जगह photo डालें';
+   up.onclick=()=>{const inp=document.createElement('input');inp.type='file';inp.accept='image/*';
+    inp.onchange=ev=>{const f=ev.target.files[0];if(!f)return;
+     const rd=new FileReader();rd.onload=e2=>{const im=new Image();im.onload=()=>{extraImgs[i]=im;
+      el.querySelector('img').src=e2.target.result;quality();toast('photo '+(i+1)+' लग गई ✅')};im.src=e2.target.result};rd.readAsDataURL(f)};
+    inp.click()};
+   el.appendChild(up)})}
  $('#fname').textContent=F.name;$('#frate').textContent='⭐ '+F.rating+' • '+F.en+' • '+cfg.ratios[F.ratio].name;
  $('#ph').src=cfg.demo[0];
  document.title='संस्कृति — '+F.name;
@@ -76,7 +91,13 @@
   $('#ord').href=wa(`नमस्ते! मुझे ये फ्रेम चाहिए:\n\n🖼️ फ्रेम: ${F.name}\n📐 साइज़: ${size.label}\n🧱 थिकनेस: ${th.mm}mm\n💰 कीमत: ${fmt(p)}\n\nकृपया details बताएँ।`);return p}
  /* --- Quality guard: असली DPI हिसाब --- */
  function quality(){const q=$('#qb');if(!curImg){q.className='qbadge';return}
-  const d=Math.min(curImg.naturalWidth/size.w,curImg.naturalHeight/size.h);
+  let d;
+  if(F.draw){d=Infinity;
+   F.draw.windows.forEach((w,i)=>{const im=i===0?curImg:extraImgs[i];if(!im)return;
+    d=Math.min(d,Math.min(im.naturalWidth/(size.w*w.w/100),im.naturalHeight/(size.h*w.h/100)))});
+   if(d===Infinity)d=0}
+  else{const wk=F.window?F.window.w/100:1,hk=F.window?F.window.h/100:1;
+   d=Math.min(curImg.naturalWidth/(size.w*wk),curImg.naturalHeight/(size.h*hk))}
   if(d>=300){q.className='qbadge ok';q.textContent='✅ बढ़िया quality — '+size.label+' में एकदम साफ print आएगा'}
   else if(d>=200){q.className='qbadge warn';q.textContent='⚠️ ठीक-ठाक quality ('+Math.round(d)+' DPI) — छोटे size में बेहतर रहेगा'}
   else{q.className='qbadge bad';q.textContent='❌ फोटो छोटी है ('+Math.round(d)+' DPI) — इस size में धुंधला आएगा। छोटा size चुनें या दूसरी फोटो डालें'}}
@@ -105,12 +126,29 @@
    c.bezierCurveTo(w*.05,h*.62,w*.30,h*.78,w*.5,h*.95);c.bezierCurveTo(w*.70,h*.78,w*.95,h*.62,w*.95,h*.38);
    c.bezierCurveTo(w*.95,h*.12,w*.58,h*.10,w*.5,h*.30);c.closePath()}}
  function dims(dpi){const b=Math.round((CFG.site.bleed_mm||3)/25.4*dpi);
-  const wk=F.window?F.window.w/100:1,hk=F.window?F.window.h/100:1;
+  const wk=F.draw?1:(F.window?F.window.w/100:1),hk=F.draw?1:(F.window?F.window.h/100:1);
   return {W:Math.round(size.w*wk*dpi)+2*b,H:Math.round(size.h*hk*dpi)+2*b}}
  function renderPrint(img){let dpi=CFG.site.dpi||300,d=dims(dpi);
   if(d.W*d.H>110e6){dpi=240;d=dims(dpi)}if(d.W*d.H>110e6){dpi=200;d=dims(dpi)}
   const c=document.createElement('canvas');c.width=d.W;c.height=d.H;const g=c.getContext('2d');
-  g.fillStyle='#fff';g.fillRect(0,0,d.W,d.H);g.save();
+  g.fillStyle='#fff';g.fillRect(0,0,d.W,d.H);
+  if(F.draw){const D=F.draw,b=Math.round((CFG.site.bleed_mm||3)/25.4*dpi),
+    X0=b,Y0=b,DW=d.W-2*b,DH=d.H-2*b;
+   g.fillStyle=D.b1.c;g.fillRect(0,0,d.W,d.H);
+   if(D.b2){const i1=D.b1.w;
+    g.fillStyle=D.b2.c;g.fillRect(X0+DW*i1/100,Y0+DH*i1/100,DW*(100-2*i1)/100,DH*(100-2*i1)/100)}
+   const mi=D.b1.w+(D.b2?D.b2.w:0);
+   if(D.bg){g.fillStyle=D.bg;g.fillRect(X0+DW*mi/100,Y0+DH*mi/100,DW*(100-2*mi)/100,DH*(100-2*mi)/100)}
+   D.windows.forEach((w,wi)=>{const im=wi===0?img:extraImgs[wi];if(!im)return;
+    const wx=X0+DW*w.x/100,wy=Y0+DH*w.y/100,ww=DW*w.w/100,wh=DH*w.h/100;
+    g.save();g.translate(wx,wy);shapePath(g,w.shape,ww,wh);g.clip();
+    const sc=Math.max(ww/im.naturalWidth,wh/im.naturalHeight);
+    if(wi===0){g.translate(ww/2+x/100*ww,wh/2+y/100*wh);g.scale(z,z);g.rotate(r*Math.PI/180);
+     g.drawImage(im,-im.naturalWidth*sc/2,-im.naturalHeight*sc/2,im.naturalWidth*sc,im.naturalHeight*sc)}
+    else{g.drawImage(im,(ww-im.naturalWidth*sc)/2,(wh-im.naturalHeight*sc)/2,im.naturalWidth*sc,im.naturalHeight*sc)}
+    g.restore()});
+   return{c,dpi}}
+  g.save();
   shapePath(g,F.shape,d.W,d.H);g.clip();
   const s=Math.max(d.W/img.naturalWidth,d.H/img.naturalHeight);
   g.translate(d.W/2+x/100*d.W,d.H/2+y/100*d.H);g.scale(z,z);g.rotate(r*Math.PI/180);
@@ -126,6 +164,9 @@
   const name=$('#oname').value.trim(),phone=$('#ophone').value.trim(),addr=$('#oaddr').value.trim();
   if(!name){toast('अपना नाम लिखें');return}
   if(!/^\d{10}$/.test(phone)){toast('सही 10 अंकों का मोबाइल लिखें');return}
+  if(F.draw&&F.draw.windows.length>1){
+   const miss=F.draw.windows.findIndex((w,i)=>i>0&&!extraImgs[i]);
+   if(miss>0){toast('जगह '+(miss+1)+' में भी अपनी photo डालें 📷');return}}
   const btn=$('#osend');btn.disabled=true;btn.textContent='⏳ 4K print file बन रही है…';
   try{
    const {c,dpi}=await renderPrint(curImg);
