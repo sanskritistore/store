@@ -17,7 +17,7 @@
 </section>
 <footer id="ft"></footer>
 <style>.edbtn{position:absolute;top:6px;right:6px;z-index:6;background:#fffdf8f0;border:1.5px solid #E3D7C3;border-radius:9px;padding:4px 8px;font-size:14px;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.18)}.edbtn:active{transform:scale(.92)}</style>
-<script src="assets/js/store.js?v=9"></script>
+<script src="assets/js/store.js?v=10"></script>
 <script>(async()=>{await loadCfg();await loadCustomFrames();shell('acrylic');
  const grp=f=>f.shape==='heart'?'heart':(f.shape==='circle'||f.shape==='oval')?'round':'rect';
  const demos=CFG.frames.demo;
@@ -25,7 +25,7 @@
   const d1=demos[i%demos.length],d2=demos[(i+3)%demos.length];
   if(f.draw){const winImgs=f.draw.windows.map((w,wi)=>demos[(i+wi)%demos.length]);
    return `<a class="fcard card" href="preview.html?frame=${f.id}">
-   <div class="fr" style="aspect-ratio:${f.ar};${frDrawBg(f)}">${frDrawHTML(f,winImgs)}<div class="glare" style="${glareStyle(f)}"></div>
+   <div class="fr" style="aspect-ratio:${f.ar};${frDrawBg(f)}">${frDrawHTML(f,winImgs)}${glareHTML(f)}
     <button class="edbtn" data-ed type="button" title="अपनी photo लगाकर देखें">✏️</button></div>
    ${f.badge?`<span class="badge">${f.badge}</span>`:''}
    <h4>${f.name}</h4><div class="rt">⭐ ${f.rating}</div>
@@ -34,7 +34,7 @@
   const win=f.window?`style="left:${f.window.x}%;top:${f.window.y}%;width:${f.window.w}%;height:${f.window.h}%"`:'';
   const ar=f.ar?`style="aspect-ratio:${f.ar}"`:'';
   return `<a class="fcard card" href="preview.html?frame=${f.id}">
-   <div class="fr shp-${f.shape} ${f.style} ${rtClass(f.ratio)}" ${ar}>${f.img?`<img class="fr-img" src="${f.img}" alt="">`:''}<div class="glare" style="${glareStyle(f)}"></div>
+   <div class="fr shp-${f.shape} ${f.style} ${rtClass(f.ratio)}" ${ar}>${f.img?`<img class="fr-img" src="${f.img}" alt="">`:''}${glareHTML(f)}
     <button class="edbtn" data-ed type="button" title="अपनी photo लगाकर देखें">✏️</button><div class="fr-photo" ${win}>
     <img src="${d1}" data-a="${d1}" data-b="${d2}" alt="${f.name}">
     <div class="es" style="opacity:0"><b>📷</b>अपनी फोटो<br>यहाँ लगाएँ</div></div></div>

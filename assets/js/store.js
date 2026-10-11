@@ -82,21 +82,27 @@ function pngMaskCss(f){
  return `-webkit-mask-image:url('${f.img}');mask-image:url('${f.img}');-webkit-mask-size:${mw}% ${mh}%;mask-size:${mw}% ${mh}%;-webkit-mask-position:${px}% ${py}%;mask-position:${px}% ${py}%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;`;
 }
 /* sample photo की सही position (zoom/x/y) card पर */
-function glareKey(ar){ /* ratio → PNG key: 2/3, 3/2, 1/1 */
- const t=(ar||'').replace(':','/');
- if(t==='2/3')return '2x3'; if(t==='3/2')return '3x2'; if(t==='1/1')return '1x1';
- return ''}
-function glareStyle(f){ /* 🪟 per-frame reflection: on/off + चमक + जगह(x/y) + आकार(s) + ratio-wise PNG + अपनी PNG (11-10, Dev) */
+function glareWin(f,side){ /* glare_set से एक खिड़की की settings — पुराने flat format को बाएँ मानो */
  let g={};
  if(f.glare_set){try{g=JSON.parse(f.glare_set)}catch(e){}}
- if(g.on===0)return 'display:none;';
+ if(g.on===0)return null;
+ let w=g[side];
+ if(!w&&side==='L'&&(g.op!==undefined||g.x!==undefined))w=g; /* flat → L */
+ if(!w)w=side==='L'?{on:1,op:60,x:8,y:10,s:100}:{on:1,op:55,x:70,y:8,s:70};
+ if(w.on===0)return null;
+ return w}
+function glareStyle(f,side){ /* 🪟 दो-खिड़की reflection (11-10 रात-8, Dev): L/R अलग PNG + position + आकार */
+ const w=glareWin(f,side);if(!w)return 'display:none;';
+ const gv=w.gv||1;
+ const custom=side==='L'?f.glare:f.glare2;
  let st='';
- if(f.glare)st+=`background-image:url('${f.glare}${f.glare.includes('?')?'&':'?'}v=${g.gv||1}');`;
- else{const k=glareKey(f.ar);if(k)st+=`background-image:url('assets/glare-${k}.png?v=2');`}
- if(g.op)st+=`opacity:${(g.op/100).toFixed(2)};`;
- if(g.x!==undefined||g.y!==undefined)st+=`background-position:${g.x===undefined?30:g.x}% ${g.y||0}%;`;
- if(g.s&&g.s!==100)st+=`background-size:${g.s}% auto;`;
+ if(custom)st+=`background-image:url('${custom}${custom.includes('?')?'&':'?'}v=${gv}');`;
+ else st+=`background-image:url('assets/glare-${side}.png?v=3');`;
+ if(w.op)st+=`opacity:${(w.op/100).toFixed(2)};`;
+ st+=`background-position:${w.x===undefined?30:w.x}% ${w.y||0}%;`;
+ if(w.s&&w.s!==100)st+=`background-size:${w.s}% auto;`;
  return st}
+function glareHTML(f){return `<div class="glare" style="${glareStyle(f,'L')}"></div><div class="glare" style="${glareStyle(f,'R')}"></div>`}
 function sampPosCss(f){
  if(!f||!f.samp_pos)return '';
  try{const p=JSON.parse(f.samp_pos);if(!p)return '';
