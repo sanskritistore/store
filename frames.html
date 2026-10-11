@@ -19,10 +19,11 @@
 <script src="assets/js/store.js?v=5"></script>
 <script>(async()=>{await loadCfg();await loadCustomFrames();shell('frames');
  const grp=f=>f.shape==='heart'?'heart':(f.shape==='circle'||f.shape==='oval')?'round':'rect';
- const demos=CFG.frames.demo;
+ const demos=CFG.frames.demo;const SAMP=CFG.frames.samples||{};
+ const sampOf=f=>SAMP[f.shape]||SAMP[(f.shape||'').startsWith('custom:')?'custom':'default']||demos[0];
  function card(f,i){
-  const d1=demos[i%demos.length],d2=demos[(i+3)%demos.length];
-  if(f.draw){const winImgs=f.draw.windows.map((w,wi)=>demos[(i+wi)%demos.length]);
+  const d1=sampOf(f),d2=demos[(i+3)%demos.length];
+  if(f.draw){const winImgs=f.draw.windows.map((w,wi)=>wi===0?sampOf(f):demos[(i+wi)%demos.length]);
    return `<a class="fcard card" href="preview.html?frame=${f.id}">
    <div class="fr" style="aspect-ratio:${f.ar};${frDrawBg(f)}">${frDrawHTML(f,winImgs)}</div>
    ${f.badge?`<span class="badge">${f.badge}</span>`:''}

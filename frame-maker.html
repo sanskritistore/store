@@ -252,14 +252,22 @@
  stg.addEventListener('pointerup',()=>dragging=null);
  /* --- frame image upload --- */
  let imgFile=null;
- $('#ff').onchange=e=>{const f=e.target.files[0];if(!f)return;imgFile=f;
+ async function toWebP(file){return new Promise(res=>{const im=new Image();im.onload=()=>{
+  const cv=document.createElement('canvas');cv.width=im.naturalWidth;cv.height=im.naturalHeight;
+  cv.getContext('2d').drawImage(im,0,0);URL.revokeObjectURL(im.src);
+  cv.toBlob(b=>res(b),'image/webp',0.94)};im.src=URL.createObjectURL(file)})}
+ $('#ff').onchange=async e=>{const f=e.target.files[0];if(!f)return;
+  const kb0=Math.round(f.size/1024);
+  imgFile=await toWebP(f);
+  const kb1=Math.round(imgFile.size/1024);
+  toast('📦 WebP बन गया: '+kb0+'KB → '+kb1+'KB — site हल्की रहेगी ✅');
   const rd=new FileReader();rd.onload=ev=>{const im=new Image();im.onload=()=>{
    $('#fi').src=ev.target.result;stg.style.display='block';$('#stghint').style.display='block';
    stg.style.aspectRatio=im.naturalWidth+'/'+im.naturalHeight;
    const a=im.naturalWidth/im.naturalHeight;
    setRatioChip(Math.abs(a-1)<0.12?'1:1':(a<1?'2:3':'3:2'));
    $('#dimg').src=CFG.frames.demo[1%CFG.frames.demo.length];draw();
-   toast('अब photo की जगह drag करके चुनें 👆')};im.src=ev.target.result};rd.readAsDataURL(f)};
+   toast('अब photo की जगह drag करके चुनें 👆')};im.src=ev.target.result};rd.readAsDataURL(imgFile)};
  /* --- save --- */
  $('#fsave').onclick=async()=>{
   const name=$('#fname').value.trim();
@@ -272,7 +280,7 @@
    fd.append('ar',$('#fratio').value.replace(':','/'));
    fd.append('base',+$('#fbase').value||499);fd.append('rating',+$('#frate').value||4.5);
    fd.append('window',JSON.stringify({x:W.x,y:W.y,w:W.w,h:W.h}));
-   fd.append('img_file',imgFile,'frame.png');
+   fd.append('img_file',imgFile,'frame.webp');
    const r=await fetch(B+'/store/frames',{method:'POST',headers:hdr(),body:fd});
    if(r.status===401||r.status===403){toast('login expire — दोबारा login करें');localStorage.removeItem('sk_adm_tok');location.reload();return}
    if(!r.ok)throw new Error('HTTP '+r.status);
