@@ -166,6 +166,14 @@
        <label style="flex:1;min-width:105px">↔️ बाएँ-दाएँ<input type="range" id="pmx" min="0" max="100" value="50" style="width:100%"></label>
        <label style="flex:1;min-width:105px">↕️ ऊपर-नीचे<input type="range" id="pmy" min="0" max="100" value="50" style="width:100%"></label>
       </div>
+      <div style="margin-top:10px;border-top:1px dashed #E3D7C3;padding-top:8px">
+       <b style="font-size:13px">🪟 Reflection (acrylic चमक) — frame के हिसाब से set करें</b>
+       <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;margin-top:4px"><input type="checkbox" id="gon" checked> Reflection चालू</label>
+       <div style="display:flex;gap:12px;margin-top:6px;font-size:12px;flex-wrap:wrap">
+        <label style="flex:1;min-width:105px">✨ चमक<input type="range" id="gop" min="10" max="100" value="55" style="width:100%"></label>
+        <label style="flex:1;min-width:105px">↔️ जगह<input type="range" id="gx" min="0" max="100" value="30" style="width:100%"></label>
+       </div>
+      </div>
      </div></div>
    </div>
    <div class="mform">
@@ -216,7 +224,7 @@
  </div>
 </section>
 <footer id="ft"></footer>
-<script src="assets/js/store.js?v=6"></script>
+<script src="assets/js/store.js?v=7"></script>
 <script>(async()=>{await loadCfg();shell('');
  const B=BACKEND()+'/api/v1';
  let tok=localStorage.getItem('sk_adm_tok')||'';
@@ -361,6 +369,9 @@
    const r=await fetch(B+'/store/frames',{method:'POST',headers:hdr(),body:fd});
    if(r.status===401||r.status===403){toast('login expire — दोबारा login करें');localStorage.removeItem('sk_adm_tok');location.reload();return}
    if(!r.ok)throw new Error('HTTP '+r.status);
+   try{const cj=await r.json();const nid=(cj.id||'').replace('fr-c','');
+    if(nid)await fetch(B+'/store/frames/'+nid,{method:'PATCH',headers:Object.assign({'Content-Type':'application/json'},hdr()),
+     body:JSON.stringify({glare_set:{on:$('#gon').checked?1:0,op:+$('#gop').value||55,x:+$('#gx').value||30}})})}catch(e){}
    toast('🎉 Frame live हो गया!');$('#fname').value='';listFrames();
   }catch(e){console.error(e);toast('save नहीं हुआ — फिर कोशिश करें')}
   btn.disabled=false;btn.textContent='💾 Frame Save करें — तुरंत live'};
@@ -372,10 +383,14 @@
   toast(r.ok?'📸 sample photo लग गई ✅':'sample नहीं लगी');e.target.value='';sampTarget=null};
  async function listFrames(){
   try{const r=await fetch(B+'/store/frames');const j=await r.json();
-   $('#exfr').innerHTML=j.length?j.map(f=>`<span class="chipx">${f.ptype==='acrylic'?'💎':f.ptype==='album'?'📖':'🖼️'} ${f.name} <small>(${f.ratio})</small><button data-samp="${f.id.replace('fr-c','')}" title="sample photo लगाओ">📸</button><button data-del="${f.id.replace('fr-c','')}">🗑️</button></span>`).join(''):'<span class="hint">अभी कोई custom frame नहीं — पहला बनाओ! 👆</span>';
+   $('#exfr').innerHTML=j.length?j.map(f=>`<span class="chipx">${f.ptype==='acrylic'?'💎':f.ptype==='album'?'📖':'🖼️'} ${f.name} <small>(${f.ratio})</small><button data-samp="${f.id.replace('fr-c','')}" title="sample photo लगाओ">📸</button><button data-glare="${f.id.replace('fr-c','')}" title="reflection setting लगाओ (ऊपर sliders से)">🪟</button><button data-del="${f.id.replace('fr-c','')}">🗑️</button></span>`).join(''):'<span class="hint">अभी कोई custom frame नहीं — पहला बनाओ! 👆</span>';
    $$('#exfr [data-del]').forEach(b=>b.onclick=async()=>{if(!confirm('यह frame हटा दें?'))return;
     await fetch(B+'/store/frames/'+b.dataset.del,{method:'DELETE',headers:hdr()});listFrames()});
    $$('#exfr [data-samp]').forEach(b=>b.onclick=()=>{sampTarget=b.dataset.samp;$('#exsamp').click()});
+   $$('#exfr [data-glare]').forEach(b=>b.onclick=async()=>{
+    const r=await fetch(B+'/store/frames/'+b.dataset.glare,{method:'PATCH',headers:Object.assign({'Content-Type':'application/json'},hdr()),
+     body:JSON.stringify({glare_set:{on:$('#gon').checked?1:0,op:+$('#gop').value||55,x:+$('#gx').value||30}})});
+    toast(r.ok?'🪟 reflection set हो गई ✅':'reflection set नहीं हुई')});
   }catch(e){$('#exfr').innerHTML='<span class="hint">list नहीं खुली</span>'}}
 
  /* ============ Generator tab ============ */

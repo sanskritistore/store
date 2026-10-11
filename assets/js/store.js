@@ -82,6 +82,11 @@ function pngMaskCss(f){
  return `-webkit-mask-image:url('${f.img}');mask-image:url('${f.img}');-webkit-mask-size:${mw}% ${mh}%;mask-size:${mw}% ${mh}%;-webkit-mask-position:${px}% ${py}%;mask-position:${px}% ${py}%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;`;
 }
 /* sample photo की सही position (zoom/x/y) card पर */
+function glareStyle(f){ /* 🪟 per-frame reflection: on/off + चमक + जगह (11-10, Dev) */
+ if(!f.glare_set)return '';
+ try{const g=JSON.parse(f.glare_set);
+  if(!g.on)return 'display:none;';
+  return `opacity:${(g.op/100).toFixed(2)};background-position:${g.x}% 0;`}catch(e){return ''}}
 function sampPosCss(f){
  if(!f||!f.samp_pos)return '';
  try{const p=JSON.parse(f.samp_pos);if(!p)return '';
