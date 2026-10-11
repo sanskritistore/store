@@ -43,6 +43,15 @@ function pCard(p){return `<a class="prod card" href="product.html?id=${p.id}">
  <div class="prod-t"><h4>${p.name}</h4><div class="pr">${fmt(p.price)}<s>${fmt(p.mrp)}</s></div>
  <div class="rt">⭐ ${p.rating} • ${p.en}</div></div></a>`}
 
+/* === Custom frames merge — backend से owner-made frames (11-10 Frame Maker) === */
+async function loadCustomFrames(){
+  try{const r=await fetch(BACKEND()+'/api/v1/store/frames');
+    if(!r.ok)return;
+    const cf=await r.json();
+    const base=location.pathname.replace(/[^/]*$/,'');
+    CFG.frames.frames=CFG.frames.frames.concat(cf.map(f=>({...f,img:BACKEND()+f.img,custom:true})));
+  }catch(e){/* backend न मिले तो static frames ही */}}
+
 /* === Ratio helpers (11-10) === */
 function rtClass(r){return 'rt-'+r.replace(':','')}
 function sizesFor(fcfg,frame){return (fcfg.ratios[frame.ratio]||Object.values(fcfg.ratios)[0]).sizes}

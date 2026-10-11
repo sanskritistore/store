@@ -1,0 +1,162 @@
+<!DOCTYPE html><html lang="hi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#8E2A32">
+<title>संस्कृति — Frame Maker</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪔</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/store.css">
+<style>
+.mk{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start;margin:18px 0}
+@media(max-width:900px){.mk{grid-template-columns:1fr}}
+.stg{position:relative;width:min(400px,100%);margin:0 auto;background:
+ repeating-conic-gradient(#eee 0 25%,#fff 0 50%) 0 0/22px 22px;border-radius:12px;overflow:hidden;touch-action:none;user-select:none}
+.stg img.fi{display:block;width:100%;position:relative;z-index:2;pointer-events:none}
+.stg .demo{position:absolute;overflow:hidden;z-index:1;background:#ddd}
+.stg .demo img{width:100%;height:100%;object-fit:cover}
+.stg .winbox{position:absolute;border:2.5px dashed #8E2A32;background:rgba(142,42,50,.08);z-index:3;pointer-events:none}
+.mform label{display:block;font-weight:700;font-size:14px;margin:12px 0 4px}
+.mform input,.mform select{width:100%;padding:10px 12px;border:1.5px solid #E3D7C3;border-radius:10px;font:inherit;background:#fff}
+.wininputs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.wininputs input{text-align:center}
+.step{font-weight:800;color:#8E2A32;margin:16px 0 6px;font-size:16px}
+.exfr{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+.exfr .chipx{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #E3D7C3;border-radius:10px;padding:8px 12px;font-weight:700}
+.exfr button{border:0;background:#FDECEA;color:#B3261E;border-radius:8px;padding:4px 8px;cursor:pointer}
+.hint{font-size:13px;color:#7a6a5f;margin-top:6px;line-height:1.5}
+</style></head><body>
+<header id="hd"></header>
+<section class="wrap" id="app">
+ <div class="login" id="login" style="max-width:380px;margin:50px auto;background:#fff;border-radius:18px;padding:24px;border:1px solid #E9DFCC">
+  <h2 style="margin:0 0 4px">🖼️ Frame Maker</h2>
+  <p class="hint">अपने खुद के frames बनाओ — दुकान वाले नंबर से login करें</p>
+  <label style="font-weight:700;font-size:14px">मोबाइल नंबर</label>
+  <input id="lp" inputmode="numeric" maxlength="10" placeholder="10 अंकों का नंबर" style="width:100%;padding:12px;border:1.5px solid #E3D7C3;border-radius:10px;font:inherit;margin:6px 0 12px">
+  <div id="lotpbox" style="display:none">
+   <label style="font-weight:700;font-size:14px">OTP</label>
+   <input id="lo" inputmode="numeric" maxlength="6" placeholder="6 अंकों का OTP" style="width:100%;padding:12px;border:1.5px solid #E3D7C3;border-radius:10px;font:inherit;margin:6px 0 12px">
+  </div>
+  <button class="btn btn-p btn-b" id="lb" style="width:100%">OTP भेजें</button>
+ </div>
+ <div id="maker" style="display:none">
+  <div class="topbar" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin:18px 0">
+   <h2 style="margin:0">🖼️ Frame Maker</h2>
+   <a class="btn btn-o" href="admin.html">🖨️ ऑर्डर Admin</a></div>
+  <div class="mk">
+   <div>
+    <div class="step">1️⃣ Frame की PNG upload करें (बीच transparent)</div>
+    <label class="up">📤 Frame image चुनें<input type="file" id="ff" accept="image/png,image/*" hidden></label>
+    <p class="hint">💡 Frame की सीधी photo खींचो या Canva/Photoshop से border PNG बनाओ — बीच का हिस्सा खाली (transparent) होना चाहिए।</p>
+    <div class="stg" id="stg" style="display:none">
+     <div class="demo" id="demo"><img id="dimg" alt=""></div>
+     <img class="fi" id="fi" alt="frame">
+     <div class="winbox" id="winbox"></div>
+    </div>
+    <div id="stghint" style="display:none">
+     <p class="hint">2️⃣ <b>Stage पर drag करें</b> — जहाँ customer की photo दिखेगी (या नीचे % भरें):</p>
+     <div class="wininputs">
+      <div><label style="font-size:12px">बाएँ %</label><input id="wx" type="number" value="12"></div>
+      <div><label style="font-size:12px">ऊपर %</label><input id="wy" type="number" value="12"></div>
+      <div><label style="font-size:12px">चौड़ाई %</label><input id="ww" type="number" value="76"></div>
+      <div><label style="font-size:12px">ऊँचाई %</label><input id="wh" type="number" value="76"></div>
+     </div></div>
+   </div>
+   <div class="mform">
+    <div class="step">3️⃣ Details भरें</div>
+    <label>Frame का नाम *</label><input id="fname" placeholder="जैसे: रॉयल गोल्डन">
+    <label>Photo window का shape</label>
+    <select id="fshape"><option value="rect">चौकोर (सीधे किनारे)</option><option value="rounded">गोल किनारे</option>
+     <option value="oval">ओवल</option><option value="circle">गोल (circle)</option><option value="heart">दिल ❤️</option></select>
+    <label>Size ratio</label>
+    <select id="fratio"><option value="2:3">Portrait 2:3 (4×6, 12×18…)</option><option value="3:2">Landscape 3:2</option><option value="1:1">Square 1:1</option></select>
+    <label>शुरुआती कीमत (₹, सबसे छोटे size की)</label><input id="fbase" type="number" value="499">
+    <label>Rating (दिखने के लिए)</label><input id="frate" type="number" step="0.1" min="3" max="5" value="4.6">
+    <div style="display:grid;gap:10px;margin-top:18px">
+     <button class="btn btn-p btn-b" id="fsave">💾 Frame Save करें — तुरंत live</button>
+     <a class="btn btn-o btn-b" href="frames.html" target="_blank">👀 Frames page पर देखें</a></div>
+    <div class="step">आपके बनाए frames</div>
+    <div class="exfr" id="exfr"><span class="hint">लoad…</span></div>
+   </div>
+  </div>
+ </div>
+</section>
+<footer id="ft"></footer>
+<script src="assets/js/store.js"></script>
+<script>(async()=>{await loadCfg();shell('');
+ const B=BACKEND()+'/api/v1';
+ let tok=localStorage.getItem('sk_adm_tok')||'';
+ function hdr(){return {'Authorization':'Bearer '+tok}}
+ /* --- login (admin.html जैसा ही) --- */
+ let sentPhone='';
+ $('#lb').onclick=async()=>{
+  if($('#lotpbox').style.display==='none'){
+   sentPhone=$('#lp').value.trim();
+   if(!/^\d{10}$/.test(sentPhone)){toast('सही 10 अंकों का नंबर लिखें');return}
+   $('#lb').disabled=true;
+   try{const r=await fetch(B+'/auth/send-otp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:sentPhone})});
+    const j=await r.json();$('#lotpbox').style.display='block';$('#lb').textContent='Login करें';
+    if(j.dev_otp){$('#lo').value=j.dev_otp;toast('OTP भर गया ✅')}
+   }catch(e){toast('OTP नहीं गया')}
+   $('#lb').disabled=false;return}
+  try{const r=await fetch(B+'/auth/verify-otp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:sentPhone,otp:$('#lo').value.trim()})});
+   if(!r.ok){toast('गलत OTP');return}
+   const j=await r.json();tok=j.access_token||j.token;localStorage.setItem('sk_adm_tok',tok);enter();
+  }catch(e){toast('Login नहीं हुआ')}};
+ function enter(){$('#login').style.display='none';$('#maker').style.display='block';listFrames()}
+ if(tok){enter()}
+ /* --- window mark: drag + inputs --- */
+ const stg=$('#stg'),demo=$('#demo'),winbox=$('#winbox');
+ let W={x:12,y:12,w:76,h:76},dragging=null;
+ function shapeCss(el){const s=$('#fshape').value;
+  el.style.borderRadius=(s==='rounded')?'14px':(s==='oval'||s==='circle')?'50%':'0';
+  if(s==='heart'){el.style.webkitMask='var(--heart) center/100% 100% no-repeat';el.style.mask='var(--heart) center/100% 100% no-repeat'}
+  else{el.style.webkitMask='';el.style.mask=''}}
+ function draw(){['x','y','w','h'].forEach(k=>{W[k]=Math.round(W[k]*10)/10});
+  $('#wx').value=W.x;$('#wy').value=W.y;$('#ww').value=W.w;$('#wh').value=W.h;
+  [demo,winbox].forEach(el=>{el.style.left=W.x+'%';el.style.top=W.y+'%';el.style.width=W.w+'%';el.style.height=W.h+'%'});
+  shapeCss(demo)}
+ function fromInputs(){W={x:+$('#wx').value||0,y:+$('#wy').value||0,w:+$('#ww').value||10,h:+$('#wh').value||10};draw()}
+ ['wx','wy','ww','wh'].forEach(id=>$('#'+id).oninput=fromInputs);
+ $('#fshape').onchange=()=>shapeCss(demo);
+ function pt(e){const r=stg.getBoundingClientRect();
+  return {x:Math.min(100,Math.max(0,(e.clientX-r.left)/r.width*100)),y:Math.min(100,Math.max(0,(e.clientY-r.top)/r.height*100))}}
+ stg.addEventListener('pointerdown',e=>{dragging=pt(e);stg.setPointerCapture(e.pointerId)});
+ stg.addEventListener('pointermove',e=>{if(!dragging)return;const p=pt(e);
+  W={x:Math.min(dragging.x,p.x),y:Math.min(dragging.y,p.y),w:Math.abs(p.x-dragging.x),h:Math.abs(p.y-dragging.y)};
+  if(W.w<3)W.w=3;if(W.h<3)W.h=3;draw()});
+ stg.addEventListener('pointerup',()=>dragging=null);
+ /* --- frame image upload --- */
+ let imgFile=null;
+ $('#ff').onchange=e=>{const f=e.target.files[0];if(!f)return;imgFile=f;
+  const rd=new FileReader();rd.onload=ev=>{const im=new Image();im.onload=()=>{
+   $('#fi').src=ev.target.result;stg.style.display='block';$('#stghint').style.display='block';
+   stg.style.aspectRatio=im.naturalWidth+'/'+im.naturalHeight;
+   const a=im.naturalWidth/im.naturalHeight;
+   $('#fratio').value=Math.abs(a-1)<0.12?'1:1':(a<1?'2:3':'3:2');
+   $('#dimg').src=CFG.frames.demo[1%CFG.frames.demo.length];draw();
+   toast('अब photo की जगह drag करके चुनें 👆')};im.src=ev.target.result};rd.readAsDataURL(f)};
+ /* --- save --- */
+ $('#fsave').onclick=async()=>{
+  const name=$('#fname').value.trim();
+  if(!imgFile){toast('पहले frame image upload करें 📤');return}
+  if(!name){toast('frame का नाम लिखें');return}
+  const btn=$('#fsave');btn.disabled=true;btn.textContent='⏳ save हो रहा…';
+  try{const fd=new FormData();
+   fd.append('name',name);fd.append('shape',$('#fshape').value);
+   fd.append('ratio',$('#fratio').value);
+   const im=$('#fi');fd.append('ar',im.naturalWidth+'/'+im.naturalHeight);
+   fd.append('base',+$('#fbase').value||499);fd.append('rating',+$('#frate').value||4.5);
+   fd.append('window',JSON.stringify({x:W.x,y:W.y,w:W.w,h:W.h}));
+   fd.append('img_file',imgFile,'frame.png');
+   const r=await fetch(B+'/store/frames',{method:'POST',headers:hdr(),body:fd});
+   if(r.status===401||r.status===403){toast('login expire — दोबारा login करें');localStorage.removeItem('sk_adm_tok');location.reload();return}
+   if(!r.ok)throw new Error('HTTP '+r.status);
+   toast('🎉 Frame live हो गया!');$('#fname').value='';listFrames();
+  }catch(e){console.error(e);toast('save नहीं हुआ — फिर कोशिश करें')}
+  btn.disabled=false;btn.textContent='💾 Frame Save करें — तुरंत live'};
+ /* --- existing frames --- */
+ async function listFrames(){
+  try{const r=await fetch(B+'/store/frames');const j=await r.json();
+   $('#exfr').innerHTML=j.length?j.map(f=>`<span class="chipx">${f.name} <small>(${f.ratio})</small><button data-del="${f.id.replace('fr-c','')}">🗑️</button></span>`).join(''):'<span class="hint">अभी कोई custom frame नहीं — पहला बनाओ! 👆</span>';
+   $$('#exfr [data-del]').forEach(b=>b.onclick=async()=>{if(!confirm('यह frame हटा दें?'))return;
+    await fetch(B+'/store/frames/'+b.dataset.del,{method:'DELETE',headers:hdr()});listFrames()});
+  }catch(e){$('#exfr').innerHTML='<span class="hint">list नहीं खुली</span>'}}
+})();</script></body></html>

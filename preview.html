@@ -55,11 +55,16 @@
 </div></div>
 <footer id="ft"></footer>
 <script src="assets/js/store.js"></script>
-<script>(async()=>{await loadCfg();shell('frames');
+<script>(async()=>{await loadCfg();await loadCustomFrames();shell('frames');
  const F=CFG.frames.frames.find(f=>f.id===qp('frame'))||CFG.frames.frames[0];
  const cfg=CFG.frames, SIZES=sizesFor(cfg,F);
  let z=1,x=0,y=0,r=0,size=SIZES[Math.min(3,SIZES.length-1)],th=cfg.thickness[0],curImg=null;
- $('#fr').className='fr shp-'+F.shape+' '+F.style+' '+rtClass(F.ratio);
+ const fr=$('#fr');fr.className='fr shp-'+F.shape+' '+F.style+' '+rtClass(F.ratio);
+ if(F.ar)fr.style.aspectRatio=F.ar;
+ if(F.img){const bi=document.createElement('img');bi.className='fr-img';bi.src=F.img;fr.prepend(bi)}
+ if(F.window){const fp=fr.querySelector('.fr-photo');
+  fp.style.left=F.window.x+'%';fp.style.top=F.window.y+'%';
+  fp.style.width=F.window.w+'%';fp.style.height=F.window.h+'%';fp.style.inset='auto'}
  $('#fname').textContent=F.name;$('#frate').textContent='⭐ '+F.rating+' • '+F.en+' • '+cfg.ratios[F.ratio].name;
  $('#ph').src=cfg.demo[0];
  document.title='संस्कृति — '+F.name;
@@ -99,7 +104,8 @@
    c.bezierCurveTo(w*.05,h*.62,w*.30,h*.78,w*.5,h*.95);c.bezierCurveTo(w*.70,h*.78,w*.95,h*.62,w*.95,h*.38);
    c.bezierCurveTo(w*.95,h*.12,w*.58,h*.10,w*.5,h*.30);c.closePath()}}
  function dims(dpi){const b=Math.round((CFG.site.bleed_mm||3)/25.4*dpi);
-  return {W:size.w*dpi+2*b,H:size.h*dpi+2*b}}
+  const wk=F.window?F.window.w/100:1,hk=F.window?F.window.h/100:1;
+  return {W:Math.round(size.w*wk*dpi)+2*b,H:Math.round(size.h*hk*dpi)+2*b}}
  function renderPrint(img){let dpi=CFG.site.dpi||300,d=dims(dpi);
   if(d.W*d.H>110e6){dpi=240;d=dims(dpi)}if(d.W*d.H>110e6){dpi=200;d=dims(dpi)}
   const c=document.createElement('canvas');c.width=d.W;c.height=d.H;const g=c.getContext('2d');

@@ -158,3 +158,7 @@ input[type=range]{width:100%;accent-color:var(--brand);height:34px}
 .mok{text-align:center;padding:10px 0}
 .mok .big{font-size:46px}
 .mok .ono{font-size:22px;font-weight:800;color:#8E2A32;letter-spacing:1px;margin:6px 0}
+
+/* === Frame Maker custom frames (11-10) === */
+.fr-img{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
+.stl-img .fr-photo{z-index:1}

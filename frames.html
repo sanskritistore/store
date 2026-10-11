@@ -17,13 +17,15 @@
 </section>
 <footer id="ft"></footer>
 <script src="assets/js/store.js"></script>
-<script>(async()=>{await loadCfg();shell('frames');
+<script>(async()=>{await loadCfg();await loadCustomFrames();shell('frames');
  const grp=f=>f.shape==='heart'?'heart':(f.shape==='circle'||f.shape==='oval')?'round':'rect';
  const demos=CFG.frames.demo;
  function card(f,i){
   const d1=demos[i%demos.length],d2=demos[(i+3)%demos.length];
+  const win=f.window?`style="left:${f.window.x}%;top:${f.window.y}%;width:${f.window.w}%;height:${f.window.h}%"`:'';
+  const ar=f.ar?`style="aspect-ratio:${f.ar}"`:'';
   return `<a class="fcard card" href="preview.html?frame=${f.id}">
-   <div class="fr shp-${f.shape} ${f.style} ${rtClass(f.ratio)}"><div class="fr-photo">
+   <div class="fr shp-${f.shape} ${f.style} ${rtClass(f.ratio)}" ${ar}>${f.img?`<img class="fr-img" src="${f.img}" alt="">`:''}<div class="fr-photo" ${win}>
     <img src="${d1}" data-a="${d1}" data-b="${d2}" alt="${f.name}">
     <div class="es" style="opacity:0"><b>📷</b>अपनी फोटो<br>यहाँ लगाएँ</div></div></div>
    ${f.badge?`<span class="badge">${f.badge}</span>`:''}
