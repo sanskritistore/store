@@ -47,7 +47,9 @@ function pCard(p){return `<a class="prod card" href="product.html?id=${p.id}">
 function shapeClipCss(sh){
  if(sh==='rounded')return 'border-radius:6%';
  if(sh==='oval'||sh==='circle')return 'border-radius:50%';
- if(sh==='heart')return '-webkit-mask:var(--heart) center/100% 100% no-repeat;mask:var(--heart) center/100% 100% no-repeat';
+ if(sh==='custom')return '';
+ if(sh&&sh.startsWith('custom:'))return 'border-radius:'+sh.slice(7).split(',').map(v=>v+'%').join(' ');
+ if(['heart','bean','egg','arch','scallop'].includes(sh))return '-webkit-mask:var(--'+sh+') center/100% 100% no-repeat;mask:var(--'+sh+') center/100% 100% no-repeat';
  return ''}
 function frDrawHTML(f,photos){
  /* draw = {b1:{w,c}, b2:{w,c}?, bg?, windows:[{x,y,w,h,shape}]} — photos: per-window image urls */

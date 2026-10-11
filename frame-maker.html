@@ -83,12 +83,29 @@
     <div class="step">4️⃣ अपने हिसाब से बदलें</div>
     <label>Photo shape — photo वैसी ही कटेगी</label>
     <input type="hidden" id="gshape" value="rect">
-    <div class="chips" id="gshapec">
-     <button class="chip on" data-s="rect"><span class="sicon"></span>चौकोर</button>
-     <button class="chip" data-s="rounded"><span class="sicon" style="border-radius:5px"></span>हल्के कोने</button>
-     <button class="chip" data-s="oval"><span class="sicon" style="border-radius:50%;width:24px"></span>ओवल</button>
-     <button class="chip" data-s="circle"><span class="sicon" style="border-radius:50%"></span>पूरा गोल ⭕</button>
-     <button class="chip" data-s="heart">❤️ दिल</button></div>
+    <select id="gshapeSel" class="inp">
+     <option value="rect">चौकोर</option>
+     <option value="rounded">हल्के कोने</option>
+     <option value="oval">ओवल</option>
+     <option value="circle">पूरा गोल ⭕</option>
+     <option value="heart">दिल ❤️</option>
+     <option value="bean">बीन 🫘</option>
+     <option value="egg">अंडा 🥚</option>
+     <option value="arch">मेहराब 🕌</option>
+     <option value="scallop">लहरिया किनारा 🌸</option>
+     <option value="custom">✏️ Custom — खुद shape बनाओ</option>
+    </select>
+    <div id="gcustbox" style="display:none;background:#fff8ef;border:1.5px dashed #d8b878;border-radius:10px;padding:10px;margin-top:6px">
+     <div style="display:flex;gap:10px;align-items:center">
+      <div id="gcprev" style="width:44px;height:44px;border:2.5px solid #8E2A32;flex:none;background:#fff"></div>
+      <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:2px 10px;font-size:12px">
+       <label>ऊपर-बाएँ<input type="range" id="gctl" min="0" max="100" value="50" style="width:100%"></label>
+       <label>ऊपर-दाएँ<input type="range" id="gctr" min="0" max="100" value="50" style="width:100%"></label>
+       <label>नीचे-दाएँ<input type="range" id="gcbr" min="0" max="100" value="50" style="width:100%"></label>
+       <label>नीचे-बाएँ<input type="range" id="gcbl" min="0" max="100" value="50" style="width:100%"></label>
+      </div>
+     </div>
+     <small style="color:#8a7a5f">sliders घुमाओ → बायाँ box अपनी shape लेगा — photo ऐसी ही कटेगी</small></div>
     <label>कितनी photos (collage)</label>
     <select id="glay"><option value="1">1 photo</option><option value="2H">2 photos — साथ-साथ</option>
      <option value="2V">2 photos — ऊपर-नीचे</option><option value="3">3 photos</option><option value="4">4 photos — चौकोर</option></select>
@@ -130,12 +147,29 @@
     <label>Frame का नाम *</label><input id="fname" placeholder="जैसे: रॉयल गोल्डन">
     <label>Photo का shape — जो चुनोगे, photo वैसी ही कटेगी</label>
     <input type="hidden" id="fshape" value="rect">
-    <div class="chips" id="pshape">
-     <button class="chip on" data-s="rect"><span class="sicon"></span>चौकोर</button>
-     <button class="chip" data-s="rounded"><span class="sicon" style="border-radius:5px"></span>हल्के कोने</button>
-     <button class="chip" data-s="oval"><span class="sicon" style="border-radius:50%;width:24px"></span>ओवल</button>
-     <button class="chip" data-s="circle"><span class="sicon" style="border-radius:50%"></span>पूरा गोल ⭕</button>
-     <button class="chip" data-s="heart">❤️ दिल</button></div>
+    <select id="pshapeSel" class="inp">
+     <option value="rect">चौकोर</option>
+     <option value="rounded">हल्के कोने</option>
+     <option value="oval">ओवल</option>
+     <option value="circle">पूरा गोल ⭕</option>
+     <option value="heart">दिल ❤️</option>
+     <option value="bean">बीन 🫘</option>
+     <option value="egg">अंडा 🥚</option>
+     <option value="arch">मेहराब 🕌</option>
+     <option value="scallop">लहरिया किनारा 🌸</option>
+     <option value="custom">✏️ Custom — खुद shape बनाओ</option>
+    </select>
+    <div id="pcustbox" style="display:none;background:#fff8ef;border:1.5px dashed #d8b878;border-radius:10px;padding:10px;margin-top:6px">
+     <div style="display:flex;gap:10px;align-items:center">
+      <div id="pcprev" style="width:44px;height:44px;border:2.5px solid #8E2A32;flex:none;background:#fff"></div>
+      <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:2px 10px;font-size:12px">
+       <label>ऊपर-बाएँ<input type="range" id="pctl" min="0" max="100" value="50" style="width:100%"></label>
+       <label>ऊपर-दाएँ<input type="range" id="pctr" min="0" max="100" value="50" style="width:100%"></label>
+       <label>नीचे-दाएँ<input type="range" id="pcbr" min="0" max="100" value="50" style="width:100%"></label>
+       <label>नीचे-बाएँ<input type="range" id="pcbl" min="0" max="100" value="50" style="width:100%"></label>
+      </div>
+     </div>
+     <small style="color:#8a7a5f">sliders घुमाओ → बायाँ box अपनी shape लेगा — photo ऐसी ही कटेगी</small></div>
     <label>Size ratio — चुनते ही stage उसी आकार का हो जाएगा</label>
     <input type="hidden" id="fratio" value="2:3">
     <div class="chips" id="pratio">
@@ -180,18 +214,27 @@
  /* --- window mark: drag + inputs --- */
  const stg=$('#stg'),demo=$('#demo'),winbox=$('#winbox');
  let W={x:12,y:12,w:76,h:76},dragging=null;
- function shapeCss(el){const s=$('#fshape').value;
-  el.style.borderRadius=(s==='rounded')?'14px':(s==='oval'||s==='circle')?'50%':'0';
-  if(s==='heart'){el.style.webkitMask='var(--heart) center/100% 100% no-repeat';el.style.mask='var(--heart) center/100% 100% no-repeat'}
-  else{el.style.webkitMask='';el.style.mask=''}}
+ function shapeCssVal(v){if(['heart','bean','egg','arch','scallop'].includes(v))return 'var(--'+v+') center/100% 100% no-repeat';return null}
+ function shapeCss(el){const s=$('#fshape').value;const m=shapeCssVal(s);
+  if(m){el.style.webkitMask=m;el.style.mask=m;el.style.borderRadius='0'}
+  else{el.style.webkitMask='';el.style.mask='';
+   el.style.borderRadius=s.startsWith('custom:')?s.slice(7).split(',').map(v=>v+'%').join(' '):(s==='rounded')?'14px':(s==='oval'||s==='circle')?'50%':'0'}}
  function draw(){['x','y','w','h'].forEach(k=>{W[k]=Math.round(W[k]*10)/10});
   $('#wx').value=W.x;$('#wy').value=W.y;$('#ww').value=W.w;$('#wh').value=W.h;
   [demo,winbox].forEach(el=>{el.style.left=W.x+'%';el.style.top=W.y+'%';el.style.width=W.w+'%';el.style.height=W.h+'%'});
   shapeCss(demo)}
  function fromInputs(){W={x:+$('#wx').value||0,y:+$('#wy').value||0,w:+$('#ww').value||10,h:+$('#wh').value||10};draw()}
  ['wx','wy','ww','wh'].forEach(id=>$('#'+id).oninput=fromInputs);
- $$('#pshape .chip').forEach(c=>c.onclick=()=>{$$('#pshape .chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');
-  $('#fshape').value=c.dataset.s;shapeCss(demo);shapeCss(winbox)});
+ function custVal(p){return 'custom:'+[p+'ctl',p+'ctr',p+'cbr',p+'cbl'].map(i=>$('#'+i).value).join(',')}
+ function custWire(prefix,hidden,after){
+  ['ctl','ctr','cbr','cbl'].forEach(k=>{const el=$('#'+prefix+k);if(!el)return;
+   el.oninput=()=>{const v=custVal(prefix);$(hidden).value=v;
+    const pv=$('#'+prefix+'cprev');if(pv)pv.style.borderRadius=v.slice(7).split(',').map(x=>x+'%').join(' ');after()}})}
+ $('#pshapeSel').onchange=e=>{const v=e.target.value;
+  $('#pcustbox').style.display=v==='custom'?'block':'none';
+  $('#fshape').value=v==='custom'?custVal('p'):v;
+  shapeCss(demo);shapeCss(winbox)};
+ custWire('p','#fshape',()=>{shapeCss(demo);shapeCss(winbox)});
  function setRatioChip(v){$('#fratio').value=v;$$('#pratio .chip').forEach(x=>x.classList.toggle('on',x.dataset.r===v));
   const p=v.split(':');stg.style.aspectRatio=p[0]+'/'+p[1];draw()}
  $$('#pratio .chip').forEach(c=>c.onclick=()=>setRatioChip(c.dataset.r));
@@ -259,8 +302,12 @@
   $('#gbgc').value=t.bg;gShapeSync(t.shape);$('#glay').value=t.lay;
   if(!$('#gname').value)$('#gname').value=t.n;
   gPrev()});
- function gShapeSync(v){$('#gshape').value=v;$$('#gshapec .chip').forEach(x=>x.classList.toggle('on',x.dataset.s===v))}
- $$('#gshapec .chip').forEach(c=>c.onclick=()=>{gShapeSync(c.dataset.s);gPrev()});
+ function gShapeSync(v){const isC=v&&v.startsWith('custom');
+  $('#gshapeSel').value=isC?'custom':v;
+  $('#gcustbox').style.display=isC?'block':'none';
+  $('#gshape').value=isC&&v!=='custom'?v:(isC?custVal('g'):v)}
+ $('#gshapeSel').onchange=e=>{gShapeSync(e.target.value);gPrev()};
+ custWire('g','#gshape',gPrev);
  $$('#gratio .chip').forEach(c=>c.onclick=()=>{$$('#gratio .chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');gPrev()});
  $$('#gpage .chip').forEach(c=>c.onclick=()=>{$$('#gpage .chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');gPrev()});
  $$('#gptype .chip').forEach(c=>c.onclick=()=>{$$('#gptype .chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');

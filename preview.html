@@ -60,7 +60,9 @@
  const F=CFG.frames.frames.find(f=>f.id===qp('frame'))||CFG.frames.frames[0];
  const cfg=CFG.frames, SIZES=sizesFor(cfg,F);
  let z=1,x=0,y=0,r=0,size=SIZES[Math.min(3,SIZES.length-1)],th=cfg.thickness[0],curImg=null;
- const fr=$('#fr');fr.className='fr shp-'+F.shape+' '+F.style+' '+rtClass(F.ratio);
+ const fr=$('#fr');fr.className='fr shp-'+(F.shape&&F.shape.startsWith('custom:')?'custom':F.shape)+' '+F.style+' '+rtClass(F.ratio);
+ if(F.shape&&F.shape.startsWith('custom:')){const v=F.shape.slice(7).split(',').map(n=>n+'%').join(' ');
+  const fp=fr.querySelector('.fr-photo');if(fp)fp.style.borderRadius=v}
  if(F.ar)fr.style.aspectRatio=F.ar;
  /* 🔪 white-knockout: frame PNG के बाहर का solid white अपने आप transparent (किनारों से अंदर flood) —
     ताकि wall दिखे + shadow carving की असली shape पर पड़े। design के अंदर का white सुरक्षित। (11-10, Dev का rule:
