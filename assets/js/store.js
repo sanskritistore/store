@@ -69,7 +69,7 @@ async function loadCustomFrames(){
     if(!r.ok)return;
     const cf=await r.json();
     const base=location.pathname.replace(/[^/]*$/,'');
-    CFG.frames.frames=CFG.frames.frames.concat(cf.map(f=>({...f,img:BACKEND()+f.img,custom:true})));
+    CFG.frames.frames=CFG.frames.frames.concat(cf.map(f=>({...f,img:BACKEND()+f.img,samp:f.samp?BACKEND()+f.samp:'',custom:true})));
   }catch(e){/* backend न मिले तो static frames ही */}}
 
 /* === Ratio helpers (11-10) === */
