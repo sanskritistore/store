@@ -54,6 +54,7 @@
   <div class="topbar" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin:18px 0">
    <h2 style="margin:0">🖼️ Frame Maker</h2>
    <a class="btn btn-o" href="admin.html">🖨️ ऑर्डर Admin</a></div>
+  <div style="font-size:11px;color:#B0A48F;text-align:right;margin-bottom:4px">v11.10-रात-2 <span id="jsok"></span></div>
   <div class="tabbar">
    <button class="tab on" data-t="gen">🎨 Generator (fast)</button>
    <button class="tab" data-t="png">📤 अपनी PNG से</button>
@@ -232,6 +233,11 @@
 <script>(async()=>{await loadCfg();shell('');
  const B=BACKEND()+'/api/v1';
  let tok=localStorage.getItem('sk_adm_tok')||'';
+ /* store.js load हुई या नहीं — नहीं तो साफ बताओ (Dev के phone पर tab मर गया था, 11-10) */
+ setTimeout(()=>{const ok=typeof loadCustomFrames==='function'&&typeof $==='function';
+  const el=document.querySelector('#jsok');
+  if(ok){if(el)el.textContent='✅'}
+  else{if(el)el.textContent='⚠️';toast('page अधूरा load हुआ — एक बार refresh करें 🔄');alert('Page अधूरा load हुआ है (internet slow?) — कृपया refresh करें')}},1500);
  function hdr(){return {'Authorization':'Bearer '+tok}}
  /* --- login (admin.html जैसा ही) --- */
  let sentPhone='';
