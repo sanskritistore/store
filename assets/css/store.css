@@ -177,5 +177,5 @@ input[type=range]{width:100%;accent-color:var(--brand);height:34px}
 
 /* 💎 acrylic glass reflection — Dev की असली window PNG (11-10) */
 .glare{position:absolute;inset:0;pointer-events:none;z-index:5;
- background:url('../glare.png') top left/cover no-repeat;
+ background:url('../glare.png?v=2') top left/cover no-repeat;
  mix-blend-mode:screen;opacity:.95}
