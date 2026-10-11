@@ -3,11 +3,11 @@
 <title>संस्कृति — फ्रेम preview</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪔</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/store.css"></head><body>
+<link rel="stylesheet" href="assets/css/store.css?v=2"></head><body>
 <header id="hd"></header>
 <section class="pv wrap">
  <div class="stage" id="stage">
-  <div class="fr" id="fr"><div class="fr-photo"><img id="ph" alt="आपकी फोटो"></div></div>
+  <div class="fr" id="fr"><div class="fr-photo"><img id="phbg" alt=""><img id="ph" alt="आपकी फोटो"></div></div>
  </div>
  <div class="pnl">
   <h2 id="fname" style="font-size:24px"></h2>
@@ -16,7 +16,7 @@
    <input type="file" id="file" accept="image/*" hidden></label>
   <div class="qbadge" id="qb"></div>
   <h3>फोटो सेट करें</h3>
-  <div class="ctl"><label>Zoom <span id="zv"></span></label><input type="range" id="zoom" min="1" max="3" step="0.01" value="1"></div>
+  <div class="ctl"><label>Zoom <span id="zv"></span> <small style="color:#8a7a5f">— 100% से कम = पूरी फोटो, किनारे blur</small></label><input type="range" id="zoom" min="0.3" max="3" step="0.01" value="1"></div>
   <div class="ctl"><label>बाएँ ↔ दाएँ</label><input type="range" id="mx" min="-50" max="50" value="0"></div>
   <div class="ctl"><label>ऊपर ↕ नीचे</label><input type="range" id="my" min="-50" max="50" value="0"></div>
   <div class="row"><button class="btn btn-o" id="rot">🔄 घुमाएँ</button>
@@ -54,7 +54,7 @@
  </div>
 </div></div>
 <footer id="ft"></footer>
-<script src="assets/js/store.js?v=4"></script>
+<script src="assets/js/store.js?v=5"></script>
 <script>(async()=>{await loadCfg();await loadCustomFrames();shell('frames');
  const F=CFG.frames.frames.find(f=>f.id===qp('frame'))||CFG.frames.frames[0];
  const cfg=CFG.frames, SIZES=sizesFor(cfg,F);
@@ -71,7 +71,7 @@
  if(F.draw){fr.style.background=F.draw.b1.c;
   fr.innerHTML=frDrawHTML(F,CFG.frames.demo.slice(0,F.draw.windows.length));
   const w0=fr.querySelector('.fr-win[data-win="0"]');
-  w0.innerHTML='<img id="ph" alt="आपकी फोटो">';
+  w0.innerHTML='<img id="phbg" alt=""><img id="ph" alt="आपकी फोटो">';
   F.draw.windows.forEach((w,i)=>{if(i===0)return;
    const el=fr.querySelector(`.fr-win[data-win="${i}"]`);
    const up=document.createElement('button');up.className='wup';up.textContent='📷';up.title='इस जगह photo डालें';
@@ -82,9 +82,10 @@
     inp.click()};
    el.appendChild(up)})}
  $('#fname').textContent=F.name;$('#frate').textContent='⭐ '+F.rating+' • '+F.en+' • '+cfg.ratios[F.ratio].name;
- $('#ph').src=cfg.demo[0];
+ $('#ph').src=cfg.demo[0];$('#phbg').src=cfg.demo[0];
  document.title='संस्कृति — '+F.name;
  function apply(){$('#ph').style.transform=`translate(${x}%,${y}%) scale(${z}) rotate(${r}deg)`;
+  const bg=$('#phbg');if(bg)bg.style.opacity=z<0.995?1:0;
   $('#zv').textContent=Math.round(z*100)+'%'}
  function price(){const p=Math.round(F.base*size.mul*th.mul/10)*10;
   $('#pr').textContent=fmt(p);$('#mrp').textContent=fmt(p*1.3);
@@ -94,16 +95,17 @@
   let d;
   if(F.draw){d=Infinity;
    F.draw.windows.forEach((w,i)=>{const im=i===0?curImg:extraImgs[i];if(!im)return;
-    d=Math.min(d,Math.min(im.naturalWidth/(size.w*w.w/100),im.naturalHeight/(size.h*w.h/100)))});
+    const zz=i===0?z:1;
+    d=Math.min(d,Math.min(im.naturalWidth/(size.w*w.w/100*zz),im.naturalHeight/(size.h*w.h*zz)))});
    if(d===Infinity)d=0}
   else{const wk=F.window?F.window.w/100:1,hk=F.window?F.window.h/100:1;
-   d=Math.min(curImg.naturalWidth/(size.w*wk),curImg.naturalHeight/(size.h*hk))}
+   d=Math.min(curImg.naturalWidth/(size.w*wk*z),curImg.naturalHeight/(size.h*hk*z))}
   if(d>=300){q.className='qbadge ok';q.textContent='✅ बढ़िया quality — '+size.label+' में एकदम साफ print आएगा'}
   else if(d>=200){q.className='qbadge warn';q.textContent='⚠️ ठीक-ठाक quality ('+Math.round(d)+' DPI) — छोटे size में बेहतर रहेगा'}
   else{q.className='qbadge bad';q.textContent='❌ फोटो छोटी है ('+Math.round(d)+' DPI) — इस size में धुंधला आएगा। छोटा size चुनें या दूसरी फोटो डालें'}}
  $('#file').onchange=e=>{const f=e.target.files[0];if(!f)return;
-  const rd=new FileReader();rd.onload=ev=>{const im=new Image();im.onload=()=>{curImg=im;$('#ph').src=ev.target.result;quality()};im.src=ev.target.result};rd.readAsDataURL(f)};
- $('#zoom').oninput=e=>{z=+e.target.value;apply()};
+  const rd=new FileReader();rd.onload=ev=>{const im=new Image();im.onload=()=>{curImg=im;$('#ph').src=ev.target.result;$('#phbg').src=ev.target.result;quality()};im.src=ev.target.result};rd.readAsDataURL(f)};
+ $('#zoom').oninput=e=>{z=+e.target.value;apply();quality()};
  $('#mx').oninput=e=>{x=+e.target.value;apply()};
  $('#my').oninput=e=>{y=+e.target.value;apply()};
  $('#rot').onclick=()=>{r=(r+90)%360;apply()};
@@ -143,7 +145,9 @@
     const wx=X0+DW*w.x/100,wy=Y0+DH*w.y/100,ww=DW*w.w/100,wh=DH*w.h/100;
     g.save();g.translate(wx,wy);shapePath(g,w.shape,ww,wh);g.clip();
     const sc=Math.max(ww/im.naturalWidth,wh/im.naturalHeight);
-    if(wi===0){g.translate(ww/2+x/100*ww,wh/2+y/100*wh);g.scale(z,z);g.rotate(r*Math.PI/180);
+    if(wi===0){if(z<1){g.save();g.filter='blur('+Math.max(8,Math.round(ww*0.03))+'px) brightness(1.04)';
+     g.drawImage(im,(ww-im.naturalWidth*sc)/2,(wh-im.naturalHeight*sc)/2,im.naturalWidth*sc,im.naturalHeight*sc);g.restore()}
+     g.translate(ww/2+x/100*ww,wh/2+y/100*wh);g.scale(z,z);g.rotate(r*Math.PI/180);
      g.drawImage(im,-im.naturalWidth*sc/2,-im.naturalHeight*sc/2,im.naturalWidth*sc,im.naturalHeight*sc)}
     else{g.drawImage(im,(ww-im.naturalWidth*sc)/2,(wh-im.naturalHeight*sc)/2,im.naturalWidth*sc,im.naturalHeight*sc)}
     g.restore()});
@@ -151,6 +155,8 @@
   g.save();
   shapePath(g,F.shape,d.W,d.H);g.clip();
   const s=Math.max(d.W/img.naturalWidth,d.H/img.naturalHeight);
+  if(z<1){g.save();g.filter='blur('+Math.max(10,Math.round(d.W*0.015))+'px) brightness(1.04)';
+   g.drawImage(img,(d.W-img.naturalWidth*s)/2,(d.H-img.naturalHeight*s)/2,img.naturalWidth*s,img.naturalHeight*s);g.restore()}
   g.translate(d.W/2+x/100*d.W,d.H/2+y/100*d.H);g.scale(z,z);g.rotate(r*Math.PI/180);
   g.drawImage(img,-img.naturalWidth*s/2,-img.naturalHeight*s/2,img.naturalWidth*s,img.naturalHeight*s);
   g.restore();return{c,dpi}}
