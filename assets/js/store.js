@@ -57,7 +57,7 @@ function frDrawHTML(f,photos){
  if(d.bg)h+=`<div style="position:absolute;inset:${d.b1.w+(d.b2?d.b2.w:0)}%;background:${d.bg}"></div>`;
  d.windows.forEach((w,i)=>{
   const ph=photos&&photos[i%photos.length];
-  h+=`<div class="fr-win" data-win="${i}" style="position:absolute;left:${w.x}%;top:${w.y}%;width:${w.w}%;height:${w.h}%;overflow:hidden;${shapeClipCss(w.shape)}">${ph?`<img src="${ph}" style="width:100%;height:100%;object-fit:cover;display:block" alt="">`:''}</div>`});
+  h+=`<div class="fr-win" data-win="${i}" style="position:absolute;left:${w.x}%;top:${w.y}%;width:${w.w}%;height:${w.h}%;overflow:hidden;${shapeClipCss(w.shape)}">${ph?`<img src="${ph}" data-a="${ph}" data-b="${photos[(i+1)%photos.length]}" style="width:100%;height:100%;object-fit:cover;display:block" alt="">`:''}</div>`});
  return h}
 function frDrawBg(f){return f.draw?`background:${f.draw.b1.c}`:''}
 
