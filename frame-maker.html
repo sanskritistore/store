@@ -286,16 +286,22 @@
   const w=Math.max(60,Math.round(im.naturalWidth*sc)),h=Math.max(60,Math.round(im.naturalHeight*sc));
   const c=document.createElement('canvas');c.width=w;c.height=h;
   const g=c.getContext('2d',{willReadFrequently:true});g.drawImage(im,0,0,w,h);
-  const d=g.getImageData(0,0,w,h).data,seen=new Uint8Array(w*h),st=[];
-  const tr=p=>d[p*4+3]<16,push=p=>{if(!seen[p]&&tr(p)){seen[p]=1;st.push(p)}};
-  for(let x=0;x<w;x++){push(x);push((h-1)*w+x)}
-  for(let y=0;y<h;y++){push(y*w);push(y*w+w-1)}
-  while(st.length){const p=st.pop(),x=p%w,y=(p/w)|0;
-   if(x>0)push(p-1);if(x<w-1)push(p+1);if(y>0)push(p-w);if(y<h-1)push(p+w)}
+  const d=g.getImageData(0,0,w,h).data,tr=p=>d[p*4+3]<16;
+  // center से BFS — heart जैसी नोक वाली shapes (जिनकी gap किनारे से जुड़ी हो) भी सही पकड़ में आएँ
+  let c0=Math.floor(w/2)+Math.floor(h/2)*w;
+  if(!tr(c0)){outer:for(let r=2;r<Math.min(w,h)/3;r+=3){for(let dx=-r;dx<=r;dx+=3){for(let dy=-r;dy<=r;dy+=3){
+   const x=(w>>1)+dx,y=(h>>1)+dy;if(x<0||y<0||x>=w||y>=h)continue;
+   if(tr(y*w+x)){c0=y*w+x;break outer}}}}}
+  if(!tr(c0))return null;
+  const seen=new Uint8Array(w*h),st=[c0];seen[c0]=1;
   let x0=w,y0=h,x1=-1,y1=-1,n=0;
-  for(let p=0;p<w*h;p++){if(tr(p)&&!seen[p]){n++;const x=p%w,y=(p/w)|0;
-   if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}}
-  if(n<w*h*0.005||x1<0)return null;
+  while(st.length){const p=st.pop(),x=p%w,y=(p/w)|0;n++;
+   if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;
+   if(x>0&&!seen[p-1]&&tr(p-1)){seen[p-1]=1;st.push(p-1)}
+   if(x<w-1&&!seen[p+1]&&tr(p+1)){seen[p+1]=1;st.push(p+1)}
+   if(y>0&&!seen[p-w]&&tr(p-w)){seen[p-w]=1;st.push(p-w)}
+   if(y<h-1&&!seen[p+w]&&tr(p+w)){seen[p+w]=1;st.push(p+w)}}
+  if(n<w*h*0.005)return null;
   return {x:+(x0/w*100).toFixed(1),y:+(y0/h*100).toFixed(1),w:+((x1-x0+1)/w*100).toFixed(1),h:+((y1-y0+1)/h*100).toFixed(1)}
  }catch(e){return null}}
  /* --- frame image upload --- */
