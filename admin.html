@@ -3,7 +3,7 @@
 <title>संस्कृति — ऑर्डर Admin</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪔</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/store.css?v=3">
+<link rel="stylesheet" href="assets/css/store.css?v=4">
 <style>
 .ocard{background:#fff;border:1px solid #E9DFCC;border-radius:16px;padding:14px;display:grid;grid-template-columns:110px 1fr;gap:14px;margin-bottom:14px}
 .ocard img{width:110px;height:110px;object-fit:contain;background:#F3EDE1;border-radius:10px}
@@ -36,6 +36,7 @@
  <div id="orders" style="display:none">
   <div class="topbar"><h2 style="margin:0">🖨️ ऑर्डर कतार</h2>
    <div><a class="btn btn-o" href="frame-maker.html">🖼️ Frame Maker</a>
+   <a class="btn btn-o" href="frames.html" target="_blank">🏬 Store देखें</a>
    <button class="btn btn-o" id="ref">🔄 Refresh</button>
    <button class="btn btn-o" id="out">बाहर निकलें</button></div></div>
   <div id="list"></div>
@@ -88,6 +89,7 @@
       <div class="cust">👤 ${o.customer_name} • 📞 <a href="tel:${o.customer_phone}">${o.customer_phone}</a>${o.customer_address?'<br>📍 '+o.customer_address:''}</div>
       <div class="acts">
        <button class="dl" data-dl="${o.id}">⬇️ 4K Print File</button>
+       <button class="dl" style="background:#6B4FA0" data-pv="${o.id}">⬇️ Photo (editing)</button>
        <select data-st="${o.id}">${Object.keys(ST).map(k=>`<option value="${k}" ${k===o.status?'selected':''}>${ST[k]}</option>`).join('')}</select>
        <a class="dl" style="background:#25D366" target="_blank" href="https://wa.me/91${o.customer_phone}?text=${encodeURIComponent('नमस्ते '+o.customer_name+'! आपका ऑर्डर '+o.order_no+' ('+o.frame_name+' '+o.size_label+') मिल गया है ✅') }">📱 Customer को msg</a>
        <button class="del" data-del="${o.id}">🗑️</button>
@@ -100,6 +102,11 @@
      const a=document.createElement('a');a.href=URL.createObjectURL(bl);
      a.download='print-'+b.dataset.dl+'.jpg';a.click()}catch(e){toast('download नहीं हुआ')}
     b.textContent='⬇️ 4K Print File'});
+   $$('#list [data-pv]').forEach(b=>b.onclick=async()=>{b.textContent='⏳…';
+    try{const r=await api('/store/orders/'+b.dataset.pv+'/preview');const bl=await r.blob();
+     const a2=document.createElement('a');a2.href=URL.createObjectURL(bl);
+     a2.download='photo-'+b.dataset.pv+'.jpg';a2.click()}catch(e){toast('download नहीं हुआ')}
+    b.textContent='⬇️ Photo (editing)'});
    $$('#list [data-st]').forEach(s=>s.onchange=async()=>{
     try{await api('/store/orders/'+s.dataset.st,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:s.value})});
      toast('status बदल गया ✅');loadOrders()}catch(e){toast('status नहीं बदला')}});

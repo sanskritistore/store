@@ -3,7 +3,7 @@
 <title>संस्कृति — फ्रेम preview</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪔</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/store.css?v=3"></head><body>
+<link rel="stylesheet" href="assets/css/store.css?v=4"></head><body>
 <header id="hd"></header>
 <section class="pv wrap">
  <div class="stage" id="stage">
@@ -66,6 +66,8 @@
  /* 🔑 PNG-as-shape: PNG frame पर कोई CSS shape/mask नहीं — ऊपर पड़ी असली PNG ही photo को उसकी transparency से दिखाएगी (11-10, Dev rule) */
  if(F.img){const fp=fr.querySelector('.fr-photo');
   if(fp){fp.style.webkitMask='none';fp.style.mask='none';fp.style.borderRadius='0';fr.classList.forEach(c=>{if(c.startsWith('shp-'))fr.classList.remove(c)})}}
+ /* 💎 acrylic = glass reflection (Dev ss9: window reflection चाहिए) */
+ if(F.ptype==='acrylic'&&!fr.querySelector('.glare')){const g=document.createElement('div');g.className='glare';fr.appendChild(g)}
  if(F.ar)fr.style.aspectRatio=F.ar;
  /* 🔪 white-knockout: frame PNG के बाहर का solid white अपने आप transparent (किनारों से अंदर flood) —
     ताकि wall दिखे + shadow carving की असली shape पर पड़े। design के अंदर का white सुरक्षित। (11-10, Dev का rule:
