@@ -42,3 +42,15 @@ function pCard(p){return `<a class="prod card" href="product.html?id=${p.id}">
  <img src="${p.img}" alt="${p.name}" loading="lazy">${p.badge?`<span class="badge">${p.badge}</span>`:''}
  <div class="prod-t"><h4>${p.name}</h4><div class="pr">${fmt(p.price)}<s>${fmt(p.mrp)}</s></div>
  <div class="rt">⭐ ${p.rating} • ${p.en}</div></div></a>`}
+
+/* === Ratio helpers (11-10) === */
+function rtClass(r){return 'rt-'+r.replace(':','')}
+function sizesFor(fcfg,frame){return (fcfg.ratios[frame.ratio]||Object.values(fcfg.ratios)[0]).sizes}
+function BACKEND(){return (CFG.site&&CFG.site.backend)||''}
+
+/* === Order API (11-10 pipeline) === */
+async function orderCreate(fd){
+  const r=await fetch(BACKEND()+'/api/v1/store/orders',{method:'POST',body:fd});
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return r.json();
+}

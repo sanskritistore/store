@@ -23,7 +23,7 @@
  function card(f,i){
   const d1=demos[i%demos.length],d2=demos[(i+3)%demos.length];
   return `<a class="fcard card" href="preview.html?frame=${f.id}">
-   <div class="fr shp-${f.shape} ${f.style}"><div class="fr-photo">
+   <div class="fr shp-${f.shape} ${f.style} ${rtClass(f.ratio)}"><div class="fr-photo">
     <img src="${d1}" data-a="${d1}" data-b="${d2}" alt="${f.name}">
     <div class="es" style="opacity:0"><b>📷</b>अपनी फोटो<br>यहाँ लगाएँ</div></div></div>
    ${f.badge?`<span class="badge">${f.badge}</span>`:''}

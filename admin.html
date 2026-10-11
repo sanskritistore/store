@@ -1,0 +1,110 @@
+<!DOCTYPE html><html lang="hi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#8E2A32">
+<title>संस्कृति — ऑर्डर Admin</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪔</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/store.css">
+<style>
+.ocard{background:#fff;border:1px solid #E9DFCC;border-radius:16px;padding:14px;display:grid;grid-template-columns:110px 1fr;gap:14px;margin-bottom:14px}
+.ocard img{width:110px;height:110px;object-fit:contain;background:#F3EDE1;border-radius:10px}
+.ocard .ono{font-weight:800;color:#8E2A32;font-size:17px}
+.ocard .meta{font-size:13.5px;color:#5a4f45;line-height:1.55}
+.ocard .cust{font-size:14px;margin-top:4px}
+.ocard .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;align-items:center}
+.ocard select{padding:8px 10px;border-radius:9px;border:1.5px solid #E3D7C3;font:inherit;font-weight:700}
+.dl{background:#1E7B3C;color:#fff;border:0;border-radius:9px;padding:9px 14px;font:inherit;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block}
+.del{background:#fff;color:#B3261E;border:1.5px solid #F0C6C0;border-radius:9px;padding:8px 12px;font:inherit;cursor:pointer}
+.st-new{background:#FFF3D6}.st-printed{background:#E3F2FD}.st-ready{background:#E7F6EC}.st-dispatched{background:#F3E8FD}.st-done{background:#eee}.st-cancelled{background:#FDECEA}
+.stag{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:800}
+.login{max-width:380px;margin:60px auto;background:#fff;border-radius:18px;padding:24px;border:1px solid #E9DFCC}
+.login input{width:100%;padding:12px;border:1.5px solid #E3D7C3;border-radius:10px;font:inherit;margin:6px 0 12px}
+.topbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin:18px 0}
+</style></head><body>
+<header id="hd"></header>
+<section class="wrap" id="app">
+ <div class="login" id="login">
+  <h2 style="margin:0 0 4px">🖨️ ऑर्डर Admin</h2>
+  <p class="sub" style="color:#7a6a5f;font-size:13px">Print team के लिए — अपने दुकान वाले नंबर से login करें</p>
+  <label style="font-weight:700;font-size:14px">मोबाइल नंबर</label>
+  <input id="lp" inputmode="numeric" maxlength="10" placeholder="10 अंकों का नंबर">
+  <div id="lotpbox" style="display:none">
+   <label style="font-weight:700;font-size:14px">OTP</label>
+   <input id="lo" inputmode="numeric" maxlength="6" placeholder="6 अंकों का OTP">
+  </div>
+  <button class="btn btn-p btn-b" id="lb" style="width:100%">OTP भेजें</button>
+ </div>
+ <div id="orders" style="display:none">
+  <div class="topbar"><h2 style="margin:0">🖨️ ऑर्डर कतार</h2>
+   <div><button class="btn btn-o" id="ref">🔄 Refresh</button>
+   <button class="btn btn-o" id="out">बाहर निकलें</button></div></div>
+  <div id="list"></div>
+ </div>
+</section>
+<footer id="ft"></footer>
+<script src="assets/js/store.js"></script>
+<script>(async()=>{await loadCfg();shell('');
+ const B=BACKEND()+'/api/v1';
+ const ST={new:'नया ऑर्डर 🆕',printed:'Print हो गया 🖨️',ready:'Acrylic तैयार ✅',dispatched:'Dispatch 📦',done:'पूरा हुआ 🎉',cancelled:'रद्द ✖️'};
+ let tok=localStorage.getItem('sk_adm_tok')||'';
+ function hdr(){return {'Authorization':'Bearer '+tok}}
+ async function api(p,o){o=o||{};o.headers=Object.assign(hdr(),o.headers||{});
+  const r=await fetch(B+p,o);if(r.status===401||r.status===403){logout();throw new Error('login expire')}
+  if(!r.ok)throw new Error('HTTP '+r.status);return r}
+ function logout(){localStorage.removeItem('sk_adm_tok');tok='';$('#orders').style.display='none';$('#login').style.display='block'}
+ /* login */
+ let sentPhone='';
+ $('#lb').onclick=async()=>{
+  if($('#lotpbox').style.display==='none'){
+   sentPhone=$('#lp').value.trim();
+   if(!/^\d{10}$/.test(sentPhone)){toast('सही 10 अंकों का नंबर लिखें');return}
+   $('#lb').disabled=true;
+   try{const r=await fetch(B+'/auth/send-otp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:sentPhone})});
+    const j=await r.json();
+    $('#lotpbox').style.display='block';$('#lb').textContent='Login करें';
+    if(j.dev_otp){$('#lo').value=j.dev_otp;toast('OTP भर गया ✅')}
+   }catch(e){toast('OTP नहीं गया — फिर कोशिश करें')}
+   $('#lb').disabled=false;return}
+  try{const r=await fetch(B+'/auth/verify-otp',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({phone:sentPhone,otp:$('#lo').value.trim()})});
+   if(!r.ok){toast('गलत OTP');return}
+   const j=await r.json();tok=j.access_token||j.token;localStorage.setItem('sk_adm_tok',tok);
+   $('#login').style.display='none';$('#orders').style.display='block';loadOrders();
+  }catch(e){toast('Login नहीं हुआ')}};
+ /* orders */
+ async function imgUrl(id,kind){const r=await api('/store/orders/'+id+'/'+kind);const b=await r.blob();return URL.createObjectURL(b)}
+ async function loadOrders(){
+  const list=$('#list');list.innerHTML='<p>लoad हो रहा है…</p>';
+  try{const j=await (await api('/store/orders')).json();
+   if(!j.length){list.innerHTML='<p style="text-align:center;color:#7a6a5f;padding:30px">अभी कोई ऑर्डर नहीं — नया ऑर्डर आते ही यहाँ दिखेगा 📥</p>';return}
+   list.innerHTML='';
+   for(const o of j){
+    const div=document.createElement('div');div.className='ocard';
+    const dt=new Date(o.created_at).toLocaleString('hi-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'});
+    div.innerHTML=`<img alt="preview" data-id="${o.id}">
+     <div><span class="ono">${o.order_no}</span> <span class="stag st-${o.status}">${ST[o.status]||o.status}</span>
+      <span style="float:right;color:#8a7a6a;font-size:12.5px">${dt}</span>
+      <div class="meta">🖼️ ${o.frame_name} — <b>${o.size_label}</b> • ${o.thickness_mm}mm acrylic • <b>${fmt(o.price)}</b></div>
+      <div class="cust">👤 ${o.customer_name} • 📞 <a href="tel:${o.customer_phone}">${o.customer_phone}</a>${o.customer_address?'<br>📍 '+o.customer_address:''}</div>
+      <div class="acts">
+       <button class="dl" data-dl="${o.id}">⬇️ 4K Print File</button>
+       <select data-st="${o.id}">${Object.keys(ST).map(k=>`<option value="${k}" ${k===o.status?'selected':''}>${ST[k]}</option>`).join('')}</select>
+       <a class="dl" style="background:#25D366" target="_blank" href="https://wa.me/91${o.customer_phone}?text=${encodeURIComponent('नमस्ते '+o.customer_name+'! आपका ऑर्डर '+o.order_no+' ('+o.frame_name+' '+o.size_label+') मिल गया है ✅') }">📱 Customer को msg</a>
+       <button class="del" data-del="${o.id}">🗑️</button>
+      </div></div>`;
+    list.appendChild(div);
+    imgUrl(o.id,'preview').then(u=>{div.querySelector('img').src=u}).catch(()=>{});
+   }
+   $$('#list [data-dl]').forEach(b=>b.onclick=async()=>{b.textContent='⏳ download…';
+    try{const r=await api('/store/orders/'+b.dataset.dl+'/print');const bl=await r.blob();
+     const a=document.createElement('a');a.href=URL.createObjectURL(bl);
+     a.download='print-'+b.dataset.dl+'.jpg';a.click()}catch(e){toast('download नहीं हुआ')}
+    b.textContent='⬇️ 4K Print File'});
+   $$('#list [data-st]').forEach(s=>s.onchange=async()=>{
+    try{await api('/store/orders/'+s.dataset.st,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:s.value})});
+     toast('status बदल गया ✅');loadOrders()}catch(e){toast('status नहीं बदला')}});
+   $$('#list [data-del]').forEach(b=>b.onclick=async()=>{if(!confirm('यह ऑर्डर हटा दें?'))return;
+    try{await api('/store/orders/'+b.dataset.del,{method:'DELETE'});loadOrders()}catch(e){toast('नहीं हटा')}});
+  }catch(e){list.innerHTML='<p>ऑर्डर list नहीं खुली — दोबारा login करें</p>'}}
+ $('#ref').onclick=loadOrders;$('#out').onclick=logout;
+ if(tok){$('#login').style.display='none';$('#orders').style.display='block';loadOrders()}
+})();</script></body></html>
