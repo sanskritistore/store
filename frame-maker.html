@@ -469,6 +469,9 @@
     if(imgFile){const fd2=new FormData();fd2.append('img_file',imgFile,'frame.webp'); /* नई PNG चुनी है तो border भी बदलो */
      const v=await mkVariants();if(v.thumb)fd2.append('thumb_file',v.thumb,'thumb.webp');if(v.display)fd2.append('display_file',v.display,'display.webp');if(v.mask)fd2.append('mask_file',v.mask,'mask.png');
      const ri=await fetch(B+'/store/frames/'+nid+'/img',{method:'POST',headers:hdr(),body:fd2});if(!ri.ok)throw new Error('img HTTP '+ri.status)}
+    if(sampFile){const fd3=new FormData();fd3.append('sample_file',sampFile,'sample.webp'); /* edit में भी sample photo save हो (12-10 रात bug: edit में sample गायब हो जाती थी) */
+     fd3.append('sample_settings',JSON.stringify({z:+$('#pz').value||100,mx:+$('#pmx').value||50,my:+$('#pmy').value||50}));
+     const rs=await fetch(B+'/store/frames/'+nid+'/sample',{method:'POST',headers:hdr(),body:fd3});if(!rs.ok)throw new Error('sample HTTP '+rs.status)}
     await uploadGlare(nid);
     toast(`✅ ${EDIT.code||''} update हो गया!`);EDIT=null;imgFile=null;$('#editPick').value='';$('#editHint').textContent='';$('#fname').value='';listFrames();
    }catch(e){console.error(e);toast('update नहीं हुआ — फिर कोशिश करें')}
