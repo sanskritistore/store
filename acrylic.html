@@ -20,11 +20,12 @@
 <script src="assets/js/store.js?v=16"></script>
 <script>(async()=>{await loadCfg();await loadCustomFrames();shell('acrylic');
  const grp=f=>f.shape==='heart'?'heart':(f.shape==='circle'||f.shape==='oval')?'round':'rect';
- const demos=CFG.frames.demo;
+ const demos=CFG.frames.demo;const SAMP=CFG.frames.samples||{};
+ const sampOf=f=>SAMP[f.shape]||SAMP[(f.shape||'').startsWith('custom:')?'custom':'default']||demos[0];
  function card(f,i){
-  const d1=demos[i%demos.length],d2=demos[(i+3)%demos.length];
+  const d1=f.samp||sampOf(f),d2=f.samp?d1:demos[(i+3)%demos.length];
   if(f.draw){const winImgs=f.draw.windows.map((w,wi)=>demos[(i+wi)%demos.length]);
-   return `<a class="fcard card" href="preview.html?frame=${f.id}">
+   return `<a class="fcard card" href="preview.html?frame=${f.id}&type=acrylic">
    <div class="fr" style="aspect-ratio:${f.ar};${frDrawBg(f)}">${frDrawHTML(f,winImgs)}${glareHTML(f)}
     <button class="edbtn" data-ed type="button" title="अपनी photo लगाकर देखें">✏️</button></div>
    ${f.badge?`<span class="badge">${f.badge}</span>`:''}
@@ -33,7 +34,7 @@
    <span class="btn btn-p">अभी बनाएं</span></a>`}
   const win=f.window?`style="left:${f.window.x}%;top:${f.window.y}%;width:${f.window.w}%;height:${f.window.h}%"`:'';
   const ar=f.ar?`style="aspect-ratio:${f.ar}"`:'';
-  return `<a class="fcard card" href="preview.html?frame=${f.id}">
+  return `<a class="fcard card" href="preview.html?frame=${f.id}&type=acrylic">
    <div class="fr shp-${f.shape} ${f.style} ${rtClass(f.ratio)}" ${ar}>${f.img?`<img class="fr-img" src="${f.img}" alt="">`:''}${glareHTML(f)}
     <button class="edbtn" data-ed type="button" title="अपनी photo लगाकर देखें">✏️</button><div class="fr-photo" ${win}>
     <img src="${d1}" data-a="${d1}" data-b="${d2}" alt="${f.name}">
@@ -43,7 +44,7 @@
    <div class="from">${fmt(f.base)} से शुरू</div>
    <span class="btn btn-p">अभी बनाएं</span></a>`}
  function render(flt){
-  const fs=CFG.frames.frames.filter(f=>f.ptype==='acrylic'&&(flt==='all'||grp(f)===flt));
+  const fs=CFG.frames.frames.filter(f=>(!f.ptype||f.ptype==='frame'||f.ptype==='acrylic')&&(flt==='all'||grp(f)===flt)); /* 12-10 Dev: acrylic में सारी frames same */
   $('#list').innerHTML=fs.map((f,i)=>card(f,i)).join('');
   $$('#list .fr-photo, #list .fr-win').forEach((ph,i)=>{
    const img=ph.querySelector('img'),es=ph.querySelector('.es');if(!img)return;if(es)es.style.opacity=0;let st=1+i%2;

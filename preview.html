@@ -68,7 +68,7 @@
  if(F.img){const fp=fr.querySelector('.fr-photo');
   if(fp){fp.style.webkitMask='none';fp.style.mask='none';fp.style.borderRadius='0';fr.classList.forEach(c=>{if(c.startsWith('shp-'))fr.classList.remove(c)})}}
  /* 💎 acrylic = glass reflection (Dev ss9: window reflection चाहिए) */
- if(F.ptype==='acrylic'&&!fr.querySelector('.glare')){
+ if((qp('type')==='acrylic'||F.ptype==='acrylic')&&!fr.querySelector('.glare')){ /* 12-10 Dev: acrylic page से आए तो reflection */
   fr.insertAdjacentHTML('beforeend',glareHTML(F));
   const tb=$('#glarebtn');if(tb)tb.style.display='inline-block'}
  if(F.ar)fr.style.aspectRatio=F.ar;
