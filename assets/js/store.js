@@ -115,6 +115,10 @@ function glareStyle(f,side){ /* 🪟 दो-खिड़की reflection (11-10
  if(hh!==100)tf.push(`scaleY(${(hh/100).toFixed(2)})`);
  if(tf.length)st+=`transform:${tf.join(' ')};`;
  return st}
+function glareForce(f){ /* acrylic page: हर frame पर glare (12-10 Dev: "sabhi me same") — off किया हुआ भी default पर वापस; custom settings सुरक्षित */
+ if(!f||!f.glare_set)return f;
+ try{const g=JSON.parse(f.glare_set);if(g.on===0){const c=Object.assign({},f);delete c.glare_set;return c}}catch(e){}
+ return f}
 function glareHTML(f){return `<div class="glare-clip">${glareDiv(f,'L')}${glareDiv(f,'R')}</div>`}
 function glareDiv(f,side){return `<div class="glare" style="${glareStyle(f,side)}"></div>`}
 function sampPosCss(f){

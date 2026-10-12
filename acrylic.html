@@ -17,7 +17,7 @@
 </section>
 <footer id="ft"></footer>
 <style>.edbtn{position:absolute;top:6px;right:6px;z-index:6;background:#fffdf8f0;border:1.5px solid #E3D7C3;border-radius:9px;padding:4px 8px;font-size:14px;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.18)}.edbtn:active{transform:scale(.92)}</style>
-<script src="assets/js/store.js?v=16"></script>
+<script src="assets/js/store.js?v=17"></script>
 <script>(async()=>{await loadCfg();await loadCustomFrames();shell('acrylic');
  const grp=f=>f.shape==='heart'?'heart':(f.shape==='circle'||f.shape==='oval')?'round':'rect';
  const demos=CFG.frames.demo;const SAMP=CFG.frames.samples||{};
@@ -45,7 +45,7 @@
    <span class="btn btn-p">अभी बनाएं</span></a>`}
  function render(flt){
   const fs=CFG.frames.frames.filter(f=>(!f.ptype||f.ptype==='frame'||f.ptype==='acrylic')&&(flt==='all'||grp(f)===flt)); /* 12-10 Dev: acrylic में सारी frames same */
-  $('#list').innerHTML=fs.map((f,i)=>card(f,i)).join('');
+  $('#list').innerHTML=fs.map((f,i)=>card(glareForce(f),i)).join(''); /* 12-10: सब पर same reflection */
   $$('#list .fr-photo, #list .fr-win').forEach((ph,i)=>{
    const img=ph.querySelector('img'),es=ph.querySelector('.es');if(!img)return;if(es)es.style.opacity=0;let st=1+i%2;
    setInterval(()=>{if(ph.dataset.user)return;st=st===1?2:1;img.src=st===1?img.dataset.a:img.dataset.b;img.style.opacity=1},2400+i*350);
