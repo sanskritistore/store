@@ -14,12 +14,12 @@
     }
   ],
   "demo": [
-    "assets/img/demo/1.jpg?v=1210",
-    "assets/img/demo/2.jpg?v=1210",
-    "assets/img/demo/3.jpg?v=1210",
-    "assets/img/demo/4.jpg?v=1210",
-    "assets/img/demo/5.jpg?v=1210",
-    "assets/img/demo/6.jpg?v=1210"
+    "assets/img/demo/1.webp?v=1210",
+    "assets/img/demo/2.webp?v=1210",
+    "assets/img/demo/3.webp?v=1210",
+    "assets/img/demo/4.webp?v=1210",
+    "assets/img/demo/5.webp?v=1210",
+    "assets/img/demo/6.webp?v=1210"
   ],
   "frames": [],
   "ratios": {
