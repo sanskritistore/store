@@ -29,8 +29,8 @@
   const d1=f.samp||sampOf(f),d2=f.samp?d1:(arNum(f)>1&&demoL.length?demoL[(i+3)%demoL.length]:demos[(i+3)%demos.length]);
   if(f.draw){const winImgs=f.draw.windows.map((w,wi)=>demos[(i+wi)%demos.length]);
    return `<a class="fcard card" href="preview.html?frame=${f.id}&type=acrylic">
-   <div class="fr" style="aspect-ratio:${arNum(f)};${frDrawBg(f)}">${frDrawHTML(f,winImgs)}${glareHTML(f)}
-    <button class="edbtn" data-ed type="button" title="अपनी photo लगाकर देखें">✏️</button></div>
+   <div class="frwall"><div class="fr" style="--ar:${arNum(f)};${frDrawBg(f)}">${frDrawHTML(f,winImgs)}${glareHTML(f)}
+    <button class="edbtn" data-ed type="button" title="अपनी photo लगाकर देखें">✏️</button></div></div>
    ${f.code?`<span class="fcode">${f.code}</span>`:''}${f.badge?`<span class="badge">${f.badge}</span>`:''}
    <h4>${f.name}</h4><div class="rt">⭐ ${f.rating}</div>
    <div class="from">${fmt(f.base)} से शुरू</div>
@@ -39,9 +39,9 @@
   const win=winSt?`style="${winSt}"`:'';
   
   return `<a class="fcard card" href="preview.html?frame=${f.id}&type=acrylic">
-   <div class="fr ${f.img?'':'shp-'+f.shape} ${f.style} ${rtClass(f.ratio)}" style="aspect-ratio:${arNum(f)}">${f.img?`<img class="fr-img" src="${f.imgCard||f.img}" alt="">`:''}${glareHTML(f)}
+   <div class="frwall"><div class="fr shp-${f.shape} ${f.style} ${rtClass(f.ratio)}" style="--ar:${arNum(f)}">${f.img?`<img class="fr-img" src="${f.imgCard||f.img}" alt="">`:''}${glareHTML(f)}
     <button class="edbtn" data-ed type="button" title="अपनी photo लगाकर देखें">✏️</button><div class="fr-photo" ${win}>
-    <img src="${d1}" data-a="${d1}" data-b="${d2}" alt="${f.name}" style="${sampPosCss(f)}"></div></div>
+    <img src="${d1}" data-a="${d1}" data-b="${d2}" alt="${f.name}"></div></div></div>
    ${f.code?`<span class="fcode">${f.code}</span>`:''}${f.badge?`<span class="badge">${f.badge}</span>`:''}
    <h4>${f.name}</h4><div class="rt">⭐ ${f.rating}</div>
    <div class="from">${fmt(f.base)} से शुरू</div>
@@ -59,6 +59,13 @@
     else{ph.classList.remove('showph');img.src=tk===0?img.dataset.a:img.dataset.b;img.style.opacity=1}
    },2600+i*300);
   });
+  /* 🧱 दीवारें — पूरी PLP पर एक साथ, हर 7 सेकंड बदलें (Dev 12-10) */
+  const WALLS=CFG.frames.walls||[];
+  if(WALLS.length){let wi=0;
+   const setW=()=>document.documentElement.style.setProperty('--wallimg',`url('${WALLS[wi]}')`);
+   setW();setInterval(()=>{wi=(wi+1)%WALLS.length;
+    $$('.frwall').forEach(d=>d.classList.add('wswap'));
+    setTimeout(()=>{setW();$$('.frwall').forEach(d=>d.classList.remove('wswap'))},420)},7000)}
   /* ✏️ card पर ही अपनी photo लगाकर देखो (Dev 11-10 — acrylic page editing button) */
   $$('#list [data-ed]').forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();
    const cardEl=b.closest('.fcard');const ph=cardEl.querySelector('.fr-photo')||cardEl.querySelector('.fr-win');
