@@ -16,7 +16,7 @@
  <div class="grid" id="list"></div>
 </section>
 <footer id="ft"></footer>
-<script src="assets/js/store.js?v=25"></script>
+<script src="assets/js/store.js?v=26"></script>
 <script>(async()=>{await loadCfg();await loadCustomFrames();shell('frames');
  const grp=f=>f.shape==='heart'?'heart':(f.shape==='circle'||f.shape==='oval')?'round':'rect';
  const demos=CFG.frames.demo;const SAMP=CFG.frames.samples||{};
@@ -34,7 +34,7 @@
   const win=winSt?`style="${winSt}"`:'';
   const ar=f.ar?`style="aspect-ratio:${f.ar}"`:'';
   return `<a class="fcard card" href="preview.html?frame=${f.id}">
-   <div class="fr ${f.img?'':'shp-'+f.shape} ${f.style} ${rtClass(f.ratio)}" ${ar}>${f.img?`<img class="fr-img" src="${f.img}" alt="">`:''}<div class="fr-photo" ${win}>
+   <div class="fr ${f.img?'':'shp-'+f.shape} ${f.style} ${rtClass(f.ratio)}" ${ar}>${f.img?`<img class="fr-img" src="${f.imgCard||f.img}" alt="">`:''}<div class="fr-photo" ${win}>
     <img src="${d1}" data-a="${d1}" data-b="${d2}" alt="${f.name}" style="${sampPosCss(f)}">
     <div class="es" style="opacity:0"><b>📷</b>अपनी फोटो<br>यहाँ लगाएँ</div></div></div>
    ${f.code?`<span class="fcode">${f.code}</span>`:''}${f.badge?`<span class="badge">${f.badge}</span>`:''}
