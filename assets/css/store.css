@@ -68,7 +68,7 @@ a{text-decoration:none;color:inherit}
 .flt::-webkit-scrollbar{display:none}
 .chip{white-space:nowrap;padding:8px 15px;border-radius:999px;border:1.5px solid var(--line);background:#fff;font-weight:600;font-size:13.5px;color:var(--muted);cursor:pointer}
 .chip.on{background:var(--brand);border-color:var(--brand);color:#fff}
-.fcard{display:block;text-align:center;padding:14px 10px 16px}
+.fcard{display:block;text-align:center;padding:14px 10px 16px;position:relative}
 .fcard .fr{margin:0 auto 12px;width:82%;filter:drop-shadow(0 10px 12px rgba(58,38,18,.30)) drop-shadow(0 2px 4px rgba(58,38,18,.22))}
 .fcard .fr.rt-32,.fcard .fr[style*="3/2"]{width:97%} /* landscape = पूरी चौड़ाई, portrait के सामने छोटा न लगे (Dev 11-10) */
 .fcard h4{font-size:15px;font-weight:700}
