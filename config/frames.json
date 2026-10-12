@@ -283,5 +283,11 @@
   "portrait": "assets/samples/portrait.webp",
   "landscape": "assets/samples/landscape.webp",
   "custom": "assets/samples/custom.webp"
- }
+ },
+ "walls": [
+  "assets/wall-1.jpg",
+  "assets/wall-2.jpg",
+  "assets/wall-3.jpg",
+  "assets/wall-4.jpg"
+ ]
 }
