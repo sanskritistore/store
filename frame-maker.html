@@ -54,7 +54,7 @@
   <div class="topbar" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin:18px 0">
    <h2 style="margin:0">🖼️ Frame Maker</h2>
    <a class="btn btn-o" href="admin.html">🖨️ ऑर्डर Admin</a></div>
-  <div style="font-size:11px;color:#B0A48F;text-align:right;margin-bottom:4px">v12.10-edit-codes <span id="jsok"></span></div>
+  <div style="font-size:11px;color:#B0A48F;text-align:right;margin-bottom:4px">v12.10-patla-edit-fix<span id="jsok"></span></div>
   <div class="card" style="margin-bottom:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
    <label style="font-weight:700;font-size:13.5px">✏️ Edit करना हो तो code चुनें:</label>
    <select id="editPick" style="flex:1;min-width:180px"><option value="">➕ नया frame बनाओ (code अपने-आप लगेगा)</option></select>
@@ -234,6 +234,7 @@
     <label style="flex:1;min-width:105px">📐 झुकाव ↔️<input type="range" id="gkx" min="-30" max="30" value="0" style="width:100%"></label>
     <label style="flex:1;min-width:105px">📐 झुकाव ↕️<input type="range" id="gky" min="-20" max="20" value="0" style="width:100%"></label>
     <label style="flex:1;min-width:105px">📏 ऊँचाई<input type="range" id="gh" min="40" max="200" value="100" style="width:100%"></label>
+    <label style="flex:1;min-width:105px">↔️ पतला ↔ मोटा<input type="range" id="gpw" min="20" max="150" value="100" style="width:100%"></label>
    </div>
    <div style="display:flex;gap:8px;margin-top:8px">
     <label class="upbox" style="flex:1;display:block;padding:10px" id="gboxL">
@@ -253,7 +254,7 @@
  </div>
 </section>
 <footer id="ft"></footer>
-<script src="assets/js/store.js?v=22"></script>
+<script src="assets/js/store.js?v=23"></script>
 <script>(async()=>{await loadCfg();shell('');
  const B=BACKEND()+'/api/v1';
  let tok=localStorage.getItem('sk_adm_tok')||'';
@@ -306,7 +307,7 @@
  let curG='L';
  let glareURL={L:'',R:''};
  function loadGSliders(){const w=GS[curG];
-  $('#gwon').checked=w.on;$('#gop').value=w.op;$('#gx').value=w.x;$('#gy').value=w.y;$('#gs').value=w.s;$('#gkx').value=w.kx||0;$('#gky').value=w.ky||0;$('#gh').value=w.h||100;
+  $('#gwon').checked=w.on;$('#gop').value=w.op;$('#gx').value=w.x;$('#gy').value=w.y;$('#gs').value=w.s;$('#gkx').value=w.kx||0;$('#gky').value=w.ky||0;$('#gh').value=w.h||100;$('#gpw').value=w.pw||100;
   $('#gwont').textContent=curG==='L'?'बाएँ खिड़की दिखाएँ':'दाएँ खिड़की दिखाएँ'}
  function selG(side){curG=side;
   $('#gselL').className='btn '+(side==='L'?'btn-p':'btn-o');
@@ -319,15 +320,16 @@
   el.style.backgroundImage=`url('${glareURL[side]||('assets/glare-'+side+'.png?v=5')}')`;
   el.style.backgroundPosition=w.x+'% '+w.y+'%';
   el.style.backgroundSize=w.s===100?'cover':w.s+'% auto';
-  const kx=w.kx||0,ky=w.ky||0,hh=w.h||100;
+  const kx=w.kx||0,ky=w.ky||0,hh=w.h||100,pw=w.pw||100;
   const tf=[];
   if(kx||ky)tf.push(`skew(${-kx}deg,${ky}deg)`);
+  if(pw!==100)tf.push(`scaleX(${(pw/100).toFixed(2)})`);
   if(hh!==100)tf.push(`scaleY(${(hh/100).toFixed(2)})`);
   el.style.transform=tf.length?tf.join(' '):'none'}
  function updGlare(){const a=$('#mglareL'),b=$('#mglareR');if(!a)return;
   applyGlareDiv(a,'L');applyGlareDiv(b,'R')}
  ['gon'].forEach(id=>$('#'+id).oninput=updGlare);
- [['gwon','on'],['gop','op'],['gx','x'],['gy','y'],['gs','s'],['gkx','kx'],['gky','ky'],['gh','h']].forEach(([id,k])=>{
+ [['gwon','on'],['gop','op'],['gx','x'],['gy','y'],['gs','s'],['gkx','kx'],['gky','ky'],['gh','h'],['gpw','pw']].forEach(([id,k])=>{
   $('#'+id).oninput=e=>{GS[curG][k]=k==='on'?(e.target.checked?1:0):+e.target.value;updGlare()}});
  [['gfileL','L'],['gfileR','R']].forEach(([id,side])=>{
   $('#'+id).onchange=e=>{const f=e.target.files[0];$('#gname'+side).textContent=f?'— ✅ '+f.name:'';
@@ -421,10 +423,9 @@
  /* --- save --- */
  $('#fsave').onclick=async()=>{
   const name=$('#fname').value.trim();
-  if(!imgFile){toast('पहले frame image upload करें 📤');return}
   if(!name){toast('frame का नाम लिखें');return}
   const btn=$('#fsave');btn.disabled=true;btn.textContent='⏳ save हो रहा…';
-  if(EDIT){ /* ✏️ update mode — same frame PATCH, नया नहीं बनता */
+  if(EDIT){ /* ✏️ update mode — same frame PATCH, नया नहीं बनता; image दोबारा upload करना ज़रूरी नहीं (12-10 Dev bug fix) */
    try{const nid=EDIT.id.replace('fr-c','');
     const r=await fetch(B+'/store/frames/'+nid,{method:'PATCH',headers:Object.assign({'Content-Type':'application/json'},hdr()),
      body:JSON.stringify({name,shape:$('#fshape').value,ratio:$('#fratio').value,ar:$('#fratio').value.replace(':','/'),
@@ -432,10 +433,15 @@
       window:{x:W.x,y:W.y,w:W.w,h:W.h,shape:$('#fshape').value},
       glare_set:{on:$('#gon').checked?1:0,L:{...GS.L},R:{...GS.R}}})});
     if(!r.ok)throw new Error('HTTP '+r.status);
+    if(imgFile){const fd2=new FormData();fd2.append('img_file',imgFile,'frame.webp'); /* नई PNG चुनी है तो border भी बदलो */
+     const ri=await fetch(B+'/store/frames/'+nid+'/img',{method:'POST',headers:hdr(),body:fd2});if(!ri.ok)throw new Error('img HTTP '+ri.status)}
     await uploadGlare(nid);
-    toast(`✅ ${EDIT.code||''} update हो गया!`);EDIT=null;$('#editPick').value='';$('#editHint').textContent='';$('#fname').value='';listFrames();
+    toast(`✅ ${EDIT.code||''} update हो गया!`);EDIT=null;imgFile=null;$('#editPick').value='';$('#editHint').textContent='';$('#fname').value='';listFrames();
    }catch(e){console.error(e);toast('update नहीं हुआ — फिर कोशिश करें')}
    btn.disabled=false;saveLabels();return}
+  if(!imgFile){toast('पहले frame image upload करें 📤');btn.disabled=false;saveLabels();return}
+  const dup=LAST.find(f=>f.active!==false&&(f.name||'').trim()===name); /* same नाम का frame पहले से? गलती से नकल न बने (12-10) */
+  if(dup&&!confirm(`"${name}" पहले से मौजूद है (${dup.code||''})।\n\nउसे बदलना था? तो Cancel दबाओ → ऊपर dropdown से ${dup.code||'वह frame'} चुनो।\nसच में नया frame बनाना है? तो OK दबाओ।`)){btn.disabled=false;saveLabels();return}
   try{const fd=new FormData();
    fd.append('name',name);fd.append('shape',$('#fshape').value);
    fd.append('ratio',$('#fratio').value);
@@ -452,7 +458,7 @@
     if(nid)await fetch(B+'/store/frames/'+nid,{method:'PATCH',headers:Object.assign({'Content-Type':'application/json'},hdr()),
      body:JSON.stringify({glare_set:{on:$('#gon').checked?1:0,L:{...GS.L},R:{...GS.R}}})});
     await uploadGlare(nid)}catch(e){}
-   toast(`🎉 Frame live हो गया! Code: ${newCode||'(list देखो)'}`);$('#fname').value='';listFrames();
+    toast(`🎉 Frame live हो गया! Code: ${newCode||'(list देखो)'}`);imgFile=null;$('#fname').value='';listFrames();
   }catch(e){console.error(e);toast('save नहीं हुआ — फिर कोशिश करें')}
   btn.disabled=false;btn.textContent='💾 Frame Save करें — तुरंत live'};
  async function uploadGlare(fid){

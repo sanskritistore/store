@@ -109,9 +109,10 @@ function glareStyle(f,side){ /* 🪟 दो-खिड़की reflection (11-10
  st+=`background-position:${px}% ${w.y===undefined?10:w.y}%;`;
  const sz=w.s!==undefined?w.s:(custom?100:(side==='L'?30:22));
  if(sz!==100)st+=`background-size:${sz}% auto;`;
- const kx=w.kx||0,ky=w.ky||0,hh=w.h||100;
+ const kx=w.kx||0,ky=w.ky||0,hh=w.h||100,pw=w.pw||100; /* pw (12-10 Dev): पतला-मोटा — streak की चौड़ाई अलग से */
  const tf=[];
  if(kx||ky)tf.push(`skew(${-kx}deg,${ky}deg)`);
+ if(pw!==100)tf.push(`scaleX(${(pw/100).toFixed(2)})`);
  if(hh!==100)tf.push(`scaleY(${(hh/100).toFixed(2)})`);
  if(tf.length)st+=`transform:${tf.join(' ')};`;
  return st}
