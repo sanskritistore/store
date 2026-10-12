@@ -83,6 +83,7 @@ function pngMaskCss(f){
 }
 /* sample photo की सही position (zoom/x/y) card पर */
 function glareWin(f,side){ /* glare_set से एक खिड़की की settings — पुराने flat format को बाएँ मानो */
+ if(f&&f._glareUniform)return side==='L'?{on:1,op:62}:null;
  let g={};
  if(f.glare_set){try{g=JSON.parse(f.glare_set)}catch(e){}}
  if(g.on===0)return null;
@@ -99,6 +100,7 @@ function isPortrait(f){ /* ar "2/3" या "3600/5400" — h>w = खड़ा (D
  return t.length===2&&t[0]&&t[1]?t[1]>t[0]:false}
 function glareStyle(f,side){ /* 🪟 दो-खिड़की reflection (11-10 रात-8, Dev): L/R अलग PNG + position + आकार */
  const w=glareWin(f,side);if(!w)return 'display:none;';
+ if(f._glareUniform)return `background-image:url('assets/glare-win.png?v=1');background-size:100% 100%;background-position:0 0;opacity:${(w.op/100).toFixed(2)};`;
  const gv=w.gv||1;
  const custom=side==='L'?f.glare:f.glare2;
  let st='';
@@ -115,10 +117,8 @@ function glareStyle(f,side){ /* 🪟 दो-खिड़की reflection (11-10
  if(hh!==100)tf.push(`scaleY(${(hh/100).toFixed(2)})`);
  if(tf.length)st+=`transform:${tf.join(' ')};`;
  return st}
-function glareForce(f){ /* acrylic page: हर frame पर glare (12-10 Dev: "sabhi me same") — off किया हुआ भी default पर वापस; custom settings सुरक्षित */
- if(!f||!f.glare_set)return f;
- try{const g=JSON.parse(f.glare_set);if(g.on===0){const c=Object.assign({},f);delete c.glare_set;return c}}catch(e){}
- return f}
+function glareForce(f){ /* acrylic: हर frame पर SS49 जैसी SAME window reflection (12-10 Dev: "sabhi me same chamak same angle") */
+ return {_glareUniform:1,ar:(f&&f.ar)||''}}
 function glareHTML(f){return `<div class="glare-clip">${glareDiv(f,'L')}${glareDiv(f,'R')}</div>`}
 function glareDiv(f,side){return `<div class="glare" style="${glareStyle(f,side)}"></div>`}
 function sampPosCss(f){
