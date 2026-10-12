@@ -3,7 +3,7 @@
 <title>संस्कृति — 💎 Acrylic फोटो फ्रेम</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪔</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/store.css?v=8"></head><body>
+<link rel="stylesheet" href="assets/css/store.css?v=9"></head><body>
 <header id="hd"></header>
 <section class="sec wrap">
  <h2>💎 Acrylic फोटो फ्रेम</h2><p class="sub">Acrylic पर सीधे print — चमकदार premium finish ✨ फ्रेम चुनें → अपनी फोटो लगाकर देखें 📸</p>
@@ -19,6 +19,7 @@
 <style>.edbtn{position:absolute;top:6px;right:6px;z-index:6;background:#fffdf8f0;border:1.5px solid #E3D7C3;border-radius:9px;padding:4px 8px;font-size:14px;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.18)}.edbtn:active{transform:scale(.92)}</style>
 <script src="assets/js/store.js?v=20"></script>
 <script>(async()=>{await loadCfg();await loadCustomFrames();shell('acrylic');
+ const arNum=f=>{const p=(''+(f.ar||f.ratio||'')).split(/[\/:]/).map(Number);return p.length===2&&p[1]?p[0]/p[1]:0.75};
  const grp=f=>f.shape==='heart'?'heart':(f.shape==='circle'||f.shape==='oval')?'round':'rect';
  const demos=CFG.frames.demo;const SAMP=CFG.frames.samples||{};
  const sampOf=f=>SAMP[f.shape]||SAMP[(f.shape||'').startsWith('custom:')?'custom':'default']||demos[0];
@@ -26,16 +27,16 @@
   const d1=f.samp||sampOf(f),d2=f.samp?d1:demos[(i+3)%demos.length];
   if(f.draw){const winImgs=f.draw.windows.map((w,wi)=>demos[(i+wi)%demos.length]);
    return `<a class="fcard card" href="preview.html?frame=${f.id}&type=acrylic">
-   <div class="frwall"><div class="fr" style="aspect-ratio:${f.ar};${frDrawBg(f)}">${frDrawHTML(f,winImgs)}${glareHTML(glareForce(f))}
+   <div class="frwall"><div class="fr" style="--ar:${arNum(f)};${frDrawBg(f)}">${frDrawHTML(f,winImgs)}${glareHTML(glareForce(f))}
     <button class="edbtn" data-ed type="button" title="अपनी photo लगाकर देखें">✏️</button></div></div>
    ${f.badge?`<span class="badge">${f.badge}</span>`:''}
    <h4>${f.name}</h4><div class="rt">⭐ ${f.rating}</div>
    <div class="from">${fmt(f.base)} से शुरू</div>
    <span class="btn btn-p">अभी बनाएं</span></a>`}
   const win=f.window?`style="left:${f.window.x}%;top:${f.window.y}%;width:${f.window.w}%;height:${f.window.h}%"`:'';
-  const ar=f.ar?`style="aspect-ratio:${f.ar}"`:'';
+  
   return `<a class="fcard card" href="preview.html?frame=${f.id}&type=acrylic">
-   <div class="frwall"><div class="fr shp-${f.shape} ${f.style} ${rtClass(f.ratio)}" ${ar}>${f.img?`<img class="fr-img" src="${f.img}" alt="">`:''}${glareHTML(glareForce(f))}
+   <div class="frwall"><div class="fr shp-${f.shape} ${f.style} ${rtClass(f.ratio)}" style="--ar:${arNum(f)}">${f.img?`<img class="fr-img" src="${f.img}" alt="">`:''}${glareHTML(glareForce(f))}
     <button class="edbtn" data-ed type="button" title="अपनी photo लगाकर देखें">✏️</button><div class="fr-photo" ${win}>
     <img src="${d1}" data-a="${d1}" data-b="${d2}" alt="${f.name}"></div></div></div>
    ${f.badge?`<span class="badge">${f.badge}</span>`:''}
