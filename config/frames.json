@@ -14,12 +14,12 @@
     }
   ],
   "demo": [
-    "assets/img/demo/1.jpg",
-    "assets/img/demo/2.jpg",
-    "assets/img/demo/3.jpg",
-    "assets/img/demo/4.jpg",
-    "assets/img/demo/5.jpg",
-    "assets/img/demo/6.jpg"
+    "assets/img/demo/1.jpg?v=1210",
+    "assets/img/demo/2.jpg?v=1210",
+    "assets/img/demo/3.jpg?v=1210",
+    "assets/img/demo/4.jpg?v=1210",
+    "assets/img/demo/5.jpg?v=1210",
+    "assets/img/demo/6.jpg?v=1210"
   ],
   "frames": [],
   "ratios": {
@@ -187,19 +187,19 @@
     }
   },
   "samples": {
-    "default": "assets/samples/default.webp",
-    "rect": "assets/samples/rect.webp",
-    "rounded": "assets/samples/rounded.webp",
-    "oval": "assets/samples/oval.webp",
-    "circle": "assets/samples/circle.webp",
-    "heart": "assets/samples/heart.webp",
-    "bean": "assets/samples/bean.webp",
-    "egg": "assets/samples/egg.webp",
-    "arch": "assets/samples/arch.webp",
-    "scallop": "assets/samples/scallop.webp",
-    "portrait": "assets/samples/portrait.webp",
-    "landscape": "assets/samples/landscape.webp",
-    "custom": "assets/samples/custom.webp"
+    "default": "assets/samples/default.webp?v=1210",
+    "rect": "assets/samples/rect.webp?v=1210",
+    "rounded": "assets/samples/rounded.webp?v=1210",
+    "oval": "assets/samples/oval.webp?v=1210",
+    "circle": "assets/samples/circle.webp?v=1210",
+    "heart": "assets/samples/heart.webp?v=1210",
+    "bean": "assets/samples/bean.webp?v=1210",
+    "egg": "assets/samples/egg.webp?v=1210",
+    "arch": "assets/samples/arch.webp?v=1210",
+    "scallop": "assets/samples/scallop.webp?v=1210",
+    "portrait": "assets/samples/portrait.webp?v=1210",
+    "landscape": "assets/samples/landscape.webp?v=1210",
+    "custom": "assets/samples/custom.webp?v=1210"
   },
   "walls": [
     "assets/wall-1.jpg",
