@@ -83,7 +83,7 @@ function pngMaskCss(f){
 }
 /* sample photo की सही position (zoom/x/y) card पर */
 function glareWin(f,side){ /* glare_set से एक खिड़की की settings — पुराने flat format को बाएँ मानो */
- if(f&&f._glareUniform)return side==='L'?{on:1,op:62}:null;
+ if(f&&f._glareUniform)return side==='L'?{on:1,op:78}:null;
  let g={};
  if(f.glare_set){try{g=JSON.parse(f.glare_set)}catch(e){}}
  if(g.on===0)return null;
@@ -100,7 +100,7 @@ function isPortrait(f){ /* ar "2/3" या "3600/5400" — h>w = खड़ा (D
  return t.length===2&&t[0]&&t[1]?t[1]>t[0]:false}
 function glareStyle(f,side){ /* 🪟 दो-खिड़की reflection (11-10 रात-8, Dev): L/R अलग PNG + position + आकार */
  const w=glareWin(f,side);if(!w)return 'display:none;';
- if(f._glareUniform)return `background-image:url('assets/glare-win.png?v=1');background-size:100% 100%;background-position:0 0;opacity:${(w.op/100).toFixed(2)};`;
+ if(f._glareUniform)return `background-image:url('assets/glare-win.png?v=2');background-size:100% 100%;background-position:0 0;opacity:${(w.op/100).toFixed(2)};`;
  const gv=w.gv||1;
  const custom=side==='L'?f.glare:f.glare2;
  let st='';
