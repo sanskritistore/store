@@ -26,7 +26,7 @@
   const d1=f.samp||sampOf(f),d2=f.samp?d1:demos[(i+3)%demos.length];
   if(f.draw){const winImgs=f.draw.windows.map((w,wi)=>demos[(i+wi)%demos.length]);
    return `<a class="fcard card" href="preview.html?frame=${f.id}&type=acrylic">
-   <div class="fr" style="aspect-ratio:${f.ar};${frDrawBg(f)}">${frDrawHTML(f,winImgs)}${glareHTML(f)}
+   <div class="fr" style="aspect-ratio:${f.ar};${frDrawBg(f)}">${frDrawHTML(f,winImgs)}${glareHTML(glareForce(f))}
     <button class="edbtn" data-ed type="button" title="अपनी photo लगाकर देखें">✏️</button></div>
    ${f.badge?`<span class="badge">${f.badge}</span>`:''}
    <h4>${f.name}</h4><div class="rt">⭐ ${f.rating}</div>
@@ -35,7 +35,7 @@
   const win=f.window?`style="left:${f.window.x}%;top:${f.window.y}%;width:${f.window.w}%;height:${f.window.h}%"`:'';
   const ar=f.ar?`style="aspect-ratio:${f.ar}"`:'';
   return `<a class="fcard card" href="preview.html?frame=${f.id}&type=acrylic">
-   <div class="fr shp-${f.shape} ${f.style} ${rtClass(f.ratio)}" ${ar}>${f.img?`<img class="fr-img" src="${f.img}" alt="">`:''}${glareHTML(f)}
+   <div class="fr shp-${f.shape} ${f.style} ${rtClass(f.ratio)}" ${ar}>${f.img?`<img class="fr-img" src="${f.img}" alt="">`:''}${glareHTML(glareForce(f))}
     <button class="edbtn" data-ed type="button" title="अपनी photo लगाकर देखें">✏️</button><div class="fr-photo" ${win}>
     <img src="${d1}" data-a="${d1}" data-b="${d2}" alt="${f.name}">
     <div class="es" style="opacity:0"><b>📷</b>अपनी फोटो<br>यहाँ लगाएँ</div></div></div>
@@ -45,7 +45,7 @@
    <span class="btn btn-p">अभी बनाएं</span></a>`}
  function render(flt){
   const fs=CFG.frames.frames.filter(f=>(!f.ptype||f.ptype==='frame'||f.ptype==='acrylic')&&(flt==='all'||grp(f)===flt)); /* 12-10 Dev: acrylic में सारी frames same */
-  $('#list').innerHTML=fs.map((f,i)=>card(glareForce(f),i)).join(''); /* 12-10: सब पर same reflection */
+  $('#list').innerHTML=fs.map((f,i)=>card(f,i)).join('');
   $$('#list .fr-photo, #list .fr-win').forEach((ph,i)=>{
    const img=ph.querySelector('img'),es=ph.querySelector('.es');if(!img)return;if(es)es.style.opacity=0;let st=1+i%2;
    setInterval(()=>{if(ph.dataset.user)return;st=st===1?2:1;img.src=st===1?img.dataset.a:img.dataset.b;img.style.opacity=1},2400+i*350);
