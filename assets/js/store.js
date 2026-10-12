@@ -117,7 +117,8 @@ function glareStyle(f,side){ /* 🪟 दो-खिड़की reflection (11-10
  if(hh!==100)tf.push(`scaleY(${(hh/100).toFixed(2)})`);
  if(tf.length)st+=`transform:${tf.join(' ')};`;
  return st}
-function glareForce(f){ /* acrylic: हर frame पर SS49 जैसी SAME window reflection (12-10 Dev: "sabhi me same chamak same angle") */
+function glareForce(f){ /* acrylic PLP: Frame Maker की custom reflection (glare_set) हमेशा जीतती है; जिस frame में कुछ set नहीं, उस पर SS49 uniform default (12-10 Dev: "jo reflection set karta hu wo PLP me aaye") */
+ if(f&&f.glare_set){try{const g=JSON.parse(f.glare_set);if(g&&(g.on===0||g.L||g.R||g.op!==undefined||g.x!==undefined))return f}catch(e){}}
  return {_glareUniform:1,ar:(f&&f.ar)||''}}
 function glareHTML(f){return `<div class="glare-clip">${glareDiv(f,'L')}${glareDiv(f,'R')}</div>`}
 function glareDiv(f,side){return `<div class="glare" style="${glareStyle(f,side)}"></div>`}
