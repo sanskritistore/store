@@ -3,7 +3,7 @@
 <title>संस्कृति — 💎 Acrylic फोटो फ्रेम</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪔</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/store.css?v=11"></head><body>
+<link rel="stylesheet" href="assets/css/store.css?v=12"></head><body>
 <header id="hd"></header>
 <section class="sec wrap">
  <h2>💎 Acrylic फोटो फ्रेम</h2><p class="sub">Acrylic पर सीधे print — चमकदार premium finish ✨ फ्रेम चुनें → अपनी फोटो लगाकर देखें 📸</p>
@@ -22,9 +22,11 @@
  const arNum=f=>{const p=(''+(f.ar||f.ratio||'')).split(/[\/:]/).map(Number);return p.length===2&&p[1]?p[0]/p[1]:0.75};
  const grp=f=>f.shape==='heart'?'heart':(f.shape==='circle'||f.shape==='oval')?'round':'rect';
  const demos=CFG.frames.demo;const SAMP=CFG.frames.samples||{};
- const sampOf=f=>SAMP[f.shape]||SAMP[(f.shape||'').startsWith('custom:')?'custom':'default']||demos[0];
+ const demoL=CFG.frames.demoL||[];
+ const sampOf=f=>{const L=arNum(f)>1; /* 12-10 Dev: आड़ी window → आड़ी photo, सिर न कटे */
+  return (L&&(SAMP[f.shape+'_L']||SAMP.landscape))||SAMP[f.shape]||SAMP[(f.shape||'').startsWith('custom:')?'custom':'default']||demos[0]};
  function card(f,i){
-  const d1=f.samp||sampOf(f),d2=f.samp?d1:demos[(i+3)%demos.length];
+  const d1=f.samp||sampOf(f),d2=f.samp?d1:(arNum(f)>1&&demoL.length?demoL[(i+3)%demoL.length]:demos[(i+3)%demos.length]);
   if(f.draw){const winImgs=f.draw.windows.map((w,wi)=>demos[(i+wi)%demos.length]);
    return `<a class="fcard card" href="preview.html?frame=${f.id}&type=acrylic">
    <div class="frwall"><div class="fr" style="--ar:${arNum(f)};${frDrawBg(f)}">${frDrawHTML(f,winImgs)}${glareHTML(f)}
