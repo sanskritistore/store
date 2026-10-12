@@ -69,7 +69,7 @@ async function loadCustomFrames(){
     if(!r.ok)return;
     const cf=await r.json();
     const base=location.pathname.replace(/[^/]*$/,'');
-    CFG.frames.frames=CFG.frames.frames.concat(cf.map(f=>({...f,img:BACKEND()+f.img,samp:f.samp?BACKEND()+f.samp:'',glare:f.glare?BACKEND()+f.glare:'',custom:true})));
+    CFG.frames.frames=CFG.frames.frames.concat(cf.map(f=>({...f,img:BACKEND()+f.img,mask:f.mask?BACKEND()+f.mask:'',samp:f.samp?BACKEND()+f.samp:'',glare:f.glare?BACKEND()+f.glare:'',custom:true})));
   }catch(e){/* backend न मिले तो static frames ही */}}
 
 /* === PNG-as-shape (11-10, Dev rule): photo dropdown से नहीं, PNG की असली transparency से कटे === */

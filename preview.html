@@ -56,7 +56,7 @@
  </div>
 </div></div>
 <footer id="ft"></footer>
-<script src="assets/js/store.js?v=24"></script>
+<script src="assets/js/store.js?v=25"></script>
 <script>(async()=>{await loadCfg();await loadCustomFrames();shell('frames');
  const F=CFG.frames.frames.find(f=>f.id===qp('frame'))||CFG.frames.frames[0];
  const cfg=CFG.frames, SIZES=sizesFor(cfg,F);
@@ -64,9 +64,12 @@
  const fr=$('#fr');fr.className='fr shp-'+(F.shape&&F.shape.startsWith('custom:')?'custom':F.shape)+' '+F.style+' '+rtClass(F.ratio);
  if(F.shape&&F.shape.startsWith('custom:')){const v=F.shape.slice(7).split(',').map(n=>n+'%').join(' ');
   const fp=fr.querySelector('.fr-photo');if(fp)fp.style.borderRadius=v}
- /* 🔑 PNG-as-shape: PNG frame पर कोई CSS shape/mask नहीं — ऊपर पड़ी असली PNG ही photo को उसकी transparency से दिखाएगी (11-10, Dev rule) */
+ /* 🔑 PNG-as-shape (12-10 शाम upgrade): PNG frame पर CSS shape नहीं — backend से बना transparency MASK लगेगा,
+    ताकि photo PNG के अंदरूनी हिस्से की असली shape में कटे (heart के बाहर rectangle न दिखे) */
  if(F.img){const fp=fr.querySelector('.fr-photo');
-  if(fp){fp.style.webkitMask='none';fp.style.mask='none';fp.style.borderRadius='0';fr.classList.forEach(c=>{if(c.startsWith('shp-'))fr.classList.remove(c)})}}
+  if(fp){fp.style.borderRadius='0';fr.classList.forEach(c=>{if(c.startsWith('shp-'))fr.classList.remove(c)});
+   if(F.mask){const m=`url('${F.mask}') center/100% 100% no-repeat`;fp.style.webkitMask=m;fp.style.mask=m}
+   else{fp.style.webkitMask='none';fp.style.mask='none'}}}
  /* 💎 acrylic = glass reflection (Dev ss9: window reflection चाहिए) */
  if((qp('type')==='acrylic'||F.ptype==='acrylic')&&!fr.querySelector('.glare')){ /* 12-10 Dev: acrylic page से आए तो reflection */
   fr.insertAdjacentHTML('beforeend',glareHTML(F)); /* 12-10: off भी acrylic में default पर */

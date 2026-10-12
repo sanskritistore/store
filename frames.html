@@ -16,7 +16,7 @@
  <div class="grid" id="list"></div>
 </section>
 <footer id="ft"></footer>
-<script src="assets/js/store.js?v=24"></script>
+<script src="assets/js/store.js?v=25"></script>
 <script>(async()=>{await loadCfg();await loadCustomFrames();shell('frames');
  const grp=f=>f.shape==='heart'?'heart':(f.shape==='circle'||f.shape==='oval')?'round':'rect';
  const demos=CFG.frames.demo;const SAMP=CFG.frames.samples||{};
@@ -30,7 +30,8 @@
    <h4>${f.name}</h4><div class="rt">⭐ ${f.rating}</div>
    <div class="from">${fmt(f.base)} से शुरू</div>
    <span class="btn btn-p">अभी बनाएं</span></a>`}
-  const win=f.window?`style="left:${f.window.x}%;top:${f.window.y}%;width:${f.window.w}%;height:${f.window.h}%"`:'';
+  const winSt=(f.window?`left:${f.window.x}%;top:${f.window.y}%;width:${f.window.w}%;height:${f.window.h}%;`:'')+(f.mask?`-webkit-mask:url('${f.mask}') center/100% 100% no-repeat;mask:url('${f.mask}') center/100% 100% no-repeat;`:''); /* 12-10 शाम: PNG transparency mask — photo असली shape में कटे */
+  const win=winSt?`style="${winSt}"`:'';
   const ar=f.ar?`style="aspect-ratio:${f.ar}"`:'';
   return `<a class="fcard card" href="preview.html?frame=${f.id}">
    <div class="fr ${f.img?'':'shp-'+f.shape} ${f.style} ${rtClass(f.ratio)}" ${ar}>${f.img?`<img class="fr-img" src="${f.img}" alt="">`:''}<div class="fr-photo" ${win}>

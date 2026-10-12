@@ -54,7 +54,7 @@
   <div class="topbar" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin:18px 0">
    <h2 style="margin:0">🖼️ Frame Maker</h2>
    <a class="btn btn-o" href="admin.html">🖨️ ऑर्डर Admin</a></div>
-  <div style="font-size:11px;color:#B0A48F;text-align:right;margin-bottom:4px">v12.10-patla-edit-fix<span id="jsok"></span></div>
+  <div style="font-size:11px;color:#B0A48F;text-align:right;margin-bottom:4px">v12.10-auto-mask<span id="jsok"></span></div>
   <div class="card" style="margin-bottom:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
    <label style="font-weight:700;font-size:13.5px">✏️ Edit करना हो तो code चुनें:</label>
    <select id="editPick" style="flex:1;min-width:180px"><option value="">➕ नया frame बनाओ (code अपने-आप लगेगा)</option></select>
@@ -254,7 +254,7 @@
  </div>
 </section>
 <footer id="ft"></footer>
-<script src="assets/js/store.js?v=24"></script>
+<script src="assets/js/store.js?v=25"></script>
 <script>(async()=>{await loadCfg();shell('');
  const B=BACKEND()+'/api/v1';
  let tok=localStorage.getItem('sk_adm_tok')||'';
@@ -285,8 +285,10 @@
  /* --- window mark: drag + inputs --- */
  const stg=$('#stg'),demo=$('#demo'),winbox=$('#winbox');
  let W={x:12,y:12,w:76,h:76},dragging=null;
+ let pngMask=''; /* 12-10 शाम: upload किए PNG के असली transparency का mask — किसी भी shape में photo कटे */
  function shapeCssVal(v){if(['heart','bean','egg','arch','scallop'].includes(v))return 'var(--'+v+') center/100% 100% no-repeat';return null}
- function shapeCss(el){const s=$('#fshape').value;const m=shapeCssVal(s);
+ function shapeCss(el){if(el.id==='demo'&&pngMask){el.style.webkitMask=pngMask;el.style.mask=pngMask;el.style.borderRadius='0';return}
+  const s=$('#fshape').value;const m=shapeCssVal(s);
   if(m){el.style.webkitMask=m;el.style.mask=m;el.style.borderRadius='0'}
   else{el.style.webkitMask='';el.style.mask='';
    el.style.borderRadius=s.startsWith('custom:')?s.slice(7).split(',').map(v=>v+'%').join(' '):(s==='rounded')?'14px':(s==='oval'||s==='circle')?'50%':'0'}}
@@ -379,7 +381,20 @@
    if(y>0&&!seen[p-w]&&tr(p-w)){seen[p-w]=1;st.push(p-w)}
    if(y<h-1&&!seen[p+w]&&tr(p+w)){seen[p+w]=1;st.push(p+w)}}
   if(n<w*h*0.005)return null;
-  return {x:+(x0/w*100).toFixed(1),y:+(y0/h*100).toFixed(1),w:+((x1-x0+1)/w*100).toFixed(1),h:+((y1-y0+1)/h*100).toFixed(1)}
+  /* 12-10 शाम (Dev: "PNG का अंदरूनी हिस्सा अपने-आप photo area बने") — mask भी बनाओ:
+     window bbox तक cropped, region = opaque white — photo stage पर असली shape में कटे */
+  const mw=x1-x0+1,mh=y1-y0+1;
+  const mc=document.createElement('canvas');mc.width=mw;mc.height=mh;
+  const mg=mc.getContext('2d');const md=mg.createImageData(mw,mh);
+  for(let yy=y0;yy<=y1;yy++){const base=yy*w;
+   for(let xx=x0;xx<=x1;xx++){if(seen[base+xx]){const o=((yy-y0)*mw+(xx-x0))*4;
+    md.data[o]=md.data[o+1]=md.data[o+2]=md.data[o+3]=255}}}
+  mg.putImageData(md,0,0);
+  const mc2=document.createElement('canvas'); /* छोटा mask — data URL हल्की रहे */
+  const msc=Math.min(1,360/Math.max(mw,mh));mc2.width=Math.max(30,Math.round(mw*msc));mc2.height=Math.max(30,Math.round(mh*msc));
+  mc2.getContext('2d').drawImage(mc,0,0,mc2.width,mc2.height);
+  return {x:+(x0/w*100).toFixed(1),y:+(y0/h*100).toFixed(1),w:+((x1-x0+1)/w*100).toFixed(1),h:+((y1-y0+1)/h*100).toFixed(1),
+   mask:`url('${mc2.toDataURL('image/png')}') center/100% 100% no-repeat`}
  }catch(e){return null}}
  /* --- frame image upload --- */
  let imgFile=null,sampFile=null;
@@ -418,8 +433,8 @@
    setRatioChip(Math.abs(a-1)<0.12?'1:1':(a<1?'2:3':'3:2'));
    $('#dimg').src=CFG.frames.demo[1%CFG.frames.demo.length];applyPos();
    const aw=autoWindow(im);
-   if(aw){W=aw;draw();toast('✅ Photo की जगह PNG से अपने आप मिल गई!')}
-   else{draw();toast('अब photo की जगह drag करके चुनें 👆')}};im.src=ev.target.result};rd.readAsDataURL(imgFile)};
+   if(aw){W={x:aw.x,y:aw.y,w:aw.w,h:aw.h};pngMask=aw.mask||'';draw();toast('✅ Photo की जगह PNG से अपने आप मिल गई — photo असली shape में कटेगी!')}
+   else{pngMask='';draw();toast('अब photo की जगह drag करके चुनें 👆')}};im.src=ev.target.result};rd.readAsDataURL(imgFile)};
  /* --- save --- */
  $('#fsave').onclick=async()=>{
   const name=$('#fname').value.trim();
