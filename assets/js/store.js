@@ -82,18 +82,16 @@ function pngMaskCss(f){
  return `-webkit-mask-image:url('${f.img}');mask-image:url('${f.img}');-webkit-mask-size:${mw}% ${mh}%;mask-size:${mw}% ${mh}%;-webkit-mask-position:${px}% ${py}%;mask-position:${px}% ${py}%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;`;
 }
 /* sample photo की सही position (zoom/x/y) card पर */
-function glareWin(f,side){ /* glare_set से एक खिड़की की settings — पुराने flat format को बाएँ मानो */
+function glareWin(f,side){ /* glare_set से एक खिड़की की settings — पुराने flat format को बाएँ मानो
+ 12-10 Dev: कोई DEFAULT नहीं — Frame Maker में set किए बिना reflection नहीं दिखेगी */
  if(f&&f._glareUniform)return side==='L'?{on:1,op:78}:null;
+ if(!f||!f.glare_set)return null;
  let g={};
- if(f.glare_set){try{g=JSON.parse(f.glare_set)}catch(e){}}
+ try{g=JSON.parse(f.glare_set)}catch(e){return null}
  if(g.on===0)return null;
  let w=g[side];
  if(!w&&side==='L'&&(g.op!==undefined||g.x!==undefined))w=g; /* flat → L */
- if(!w){const pa=isPortrait(f);
-  w=side==='L'
-   ?(pa?{on:1,op:70,x:2,y:35,s:30,kx:-5,ky:7,h:182}:{on:1,op:70,x:2,y:6,s:30,kx:0,ky:0,h:100})
-   :(pa?{on:1,op:60,x:92,y:10,s:22,kx:0,ky:0,h:100}:{on:1,op:60,x:92,y:10,s:22,kx:0,ky:0,h:100})}
- if(w.on===0)return null;
+ if(!w||w.on===0)return null;
  return w}
 function isPortrait(f){ /* ar "2/3" या "3600/5400" — h>w = खड़ा (Dev SS20 default) */
  const t=(f.ar||'').split(/[/:]/).map(Number);
@@ -117,9 +115,7 @@ function glareStyle(f,side){ /* 🪟 दो-खिड़की reflection (11-10
  if(hh!==100)tf.push(`scaleY(${(hh/100).toFixed(2)})`);
  if(tf.length)st+=`transform:${tf.join(' ')};`;
  return st}
-function glareForce(f){ /* acrylic PLP: Frame Maker की custom reflection (glare_set) हमेशा जीतती है; जिस frame में कुछ set नहीं, उस पर SS49 uniform default (12-10 Dev: "jo reflection set karta hu wo PLP me aaye") */
- if(f&&f.glare_set){try{const g=JSON.parse(f.glare_set);if(g&&(g.on===0||g.L||g.R||g.op!==undefined||g.x!==undefined))return f}catch(e){}}
- return {_glareUniform:1,ar:(f&&f.ar)||''}}
+
 function glareHTML(f){return `<div class="glare-clip">${glareDiv(f,'L')}${glareDiv(f,'R')}</div>`}
 function glareDiv(f,side){return `<div class="glare" style="${glareStyle(f,side)}"></div>`}
 function sampPosCss(f){
