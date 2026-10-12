@@ -191,3 +191,6 @@ input[type=range]{width:100%;accent-color:var(--brand);height:34px}
 .pho{position:absolute;inset:0;background:#ebe8e3;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#a39e94;font-size:12px;font-weight:600;text-align:center;gap:2px;opacity:0;transition:opacity .7s;pointer-events:none;z-index:3;line-height:1.5}
 .pho b{font-size:19px;font-weight:400;opacity:.65}
 .showph .pho,.pho.showph{opacity:1}
+
+/* frame पहचान नंबर chip (12-10) */
+.fcode{position:absolute;top:5px;left:5px;z-index:5;background:rgba(20,16,10,.78);color:#F4E9C8;font-size:10px;font-weight:700;letter-spacing:.4px;padding:2px 6px;border-radius:7px;pointer-events:none;font-family:ui-monospace,monospace}

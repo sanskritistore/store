@@ -3,7 +3,7 @@
 <title>संस्कृति — फोटो फ्रेम चुनें</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪔</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/store.css?v=7"></head><body>
+<link rel="stylesheet" href="assets/css/store.css?v=10"></head><body>
 <header id="hd"></header>
 <section class="sec wrap">
  <h2>अपना फ्रेम चुनें</h2><p class="sub">जो फ्रेम पसंद आए उस पर click करें → अपनी फोटो लगाकर देखें 📸</p>
@@ -26,7 +26,7 @@
   if(f.draw){const winImgs=f.draw.windows.map((w,wi)=>wi===0?sampOf(f):demos[(i+wi)%demos.length]);
    return `<a class="fcard card" href="preview.html?frame=${f.id}">
    <div class="fr" style="aspect-ratio:${f.ar};${frDrawBg(f)}">${frDrawHTML(f,winImgs)}</div>
-   ${f.badge?`<span class="badge">${f.badge}</span>`:''}
+   ${f.code?`<span class="fcode">${f.code}</span>`:''}${f.badge?`<span class="badge">${f.badge}</span>`:''}
    <h4>${f.name}</h4><div class="rt">⭐ ${f.rating}</div>
    <div class="from">${fmt(f.base)} से शुरू</div>
    <span class="btn btn-p">अभी बनाएं</span></a>`}
@@ -36,7 +36,7 @@
    <div class="fr ${f.img?'':'shp-'+f.shape} ${f.style} ${rtClass(f.ratio)}" ${ar}>${f.img?`<img class="fr-img" src="${f.img}" alt="">`:''}<div class="fr-photo" ${win}>
     <img src="${d1}" data-a="${d1}" data-b="${d2}" alt="${f.name}" style="${sampPosCss(f)}">
     <div class="es" style="opacity:0"><b>📷</b>अपनी फोटो<br>यहाँ लगाएँ</div></div></div>
-   ${f.badge?`<span class="badge">${f.badge}</span>`:''}
+   ${f.code?`<span class="fcode">${f.code}</span>`:''}${f.badge?`<span class="badge">${f.badge}</span>`:''}
    <h4>${f.name}</h4><div class="rt">⭐ ${f.rating}</div>
    <div class="from">${fmt(f.base)} से शुरू</div>
    <span class="btn btn-p">अभी बनाएं</span></a>`}

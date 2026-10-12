@@ -3,7 +3,7 @@
 <title>संस्कृति — Frame Maker</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪔</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/store.css?v=7">
+<link rel="stylesheet" href="assets/css/store.css?v=10">
 <style>
 .mk{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start;margin:18px 0}
 @media(max-width:900px){.mk{grid-template-columns:1fr}}
@@ -54,7 +54,12 @@
   <div class="topbar" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin:18px 0">
    <h2 style="margin:0">🖼️ Frame Maker</h2>
    <a class="btn btn-o" href="admin.html">🖨️ ऑर्डर Admin</a></div>
-  <div style="font-size:11px;color:#B0A48F;text-align:right;margin-bottom:4px">v11.10-रात-14 <span id="jsok"></span></div>
+  <div style="font-size:11px;color:#B0A48F;text-align:right;margin-bottom:4px">v12.10-edit-codes <span id="jsok"></span></div>
+  <div class="card" style="margin-bottom:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+   <label style="font-weight:700;font-size:13.5px">✏️ Edit करना हो तो code चुनें:</label>
+   <select id="editPick" style="flex:1;min-width:180px"><option value="">➕ नया frame बनाओ (code अपने-आप लगेगा)</option></select>
+   <span class="hint" id="editHint" style="font-size:11.5px"></span>
+  </div>
   <div class="tabbar">
    <button class="tab on" data-t="gen">🎨 Generator (fast)</button>
    <button class="tab" data-t="png">📤 अपनी PNG से</button>
@@ -419,6 +424,18 @@
   if(!imgFile){toast('पहले frame image upload करें 📤');return}
   if(!name){toast('frame का नाम लिखें');return}
   const btn=$('#fsave');btn.disabled=true;btn.textContent='⏳ save हो रहा…';
+  if(EDIT){ /* ✏️ update mode — same frame PATCH, नया नहीं बनता */
+   try{const nid=EDIT.id.replace('fr-c','');
+    const r=await fetch(B+'/store/frames/'+nid,{method:'PATCH',headers:Object.assign({'Content-Type':'application/json'},hdr()),
+     body:JSON.stringify({name,shape:$('#fshape').value,ratio:$('#fratio').value,ar:$('#fratio').value.replace(':','/'),
+      base:+$('#fbase').value||499,rating:+$('#frate').value||4.5,
+      window:{x:W.x,y:W.y,w:W.w,h:W.h,shape:$('#fshape').value},
+      glare_set:{on:$('#gon').checked?1:0,L:{...GS.L},R:{...GS.R}}})});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    await uploadGlare(nid);
+    toast(`✅ ${EDIT.code||''} update हो गया!`);EDIT=null;$('#editPick').value='';$('#editHint').textContent='';$('#fname').value='';listFrames();
+   }catch(e){console.error(e);toast('update नहीं हुआ — फिर कोशिश करें')}
+   btn.disabled=false;saveLabels();return}
   try{const fd=new FormData();
    fd.append('name',name);fd.append('shape',$('#fshape').value);
    fd.append('ratio',$('#fratio').value);
@@ -431,11 +448,11 @@
    const r=await fetch(B+'/store/frames',{method:'POST',headers:hdr(),body:fd});
    if(r.status===401||r.status===403){toast('login expire — दोबारा login करें');localStorage.removeItem('sk_adm_tok');location.reload();return}
    if(!r.ok)throw new Error('HTTP '+r.status);
-   try{const cj=await r.json();const nid=((cj.frame&&cj.frame.id)||cj.id||'').replace('fr-c','');
+   let newCode='';try{const cj=await r.json();newCode=(cj.frame&&cj.frame.code)||'';const nid=((cj.frame&&cj.frame.id)||cj.id||'').replace('fr-c','');
     if(nid)await fetch(B+'/store/frames/'+nid,{method:'PATCH',headers:Object.assign({'Content-Type':'application/json'},hdr()),
      body:JSON.stringify({glare_set:{on:$('#gon').checked?1:0,L:{...GS.L},R:{...GS.R}}})});
     await uploadGlare(nid)}catch(e){}
-   toast('🎉 Frame live हो गया!');$('#fname').value='';listFrames();
+   toast(`🎉 Frame live हो गया! Code: ${newCode||'(list देखो)'}`);$('#fname').value='';listFrames();
   }catch(e){console.error(e);toast('save नहीं हुआ — फिर कोशिश करें')}
   btn.disabled=false;btn.textContent='💾 Frame Save करें — तुरंत live'};
  async function uploadGlare(fid){
@@ -444,6 +461,40 @@
    const blob=gf.type==='image/png'?gf:await toWebP(gf);
    const fd=new FormData();fd.append('glare_file',blob,gf.type==='image/png'?'glare.png':'glare.webp');
    await fetch(B+'/store/frames/'+fid+(side==='R'?'/glare2':'/glare'),{method:'POST',headers:hdr(),body:fd})}}
+ /* ============ ✏️ Edit system (12-10 Dev): code dropdown → frame form में खुलता है → Update = PATCH ============ */
+ let EDIT=null,LAST=[];
+ function layOf(ws){if(!ws||ws.length<=1)return '1';if(ws.length===2)return Math.abs((ws[0].y||0)-(ws[1].y||0))<1?'2H':'2V';if(ws.length===3)return '3';return '4'}
+ function chipOn(sel,val,attr){$$(sel+' .chip').forEach(c=>c.classList.toggle('on',c.dataset[attr]===String(val)))}
+ function saveLabels(){$('#gsave').textContent=EDIT?'💾 Update करें (same frame)':'💾 Frame Save — तुरंत live';
+  $('#fsave').textContent=EDIT?'💾 Update करें (same frame)':'💾 Frame Save करें — तुरंत live'}
+ function loadEdit(){
+  const id=$('#editPick').value;EDIT=LAST.find(f=>f.id===id)||null;
+  $('#editHint').textContent=EDIT?`✏️ ${EDIT.code||''} edit mode — Update दबाओ, same frame बदल जाएगा`:'';
+  saveLabels();if(!EDIT)return;
+  if(EDIT.draw){ /* generator frame */
+   $$('.tab')[0].click();
+   const d=EDIT.draw,w=(d.windows&&d.windows[0])||{};
+   $('#gname').value=EDIT.name;$('#gbase').value=EDIT.base;$('#grate').value=EDIT.rating;
+   chipOn('#gptype',EDIT.ptype||'frame','p');chipOn('#gratio',EDIT.ratio||'2:3','r');
+   $('#gshape').value=w.shape||'rect';$('#glay').value=layOf(d.windows);
+   if(d.b1){$('#gb1w').value=d.b1.w;$('#gb1c').value=d.b1.c}
+   $('#gb2on').checked=!!d.b2;if(d.b2){$('#gb2w').value=d.b2.w;$('#gb2c').value=d.b2.c}
+   if(d.bg)$('#gbgc').value=d.bg;
+   gPrev();
+  }else{ /* PNG frame */
+   $$('.tab')[1].click();
+   $('#fname').value=EDIT.name;$('#fbase').value=EDIT.base;$('#frate').value=EDIT.rating;
+   $('#fshape').value=EDIT.shape||'rect';setRatioChip(EDIT.ratio||'2:3');
+   if(EDIT.img){$('#fi').src=EDIT.img.startsWith('http')?EDIT.img:B.replace(/\/api\/v1$/,'')+EDIT.img}
+   const w=EDIT.window||{};W={x:+w.x||10,y:+w.y||10,w:+w.w||80,h:+w.h||80};
+   $('#wx').value=W.x;$('#wy').value=W.y;$('#ww').value=W.w;$('#wh').value=W.h;draw();
+   if(EDIT.glare_set){try{const g=JSON.parse(EDIT.glare_set);$('#gon').checked=!!g.on;
+    if(g.L)GS.L={...GS.L,...g.L};if(g.R)GS.R={...GS.R,...g.R};
+    if(!g.L&&g.op!==undefined)GS.L={...GS.L,op:g.op,x:g.x,y:g.y??GS.L.y,s:g.s??GS.L.s}}catch(e){}}
+  }
+ }
+ $('#editPick').onchange=loadEdit;
+
  /* --- existing frames --- */
  let sampTarget=null;
  $('#exsamp').onchange=async e=>{const f=e.target.files[0];if(!f||!sampTarget)return;
@@ -452,7 +503,11 @@
   toast(r.ok?'📸 sample photo लग गई ✅':'sample नहीं लगी');e.target.value='';sampTarget=null};
  async function listFrames(){
   try{const r=await fetch(B+'/store/frames');const j=await r.json();
-   $('#exfr').innerHTML=j.length?j.map(f=>`<span class="chipx">${f.ptype==='acrylic'?'💎':f.ptype==='album'?'📖':'🖼️'} ${f.name} <small>(${f.ratio})</small><button data-samp="${f.id.replace('fr-c','')}" title="sample photo लगाओ">📸</button><button data-glare="${f.id.replace('fr-c','')}" title="reflection setting लगाओ (ऊपर sliders से)">🪟</button><button data-del="${f.id.replace('fr-c','')}">🗑️</button></span>`).join(''):'<span class="hint">अभी कोई custom frame नहीं — पहला बनाओ! 👆</span>';
+  LAST=j;
+  $('#editPick').innerHTML='<option value="">➕ नया frame बनाओ (code अपने-आप लगेगा)</option>'+j.map(f=>`<option value="${f.id}">${f.code||'?'} — ${f.name}</option>`).join('');
+  if(EDIT)$('#editPick').value=EDIT.id;
+  $('#exfr').innerHTML=j.length?j.map(f=>`<span class="chipx"><b style="color:var(--gold,#C9A24A)">${f.code||''}</b> ${f.ptype==='acrylic'?'💎':f.ptype==='album'?'📖':'🖼️'} ${f.name} <small>(${f.ratio})</small><button data-edit="${f.id}" title="ऊपर form में खोलो">✏️</button><button data-samp="${f.id.replace('fr-c','')}" title="sample photo लगाओ">📸</button><button data-glare="${f.id.replace('fr-c','')}" title="reflection setting लगाओ (ऊपर sliders से)">🪟</button><button data-del="${f.id.replace('fr-c','')}">🗑️</button></span>`).join(''):'<span class="hint">अभी कोई custom frame नहीं — पहला बनाओ! 👆</span>';
+  $$('#exfr [data-edit]').forEach(b=>b.onclick=()=>{$('#editPick').value=b.dataset.edit;loadEdit()});
    $$('#exfr [data-del]').forEach(b=>b.onclick=async()=>{if(!confirm('यह frame हटा दें?'))return;
     await fetch(B+'/store/frames/'+b.dataset.del,{method:'DELETE',headers:hdr()});listFrames()});
    $$('#exfr [data-samp]').forEach(b=>b.onclick=()=>{sampTarget=b.dataset.samp;$('#exsamp').click()});
@@ -526,6 +581,15 @@
   const ptype=$('#gptype .on').dataset.p,d=gDraw();
   const ratio=ptype==='album'?'album':$('#gratio .on').dataset.r;
   const btn=$('#gsave');btn.disabled=true;btn.textContent='⏳ save हो रहा…';
+  if(EDIT){ /* ✏️ update mode */
+   try{const nid=EDIT.id.replace('fr-c','');
+    const r=await fetch(B+'/store/frames/'+nid,{method:'PATCH',headers:Object.assign({'Content-Type':'application/json'},hdr()),
+     body:JSON.stringify({name,ptype,ratio,ar:gAR(),base:+$('#gbase').value||399,rating:+$('#grate').value||4.5,
+      shape:d.windows[0].shape,window:d.windows[0],draw:d})});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    toast(`✅ ${EDIT.code||''} update हो गया!`);EDIT=null;$('#editPick').value='';$('#editHint').textContent='';$('#gname').value='';listFrames();
+   }catch(e){console.error(e);toast('update नहीं हुआ — फिर कोशिश करें')}
+   btn.disabled=false;saveLabels();return}
   try{const fd=new FormData();
    fd.append('name',name);fd.append('shape',d.windows[0].shape);
    fd.append('ratio',ratio);fd.append('ar',gAR());fd.append('ptype',ptype);
@@ -535,7 +599,8 @@
    const r=await fetch(B+'/store/frames',{method:'POST',headers:hdr(),body:fd});
    if(r.status===401||r.status===403){toast('login expire — दोबारा login करें');localStorage.removeItem('sk_adm_tok');location.reload();return}
    if(!r.ok)throw new Error('HTTP '+r.status);
-   toast('🎉 Frame live हो गया!');listFrames();
+   let newCode='';try{newCode=((await r.json()).frame||{}).code||''}catch(e){}
+   toast(`🎉 Frame live हो गया! Code: ${newCode||'(list देखो)'}`);listFrames();
   }catch(e){console.error(e);toast('save नहीं हुआ — फिर कोशिश करें')}
   btn.disabled=false;btn.textContent='💾 Frame Save — तुरंत live'};
  gPrev();
