@@ -129,7 +129,7 @@ function sampPosCss(f){
 }
 
 /* === Ratio helpers (11-10) === */
-function rtClass(r){return 'rt-'+r.replace(':','')}
+function rtClass(r){return 'rt-'+String(r||'1:1').replace(':','')} /* 12-10: ratio-less frames (backend PNG) के लिए fallback */
 function sizesFor(fcfg,frame){return (fcfg.ratios[frame.ratio]||Object.values(fcfg.ratios)[0]).sizes}
 function BACKEND(){return (CFG.site&&CFG.site.backend)||''}
 
