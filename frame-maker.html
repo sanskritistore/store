@@ -447,7 +447,9 @@
    c.getContext('2d').drawImage(im,0,0,w,h);
    out.thumb=await new Promise(res=>c.toBlob(res,'image/webp',.82));
   }catch(e){console.warn('thumb',e)}
-  if(pngMask){try{out.mask=await (await fetch(pngMask)).blob()}catch(e){console.warn('mask',e)}}
+  if(pngMask){try{ /* pngMask एक CSS value है: url('data:image/png;base64,…') center/100%… — असली data URL अंदर से निकालो (12-10 रात bug: पूरी string fetch होकर 19B कचरा mask बना था) */
+   const dm=pngMask.match(/url\('([^']+)'\)/);
+   if(dm)out.mask=await (await fetch(dm[1])).blob()}catch(e){console.warn('mask',e)}}
   return out}
  /* --- save --- */
  $('#fsave').onclick=async()=>{
