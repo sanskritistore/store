@@ -60,6 +60,8 @@ function frDrawHTML(f,photos){
  d.windows.forEach((w,i)=>{
   const ph=photos&&photos[i%photos.length];
   h+=`<div class="fr-win" data-win="${i}" style="position:absolute;left:${w.x}%;top:${w.y}%;width:${w.w}%;height:${w.h}%;overflow:hidden;${shapeClipCss(w.shape)}">${ph?`<img src="${ph}" data-a="${ph}" data-b="${photos[(i+1)%photos.length]}" style="width:100%;height:100%;object-fit:cover;display:block" alt="">`:''}</div>`});
+ /* 🧩 collage PNG overlay — photos नीचे, divider/lines PNG ऊपर (13-10 Dev collage9) */
+ if(d.png&&f.img)h+=`<img src="${f.img}" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none" alt="" loading="lazy">`;
  return h}
 function frDrawBg(f){return f.draw?`background:${f.draw.b1.c}`:''}
 

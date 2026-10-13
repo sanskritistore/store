@@ -236,8 +236,9 @@ $('#rot').onclick=()=>{r=(r+90)%360;apply()};
      g.drawImage(im,(ww-im.naturalWidth*sc)/2,(wh-im.naturalHeight*sc)/2,im.naturalWidth*sc,im.naturalHeight*sc);g.restore()}
      g.translate(ww/2+x/100*ww,wh/2+y/100*wh);g.scale(z,z);g.rotate(r*Math.PI/180);
      g.drawImage(im,-im.naturalWidth*sc/2,-im.naturalHeight*sc/2,im.naturalWidth*sc,im.naturalHeight*sc)}
-    else{g.drawImage(im,(ww-im.naturalWidth*sc)/2,(wh-im.naturalHeight*sc)/2,im.naturalWidth*sc,im.naturalHeight*sc)}
-    g.restore()});
+     else{g.drawImage(im,(ww-im.naturalWidth*sc)/2,(wh-im.naturalHeight*sc)/2,im.naturalWidth*sc,im.naturalHeight*sc)}
+     g.restore()});
+   if(D.png&&F.img){const fim=await corsImg(F.img);g.drawImage(fim,X0,Y0,DW,DH)} /* 🧩 collage divider PNG ऊपर */
    return{c,dpi}}
   if(F.img&&F.window){ /* PNG frame: photo PNG की असली shape में कटे (alpha mask) */
    const wx=d.W*F.window.x/100,wy=d.H*F.window.y/100,ww=d.W*F.window.w/100,wh=d.H*F.window.h/100;

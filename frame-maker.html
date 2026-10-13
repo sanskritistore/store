@@ -372,7 +372,7 @@
  $$('#pratio .chip').forEach(c=>c.onclick=()=>setRatioChip(c.dataset.r));
  function pt(e){const r=stg.getBoundingClientRect();
   return {x:Math.min(100,Math.max(0,(e.clientX-r.left)/r.width*100)),y:Math.min(100,Math.max(0,(e.clientY-r.top)/r.height*100))}}
- stg.addEventListener('pointerdown',e=>{dragging=pt(e);stg.setPointerCapture(e.pointerId)});
+ stg.addEventListener('pointerdown',e=>{if(collageWins){toast('🧩 Collage frame है — slots अपने आप set हैं, drag की ज़रूरत नहीं');return}dragging=pt(e);stg.setPointerCapture(e.pointerId)});
  stg.addEventListener('pointermove',e=>{if(!dragging)return;const p=pt(e);
   W={x:Math.min(dragging.x,p.x),y:Math.min(dragging.y,p.y),w:Math.abs(p.x-dragging.x),h:Math.abs(p.y-dragging.y)};
   if(W.w<3)W.w=3;if(W.h<3)W.h=3;draw()});
@@ -426,6 +426,40 @@
   return {x:+(x0/w*100).toFixed(1),y:+(y0/h*100).toFixed(1),w:+((x1-x0+1)/w*100).toFixed(1),h:+((y1-y0+1)/h*100).toFixed(1),
    mask:`url('${mc2.toDataURL('image/png')}') center/100% 100% no-repeat`}
  }catch(e){return null}}
+ /* --- 🧩 Collage detect: सारे enclosed holes → windows[] (13-10 Dev: "9 photo collage par photo kaise set karenge") --- */
+ function autoWindows(im){try{
+  const M=640,sc=Math.min(1,M/Math.max(im.naturalWidth,im.naturalHeight));
+  const w=Math.max(60,Math.round(im.naturalWidth*sc)),h=Math.max(60,Math.round(im.naturalHeight*sc));
+  const c=document.createElement('canvas');c.width=w;c.height=h;
+  const g=c.getContext('2d',{willReadFrequently:true});g.drawImage(im,0,0,w,h);
+  const d=g.getImageData(0,0,w,h).data,tr=p=>d[p*4+3]<16;
+  const bg=new Uint8Array(w*h),bst=[];
+  for(let x=0;x<w;x++){if(tr(x))bst.push(x);if(tr((h-1)*w+x))bst.push((h-1)*w+x)}
+  for(let y=0;y<h;y++){if(tr(y*w))bst.push(y*w);if(tr(y*w+w-1))bst.push(y*w+w-1)}
+  while(bst.length){const p=bst.pop();if(bg[p])continue;bg[p]=1;
+   const x=p%w,y=(p/w)|0;
+   if(x>0&&!bg[p-1]&&tr(p-1))bst.push(p-1);if(x<w-1&&!bg[p+1]&&tr(p+1))bst.push(p+1);
+   if(y>0&&!bg[p-w]&&tr(p-w))bst.push(p-w);if(y<h-1&&!bg[p+w]&&tr(p+w))bst.push(p+w)}
+  /* बचे हुए transparent = enclosed holes → हर अलग region label करो */
+  const lab=new Int32Array(w*h).fill(-1),regs=[];
+  for(let i=0;i<w*h;i++){
+   if(!tr(i)||bg[i]||lab[i]>=0)continue;
+   const id=regs.length,q=[i];lab[i]=id;let x0=w,y0=h,x1=-1,y1=-1,cnt=0;
+   while(q.length){const p=q.pop(),x=p%w,y=(p/w)|0;cnt++;
+    if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;
+    if(x>0&&tr(p-1)&&!bg[p-1]&&lab[p-1]<0){lab[p-1]=id;q.push(p-1)}
+    if(x<w-1&&tr(p+1)&&!bg[p+1]&&lab[p+1]<0){lab[p+1]=id;q.push(p+1)}
+    if(y>0&&tr(p-w)&&!bg[p-w]&&lab[p-w]<0){lab[p-w]=id;q.push(p-w)}
+    if(y<h-1&&tr(p+w)&&!bg[p+w]&&lab[p+w]<0){lab[p+w]=id;q.push(p+w)}}
+   regs.push({x0,y0,x1,y1,cnt})}
+  return regs.filter(r=>r.cnt>=w*h*0.005).map(r=>{
+   const bw=r.x1-r.x0+1,bh=r.y1-r.y0+1,fill=r.cnt/(bw*bh);
+   let shape='rect';
+   if(Math.abs(bw/bh-1)<0.12&&Math.abs(fill-0.785)<0.09)shape='circle';
+   else if(fill<0.88)shape='oval';
+   return{x:+(r.x0/w*100).toFixed(1),y:+(r.y0/h*100).toFixed(1),w:+(bw/w*100).toFixed(1),h:+(bh/h*100).toFixed(1),shape,cnt:r.cnt}
+  }).sort((a,b)=>b.cnt-a.cnt) /* सबसे बड़ा slot = window 0 (main photo) */
+ }catch(e){return[]}}
  /* --- frame image upload --- */
  let imgFile=null,sampFile=null;
  $('#cvb').onclick=()=>$('#cvf').click();
@@ -452,7 +486,8 @@
   cv.getContext('2d').drawImage(im,0,0);URL.revokeObjectURL(im.src);
   cv.toBlob(b=>res(b),'image/webp',0.94)};im.src=URL.createObjectURL(file)})}
  /* frame image accept — manual PNG upload और AI Transparent Tool दोनों यहीं से (13-10) */
- let aiPunch=false; /* AI से बनी image — save पर अंदर का window shape में punch होगा */
+  let aiPunch=false; /* AI से बनी image — save पर अंदर का window shape में punch होगा */
+  let collageWins=null; /* 🧩 2+ holes मिले = collage frame — save पर draw बनेगा */
  async function acceptFrameImage(f,fromAI){
   const kb0=Math.round(f.size/1024);
   imgFile=await toWebP(f);
@@ -464,9 +499,13 @@
    const a=im.naturalWidth/im.naturalHeight;
    setRatioChip(Math.abs(a-1)<0.12?'1:1':(a<1?'2:3':'3:2'));
    $('#dimg').src=CFG.frames.demo[1%CFG.frames.demo.length];applyPos();
-   const aw=autoWindow(im);
-   if(aw){W={x:aw.x,y:aw.y,w:aw.w,h:aw.h};pngMask=aw.mask||'';draw();toast('✅ Photo की जगह PNG से अपने आप मिल गई — photo असली shape में कटेगी!')}
-   else{pngMask='';draw();if(!fromAI)toast('अब photo की जगह drag करके चुनें 👆')}};im.src=ev.target.result};rd.readAsDataURL(imgFile)}
+   collageWins=null;
+   const wins=autoWindows(im);
+   if(wins.length>=2){collageWins=wins;W={x:wins[0].x,y:wins[0].y,w:wins[0].w,h:wins[0].h};pngMask='';draw();
+    toast('🧩 Collage frame! '+wins.length+' photo slots अपने आप मिल गए ✅ — site पर हर slot में अलग photo लगेगी!')}
+   else{const aw=autoWindow(im);
+    if(aw){W={x:aw.x,y:aw.y,w:aw.w,h:aw.h};pngMask=aw.mask||'';draw();toast('✅ Photo की जगह PNG से अपने आप मिल गई — photo असली shape में कटेगी!')}
+    else{pngMask='';draw();if(!fromAI)toast('अब photo की जगह drag करके चुनें 👆')}}};im.src=ev.target.result};rd.readAsDataURL(imgFile)}
  $('#ff').onchange=async e=>{const f=e.target.files[0];if(!f)return;aiPunch=false;await acceptFrameImage(f,false)};
  /* --- ✨ Transparent Tool (AI) — 13-10 Dev: "frame photo → अंदर+बाहर दोनों transparent, shadow असली आएगी" --- */
  $('#trb').onclick=()=>$('#trf').click();
@@ -610,7 +649,9 @@
    fd.append('base',+$('#fbase').value||499);fd.append('rating',+$('#frate').value||4.5);
    fd.append('window',JSON.stringify({x:W.x,y:W.y,w:W.w,h:W.h}));
    fd.append('img_file',imgFile,'frame.webp');
-   const v=await mkVariants();if(v.thumb)fd.append('thumb_file',v.thumb,'thumb.webp');if(v.display)fd.append('display_file',v.display,'display.webp');if(v.mask)fd.append('mask_file',v.mask,'mask.png');
+   if(collageWins&&collageWins.length>=2){ /* 🧩 collage → draw frame (site हर slot में अलग photo लगाएगी) */
+    fd.append('draw',JSON.stringify({png:1,b1:{w:0,c:'#ffffff'},windows:collageWins.map(w=>({x:w.x,y:w.y,w:w.w,h:w.h,shape:w.shape}))}))}
+   const v=await mkVariants();if(v.thumb)fd.append('thumb_file',v.thumb,'thumb.webp');if(v.display)fd.append('display_file',v.display,'display.webp');if(v.mask&&!collageWins)fd.append('mask_file',v.mask,'mask.png');
    if(sampFile){fd.append('sample_file',sampFile,'sample.webp');
     fd.append('sample_settings',JSON.stringify({z:+$('#pz').value||100,mx:+$('#pmx').value||50,my:+$('#pmy').value||50}))}
    const r=await fetch(B+'/store/frames',{method:'POST',headers:hdr(),body:fd});
@@ -772,7 +813,7 @@
   }catch(e){console.error(e);toast('save नहीं हुआ — फिर कोशिश करें')}
   btn.disabled=false;btn.textContent='💾 Frame Save — तुरंत live'};
  /* debug/test hooks — maker की अंदरूनी state बाहर से देखने/चलाने के लिए (13-10) */
- window.FM={acceptFrameImage,applyPunch,autoWindow,setPunch:v=>{aiPunch=v},wandOpen,wandFlood,
+ window.FM={acceptFrameImage,applyPunch,autoWindow,autoWindows,setPunch:v=>{aiPunch=v},wandOpen,wandFlood,
   get W(){return W},set W(v){W=v},get pngMask(){return pngMask},get imgFile(){return imgFile}};
  gPrev();
 })();</script></body></html>
