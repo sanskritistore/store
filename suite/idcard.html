@@ -97,7 +97,7 @@
 
 <header>
   <a href="index.html">←</a>
-  <h1>🪪 ID Card Print <span class="ver">v0.3</span></h1>
+  <h1>🪪 ID Card Print <span class="ver">v0.4</span></h1>
 </header>
 
 <main>
@@ -110,6 +110,9 @@
     <small>e-Aadhaar PDF चलेगी — password = नाम के 4 अक्षर + जन्म साल 🔒<br>Photo आपके device से बाहर नहीं जाती</small>
     <input type="file" id="fileInput" accept="image/*,.pdf" style="display:none">
   </div>
+
+  <div id="okMsg" style="display:none; background:#e8f5e9; color:#1b5e20; border:1px solid #a5d6a7; border-radius:8px; padding:10px 12px; font-size:14px; margin-top:10px; font-weight:600"></div>
+  <div id="err" style="display:none; background:#fdecea; color:#b3261e; border:1px solid #f5c6c0; border-radius:8px; padding:10px 12px; font-size:14px; margin-top:10px; font-weight:600"></div>
 
   <div class="editor" id="editor" style="display:none">
     <div class="step-title" id="editorTitle">✂️ FRONT crop करें — box card पर ठीक करें</div>
@@ -167,8 +170,6 @@
     <div class="crop-hint" id="trayHint" style="display:none">🖨️ पहले FRONT print करें → tray में cards पलटें → BACK print करें</div>
   </div>
 
-  <div id="okMsg" style="display:none; background:#e8f5e9; color:#1b5e20; border:1px solid #a5d6a7; border-radius:8px; padding:10px 12px; font-size:13px; margin-top:12px"></div>
-  <div id="err" style="display:none; background:#fdecea; color:#b3261e; border:1px solid #f5c6c0; border-radius:8px; padding:10px 12px; font-size:13px; margin-top:12px"></div>
   <span id="cfgBadge"></span>
 </main>
 
@@ -181,7 +182,12 @@
 <script>
 (async function () {
   const $ = (id) => document.getElementById(id);
-  const err = (m) => { const e = $("err"); e.style.display = m ? "block" : "none"; e.textContent = m || ""; };
+  const err = (m) => {
+    const e = $("err");
+    e.style.display = m ? "block" : "none";
+    e.textContent = m || "";
+    if (m) e.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
   const ok = (m) => { const e = $("okMsg"); e.style.display = m ? "block" : "none"; e.textContent = m || ""; };
   const busy = (on, msg) => { $("busy").style.display = on ? "flex" : "none"; $("busyMsg").textContent = msg || ""; };
 
@@ -235,7 +241,12 @@
   }
   async function loadPdf(file) {
     const buf = await file.arrayBuffer();
-    const m = await pdfLib();
+    busy(true, "PDF tool खुल रहा है (पहली बार 10-20 sec)...");
+    const m = await Promise.race([
+      pdfLib(),
+      new Promise((_, rej) => setTimeout(() => rej(new Error("PDF tool internet से load नहीं हुआ — net ठीक करके फिर try करें")), 25000)),
+    ]);
+    busy(true, "PDF पढ़ी जा रही है...");
     const doc = await m.getDocument({
       data: buf,
       onPassword: (cb) => cb(prompt("PDF का password दें\n(e-Aadhaar: नाम के पहले 4 अक्षर CAPITAL में + जन्म साल — जैसे DEVI1990)") || ""),
