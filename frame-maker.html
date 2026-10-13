@@ -150,10 +150,21 @@
     </div>
     <div style="display:flex;gap:10px;align-items:center;margin-top:8px;background:#faf4fd;border:1.5px dashed #c8a8d8;border-radius:12px;padding:10px">
      <img id="trth" style="width:54px;height:54px;object-fit:cover;border-radius:10px;display:none;border:1px solid #eee">
-     <div style="flex:1" id="trinfo"><b style="font-size:14px">✨ Transparent Tool (AI)</b><br>
-     <small style="color:#7a5f8a">Frame की सीधी photo चुनो → background अपने आप मिटेगा — Photoshop/Canva की ज़रूरत नहीं! (13-10 Dev)</small></div>
-     <button class="btn btn-o" id="trb" type="button" style="flex:none">चुनें</button>
+     <div style="flex:1" id="trinfo"><b style="font-size:14px">✨ Transparent Tool</b><br>
+     <small style="color:#7a5f8a"><b>✨ AI</b> = background अपने आप मिटे • <b>🪄 खुद चुनो</b> = जिस हिस्से पर tap करोगे वही transparent (13-10 Dev)</small></div>
+     <button class="btn btn-o" id="trb" type="button" style="flex:none">✨ AI</button>
+     <button class="btn btn-o" id="trb2" type="button" style="flex:none">🪄 चुनो</button>
      <input type="file" id="trf" accept="image/*" hidden>
+     <input type="file" id="trf2" accept="image/*" hidden>
+    </div>
+    <div id="wandWrap" style="display:none;margin-top:8px;background:#fff;border:2px solid #c8a8d8;border-radius:12px;padding:10px">
+     <div style="font-weight:700;font-size:14px;margin-bottom:6px">🪄 जिस हिस्से को transparent बनाना है, उस पर <b>TAP</b> करो — बाहर, अंदर, बीच की gap… जितने चाहो!</div>
+     <canvas id="wandCv" style="width:100%;border-radius:8px;border:1px solid #eee;touch-action:manipulation;cursor:crosshair;background:repeating-conic-gradient(#eee 0 25%,#fff 0 50%) 0 0/24px 24px"></canvas>
+     <div style="display:flex;gap:8px;margin-top:8px">
+      <button id="wandUndo" class="btn btn-o" type="button">↩️ Undo</button>
+      <button id="wandUse" class="btn btn-p" type="button" style="flex:1">✅ यह PNG Use करो</button>
+      <button id="wandCancel" class="btn btn-o" type="button">❌</button>
+     </div>
     </div>
     <input type="file" id="cvf" accept="image/*" hidden>
     <input type="file" id="fsamp" accept="image/*" hidden>
@@ -473,6 +484,56 @@
    info.innerHTML='✅ <b>Background मिट गया!</b><br><small>अब नीचे stage पर photo की जगह drag करो → save दबाओ — अंदर का हिस्सा भी अपने आप खाली होगा ✨</small>';
    toast('✨ Transparent PNG तैयार! अब photo की जगह drag करो 👆');
   }catch(err){console.error(err);info.innerHTML='❌ <b>नहीं बनी</b> — photo दोबारा चुनो (साफ़ photo में frame अच्छे कटता है)'}};
+ /* --- 🪄 Magic Wand: खुद area tap करके transparent बनाओ (13-10 Dev: "jo area ander or bahar select karke wahi area png bane") --- */
+ let wandStack=[];
+ async function wandOpen(file){
+  const cv=$('#wandCv'),g=cv.getContext('2d',{willReadFrequently:true});
+  const url=await new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(file)});
+  const im=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=url});
+  const M=1600,sc=Math.min(1,M/Math.max(im.naturalWidth,im.naturalHeight));
+  cv.width=Math.round(im.naturalWidth*sc);cv.height=Math.round(im.naturalHeight*sc);
+  g.clearRect(0,0,cv.width,cv.height);g.drawImage(im,0,0,cv.width,cv.height);
+  wandStack=[];$('#wandWrap').style.display='block';
+  $('#wandWrap').scrollIntoView({behavior:'smooth',block:'center'});
+  toast('🪄 अब जिस हिस्से को transparent करना है, उस पर TAP करो')}
+ function wandFlood(cx,cy){
+  const cv=$('#wandCv'),g=cv.getContext('2d',{willReadFrequently:true});
+  const w=cv.width,h=cv.height;
+  const id=g.getImageData(0,0,w,h),d=id.data;
+  const p0=(cy*w+cx)*4;
+  if(d[p0+3]===0)return; /* पहले से transparent */
+  const tr=d[p0],tg=d[p0+1],tb=d[p0+2],TOL=48;
+  const close=p=>Math.abs(d[p*4]-tr)<=TOL&&Math.abs(d[p*4+1]-tg)<=TOL&&Math.abs(d[p*4+2]-tb)<=TOL;
+  wandStack.push(g.getImageData(0,0,w,h));if(wandStack.length>10)wandStack.shift();
+  const seen=new Uint8Array(w*h),st=[cy*w+cx];seen[cy*w+cx]=1;let n=0;
+  while(st.length){const p=st.pop(),x=p%w,y=(p/w)|0;
+   d[p*4+3]=0;n++;
+   if(x>0&&!seen[p-1]&&d[(p-1)*4+3]>0&&close(p-1)){seen[p-1]=1;st.push(p-1)}
+   if(x<w-1&&!seen[p+1]&&d[(p+1)*4+3]>0&&close(p+1)){seen[p+1]=1;st.push(p+1)}
+   if(y>0&&!seen[p-w]&&d[(p-w)*4+3]>0&&close(p-w)){seen[p-w]=1;st.push(p-w)}
+   if(y<h-1&&!seen[p+w]&&d[(p+w)*4+3]>0&&close(p+w)){seen[p+w]=1;st.push(p+w)}}
+  if(n<50){wandStack.pop();toast('यहाँ कुछ नहीं मिला — किसी रंग वाले हिस्से पर tap करो');return}
+  /* किनारे की अर्ध-पारदर्शी feather — gray halo न रहे */
+  const d2=id.data;
+  for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const p=(y*w+x)*4;
+   if(d2[p+3]===0)continue;
+   if(d2[p-4+3]===0||d2[p+4+3]===0||d2[p-w*4+3]===0||d2[p+w*4+3]===0){
+    const dd=Math.max(Math.abs(d2[p]-tr),Math.abs(d2[p+1]-tg),Math.abs(d2[p+2]-tb));
+    if(dd<110)d2[p+3]=Math.round(d2[p+3]*dd/110)}}
+  g.putImageData(id,0,0)}
+ $('#trb2').onclick=()=>$('#trf2').click();
+ $('#trf2').onchange=async e=>{const f=e.target.files[0];if(!f)return;e.target.value='';await wandOpen(f)};
+ $('#wandCv').addEventListener('click',e=>{
+  const cv=e.target,r=cv.getBoundingClientRect();
+  const x=Math.round((e.clientX-r.left)*cv.width/r.width),y=Math.round((e.clientY-r.top)*cv.height/r.height);
+  wandFlood(x,y)});
+ $('#wandUndo').onclick=()=>{if(!wandStack.length){toast('कुछ बचा नहीं undo के लिए');return}
+  $('#wandCv').getContext('2d').putImageData(wandStack.pop(),0,0)};
+ $('#wandCancel').onclick=()=>{$('#wandWrap').style.display='none';wandStack=[]};
+ $('#wandUse').onclick=()=>{$('#wandCv').toBlob(async b=>{
+  $('#wandWrap').style.display='none';aiPunch=false;
+  await acceptFrameImage(new File([b],'wand.png',{type:'image/png'}),false);
+  toast('✅ तुम्हारे चुने हिस्से transparent हो गए!')},'image/png')};
  /* --- window punch: dragged box को shape में खाली करो (AI image के लिए) --- */
  function shapePath(g,x,y,w,h,s){
   g.beginPath();
@@ -711,7 +772,7 @@
   }catch(e){console.error(e);toast('save नहीं हुआ — फिर कोशिश करें')}
   btn.disabled=false;btn.textContent='💾 Frame Save — तुरंत live'};
  /* debug/test hooks — maker की अंदरूनी state बाहर से देखने/चलाने के लिए (13-10) */
- window.FM={acceptFrameImage,applyPunch,autoWindow,setPunch:v=>{aiPunch=v},
+ window.FM={acceptFrameImage,applyPunch,autoWindow,setPunch:v=>{aiPunch=v},wandOpen,wandFlood,
   get W(){return W},set W(v){W=v},get pngMask(){return pngMask},get imgFile(){return imgFile}};
  gPrev();
 })();</script></body></html>
