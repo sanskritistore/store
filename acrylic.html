@@ -50,15 +50,16 @@
   const fs=CFG.frames.frames.filter(f=>(!f.ptype||f.ptype==='frame'||f.ptype==='acrylic')&&(flt==='all'||grp(f)===flt)); /* 12-10 Dev: acrylic में सारी frames same */
   $('#list').innerHTML=fs.map((f,i)=>card(f,i)).join('');
   /* 🔄 photo ↔ gray placeholder cycle (Dev 12-10 SS49 जैसा) — photo A → photo B → gray "अपनी फोटो लगाएँ" */
-  $$('#list .fr-photo, #list .fr-win').forEach((ph,i)=>{
-   const img=ph.querySelector('img');if(!img)return;
-   ph.insertAdjacentHTML('beforeend','<div class="pho"><b>📷</b>अपनी फोटो<br>लगाएँ</div>');
-   let tk=i%3;
-   setInterval(()=>{if(ph.dataset.user)return;tk=(tk+1)%3;
+  const phs=$$('#list .fr-photo, #list .fr-win').filter(ph=>ph.querySelector('img'));
+  phs.forEach(ph=>ph.insertAdjacentHTML('beforeend','<div class="pho"><b>📷</b>अपनी फोटो<br>लगाएँ</div>'));
+  /* 🔄 सारे frames EK SATH पलटें (Dev 13-10: अलग-अलग अच्छा नहीं लगता) — photo A → photo B → gray */
+  if(window.__phCyc)clearInterval(window.__phCyc);
+  let tk=0;
+  window.__phCyc=setInterval(()=>{tk=(tk+1)%3;
+   phs.forEach(ph=>{if(ph.dataset.user)return;const img=ph.querySelector('img');
     if(tk===2){ph.classList.add('showph')}
-    else{ph.classList.remove('showph');img.src=tk===0?img.dataset.a:img.dataset.b;img.style.opacity=1}
-   },2600+i*300);
-  });
+    else{ph.classList.remove('showph');img.src=tk===0?img.dataset.a:img.dataset.b;img.style.opacity=1}});
+  },2600);
   /* 🧱 दीवारें — पूरी PLP पर एक साथ, हर 7 सेकंड बदलें (Dev 12-10) */
   const WALLS=CFG.frames.walls||[];
   if(WALLS.length){let wi=0;
