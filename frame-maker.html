@@ -899,6 +899,10 @@
   btn.disabled=false;btn.textContent='💾 Frame Save — तुरंत live'};
  /* debug/test hooks — maker की अंदरूनी state बाहर से देखने/चलाने के लिए (13-10) */
  window.FM={acceptFrameImage,applyPunch,autoWindow,autoWindows,setPunch:v=>{aiPunch=v},wandOpen,wandFlood,
-  get W(){return W},set W(v){W=v},get pngMask(){return pngMask},get imgFile(){return imgFile}};
+  get W(){return W},set W(v){W=v},get pngMask(){return pngMask},get imgFile(){return imgFile},
+  get collageWins(){return collageWins},get slotPhotos(){return slotPhotos},get slotSel(){return slotSel},
+  setSlotPhoto:(i,url)=>{slotPhotos[i]=url;draw();buildLayers()},
+  pickSlot:i=>{slotSel=i;if(inCollage()){W={x:collageWins[i].x,y:collageWins[i].y,w:collageWins[i].w,h:collageWins[i].h};draw();buildLayers()}},
+  moveSlot,buildCollageUI};
  gPrev();
 })();</script></body></html>
