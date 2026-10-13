@@ -9,10 +9,10 @@
 @media(max-width:900px){.mk{grid-template-columns:1fr}}
 .stg{position:relative;width:min(400px,100%);margin:0 auto;background:
  repeating-conic-gradient(#eee 0 25%,#fff 0 50%) 0 0/22px 22px;border-radius:12px;overflow:hidden;touch-action:none;user-select:none}
-.stg img.fi{display:block;width:100%;position:relative;z-index:2;pointer-events:none}
+.stg img.fi{display:block;width:100%;position:relative;z-index:40;pointer-events:none}
 .stg .demo{position:absolute;overflow:hidden;z-index:1;background:#ddd}
 .stg .demo img{width:100%;height:100%;object-fit:cover}
-.stg .winbox{position:absolute;border:2.5px dashed #8E2A32;background:rgba(142,42,50,.08);z-index:3;pointer-events:none}
+.stg .winbox{position:absolute;border:2.5px dashed #8E2A32;background:rgba(142,42,50,.08);z-index:50;pointer-events:none}
 .mform label{display:block;font-weight:700;font-size:14px;margin:12px 0 4px}
 .mform input,.mform select{width:100%;padding:10px 12px;border:1.5px solid #E3D7C3;border-radius:10px;font:inherit;background:#fff}
 .wininputs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
@@ -37,7 +37,7 @@
 .crow input[type=color]{width:52px;height:38px;padding:2px;border:1.5px solid #E3D7C3;border-radius:8px;background:#fff}
 #gstg{width:min(300px,100%);margin:10px auto;box-shadow:0 6px 18px rgba(90,60,20,.15);border-radius:4px}
  </style></head><body>
- <small style="position:fixed;top:4px;right:6px;z-index:999;font-size:10px;font-weight:700;color:#a08;background:rgba(255,255,255,.88);padding:2px 8px;border-radius:10px;border:1px solid #e5d">v13.10-collage5</small>
+ <small style="position:fixed;top:4px;right:6px;z-index:999;font-size:10px;font-weight:700;color:#a08;background:rgba(255,255,255,.88);padding:2px 8px;border-radius:10px;border:1px solid #e5d">v13.10-slots1</small>
  <header id="hd"></header>
 <section class="wrap" id="app">
  <div class="login" id="login" style="max-width:380px;margin:50px auto;background:#fff;border-radius:18px;padding:24px;border:1px solid #E9DFCC">
@@ -194,6 +194,17 @@
        <label style="flex:1;min-width:105px">↕️ ऊपर-नीचे<input type="range" id="pmy" min="0" max="100" value="50" style="width:100%"></label>
       </div>
      </div></div>
+    <div id="collageUI" style="display:none;margin-top:10px;background:#fff;border:1px solid #e8dcc8;border-radius:12px;padding:10px">
+     <b style="font-size:13px">🧩 Collage boxes — box चुनो, photo लगाओ, layer ऊपर-नीचे करो</b>
+     <div style="display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap">
+      <select id="slotPick" style="flex:1;min-width:150px;padding:8px;border:2px solid #C9A24A;border-radius:8px;font-weight:700"></select>
+      <button type="button" class="btn btn-s" id="slotPhotoBtn" style="width:auto;padding:8px 14px">📷 photo लगाओ</button>
+      <button type="button" class="btn btn-s" id="slotPhotoClear" title="इस box की photo हटाओ" style="width:auto;padding:8px 10px;background:#f5e9e9;color:#8E2A32">🗑️</button>
+     </div>
+     <input type="file" id="slotPhotoFile" accept="image/*" hidden>
+     <div id="layerList" style="margin-top:10px;display:flex;flex-direction:column;gap:4px;max-height:230px;overflow:auto"></div>
+     <p class="hint" style="margin:6px 0 0">⬆️ ऊपर वाली layer सबसे ऊपर दिखेगी (Photoshop जैसा) — जैसे circle photo को grid photos के ऊपर रखो</p>
+    </div>
    </div>
    <div class="mform">
     <div class="step">3️⃣ Details भरें</div>
@@ -316,16 +327,53 @@
   ['x','y','w','h'].forEach(k=>{W[k]=Math.round(W[k]*10)/10});
   $('#wx').value=W.x;$('#wy').value=W.y;$('#ww').value=W.w;$('#wh').value=W.h;
   [demo,winbox].forEach(el=>{el.style.left=W.x+'%';el.style.top=W.y+'%';el.style.width=W.w+'%';el.style.height=W.h+'%'});
-  shapeCss(demo);drawCollageBoxes()}
+  shapeCss(demo);renderSlotPhotos();drawCollageBoxes()}
  /* 🧩 collage mode: सभी slots के numbered dashed boxes stage पर — "set nahi ho rahi" की confusion खत्म (13-10) */
  function drawCollageBoxes(){stg.querySelectorAll('.cslot').forEach(e=>e.remove());
   if(typeof collageWins==='undefined'||!collageWins)return;
-  collageWins.forEach((w,i)=>{const d=document.createElement('div');d.className='cslot';
-   d.style.cssText='position:absolute;left:'+w.x+'%;top:'+w.y+'%;width:'+w.w+'%;height:'+w.h+'%;border:2.5px dashed '+(i===0?'#E8B931':'#4aa3e0')+';border-radius:'+(w.shape==='circle'?'50%':'8px')+';pointer-events:none;z-index:4;box-sizing:border-box';
+  collageWins.forEach((w,i)=>{const sel=i===slotSel;const d=document.createElement('div');d.className='cslot';
+   d.style.cssText='position:absolute;left:'+w.x+'%;top:'+w.y+'%;width:'+w.w+'%;height:'+w.h+'%;border:'+(sel?'3.5px solid #E8B931':'2px dashed '+(i===0?'#E8B931':'#4aa3e0'))+';border-radius:'+(w.shape==='circle'?'50%':'8px')+';pointer-events:none;z-index:51;box-sizing:border-box'+(sel?';box-shadow:0 0 0 2px rgba(232,185,49,.35)':'');
    const t=document.createElement('span');t.textContent=i+1;
-   t.style.cssText='position:absolute;top:2px;left:4px;font-size:11px;font-weight:800;color:#fff;background:rgba(0,0,0,.55);border-radius:8px;padding:0 6px;line-height:1.6';
+   t.style.cssText='position:absolute;top:2px;left:4px;font-size:11px;font-weight:800;color:#fff;background:'+(sel?'#C9A24A':'rgba(0,0,0,.55)')+';border-radius:8px;padding:0 6px;line-height:1.6';
    d.appendChild(t);stg.appendChild(d)})}
- function fromInputs(){W={x:+$('#wx').value||0,y:+$('#wy').value||0,w:+$('#ww').value||10,h:+$('#wh').value||10};draw()}
+ /* 🧩 per-box photos + Photoshop layers (Dev 13-10 दोपहर): dropdown से box चुनो → photo लगाओ; ▲▼ से z-order */
+ let slotPhotos={},slotSel=0;
+ function inCollage(){return typeof collageWins!=='undefined'&&collageWins&&collageWins.length>=2}
+ function renderSlotPhotos(){stg.querySelectorAll('.slotimg').forEach(e=>e.remove());
+  if(!inCollage())return;
+  collageWins.forEach((w,i)=>{const url=slotPhotos[i];if(!url)return;
+   const d=document.createElement('div');d.className='slotimg';
+   d.style.cssText='position:absolute;left:'+w.x+'%;top:'+w.y+'%;width:'+w.w+'%;height:'+w.h+'%;overflow:hidden;z-index:'+(10+i)+';'+(w.shape==='circle'?'border-radius:50%':'');
+   d.innerHTML='<img src="'+url+'" style="width:100%;height:100%;object-fit:cover">';
+   stg.appendChild(d)})}
+ function buildCollageUI(){const cp=$('#collageUI');if(!cp)return;
+  if(!inCollage()){cp.style.display='none';return}
+  cp.style.display='block';slotSel=Math.min(slotSel,collageWins.length-1);
+  $('#slotPick').innerHTML=collageWins.map((w,i)=>'<option value="'+i+'">Box '+(i+1)+' '+(w.shape==='circle'?'⭕ circle':'▭ rect')+(i===0?' (main)':'')+'</option>').join('');
+  $('#slotPick').value=slotSel;buildLayers()}
+ function buildLayers(){const ll=$('#layerList');if(!ll)return;
+  ll.innerHTML=collageWins.map((w,i)=>({w,i})).reverse().map(({w,i})=>
+   '<div style="display:flex;align-items:center;gap:6px;background:'+(i===slotSel?'#fdf3e3':'#faf7f0')+';border:1.5px solid '+(i===slotSel?'#C9A24A':'#eee0c8')+';border-radius:8px;padding:4px 8px;font-size:12px">'
+   +'<b style="min-width:58px">'+(i===slotSel?'👉 ':'')+'Box '+(i+1)+'</b>'
+   +'<span style="color:#998">'+(w.shape==='circle'?'⭕':'▭')+(slotPhotos[i]?' 📷':'')+(i===collageWins.length-1?' · सबसे ऊपर':(i===0?' · सबसे नीचे':''))+'</span>'
+   +'<span style="flex:1"></span>'
+   +'<button type="button" data-up="'+i+'" '+(i===collageWins.length-1?'disabled':'')+' style="padding:2px 8px">▲</button>'
+   +'<button type="button" data-dn="'+i+'" '+(i===0?'disabled':'')+' style="padding:2px 8px">▼</button></div>').join('');
+  ll.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>moveSlot(+b.dataset.up,1));
+  ll.querySelectorAll('[data-dn]').forEach(b=>b.onclick=()=>moveSlot(+b.dataset.dn,-1))}
+ function moveSlot(i,dir){const j=i+dir;if(j<0||j>=collageWins.length)return;
+  const tmp=collageWins[i];collageWins[i]=collageWins[j];collageWins[j]=tmp;
+  const np={};Object.keys(slotPhotos).forEach(k=>{const ki=+k;np[ki===i?j:(ki===j?i:ki)]=slotPhotos[k]});slotPhotos=np;
+  if(slotSel===i)slotSel=j;else if(slotSel===j)slotSel=i;
+  draw();buildCollageUI();toast('Layer '+(dir>0?'ऊपर':'नीचे')+' — Box '+(j+1))}
+ $('#slotPick').onchange=function(){slotSel=+this.value;
+  if(inCollage()){W={x:collageWins[slotSel].x,y:collageWins[slotSel].y,w:collageWins[slotSel].w,h:collageWins[slotSel].h};draw();buildLayers()}};
+ $('#slotPhotoBtn').onclick=()=>{if(!inCollage())return toast('पहले collage PNG upload करो');$('#slotPhotoFile').click()};
+ $('#slotPhotoFile').onchange=function(){const f=this.files[0];if(!f)return;
+  slotPhotos[slotSel]=URL.createObjectURL(f);this.value='';draw();buildLayers();toast('📷 Box '+(slotSel+1)+' में photo लग गई!')};
+ $('#slotPhotoClear').onclick=()=>{delete slotPhotos[slotSel];draw();buildLayers()};
+ function fromInputs(){W={x:+$('#wx').value||0,y:+$('#wy').value||0,w:+$('#ww').value||10,h:+$('#wh').value||10};
+  if(inCollage())collageWins[slotSel]={x:W.x,y:W.y,w:W.w,h:W.h,shape:collageWins[slotSel].shape};draw()}
  ['wx','wy','ww','wh'].forEach(id=>$('#'+id).oninput=fromInputs);
  function applyPos(){const z=(+$('#pz').value||100)/100,mx=+$('#pmx').value,my=+$('#pmy').value;
   const di=$('#dimg');di.style.objectPosition=mx+'% '+my+'%';
@@ -538,9 +586,9 @@
    $('#dimg').src=CFG.frames.demo[1%CFG.frames.demo.length];applyPos();
    collageWins=null;
    const wins=autoWindows(im);
-   if(wins.length>=2){collageWins=wins;W={x:wins[0].x,y:wins[0].y,w:wins[0].w,h:wins[0].h};pngMask='';draw();
-    toast('🧩 Collage frame! '+wins.length+' photo slots अपने आप मिल गए ✅ — site पर हर slot में अलग photo लगेगी!')}
-   else{const aw=autoWindow(im);
+   if(wins.length>=2){collageWins=wins;W={x:wins[0].x,y:wins[0].y,w:wins[0].w,h:wins[0].h};pngMask='';slotPhotos={};slotSel=0;draw();buildCollageUI();
+    toast('🧩 Collage frame! '+wins.length+' photo slots मिल गए ✅ — नीचे box चुनकर हर box में photo लगाओ!')}
+   else{buildCollageUI();const aw=autoWindow(im);
     if(aw){W={x:aw.x,y:aw.y,w:aw.w,h:aw.h};pngMask=aw.mask||'';draw();toast('✅ Photo की जगह PNG से अपने आप मिल गई — photo असली shape में कटेगी!')}
     else{pngMask='';draw();if(!fromAI)toast('अब photo की जगह drag करके चुनें 👆')}}};im.src=ev.target.result};rd.readAsDataURL(imgFile)}
  $('#ff').onchange=async e=>{const f=e.target.files[0];if(!f)return;aiPunch=false;await acceptFrameImage(f,false)};
