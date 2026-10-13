@@ -427,32 +427,38 @@
    mask:`url('${mc2.toDataURL('image/png')}') center/100% 100% no-repeat`}
  }catch(e){return null}}
  /* --- 🧩 Collage detect: सारे enclosed holes → windows[] (13-10 Dev: "9 photo collage par photo kaise set karenge") --- */
- function autoWindows(im){try{
-  const M=640,sc=Math.min(1,M/Math.max(im.naturalWidth,im.naturalHeight));
-  const w=Math.max(60,Math.round(im.naturalWidth*sc)),h=Math.max(60,Math.round(im.naturalHeight*sc));
-  const c=document.createElement('canvas');c.width=w;c.height=h;
-  const g=c.getContext('2d',{willReadFrequently:true});g.drawImage(im,0,0,w,h);
-  const d=g.getImageData(0,0,w,h).data,tr=p=>d[p*4+3]<16;
-  const bg=new Uint8Array(w*h),bst=[];
-  for(let x=0;x<w;x++){if(tr(x))bst.push(x);if(tr((h-1)*w+x))bst.push((h-1)*w+x)}
-  for(let y=0;y<h;y++){if(tr(y*w))bst.push(y*w);if(tr(y*w+w-1))bst.push(y*w+w-1)}
-  while(bst.length){const p=bst.pop();if(bg[p])continue;bg[p]=1;
-   const x=p%w,y=(p/w)|0;
-   if(x>0&&!bg[p-1]&&tr(p-1))bst.push(p-1);if(x<w-1&&!bg[p+1]&&tr(p+1))bst.push(p+1);
-   if(y>0&&!bg[p-w]&&tr(p-w))bst.push(p-w);if(y<h-1&&!bg[p+w]&&tr(p+w))bst.push(p+w)}
-  /* बचे हुए transparent = enclosed holes → हर अलग region label करो */
-  const lab=new Int32Array(w*h).fill(-1),regs=[];
+  function autoWindows(im){try{
+  const M=800; /* detection grid */
+  const I=2400,scI=Math.min(1,I/Math.max(im.naturalWidth,im.naturalHeight));
+  const iw=Math.max(M,Math.round(im.naturalWidth*scI)),ih=Math.max(M,Math.round(im.naturalHeight*scI));
+  const c=document.createElement('canvas');c.width=iw;c.height=ih;
+  const g=c.getContext('2d',{willReadFrequently:true});g.drawImage(im,0,0,iw,ih);
+  const d=g.getImageData(0,0,iw,ih).data;
+  const w=M,h=Math.max(60,Math.round(M*ih/iw));
+  /* min-pool: block का सबसे छोटा alpha — पतली divider lines downscale में गायब न हों (collage9 की 2px lines) */
+  const mn=new Uint8Array(w*h);
+  for(let oy=0;oy<h;oy++){const sy0=Math.floor(oy*ih/h),sy1=Math.max(sy0+1,Math.ceil((oy+1)*ih/h));
+   for(let ox=0;ox<w;ox++){const sx0=Math.floor(ox*iw/w),sx1=Math.max(sx0+1,Math.ceil((ox+1)*iw/w));
+    let m=255;for(let sy=sy0;sy<sy1;sy++){const base=sy*iw;for(let sx=sx0;sx<sx1;sx++){const a=d[(base+sx)*4+3];if(a<m)m=a}}
+    mn[oy*w+ox]=m}}
+  const tr=p=>mn[p]<16;
+  /* regions label करो — border flood नहीं: collage cells किनारे से छूती हैं, इसलिए बाद में filter से background हटाएँगे */
+  const lab=new Int32Array(w*h).fill(-1),regs=[],per=w*2+h*2;
   for(let i=0;i<w*h;i++){
-   if(!tr(i)||bg[i]||lab[i]>=0)continue;
-   const id=regs.length,q=[i];lab[i]=id;let x0=w,y0=h,x1=-1,y1=-1,cnt=0;
+   if(!tr(i)||lab[i]>=0)continue;
+   const id=regs.length,q=[i];lab[i]=id;let x0=w,y0=h,x1=-1,y1=-1,cnt=0,touch=0;
    while(q.length){const p=q.pop(),x=p%w,y=(p/w)|0;cnt++;
+    if(x===0||y===0||x===w-1||y===h-1)touch++;
     if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;
-    if(x>0&&tr(p-1)&&!bg[p-1]&&lab[p-1]<0){lab[p-1]=id;q.push(p-1)}
-    if(x<w-1&&tr(p+1)&&!bg[p+1]&&lab[p+1]<0){lab[p+1]=id;q.push(p+1)}
-    if(y>0&&tr(p-w)&&!bg[p-w]&&lab[p-w]<0){lab[p-w]=id;q.push(p-w)}
-    if(y<h-1&&tr(p+w)&&!bg[p+w]&&lab[p+w]<0){lab[p+w]=id;q.push(p+w)}}
-   regs.push({x0,y0,x1,y1,cnt})}
-  return regs.filter(r=>r.cnt>=w*h*0.005).map(r=>{
+    if(x>0&&tr(p-1)&&lab[p-1]<0){lab[p-1]=id;q.push(p-1)}
+    if(x<w-1&&tr(p+1)&&lab[p+1]<0){lab[p+1]=id;q.push(p+1)}
+    if(y>0&&tr(p-w)&&lab[p-w]<0){lab[p-w]=id;q.push(p-w)}
+    if(y<h-1&&tr(p+w)&&lab[p+w]<0){lab[p+w]=id;q.push(p+w)}}
+   regs.push({x0,y0,x1,y1,cnt,touch})}
+  return regs.filter(r=>{
+   const area=r.cnt/(w*h),bw=r.x1-r.x0+1,bh=r.y1-r.y0+1,fill=r.cnt/(bw*bh),edge=r.touch/per;
+   return area>=0.015&&area<=0.55&&fill>=0.45&&edge<=0.45 /* बड़ा/cिनारे-घेरा हुआ = background, पतला ring-corner = noise */
+  }).map(r=>{
    const bw=r.x1-r.x0+1,bh=r.y1-r.y0+1,fill=r.cnt/(bw*bh);
    let shape='rect';
    if(Math.abs(bw/bh-1)<0.12&&Math.abs(fill-0.785)<0.09)shape='circle';
