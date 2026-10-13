@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ID Card Print — Sanskriti Print Suite</title>
+<style>
+  :root { --maroon:#6b1f2a; --maroon-dark:#4a141d; --gold:#c9a227; --ivory:#fdf8ef; --ink:#2b2118; }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { font-family:'Mukta',sans-serif; background:var(--ivory); color:var(--ink); }
+  header { background:linear-gradient(135deg,var(--maroon-dark),var(--maroon)); color:var(--ivory);
+    padding:14px 16px; display:flex; align-items:center; gap:12px; border-bottom:3px solid var(--gold);
+    position:sticky; top:0; z-index:50; }
+  header a { color:var(--gold-light,#e8c862); text-decoration:none; font-size:20px; }
+  header h1 { font-size:18px; font-weight:700; }
+  main { max-width:560px; margin:0 auto; padding:16px 14px 60px; }
+
+  .step-title { font-size:15px; font-weight:700; color:var(--maroon); margin:14px 0 8px; }
+  .sizes { display:flex; flex-wrap:wrap; gap:8px; }
+  .size-chip { border:2px solid #e6d9bd; background:#fff; border-radius:10px; padding:8px 12px;
+    font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; }
+  .size-chip.on { border-color:var(--gold); background:#fff8e6; color:var(--maroon); }
+  .size-chip small { display:block; font-weight:400; opacity:.65; font-size:11px; }
+
+  .upload-zone { margin-top:14px; border:2px dashed var(--gold); border-radius:14px; background:#fff;
+    padding:34px 16px; text-align:center; cursor:pointer; }
+  .upload-zone .big { font-size:38px; }
+  .upload-zone p { font-size:14px; font-weight:600; margin-top:6px; }
+  .upload-zone small { opacity:.65; font-size:12px; }
+
+  .editor { display:none; margin-top:14px; }
+  .crop-wrap { position:relative; margin:0 auto; background:#222; border-radius:10px; overflow:hidden;
+    touch-action:none; user-select:none; }
+  .crop-wrap canvas { display:block; }
+  /* crop corners — असली crop tool जैसे निशान */
+  .cc { position:absolute; width:24px; height:24px; border:4px solid #fff; pointer-events:none; z-index:6;
+    filter:drop-shadow(0 0 3px rgba(0,0,0,.8)); }
+  .cc.tl { top:5px; left:5px; border-right:none; border-bottom:none; }
+  .cc.tr { top:5px; right:5px; border-left:none; border-bottom:none; }
+  .cc.bl { bottom:5px; left:5px; border-right:none; border-top:none; }
+  .cc.br { bottom:5px; right:5px; border-left:none; border-top:none; }
+  .crop-hint { text-align:center; font-size:13px; font-weight:600; color:var(--maroon); margin-top:6px; }
+  .ver { font-size:10px; background:var(--gold); color:var(--maroon); border-radius:6px; padding:1px 6px; vertical-align:middle; }
+  /* मोटा slider — उंगली से पकड़ने में आसान */
+  input[type=range] { -webkit-appearance:none; appearance:none; height:8px; border-radius:4px; background:#e6d9bd; flex:1; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:30px; height:30px; border-radius:50%;
+    background:var(--maroon); border:3px solid #fff; box-shadow:0 1px 5px rgba(0,0,0,.35); cursor:pointer; }
+  input[type=range]::-moz-range-thumb { width:26px; height:26px; border-radius:50%; background:var(--maroon); border:3px solid #fff; cursor:pointer; }
+  .guide { position:absolute; pointer-events:none; border:2px dashed rgba(255,255,255,.85);
+    border-radius:50%; box-shadow:0 0 0 9999px rgba(0,0,0,.35); }
+  .guide-line { position:absolute; left:0; right:0; pointer-events:none;
+    border-top:1px dashed rgba(255,255,255,.5); }
+
+  .controls { margin-top:12px; display:flex; flex-direction:column; gap:10px; }
+  .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .row label { font-size:13px; font-weight:600; min-width:52px; }
+  input[type=range] { flex:1; accent-color:var(--maroon); }
+  .btn { border:none; border-radius:10px; padding:11px 16px; font-size:14px; font-weight:700;
+    cursor:pointer; font-family:inherit; }
+  .btn-main { background:var(--maroon); color:#fff; flex:1; }
+  .btn-gold { background:var(--gold); color:#3a2c00; }
+  .btn-soft { background:#f3ead6; color:var(--ink); border:1px solid #e2d3b4; }
+  .btn:active { transform:scale(.97); }
+  .bg-dots { display:flex; gap:8px; }
+  .bg-dot { width:30px; height:30px; border-radius:50%; border:2px solid #ccc; cursor:pointer; }
+  .bg-dot.on { border-color:var(--maroon); box-shadow:0 0 0 2px #fff,0 0 0 4px var(--maroon); }
+
+  .sheet-area { display:none; margin-top:16px; }
+  .sheet-preview { background:#fff; border:1px solid #e6d9bd; border-radius:10px; padding:10px; text-align:center; }
+  .sheet-preview canvas { max-width:100%; height:auto; border:1px solid #ddd; }
+  .info { font-size:13px; margin:8px 0; opacity:.8; }
+  #tray { display:flex; gap:10px; overflow-x:auto; padding:8px 2px; }
+  .trayItem { flex:0 0 auto; background:#fff; border:1px solid #e6d9bd; border-radius:10px; padding:6px; text-align:center; width:92px; }
+  .trayThumbCard { width:100%; border-radius:6px; display:block; }
+  .trayThumb { width:64px; height:auto; border-radius:6px; border:1px solid #ddd; }
+  .chipsRow { display:flex; gap:3px; justify-content:center; margin-top:5px; flex-wrap:wrap; }
+  .chip { border:1px solid #d9c9a3; background:#fffdf6; border-radius:6px; font-size:11px; padding:2px 7px; cursor:pointer; font-family:inherit; }
+  .chip.on { background:var(--gold); color:#3a2c00; font-weight:700; }
+  .trayCount { font-size:12px; font-weight:700; color:var(--maroon); margin-top:3px; }
+  .trayQuick { display:none; align-items:center; gap:6px; flex-wrap:wrap; font-size:13px; font-weight:700; color:var(--maroon); margin:8px 0 2px; }
+  .trayTools { display:flex; gap:4px; justify-content:center; margin-top:4px; }
+  .trayTools button { border:none; background:#f3ead6; border:1px solid #e2d3b4; border-radius:6px; font-size:12px; padding:2px 8px; cursor:pointer; font-family:inherit; }
+  .slotX { position:absolute; width:18px; height:18px; border-radius:50%; background:rgba(255,255,255,.94); color:#7a1f2b; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; cursor:pointer; border:1px solid #d9a3a3; box-shadow:0 1px 3px rgba(0,0,0,.3); z-index:5; }
+  #overWarn { display:none; background:#fff4e5; border:1px solid #f0d9a8; color:#8a5a00; border-radius:8px; padding:8px 10px; font-size:12px; margin-top:8px; }
+  #err { display:none; background:#fdecea; color:#a02c2c; border:1px solid #f5c6c0; border-radius:8px;
+    padding:10px 12px; font-size:13px; margin-top:12px; }
+  #busy { display:none; position:fixed; inset:0; background:rgba(43,33,24,.55); z-index:99;
+    align-items:center; justify-content:center; color:#fff; font-size:15px; font-weight:600;
+    text-align:center; padding:20px; }
+
+  .cardPrev { width:100%; border-radius:8px; border:1px solid #e2d3b4; background:#fff; display:block; }
+  #backZone { margin-top:10px; }
+  #cardReady { margin-top:10px; }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="index.html">←</a>
+  <h1>🪪 ID Card Print <span class="ver">v0.1</span></h1>
+</header>
+
+<main>
+  <div class="step-title">1. Card type चुनें</div>
+  <div class="sizes" id="typeList"></div>
+
+  <div class="upload-zone" id="uploadZone">
+    <div class="big">📄</div>
+    <p id="uploadTitle">2. Card की photo या e-PDF डालें (tap करें)</p>
+    <small>e-Aadhaar PDF चलेगी — password = नाम के 4 अक्षर + जन्म साल 🔒<br>Photo आपके device से बाहर नहीं जाती</small>
+    <input type="file" id="fileInput" accept="image/*,.pdf" style="display:none">
+  </div>
+
+  <div class="editor" id="editor" style="display:none">
+    <div class="step-title" id="editorTitle">✂️ FRONT crop करें — box card पर ठीक करें</div>
+    <div class="crop-wrap" id="cropWrap"><canvas id="cropCanvas"></canvas></div>
+    <div class="crop-hint">✂️ सफ़ेद कोनों से box ठीक करें — box CR80 card size (85.6×54mm) का है</div>
+    <div class="controls">
+      <div class="row">
+        <button class="btn btn-soft" id="rotateBtn">↻ घुमाएँ</button>
+      </div>
+      <div class="row">
+        <button class="btn btn-main" id="okBtn">✓ Front पक्का — अब BACK →</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="backZone" style="display:none">
+    <div class="step-title">3. पीछे की तरफ़ (BACK)</div>
+    <div class="row" style="display:flex; gap:8px">
+      <button class="btn btn-soft" id="sameImgBtn" style="flex:1">🔄 इसी image/PDF से</button>
+      <button class="btn btn-soft" id="newImgBtn" style="flex:1">📄 नई image/PDF डालें</button>
+    </div>
+  </div>
+
+  <div id="cardReady" style="display:none">
+    <div class="step-title">4. Card तैयार ✅ (front | back)</div>
+    <canvas class="cardPrev" id="cardPreview"></canvas>
+    <div class="row" style="margin-top:8px">
+      <button class="btn btn-main" id="addCardBtn" style="width:100%">✓ Card tray में जोड़ें →</button>
+    </div>
+  </div>
+
+  <div class="sheet-area" id="sheetArea" style="display:none">
+    <div class="step-title">5. A4 Sheet (300 DPI) — front | back जोड़ी, काटकर laminate करें</div>
+    <div class="trayQuick" id="trayQuick"></div>
+    <div id="tray"></div>
+    <button class="btn btn-soft" id="addCardBtn2" style="width:100%">＋ और customer का card जोड़ें</button>
+    <div id="overWarn" style="display:none"></div>
+    <div id="previewWrap" style="position:relative; margin-top:10px"><canvas id="sheetPreview" style="width:100%; border:1px solid #e2d3b4; border-radius:8px; background:#fff"></canvas></div>
+    <div id="sheetInfo" style="text-align:center; font-size:13px; color:#6b5b3e; margin-top:6px"></div>
+    <div class="crop-hint">💡 किसी card को हटाने के लिए उसके कोने के ✕ को दबाएँ</div>
+    <div class="row" style="display:flex; gap:8px; margin-top:8px">
+      <button class="btn btn-main" id="dlBtn" style="flex:2">⬇️ Sheet डाउनलोड (JPG)</button>
+      <button class="btn btn-soft" id="printBtn" style="flex:1">🖨️ Print</button>
+    </div>
+  </div>
+
+  <div id="err" style="display:none; background:#fdecea; color:#b3261e; border:1px solid #f5c6c0; border-radius:8px; padding:10px 12px; font-size:13px; margin-top:12px"></div>
+  <span id="cfgBadge"></span>
+</main>
+
+<div id="busy"><div id="busyMsg">खुल रहा है...</div></div>
+
+<script src="js/core-config.js"></script>
+<script src="js/core-photo.js"></script>
+<script src="js/core-crop.js"></script>
+<script>
+(async function () {
+  const $ = (id) => document.getElementById(id);
+  const err = (m) => { const e = $("err"); e.style.display = m ? "block" : "none"; e.textContent = m || ""; };
+  const busy = (on, msg) => { $("busy").style.display = on ? "flex" : "none"; $("busyMsg").textContent = msg || ""; };
+
+  await SUITE.load();
+  SUITE.badge($("cfgBadge"));
+
+  const CFG = SUITE.cfg.idtypes;
+  const TYPES = CFG.id_types;
+  const STOCK = CFG.card_stock.cr80;
+  const PRINT = CFG.print;
+  const SHEET = SUITE.sheet(PRINT.sheet_id);
+  const CARD_W = SUITE.mmToPx(STOCK.w_mm, STOCK.dpi), CARD_H = SUITE.mmToPx(STOCK.h_mm, STOCK.dpi);
+  const ASPECT = STOCK.w_mm / STOCK.h_mm;
+
+  // ---------- 1. type chips ----------
+  let idType = TYPES[0];
+  const typeList = $("typeList");
+  TYPES.forEach((t, i) => {
+    const b = document.createElement("button");
+    b.className = "size-chip" + (i === 0 ? " on" : "");
+    b.innerHTML = t.label + (t.note ? "<small>" + t.note + "</small>" : "");
+    b.onclick = () => {
+      typeList.querySelectorAll(".size-chip").forEach((x) => x.classList.remove("on"));
+      b.classList.add("on");
+      idType = t;
+    };
+    typeList.appendChild(b);
+  });
+
+  // ---------- 2. upload (photo या PDF) ----------
+  let srcPage = null, side = "front";
+  let front = null, back = null;   // {cv, orig}
+  let tray = [];                   // {front, back, copies}
+  let editIdx = -1;                // tray re-edit index
+  let sheetOut = null;
+
+  const cropEd = SUITE_CROP.create($("cropWrap"), $("cropCanvas"));
+  cropEd.setAspect(ASPECT);
+
+  // pdf.js lazy loader (fail-soft)
+  let _pdfjs = null;
+  async function pdfLib() {
+    if (_pdfjs) return _pdfjs;
+    const m = await import("https://cdn.jsdelivr.net/npm/pdfjs-dist@4.7.76/build/pdf.min.mjs");
+    m.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.7.76/build/pdf.worker.min.mjs";
+    _pdfjs = m;
+    return m;
+  }
+  async function loadPdf(file) {
+    const buf = await file.arrayBuffer();
+    const m = await pdfLib();
+    const doc = await m.getDocument({
+      data: buf,
+      onPassword: (cb) => cb(prompt("PDF का password दें\n(e-Aadhaar: नाम के पहले 4 अक्षर CAPITAL में + जन्म साल — जैसे DEVI1990)") || ""),
+    }).promise;
+    const pg = await doc.getPage(1);
+    const vp = pg.getViewport({ scale: 3 });
+    const cv = document.createElement("canvas");
+    cv.width = vp.width; cv.height = vp.height;
+    await pg.render({ canvasContext: cv.getContext("2d"), viewport: vp }).promise;
+    return cv;
+  }
+
+  $("uploadZone").onclick = () => $("fileInput").click();
+  $("fileInput").onchange = async (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    err("");
+    const isPdf = f.type === "application/pdf" || /\.pdf$/i.test(f.name);
+    busy(true, isPdf ? "PDF खुल रही है..." : "Photo खुल रही है...");
+    try {
+      srcPage = isPdf ? await loadPdf(f) : SUITE_PHOTO.trimMargins(await SUITE_PHOTO.load(f));
+      $("editor").style.display = "block";
+      $("editorTitle").textContent = side === "front" ? "✂️ FRONT crop करें — card के आगे वाले हिस्से पर box" : "✂️ BACK crop करें — card के पीछे वाले हिस्से पर box";
+      $("okBtn").textContent = side === "front" ? "✓ Front पक्का — अब BACK →" : "✓ Card तैयार — preview →";
+      cropEd.setImage(srcPage);
+      $("editor").scrollIntoView({ behavior: "smooth" });
+    } catch (ex) { err("⚠️ " + (ex.message || "File नहीं खुली") + (isPdf ? " — password सही था?" : "")); }
+    busy(false);
+    e.target.value = "";
+  };
+
+  $("rotateBtn").onclick = () => {
+    const r = document.createElement("canvas");
+    r.width = srcPage.height; r.height = srcPage.width;
+    const c = r.getContext("2d");
+    c.translate(r.width / 2, r.height / 2);
+    c.rotate(Math.PI / 2);
+    c.drawImage(srcPage, -srcPage.width / 2, -srcPage.height / 2);
+    srcPage = r;
+    cropEd.setImage(srcPage);
+  };
+
+  function cropCard() {
+    const r = cropEd.rectSrc();
+    return SUITE_PHOTO.cropTo(srcPage, r, CARD_W, CARD_H);
+  }
+
+  // ---------- 3. front → back → ready ----------
+  $("okBtn").onclick = () => {
+    if (side === "front") {
+      front = { cv: cropCard(), orig: srcPage };
+      if (editIdx >= 0) { // re-edit: सीधे back भी फिर से (origB से)
+        side = "back";
+        srcPage = tray[editIdx].back.orig;
+        $("editorTitle").textContent = "✂️ BACK crop करें — card के पीछे वाले हिस्से पर box";
+        $("okBtn").textContent = "✓ Crop save करें";
+        cropEd.setImage(srcPage);
+      } else {
+        side = "back";
+        $("editor").style.display = "none";
+        $("backZone").style.display = "block";
+        $("backZone").scrollIntoView({ behavior: "smooth" });
+      }
+    } else {
+      back = { cv: cropCard(), orig: srcPage };
+      if (editIdx >= 0) {
+        tray[editIdx].front = front; tray[editIdx].back = back;
+        editIdx = -1; front = back = null; side = "front";
+        $("editor").style.display = "none";
+        renderSheet();
+        $("sheetArea").scrollIntoView({ behavior: "smooth" });
+      } else {
+        $("editor").style.display = "none";
+        $("backZone").style.display = "none";
+        // preview strip
+        const pv = $("cardPreview"), g = 8;
+        const pw = 340, ch = Math.round(pw / 2 / ASPECT);
+        pv.width = pw; pv.height = ch;
+        const ctx = pv.getContext("2d");
+        ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, pw, ch);
+        ctx.drawImage(front.cv, 0, 0, pw / 2 - g / 2, ch);
+        ctx.drawImage(back.cv, pw / 2 + g / 2, 0, pw / 2 - g / 2, ch);
+        $("cardReady").style.display = "block";
+        $("cardReady").scrollIntoView({ behavior: "smooth" });
+      }
+    }
+  };
+
+  $("sameImgBtn").onclick = () => {
+    $("backZone").style.display = "none";
+    $("editor").style.display = "block";
+    $("editorTitle").textContent = "✂️ BACK crop करें — card के पीछे वाले हिस्से पर box";
+    $("okBtn").textContent = "✓ Card तैयार — preview →";
+    cropEd.setImage(srcPage);
+    $("editor").scrollIntoView({ behavior: "smooth" });
+  };
+  $("newImgBtn").onclick = () => {
+    $("backZone").style.display = "none";
+    $("uploadTitle").textContent = "पीछे की तरफ़ (BACK) की photo/PDF डालें";
+    $("uploadZone").scrollIntoView({ behavior: "smooth" });
+    $("fileInput").click();
+  };
+
+  $("addCardBtn").onclick = () => {
+    tray.push({ front, back, copies: 1 });
+    front = back = null; side = "front";
+    $("cardReady").style.display = "none";
+    $("uploadTitle").textContent = "2. Card की photo या e-PDF डालें (tap करें)";
+    $("sheetArea").style.display = "block";
+    renderSheet();
+    $("sheetArea").scrollIntoView({ behavior: "smooth" });
+  };
+  $("addCardBtn2").onclick = () => {
+    $("uploadZone").scrollIntoView({ behavior: "smooth" });
+    $("fileInput").click();
+  };
+
+  // ---------- 4. A4 sheet (strips: front | back) ----------
+  function renderSheet() {
+    const dpi = 300;
+    const sheetW = SUITE.mmToPx(SHEET.w_mm, dpi), sheetH = SUITE.mmToPx(SHEET.h_mm, dpi);
+    const margin = SUITE.mmToPx(PRINT.margin_mm, dpi);
+    const rowGap = SUITE.mmToPx(PRINT.row_gap_mm, dpi);
+    const pairGap = SUITE.mmToPx(PRINT.pair_gap_mm, dpi);
+    const stripW = CARD_W * 2 + pairGap, stripH = CARD_H;
+    const rows = Math.max(1, Math.floor((sheetH - 2 * margin + rowGap) / (stripH + rowGap)));
+    const capacity = rows;
+    const x0 = Math.round((sheetW - stripW) / 2);
+
+    if (!tray.length) {
+      const pv0 = $("sheetPreview");
+      pv0.getContext("2d").clearRect(0, 0, pv0.width, pv0.height);
+      $("previewWrap").querySelectorAll(".slotX").forEach((x) => x.remove());
+      $("sheetInfo").textContent = "Tray खाली है — ऊपर से card जोड़ें।";
+      $("overWarn").style.display = "none";
+      renderTray(0);
+      return;
+    }
+
+    const queue = [], owners = [];
+    tray.forEach((t, ti) => { for (let i = 0; i < t.copies; i++) { queue.push(t); owners.push(ti); } });
+    const over = Math.max(0, queue.length - capacity);
+    const vis = queue.slice(0, capacity), visOwners = owners.slice(0, capacity);
+
+    const cv = document.createElement("canvas");
+    cv.width = sheetW; cv.height = sheetH;
+    const ctx = cv.getContext("2d");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, sheetW, sheetH);
+    const pos = [];
+    vis.forEach((t, i) => {
+      const y = margin + i * (stripH + rowGap);
+      pos.push({ x: x0, y });
+      ctx.drawImage(t.front.cv, x0, y, CARD_W, CARD_H);
+      ctx.drawImage(t.back.cv, x0 + CARD_W + pairGap, y, CARD_W, CARD_H);
+      ctx.strokeStyle = "rgba(0,0,0,0.3)"; // cutting guides
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x0 + 0.5, y + 0.5, CARD_W - 1, CARD_H - 1);
+      ctx.strokeRect(x0 + CARD_W + pairGap + 0.5, y + 0.5, CARD_W - 1, CARD_H - 1);
+    });
+    sheetOut = { canvas: cv, count: vis.length };
+
+    // preview + ✕ overlays
+    const pv = $("sheetPreview");
+    const scale = 340 / sheetW;
+    pv.width = Math.round(sheetW * scale);
+    pv.height = Math.round(sheetH * scale);
+    pv.getContext("2d").drawImage(cv, 0, 0, pv.width, pv.height);
+    const wrap = $("previewWrap");
+    wrap.querySelectorAll(".slotX").forEach((x) => x.remove());
+    vis.forEach((t, i) => {
+      const p = pos[i];
+      const x = document.createElement("div");
+      x.className = "slotX";
+      x.textContent = "✕";
+      x.style.left = Math.round((p.x + stripW) * scale - 22) + "px";
+      x.style.top = Math.round(p.y * scale + 2) + "px";
+      x.title = "ये card हटाएँ";
+      x.onclick = () => { tray[visOwners[i]].copies--; renderSheet(); };
+      wrap.appendChild(x);
+    });
+
+    renderTray(capacity);
+    $("sheetInfo").textContent =
+      "A4 sheet • " + vis.length + " cards print होंगे • " + (capacity - vis.length) + " जगह खाली • 300 DPI";
+    $("overWarn").style.display = over ? "block" : "none";
+    if (over) $("overWarn").textContent =
+      "⚠️ Sheet में " + capacity + " cards ही आएँगे — " + over + " बच गए। Count कम करें या ✕ से हटाएँ।";
+  }
+
+  function renderTray(capacity) {
+    const box = $("tray");
+    box.innerHTML = "";
+    const q = $("trayQuick");
+    q.innerHTML = "";
+    if (tray.length > 1) {
+      q.style.display = "flex";
+      const lbl = document.createElement("span");
+      lbl.textContent = "☑ सबकी एक साथ:";
+      q.appendChild(lbl);
+      [1, 2, 4, 5].forEach((n) => {
+        const c = document.createElement("button");
+        c.className = "chip";
+        c.textContent = n;
+        c.onclick = () => { tray.forEach((t) => (t.copies = n)); renderSheet(); };
+        q.appendChild(c);
+      });
+    } else {
+      q.style.display = "none";
+    }
+    tray.forEach((t, ti) => {
+      const d = document.createElement("div");
+      d.className = "trayItem";
+      d.style.width = "150px";
+      // thumb = front|back strip
+      const th = document.createElement("canvas");
+      const tw = 140, thH = Math.round(tw / 2 / ASPECT);
+      th.width = tw; th.height = thH;
+      const tc = th.getContext("2d");
+      tc.fillStyle = "#fff"; tc.fillRect(0, 0, tw, thH);
+      tc.drawImage(t.front.cv, 0, 0, tw / 2 - 2, thH);
+      tc.drawImage(t.back.cv, tw / 2 + 2, 0, tw / 2 - 2, thH);
+      th.className = "trayThumbCard";
+      d.appendChild(th);
+      const row = document.createElement("div");
+      row.className = "chipsRow";
+      [1, 2, 4, 5].forEach((n) => {
+        const c = document.createElement("button");
+        c.className = "chip" + (t.copies === n ? " on" : "");
+        c.textContent = n;
+        c.onclick = () => { t.copies = n; renderSheet(); };
+        row.appendChild(c);
+      });
+      const full = document.createElement("button");
+      full.className = "chip";
+      full.textContent = "भरें";
+      full.onclick = () => {
+        let others = 0;
+        tray.forEach((o, oi) => { if (oi !== ti) others += o.copies; });
+        t.copies = Math.max(0, capacity - others);
+        renderSheet();
+      };
+      row.appendChild(full);
+      d.appendChild(row);
+      const lbl = document.createElement("div");
+      lbl.className = "trayCount";
+      lbl.textContent = "× " + t.copies;
+      d.appendChild(lbl);
+      const tools = document.createElement("div");
+      tools.className = "trayTools";
+      const re = document.createElement("button");
+      re.textContent = "✏️ crop";
+      re.title = "ये card फिर से crop करें (front फिर back)";
+      re.onclick = () => {
+        editIdx = ti;
+        side = "front";
+        srcPage = t.front.orig;
+        $("sheetArea").style.display = "none";
+        $("cardReady").style.display = "none";
+        $("backZone").style.display = "none";
+        $("editor").style.display = "block";
+        $("editorTitle").textContent = "✂️ Card FRONT फिर से crop करें";
+        $("okBtn").textContent = "✓ Front — अब BACK crop करें →";
+        cropEd.setImage(srcPage);
+        $("editor").scrollIntoView({ behavior: "smooth" });
+      };
+      tools.appendChild(re);
+      const del = document.createElement("button");
+      del.textContent = "🗑️";
+      del.onclick = () => { tray.splice(ti, 1); renderSheet(); };
+      tools.appendChild(del);
+      d.appendChild(tools);
+      box.appendChild(d);
+    });
+  }
+
+  // ---------- 5. download / print ----------
+  $("dlBtn").onclick = () => {
+    if (!sheetOut) return;
+    sheetOut.canvas.toBlob((b) => SUITE_PHOTO.download(b, "idcards-a4.jpg"), "image/jpeg", 0.95);
+  };
+  $("printBtn").onclick = () => {
+    if (!sheetOut) return;
+    const w = window.open("", "_blank");
+    w.document.write(
+      "<html><head><title>Print</title><style>@page{size:" + SHEET.w_mm + "mm " + SHEET.h_mm + "mm;margin:0}body{margin:0}img{width:" + SHEET.w_mm + "mm;height:" + SHEET.h_mm + "mm;display:block}</style></head><body>" +
+      '<img src="' + sheetOut.canvas.toDataURL("image/jpeg", 0.95) + '" onload="setTimeout(()=>window.print(),300)">' +
+      "</body></html>"
+    );
+    w.document.close();
+  };
+})();
+</script>
+</body>
+</html>

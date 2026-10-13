@@ -161,6 +161,7 @@
 <script src="js/core-config.js"></script>
 <script src="js/core-photo.js"></script>
 <script src="js/core-sheet.js"></script>
+<script src="js/core-crop.js"></script>
 <script src="js/ai-bg.js"></script>
 <script>
 (async function () {
@@ -219,105 +220,10 @@
     busy(false);
   };
 
-  // ---------- 3. crop editor (असली crop box — कोने खींचो, aspect = चुना size) ----------
-  const wrap = $("cropWrap"), cvs = $("cropCanvas");
-  let winW = 0, winH = 0, cscale = 1;
-  let crop = { x: 0, y: 0, w: 10, h: 10 }; // canvas px
+  // ---------- 3. crop editor (shared core-crop.js) ----------
+  const cropEd = SUITE_CROP.create($("cropWrap"), $("cropCanvas"));
 
-  function setupCrop() {
-    const maxW = Math.min(360, window.innerWidth - 28), maxH = 440;
-    cscale = Math.min(maxW / src.width, maxH / src.height);
-    winW = Math.max(1, Math.round(src.width * cscale));
-    winH = Math.max(1, Math.round(src.height * cscale));
-    wrap.style.width = winW + "px";
-    wrap.style.height = winH + "px";
-    cvs.width = winW; cvs.height = winH;
-    const A = sel.w_mm / sel.h_mm; // box का aspect = चुने size का
-    let rw = winW * 0.94, rh = rw / A;
-    if (rh > winH * 0.94) { rh = winH * 0.94; rw = rh * A; }
-    crop = { x: (winW - rw) / 2, y: (winH - rh) / 2, w: rw, h: rh };
-    draw();
-  }
-
-  function draw() {
-    const ctx = cvs.getContext("2d");
-    ctx.drawImage(src, 0, 0, winW, winH);
-    // box के बाहर अंधेरा
-    ctx.fillStyle = "rgba(0,0,0,0.55)";
-    ctx.fillRect(0, 0, winW, Math.max(0, crop.y));
-    ctx.fillRect(0, crop.y + crop.h, winW, Math.max(0, winH - crop.y - crop.h));
-    ctx.fillRect(0, crop.y, Math.max(0, crop.x), crop.h);
-    ctx.fillRect(crop.x + crop.w, crop.y, Math.max(0, winW - crop.x - crop.w), crop.h);
-    // thirds grid
-    ctx.strokeStyle = "rgba(255,255,255,0.4)";
-    ctx.lineWidth = 1;
-    for (let i = 1; i <= 2; i++) {
-      ctx.beginPath(); ctx.moveTo(crop.x + (crop.w * i) / 3, crop.y); ctx.lineTo(crop.x + (crop.w * i) / 3, crop.y + crop.h); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(crop.x, crop.y + (crop.h * i) / 3); ctx.lineTo(crop.x + crop.w, crop.y + (crop.h * i) / 3); ctx.stroke();
-    }
-    // border + मोटे corner handles
-    ctx.strokeStyle = "#fff";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(crop.x, crop.y, crop.w, crop.h);
-    ctx.lineWidth = 6;
-    ctx.lineCap = "round";
-    const L = Math.max(14, Math.min(26, crop.w / 3, crop.h / 3));
-    [[crop.x, crop.y, 1, 1], [crop.x + crop.w, crop.y, -1, 1],
-     [crop.x, crop.y + crop.h, 1, -1], [crop.x + crop.w, crop.y + crop.h, -1, -1]].forEach(([cx, cy, dx, dy]) => {
-      ctx.beginPath();
-      ctx.moveTo(cx + dx * L, cy);
-      ctx.lineTo(cx, cy);
-      ctx.lineTo(cx, cy + dy * L);
-      ctx.stroke();
-    });
-  }
-
-  const HIT = 32; // कोना पकड़ने का दायरा (px)
-  function cPos(e) {
-    const r = cvs.getBoundingClientRect();
-    return { x: e.clientX - r.left, y: e.clientY - r.top };
-  }
-  function cornerAt(p) {
-    const c = crop;
-    const m = [["tl", c.x, c.y], ["tr", c.x + c.w, c.y], ["bl", c.x, c.y + c.h], ["br", c.x + c.w, c.y + c.h]];
-    for (const [k, x, y] of m) if (Math.abs(p.x - x) <= HIT && Math.abs(p.y - y) <= HIT) return k;
-    return null;
-  }
-  let drag = null; // {mode: "move"|corner, last:{x,y}}
-  wrap.addEventListener("pointerdown", (e) => {
-    const p = cPos(e);
-    const k = cornerAt(p);
-    const inside = p.x > crop.x && p.x < crop.x + crop.w && p.y > crop.y && p.y < crop.y + crop.h;
-    drag = k ? { mode: k, last: p } : inside ? { mode: "move", last: p } : null;
-    if (drag) wrap.setPointerCapture(e.pointerId);
-  });
-  wrap.addEventListener("pointermove", (e) => {
-    if (!drag) return;
-    const p = cPos(e);
-    const A = sel.w_mm / sel.h_mm, MIN = 34;
-    if (drag.mode === "move") {
-      crop.x = Math.max(0, Math.min(winW - crop.w, crop.x + p.x - drag.last.x));
-      crop.y = Math.max(0, Math.min(winH - crop.h, crop.y + p.y - drag.last.y));
-    } else {
-      // सामने वाला कोना anchor — aspect locked resize
-      const ax = drag.mode.includes("l") ? crop.x + crop.w : crop.x;
-      const ay = drag.mode.includes("t") ? crop.y + crop.h : crop.y;
-      let w2 = Math.abs(p.x - ax);
-      let maxW = drag.mode.includes("l") ? ax : winW - ax;
-      w2 = Math.min(w2, maxW);
-      let h2 = w2 / A;
-      let maxH = drag.mode.includes("t") ? ay : winH - ay;
-      if (h2 > maxH) { h2 = maxH; w2 = h2 * A; }
-      if (w2 < MIN) { w2 = MIN; h2 = w2 / A; }
-      crop.w = w2; crop.h = h2;
-      crop.x = drag.mode.includes("l") ? ax - w2 : ax;
-      crop.y = drag.mode.includes("t") ? ay - h2 : ay;
-    }
-    drag.last = p;
-    draw();
-  });
-  wrap.addEventListener("pointerup", () => (drag = null));
-  wrap.addEventListener("pointercancel", () => (drag = null));
+  function setupCrop() { cropEd.setAspect(sel.w_mm / sel.h_mm); cropEd.setImage(src); }
 
   $("rotateBtn").onclick = () => {
     const r = document.createElement("canvas");
@@ -330,7 +236,7 @@
     setupCrop();
   };
 
-  $("enhanceBtn").onclick = () => { SUITE_PHOTO.autoEnhance(src); draw(); };
+  $("enhanceBtn").onclick = () => { SUITE_PHOTO.autoEnhance(src); cropEd.redraw(); };
 
   // bg removal (lazy, fail-soft)
   let bgHex = "#ffffff";
@@ -398,7 +304,7 @@
 
   function exportPhoto() {
     const out = SUITE.sizePx(sel);
-    const r = { x: crop.x / cscale, y: crop.y / cscale, w: crop.w / cscale, h: crop.h / cscale };
+    const r = cropEd.rectSrc();
     return { cv: SUITE_PHOTO.cropTo(src, r, out.w, out.h), w: out.w, h: out.h };
   }
 
