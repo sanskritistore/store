@@ -55,5 +55,26 @@
     "pair_gap_mm": 2,
     "row_gap_mm": 3,
     "margin_mm": 6
+  },
+  "trays": {
+    "epson-l805": {
+      "label": "Epson L805 PVC Tray",
+      "dpi": 300,
+      "card_px": {
+        "w": 994,
+        "h": 628
+      },
+      "slots": [
+        {
+          "x": 388,
+          "y": 122
+        },
+        {
+          "x": 388,
+          "y": 782
+        }
+      ],
+      "note": "Dev ke PSD se slot1 pakka (x=388,y=122,card 994x628). Slot2 gap confirm karna hai — test print se adjust hoga (sirf config number badalna hai)."
+    }
   }
 }

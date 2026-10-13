@@ -97,7 +97,7 @@
 
 <header>
   <a href="index.html">←</a>
-  <h1>🪪 ID Card Print <span class="ver">v0.1</span></h1>
+  <h1>🪪 ID Card Print <span class="ver">v0.2</span></h1>
 </header>
 
 <main>
@@ -142,7 +142,13 @@
   </div>
 
   <div class="sheet-area" id="sheetArea" style="display:none">
-    <div class="step-title">5. A4 Sheet (300 DPI) — front | back जोड़ी, काटकर laminate करें</div>
+    <div class="step-title">5. Print कैसे करेंगे?</div>
+    <div class="sizes" id="modeList" style="margin-bottom:10px">
+      <button class="size-chip on" data-m="a4">A4 Sheet<small>5 cards — काटकर laminate</small></button>
+      <button class="size-chip" data-m="tray1">L805 Tray · 1 card<small>PVC card सीधे</small></button>
+      <button class="size-chip" data-m="tray2">L805 Tray · 2 cards<small>PVC cards सीधे</small></button>
+    </div>
+    <div class="step-title" id="sheetTitle">6. Sheet (300 DPI)</div>
     <div class="trayQuick" id="trayQuick"></div>
     <div id="tray"></div>
     <button class="btn btn-soft" id="addCardBtn2" style="width:100%">＋ और customer का card जोड़ें</button>
@@ -150,10 +156,15 @@
     <div id="previewWrap" style="position:relative; margin-top:10px"><canvas id="sheetPreview" style="width:100%; border:1px solid #e2d3b4; border-radius:8px; background:#fff"></canvas></div>
     <div id="sheetInfo" style="text-align:center; font-size:13px; color:#6b5b3e; margin-top:6px"></div>
     <div class="crop-hint">💡 किसी card को हटाने के लिए उसके कोने के ✕ को दबाएँ</div>
-    <div class="row" style="display:flex; gap:8px; margin-top:8px">
+    <div class="row" id="a4Btns" style="display:flex; gap:8px; margin-top:8px">
       <button class="btn btn-main" id="dlBtn" style="flex:2">⬇️ Sheet डाउनलोड (JPG)</button>
       <button class="btn btn-soft" id="printBtn" style="flex:1">🖨️ Print</button>
     </div>
+    <div class="row" id="trayBtns" style="display:none; gap:8px; margin-top:8px">
+      <button class="btn btn-main" id="dlFrontBtn" style="flex:1">⬇️ FRONT sheet</button>
+      <button class="btn btn-main" id="dlBackBtn" style="flex:1">⬇️ BACK sheet</button>
+    </div>
+    <div class="crop-hint" id="trayHint" style="display:none">🖨️ पहले FRONT print करें → tray में cards पलटें → BACK print करें</div>
   </div>
 
   <div id="err" style="display:none; background:#fdecea; color:#b3261e; border:1px solid #f5c6c0; border-radius:8px; padding:10px 12px; font-size:13px; margin-top:12px"></div>
@@ -180,6 +191,9 @@
   const PRINT = CFG.print;
   const SHEET = SUITE.sheet(PRINT.sheet_id);
   const CARD_W = SUITE.mmToPx(STOCK.w_mm, STOCK.dpi), CARD_H = SUITE.mmToPx(STOCK.h_mm, STOCK.dpi);
+  const TRAY = CFG.trays["epson-l805"];
+  let printMode = "a4"; // "a4" | "tray1" | "tray2"
+  const trayCapacity = () => (printMode === "tray1" ? 1 : 2);
   const ASPECT = STOCK.w_mm / STOCK.h_mm;
 
   // ---------- 1. type chips ----------
@@ -336,17 +350,46 @@
     $("fileInput").click();
   };
 
-  // ---------- 4. A4 sheet (strips: front | back) ----------
+  // ---------- print mode chips ----------
+  $("modeList").querySelectorAll(".size-chip").forEach((b) => {
+    b.onclick = () => {
+      $("modeList").querySelectorAll(".size-chip").forEach((x) => x.classList.remove("on"));
+      b.classList.add("on");
+      printMode = b.dataset.m;
+      renderSheet();
+    };
+  });
+
+  // ---------- 4. sheet (A4 strips या L805 tray) ----------
   function renderSheet() {
     const dpi = 300;
     const sheetW = SUITE.mmToPx(SHEET.w_mm, dpi), sheetH = SUITE.mmToPx(SHEET.h_mm, dpi);
+    const isTray = printMode !== "a4";
     const margin = SUITE.mmToPx(PRINT.margin_mm, dpi);
     const rowGap = SUITE.mmToPx(PRINT.row_gap_mm, dpi);
     const pairGap = SUITE.mmToPx(PRINT.pair_gap_mm, dpi);
-    const stripW = CARD_W * 2 + pairGap, stripH = CARD_H;
-    const rows = Math.max(1, Math.floor((sheetH - 2 * margin + rowGap) / (stripH + rowGap)));
-    const capacity = rows;
-    const x0 = Math.round((sheetW - stripW) / 2);
+
+    let capacity, stripW, x0;
+    const slots = [];
+    if (isTray) {
+      capacity = trayCapacity();
+      for (let i = 0; i < capacity; i++)
+        slots.push({ x: TRAY.slots[i].x, y: TRAY.slots[i].y, w: TRAY.card_px.w, h: TRAY.card_px.h });
+    } else {
+      stripW = CARD_W * 2 + pairGap;
+      const stripH = CARD_H;
+      capacity = Math.max(1, Math.floor((sheetH - 2 * margin + rowGap) / (stripH + rowGap)));
+      x0 = Math.round((sheetW - stripW) / 2);
+    }
+
+    const toggleBtns = () => {
+      $("a4Btns").style.display = isTray ? "none" : "flex";
+      $("trayBtns").style.display = isTray ? "flex" : "none";
+      $("trayHint").style.display = isTray ? "block" : "none";
+      $("sheetTitle").textContent = isTray
+        ? "6. L805 Tray Sheet (300 DPI) — FRONT दिख रहा है"
+        : "6. A4 Sheet (300 DPI) — front | back जोड़ी, काटकर laminate करें";
+    };
 
     if (!tray.length) {
       const pv0 = $("sheetPreview");
@@ -354,6 +397,7 @@
       $("previewWrap").querySelectorAll(".slotX").forEach((x) => x.remove());
       $("sheetInfo").textContent = "Tray खाली है — ऊपर से card जोड़ें।";
       $("overWarn").style.display = "none";
+      toggleBtns();
       renderTray(0);
       return;
     }
@@ -363,25 +407,47 @@
     const over = Math.max(0, queue.length - capacity);
     const vis = queue.slice(0, capacity), visOwners = owners.slice(0, capacity);
 
-    const cv = document.createElement("canvas");
-    cv.width = sheetW; cv.height = sheetH;
-    const ctx = cv.getContext("2d");
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, sheetW, sheetH);
-    const pos = [];
-    vis.forEach((t, i) => {
-      const y = margin + i * (stripH + rowGap);
-      pos.push({ x: x0, y });
-      ctx.drawImage(t.front.cv, x0, y, CARD_W, CARD_H);
-      ctx.drawImage(t.back.cv, x0 + CARD_W + pairGap, y, CARD_W, CARD_H);
-      ctx.strokeStyle = "rgba(0,0,0,0.3)"; // cutting guides
-      ctx.lineWidth = 1;
-      ctx.strokeRect(x0 + 0.5, y + 0.5, CARD_W - 1, CARD_H - 1);
-      ctx.strokeRect(x0 + CARD_W + pairGap + 0.5, y + 0.5, CARD_W - 1, CARD_H - 1);
-    });
-    sheetOut = { canvas: cv, count: vis.length };
+    if (!isTray) {
+      const stripH = CARD_H;
+      vis.forEach((t, i) => slots.push({ x: x0, y: margin + i * (stripH + rowGap), w: stripW, h: stripH }));
+    }
 
-    // preview + ✕ overlays
+    const mk = () => {
+      const c = document.createElement("canvas");
+      c.width = sheetW; c.height = sheetH;
+      const g = c.getContext("2d");
+      g.fillStyle = "#ffffff"; g.fillRect(0, 0, sheetW, sheetH);
+      return [c, g];
+    };
+    const [cv, ctx] = mk();
+    let cvBack = null, ctxBack = null;
+    if (isTray) [cvBack, ctxBack] = mk();
+
+    if (isTray) {
+      [ctx, ctxBack].forEach((g) => {
+        g.strokeStyle = "rgba(0,0,0,0.18)"; g.lineWidth = 2; g.setLineDash([12, 10]);
+        slots.forEach((p) => g.strokeRect(p.x, p.y, p.w, p.h));
+        g.setLineDash([]);
+      });
+      vis.forEach((t, i) => {
+        const p = slots[i];
+        ctx.drawImage(t.front.cv, p.x, p.y, p.w, p.h);
+        ctxBack.drawImage(t.back.cv, p.x, p.y, p.w, p.h);
+      });
+      sheetOut = { front: cv, back: cvBack, count: vis.length };
+    } else {
+      vis.forEach((t, i) => {
+        const p = slots[i];
+        ctx.drawImage(t.front.cv, p.x, p.y, CARD_W, CARD_H);
+        ctx.drawImage(t.back.cv, p.x + CARD_W + pairGap, p.y, CARD_W, CARD_H);
+        ctx.strokeStyle = "rgba(0,0,0,0.3)"; ctx.lineWidth = 1;
+        ctx.strokeRect(p.x + 0.5, p.y + 0.5, CARD_W - 1, CARD_H - 1);
+        ctx.strokeRect(p.x + CARD_W + pairGap + 0.5, p.y + 0.5, CARD_W - 1, CARD_H - 1);
+      });
+      sheetOut = { canvas: cv, count: vis.length };
+    }
+
+    // preview (front) + ✕ overlays
     const pv = $("sheetPreview");
     const scale = 340 / sheetW;
     pv.width = Math.round(sheetW * scale);
@@ -390,11 +456,11 @@
     const wrap = $("previewWrap");
     wrap.querySelectorAll(".slotX").forEach((x) => x.remove());
     vis.forEach((t, i) => {
-      const p = pos[i];
+      const p = slots[i];
       const x = document.createElement("div");
       x.className = "slotX";
-      x.textContent = "✕";
-      x.style.left = Math.round((p.x + stripW) * scale - 22) + "px";
+      x.textContent = "\u2715";
+      x.style.left = Math.round((p.x + p.w) * scale - 22) + "px";
       x.style.top = Math.round(p.y * scale + 2) + "px";
       x.title = "ये card हटाएँ";
       x.onclick = () => { tray[visOwners[i]].copies--; renderSheet(); };
@@ -402,11 +468,14 @@
     });
 
     renderTray(capacity);
-    $("sheetInfo").textContent =
-      "A4 sheet • " + vis.length + " cards print होंगे • " + (capacity - vis.length) + " जगह खाली • 300 DPI";
+    toggleBtns();
+    $("sheetInfo").textContent = isTray
+      ? "Epson L805 Tray • " + vis.length + "/" + capacity + " cards • 300 DPI"
+      : "A4 sheet • " + vis.length + " cards print होंगे • " + (capacity - vis.length) + " जगह खाली • 300 DPI";
     $("overWarn").style.display = over ? "block" : "none";
-    if (over) $("overWarn").textContent =
-      "⚠️ Sheet में " + capacity + " cards ही आएँगे — " + over + " बच गए। Count कम करें या ✕ से हटाएँ।";
+    if (over) $("overWarn").textContent = isTray
+      ? "⚠️ Tray में " + capacity + " cards ही आएँगे — " + over + " बच गए। Count कम करें या अगली tray में निकालें।"
+      : "⚠️ Sheet में " + capacity + " cards ही आएँगे — " + over + " बच गए। Count कम करें या ✕ से हटाएँ।";
   }
 
   function renderTray(capacity) {
@@ -499,6 +568,14 @@
   $("dlBtn").onclick = () => {
     if (!sheetOut) return;
     sheetOut.canvas.toBlob((b) => SUITE_PHOTO.download(b, "idcards-a4.jpg"), "image/jpeg", 0.95);
+  };
+  $("dlFrontBtn").onclick = () => {
+    if (!sheetOut || !sheetOut.front) return;
+    sheetOut.front.toBlob((b) => SUITE_PHOTO.download(b, "L805-FRONT.jpg"), "image/jpeg", 0.95);
+  };
+  $("dlBackBtn").onclick = () => {
+    if (!sheetOut || !sheetOut.back) return;
+    sheetOut.back.toBlob((b) => SUITE_PHOTO.download(b, "L805-BACK.jpg"), "image/jpeg", 0.95);
   };
   $("printBtn").onclick = () => {
     if (!sheetOut) return;
