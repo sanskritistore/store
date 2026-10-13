@@ -710,5 +710,8 @@
    toast(`🎉 Frame live हो गया! Code: ${newCode||'(list देखो)'}`);listFrames();
   }catch(e){console.error(e);toast('save नहीं हुआ — फिर कोशिश करें')}
   btn.disabled=false;btn.textContent='💾 Frame Save — तुरंत live'};
+ /* debug/test hooks — maker की अंदरूनी state बाहर से देखने/चलाने के लिए (13-10) */
+ window.FM={acceptFrameImage,applyPunch,autoWindow,setPunch:v=>{aiPunch=v},
+  get W(){return W},set W(v){W=v},get pngMask(){return pngMask},get imgFile(){return imgFile}};
  gPrev();
 })();</script></body></html>
