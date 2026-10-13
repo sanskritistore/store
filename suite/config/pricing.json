@@ -1,0 +1,16 @@
+{
+  "v": 1,
+  "updated": "2026-10-13",
+  "note": "Print Cafe counter pricing — price aisa ke nuksan na ho. currency INR.",
+  "photo_prints": [
+    { "size": "passport-in", "copies": 8, "price": 100, "label": "पासपोर्ट 8 copies" },
+    { "size": "passport-in", "copies": 16, "price": 180, "label": "पासपोर्ट 16 copies" },
+    { "size": "photo-4x6", "copies": 1, "price": 30, "label": "4×6 single" },
+    { "size": "photo-5x7", "copies": 1, "price": 60, "label": "5×7 single" }
+  ],
+  "digital_services": [
+    { "id": "form-fill", "label": "Form भरना", "price": 50 },
+    { "id": "bg-change", "label": "Background बदलना", "price": 20 },
+    { "id": "resume-basic", "label": "Resume बनाना", "price": 99 }
+  ]
+}

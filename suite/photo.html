@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Photo Studio — Sanskriti Print Suite</title>
+<link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --maroon:#6b1f2a; --maroon-dark:#4a141d; --gold:#c9a227; --ivory:#fdf8ef; --ink:#2b2118; }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { font-family:'Mukta',sans-serif; background:var(--ivory); color:var(--ink); }
+  header { background:linear-gradient(135deg,var(--maroon-dark),var(--maroon)); color:var(--ivory);
+    padding:14px 16px; display:flex; align-items:center; gap:12px; border-bottom:3px solid var(--gold);
+    position:sticky; top:0; z-index:50; }
+  header a { color:var(--gold-light,#e8c862); text-decoration:none; font-size:20px; }
+  header h1 { font-size:18px; font-weight:700; }
+  main { max-width:560px; margin:0 auto; padding:16px 14px 60px; }
+
+  .step-title { font-size:15px; font-weight:700; color:var(--maroon); margin:14px 0 8px; }
+  .sizes { display:flex; flex-wrap:wrap; gap:8px; }
+  .size-chip { border:2px solid #e6d9bd; background:#fff; border-radius:10px; padding:8px 12px;
+    font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; }
+  .size-chip.on { border-color:var(--gold); background:#fff8e6; color:var(--maroon); }
+  .size-chip small { display:block; font-weight:400; opacity:.65; font-size:11px; }
+
+  .upload-zone { margin-top:14px; border:2px dashed var(--gold); border-radius:14px; background:#fff;
+    padding:34px 16px; text-align:center; cursor:pointer; }
+  .upload-zone .big { font-size:38px; }
+  .upload-zone p { font-size:14px; font-weight:600; margin-top:6px; }
+  .upload-zone small { opacity:.65; font-size:12px; }
+
+  .editor { display:none; margin-top:14px; }
+  .crop-wrap { position:relative; margin:0 auto; background:#222; border-radius:10px; overflow:hidden;
+    touch-action:none; user-select:none; }
+  .crop-wrap canvas { display:block; }
+  .guide { position:absolute; pointer-events:none; border:2px dashed rgba(255,255,255,.85);
+    border-radius:50%; box-shadow:0 0 0 9999px rgba(0,0,0,.35); }
+  .guide-line { position:absolute; left:0; right:0; pointer-events:none;
+    border-top:1px dashed rgba(255,255,255,.5); }
+
+  .controls { margin-top:12px; display:flex; flex-direction:column; gap:10px; }
+  .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .row label { font-size:13px; font-weight:600; min-width:52px; }
+  input[type=range] { flex:1; accent-color:var(--maroon); }
+  .btn { border:none; border-radius:10px; padding:11px 16px; font-size:14px; font-weight:700;
+    cursor:pointer; font-family:inherit; }
+  .btn-main { background:var(--maroon); color:#fff; flex:1; }
+  .btn-gold { background:var(--gold); color:#3a2c00; }
+  .btn-soft { background:#f3ead6; color:var(--ink); border:1px solid #e2d3b4; }
+  .btn:active { transform:scale(.97); }
+  .bg-dots { display:flex; gap:8px; }
+  .bg-dot { width:30px; height:30px; border-radius:50%; border:2px solid #ccc; cursor:pointer; }
+  .bg-dot.on { border-color:var(--maroon); box-shadow:0 0 0 2px #fff,0 0 0 4px var(--maroon); }
+
+  .sheet-area { display:none; margin-top:16px; }
+  .sheet-preview { background:#fff; border:1px solid #e6d9bd; border-radius:10px; padding:10px; text-align:center; }
+  .sheet-preview canvas { max-width:100%; height:auto; border:1px solid #ddd; }
+  .info { font-size:13px; margin:8px 0; opacity:.8; }
+  #err { display:none; background:#fdecea; color:#a02c2c; border:1px solid #f5c6c0; border-radius:8px;
+    padding:10px 12px; font-size:13px; margin-top:12px; }
+  #busy { display:none; position:fixed; inset:0; background:rgba(43,33,24,.55); z-index:99;
+    align-items:center; justify-content:center; color:#fff; font-size:15px; font-weight:600;
+    text-align:center; padding:20px; }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="index.html">←</a>
+  <h1>📷 Photo Studio</h1>
+</header>
+
+<main>
+  <div class="step-title">1. Size चुनें</div>
+  <div class="sizes" id="sizeList"></div>
+
+  <div class="upload-zone" id="uploadZone">
+    <div class="big">📤</div>
+    <p>2. Photo डालें (tap करें)</p>
+    <small>Photo आपके device से बाहर नहीं जाती 🔒</small>
+    <input type="file" id="fileInput" accept="image/*" style="display:none">
+  </div>
+
+  <div class="editor" id="editor">
+    <div class="step-title">3. Photo ठीक करें — चेहरा गोले में रखें</div>
+    <div class="crop-wrap" id="cropWrap">
+      <canvas id="cropCanvas"></canvas>
+      <div class="guide" id="guide"></div>
+      <div class="guide-line" id="guideTop"></div>
+      <div class="guide-line" id="guideBottom"></div>
+    </div>
+    <div class="controls">
+      <div class="row">
+        <label>Zoom</label>
+        <input type="range" id="zoom" min="50" max="300" value="100">
+      </div>
+      <div class="row">
+        <button class="btn btn-soft" id="rotateBtn">↻ घुमाएँ</button>
+        <button class="btn btn-soft" id="enhanceBtn">✨ Auto Enhance</button>
+        <button class="btn btn-soft" id="bgBtn">🖼️ BG हटाएँ</button>
+      </div>
+      <div class="row" id="bgRow" style="display:none">
+        <label>BG रंग</label>
+        <div class="bg-dots" id="bgDots"></div>
+      </div>
+      <div class="row">
+        <button class="btn btn-main" id="nextBtn">आगे — Sheet बनाएँ →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet-area" id="sheetArea">
+    <div class="step-title">4. Print Sheet (300 DPI)</div>
+    <div class="sizes" id="sheetList" style="margin-bottom:10px"></div>
+    <div class="sheet-preview">
+      <canvas id="sheetPreview"></canvas>
+      <div class="info" id="sheetInfo"></div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn btn-main" id="dlBtn">⬇️ Sheet डाउनलोड (JPG)</button>
+      <button class="btn btn-gold" id="printBtn">🖨️ Print</button>
+    </div>
+    <div class="row" id="kbRow" style="margin-top:8px;display:none">
+      <button class="btn btn-soft" id="kbBtn" style="flex:1"></button>
+    </div>
+  </div>
+
+  <div id="err"></div>
+  <span id="cfgBadge"></span>
+</main>
+
+<div id="busy">⏳ काम हो रहा है...<br><small id="busyMsg"></small></div>
+
+<script src="js/core-config.js"></script>
+<script src="js/core-photo.js"></script>
+<script src="js/core-sheet.js"></script>
+<script src="js/ai-bg.js"></script>
+<script>
+(async function () {
+  const $ = (id) => document.getElementById(id);
+  const err = (m) => { const e = $("err"); e.style.display = m ? "block" : "none"; e.textContent = m || ""; };
+  const busy = (on, msg) => { $("busy").style.display = on ? "flex" : "none"; $("busyMsg").textContent = msg || ""; };
+
+  await SUITE.load();
+  SUITE.badge($("cfgBadge"));
+
+  // ---------- state ----------
+  let sel = null;            // चुना हुआ size config
+  let src = null;            // काम कर रही photo (canvas)
+  let tx = { scale: 1, x: 0, y: 0 };  // crop window पर image का transform
+  let baseScale = 1;
+  let sheet = null, sheetOut = null;
+
+  // ---------- 1. sizes ----------
+  const sizes = (SUITE.cfg.sizes.photo_sizes || []);
+  const sizeList = $("sizeList");
+  sizes.forEach((s, i) => {
+    const b = document.createElement("button");
+    b.className = "size-chip" + (i === 0 ? " on" : "");
+    b.innerHTML = s.label + "<small>" + s.w_mm + "×" + s.h_mm + " mm" + (s.kb_limit ? " · " + s.kb_limit[0] + "–" + s.kb_limit[1] + "KB" : "") + "</small>";
+    b.onclick = () => {
+      sizeList.querySelectorAll(".size-chip").forEach((x) => x.classList.remove("on"));
+      b.classList.add("on");
+      sel = s;
+      if (src) setupCrop();
+    };
+    sizeList.appendChild(b);
+  });
+  sel = sizes[0];
+
+  // ---------- 2. upload ----------
+  $("uploadZone").onclick = () => $("fileInput").click();
+  $("fileInput").onchange = async (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    err("");
+    busy(true, "Photo खुल रही है...");
+    try {
+      src = await SUITE_PHOTO.load(f);
+      src = SUITE_PHOTO.trimMargins(src);
+      $("editor").style.display = "block";
+      $("sheetArea").style.display = "none";
+      setupCrop();
+      $("editor").scrollIntoView({ behavior: "smooth" });
+    } catch (ex) { err(ex.message); }
+    busy(false);
+  };
+
+  // ---------- 3. crop editor ----------
+  const wrap = $("cropWrap"), cvs = $("cropCanvas");
+  let winW = 0, winH = 0;
+
+  function setupCrop() {
+    const maxW = Math.min(360, window.innerWidth - 28);
+    winW = maxW;
+    winH = Math.round((maxW * sel.h_mm) / sel.w_mm);
+    wrap.style.width = winW + "px";
+    wrap.style.height = winH + "px";
+    cvs.width = winW; cvs.height = winH;
+    baseScale = Math.max(winW / src.width, winH / src.height);
+    tx.scale = baseScale;
+    tx.x = (winW - src.width * tx.scale) / 2;
+    tx.y = (winH - src.height * tx.scale) / 2;
+    $("zoom").value = 100;
+    placeGuide();
+    draw();
+  }
+
+  function placeGuide() {
+    const g = $("guide");
+    let gh = winH * 0.6, gy = winH * 0.5;
+    if (sel.head_pct) {
+      gh = winH * ((sel.head_pct[0] + sel.head_pct[1]) / 2 / 100);
+      gy = winH * 0.52;
+    }
+    g.style.width = gh * 0.78 + "px";
+    g.style.height = gh + "px";
+    g.style.left = (winW - gh * 0.78) / 2 + "px";
+    g.style.top = gy - gh / 2 + "px";
+    $("guideTop").style.top = gy - gh / 2 + "px";
+    $("guideBottom").style.top = gy + gh / 2 + "px";
+  }
+
+  function draw() {
+    const ctx = cvs.getContext("2d");
+    ctx.fillStyle = "#222";
+    ctx.fillRect(0, 0, winW, winH);
+    ctx.drawImage(src, tx.x, tx.y, src.width * tx.scale, src.height * tx.scale);
+  }
+
+  // drag (pointer events — mouse + touch दोनों)
+  let drag = null;
+  wrap.addEventListener("pointerdown", (e) => { drag = { x: e.clientX - tx.x, y: e.clientY - tx.y }; wrap.setPointerCapture(e.pointerId); });
+  wrap.addEventListener("pointermove", (e) => { if (!drag) return; tx.x = e.clientX - drag.x; tx.y = e.clientY - drag.y; draw(); });
+  wrap.addEventListener("pointerup", () => (drag = null));
+
+  $("zoom").oninput = (e) => {
+    let ns = baseScale * (e.target.value / 100);
+    if (ns < baseScale) ns = baseScale; // image window se chhoti nahi — khali kinare nahi
+    const cx = winW / 2, cy = winH / 2; // center से zoom
+    tx.x = cx - ((cx - tx.x) / tx.scale) * ns;
+    tx.y = cy - ((cy - tx.y) / tx.scale) * ns;
+    tx.scale = ns;
+    draw();
+  };
+
+  $("rotateBtn").onclick = () => {
+    const r = document.createElement("canvas");
+    r.width = src.height; r.height = src.width;
+    const c = r.getContext("2d");
+    c.translate(r.width / 2, r.height / 2);
+    c.rotate(Math.PI / 2);
+    c.drawImage(src, -src.width / 2, -src.height / 2);
+    src = r;
+    setupCrop();
+  };
+
+  $("enhanceBtn").onclick = () => { SUITE_PHOTO.autoEnhance(src); draw(); };
+
+  // bg removal (lazy, fail-soft)
+  let bgHex = "#ffffff";
+  $("bgBtn").onclick = async () => {
+    busy(true, "AI background हटा रहा है — पहली बार ~30MB model download होगा");
+    err("");
+    try {
+      const cut = await SUITE_BG.remove(src);
+      src = SUITE_BG.flatten(cut, bgHex);
+      $("bgRow").style.display = "flex";
+      setupCrop();
+    } catch (ex) {
+      err("⚠️ " + ex.message + " — नेट check करें या बिना BG बदले आगे बढ़ें।");
+    }
+    busy(false);
+  };
+
+  (SUITE.cfg.sizes.bg_colors || []).forEach((c, i) => {
+    const d = document.createElement("div");
+    d.className = "bg-dot" + (i === 0 ? " on" : "");
+    d.style.background = c.hex;
+    d.title = c.label;
+    d.onclick = () => {
+      document.querySelectorAll(".bg-dot").forEach((x) => x.classList.remove("on"));
+      d.classList.add("on");
+      bgHex = c.hex;
+    };
+    $("bgDots").appendChild(d);
+  });
+
+  // ---------- 4. sheet ----------
+  $("nextBtn").onclick = () => {
+    $("sheetArea").style.display = "block";
+    buildSheets();
+    $("sheetArea").scrollIntoView({ behavior: "smooth" });
+  };
+
+  function exportPhoto() {
+    const out = SUITE.sizePx(sel);
+    const sx = Math.max(0, -tx.x / tx.scale);
+    const sy = Math.max(0, -tx.y / tx.scale);
+    const sw = Math.min(src.width - sx, winW / tx.scale);
+    const sh = Math.min(src.height - sy, winH / tx.scale);
+    return { cv: SUITE_PHOTO.cropTo(src, { x: sx, y: sy, w: sw, h: sh }, out.w, out.h), w: out.w, h: out.h };
+  }
+
+  function buildSheets() {
+    const list = $("sheetList");
+    list.innerHTML = "";
+    (SUITE.cfg.sizes.sheets || []).forEach((sh, i) => {
+      const b = document.createElement("button");
+      b.className = "size-chip" + (i === 0 ? " on" : "");
+      b.innerHTML = sh.label;
+      b.onclick = () => {
+        list.querySelectorAll(".size-chip").forEach((x) => x.classList.remove("on"));
+        b.classList.add("on");
+        sheet = sh;
+        renderSheet();
+      };
+      list.appendChild(b);
+    });
+    sheet = SUITE.cfg.sizes.sheets[0];
+    renderSheet();
+  }
+
+  function renderSheet() {
+    const ph = exportPhoto();
+    sheetOut = SUITE_SHEET.render(ph.cv, ph.w, ph.h, sheet, 300, SUITE);
+    const pv = $("sheetPreview");
+    const scale = Math.min(1, 320 / sheetOut.canvas.width);
+    pv.width = Math.round(sheetOut.canvas.width * scale);
+    pv.height = Math.round(sheetOut.canvas.height * scale);
+    pv.getContext("2d").drawImage(sheetOut.canvas, 0, 0, pv.width, pv.height);
+    $("sheetInfo").textContent =
+      "इस sheet पर " + sheetOut.count + " photos (" + sheetOut.cols + "×" + sheetOut.rows + ") • " +
+      sheet.label + " • 300 DPI print-ready";
+    // KB download (exam forms)
+    if (sel.kb_limit) {
+      $("kbRow").style.display = "flex";
+      $("kbBtn").textContent = "⬇️ Form upload के लिए single photo (" + sel.kb_limit[0] + "–" + sel.kb_limit[1] + " KB)";
+      $("kbBtn").onclick = async () => {
+        busy(true, "KB compress हो रहा...");
+        const b = await SUITE_PHOTO.compressToKB(exportPhoto().cv, sel.kb_limit[0], sel.kb_limit[1]);
+        SUITE_PHOTO.download(b, sel.id + "-photo.jpg");
+        busy(false);
+      };
+    } else {
+      $("kbRow").style.display = "none";
+    }
+  }
+
+  $("dlBtn").onclick = () => {
+    if (!sheetOut) return;
+    sheetOut.canvas.toBlob((b) => SUITE_PHOTO.download(b, "sheet-" + sel.id + "-" + sheet.id + ".jpg"), "image/jpeg", 0.95);
+  };
+
+  $("printBtn").onclick = () => {
+    if (!sheetOut) return;
+    const w = window.open("", "_blank");
+    const wi = sheet.w_mm / 25.4, hi = sheet.h_mm / 25.4;
+    w.document.write(
+      "<html><head><title>Print</title><style>@page{size:" + wi + "in " + hi + "in;margin:0}body{margin:0}img{width:" + sheet.w_mm + "mm;height:" + sheet.h_mm + "mm;display:block}</style></head><body>" +
+      '<img src="' + sheetOut.canvas.toDataURL("image/jpeg", 0.95) + '" onload="setTimeout(()=>window.print(),300)">' +
+      "</body></html>"
+    );
+    w.document.close();
+  };
+})();
+</script>
+</body>
+</html>

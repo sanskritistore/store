@@ -1,0 +1,39 @@
+{
+  "v": 1,
+  "updated": "2026-10-13",
+  "note": "Form Mode: har sarkari/exam form ke liye kya kya chahiye, kis size me. admin badal sakta hai jab notification aaye. item types: photo | sign | thumb | doc",
+  "forms": [
+    {
+      "id": "passport-seva",
+      "label": "पासपोर्ट अपॉइंटमेंट",
+      "items": [
+        { "type": "photo", "label": "फोटो", "w_mm": 35, "h_mm": 45, "kb": [20, 100], "dpi": 300 },
+        { "type": "sign", "label": "हस्ताक्षर", "w_mm": 45, "h_mm": 15, "kb": [10, 50], "dpi": 300, "ink_clean": true }
+      ]
+    },
+    {
+      "id": "pan-card",
+      "label": "PAN कार्ड",
+      "items": [
+        { "type": "photo", "label": "फोटो", "w_mm": 25, "h_mm": 35, "kb": [10, 50], "dpi": 300 },
+        { "type": "sign", "label": "हस्ताक्षर", "w_mm": 50, "h_mm": 20, "kb": [10, 60], "dpi": 300, "ink_clean": true }
+      ]
+    },
+    {
+      "id": "ssc-exam",
+      "label": "SSC / सरकारी Exam",
+      "items": [
+        { "type": "photo", "label": "फोटो", "w_mm": 35, "h_mm": 45, "kb": [20, 50], "dpi": 200 },
+        { "type": "sign", "label": "हस्ताक्षर", "w_mm": 40, "h_mm": 15, "kb": [10, 20], "dpi": 200, "ink_clean": true },
+        { "type": "thumb", "label": "अंगूठा निशान", "w_mm": 30, "h_mm": 40, "kb": [10, 50], "dpi": 200, "ink_clean": true }
+      ]
+    },
+    {
+      "id": "driving-licence",
+      "label": "ड्राइविंग लाइसेंस",
+      "items": [
+        { "type": "photo", "label": "फोटो", "w_mm": 35, "h_mm": 45, "kb": [10, 100], "dpi": 300 }
+      ]
+    }
+  ]
+}

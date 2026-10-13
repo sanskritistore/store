@@ -1,0 +1,19 @@
+{
+  "v": 1,
+  "updated": "2026-10-13",
+  "note": "SaaS plans (P6) + public pricing. tenant_id har jagah; default tenant 'printcafe' = tenant #0 unlimited.",
+  "tenants": [
+    { "id": "printcafe", "name": "CSC Print Cafe (खुद)", "plan": "unlimited", "modules": "all" }
+  ],
+  "plans": [
+    { "id": "free", "price": 0, "sheets_per_day": 5, "watermark": true, "modules": ["photo"] },
+    { "id": "shop-299", "price": 299, "period": "month", "sheets_per_day": 50, "watermark": false, "modules": ["photo", "idcard"] },
+    { "id": "shop-799", "price": 799, "period": "month", "sheets_per_day": -1, "watermark": false, "modules": "all", "own_branding": true }
+  ],
+  "public_pricing": {
+    "note": "jaal nahi — itna sasta ki soch kar na de",
+    "resume_hd_download": 29,
+    "album_design_unlock": "final price me adjust",
+    "watermark_free_tier": true
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "v": 1,
+  "updated": "2026-10-13",
+  "note": "koi hardcode nahi — sab sizes yahan se badlo. mm me likho, px runtime par banta hai (px = mm/25.4*dpi)",
+  "defaults": { "dpi": 300, "bg": "#ffffff" },
+  "photo_sizes": [
+    { "id": "passport-in", "label": "पासपोर्ट (India)", "w_mm": 35, "h_mm": 45, "head_pct": [50, 69], "bg": "#ffffff", "kb_limit": null },
+    { "id": "visa-us", "label": "US Visa (51×51)", "w_mm": 51, "h_mm": 51, "head_pct": [50, 69], "bg": "#ffffff", "kb_limit": null },
+    { "id": "visa-schengen", "label": "Schengen Visa", "w_mm": 35, "h_mm": 45, "head_pct": [70, 80], "bg": "#ffffff", "kb_limit": null },
+    { "id": "stamp", "label": "Stamp Size", "w_mm": 20, "h_mm": 25, "head_pct": null, "bg": "#ffffff", "kb_limit": null },
+    { "id": "exam-20-50kb", "label": "Exam Form (20–50 KB)", "w_mm": 35, "h_mm": 45, "head_pct": null, "bg": "#ffffff", "kb_limit": [20, 50] },
+    { "id": "exam-10-20kb", "label": "Exam Form (10–20 KB)", "w_mm": 35, "h_mm": 45, "head_pct": null, "bg": "#ffffff", "kb_limit": [10, 20] },
+    { "id": "photo-4x6", "label": "Photo 4×6 inch", "w_mm": 102, "h_mm": 152, "head_pct": null, "bg": null, "kb_limit": null },
+    { "id": "photo-5x7", "label": "Photo 5×7 inch", "w_mm": 127, "h_mm": 178, "head_pct": null, "bg": null, "kb_limit": null }
+  ],
+  "sheets": [
+    { "id": "4x6", "label": "4×6 inch sheet", "w_mm": 152, "h_mm": 102, "gap_mm": 2, "margin_mm": 3 },
+    { "id": "5x7", "label": "5×7 inch sheet", "w_mm": 178, "h_mm": 127, "gap_mm": 2, "margin_mm": 3 },
+    { "id": "a4", "label": "A4 sheet", "w_mm": 210, "h_mm": 297, "gap_mm": 3, "margin_mm": 5 },
+    { "id": "roll-12", "label": "12 inch roll (Plotter)", "w_mm": 305, "h_mm": 914, "gap_mm": 3, "margin_mm": 5 }
+  ],
+  "bg_colors": [
+    { "id": "white", "label": "सफ़ेद", "hex": "#ffffff" },
+    { "id": "blue", "label": "नीला", "hex": "#3b6ea5" },
+    { "id": "red", "label": "लाल", "hex": "#c0392b" },
+    { "id": "grey", "label": "ग्रे", "hex": "#d5d8dc" }
+  ]
+}

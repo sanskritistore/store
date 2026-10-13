@@ -1,0 +1,17 @@
+{
+  "v": 1,
+  "updated": "2026-10-13",
+  "note": "Resume+Biodata professions (Module C — P3). tags = search aliases (Hindi+English). har profession ke fields baad me badhenge.",
+  "professions": [
+    { "id": "hotel-staff", "label": "Hotel Staff", "tags": ["hotel", "होटल", "hotel line", "hospitality", "waiter", "वेटर"] },
+    { "id": "restaurant", "label": "Restaurant / Cook", "tags": ["restaurant", "रेस्टोरेंट", "cook", "रसोइया", "chef", "kitchen"] },
+    { "id": "salon", "label": "Salon / Beauty Parlour", "tags": ["salon", "सैलून", "saloon", "beauty parlour", "ब्यूटी पार्लर", "parlour"] },
+    { "id": "driver", "label": "Driver", "tags": ["driver", "ड्राइवर", "चालक", "taxi", "truck"] },
+    { "id": "computer-operator", "label": "Computer Operator", "tags": ["computer operator", "कंप्यूटर ऑपरेटर", "data entry", "डाटा एंट्री", "dtp"] },
+    { "id": "office-boy", "label": "Office Boy / Helper", "tags": ["office boy", "ऑफिस बॉय", "helper", "हेल्पर", "peon"] },
+    { "id": "sales", "label": "Sales / Counter Staff", "tags": ["sales", "सेल्स", "counter", "दुकान", "shop"] },
+    { "id": "fresher", "label": "Fresher (General)", "tags": ["fresher", "फ्रेशर", "general", "नौकरी", "job"] }
+  ],
+  "template_tiers": ["classic", "modern", "latest"],
+  "languages": ["hi", "en"]
+}

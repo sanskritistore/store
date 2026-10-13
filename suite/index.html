@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sanskriti Print Suite — दुकान का पूरा Software</title>
+<meta name="description" content="Photo Studio, ID Card, Resume, Album — सब एक जगह। Easy, fast, koi hardcode nahi.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --maroon: #6b1f2a; --maroon-dark: #4a141d; --gold: #c9a227; --gold-light: #e8c862;
+    --ivory: #fdf8ef; --ink: #2b2118;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Mukta', sans-serif; background: var(--ivory); color: var(--ink); min-height: 100vh; }
+
+  header {
+    background: linear-gradient(135deg, var(--maroon-dark), var(--maroon));
+    color: var(--ivory); padding: 28px 18px 34px; text-align: center;
+    border-bottom: 4px solid var(--gold);
+  }
+  header h1 { font-size: 26px; font-weight: 800; letter-spacing: .5px; }
+  header h1 span { color: var(--gold-light); }
+  header p { opacity: .85; font-size: 14px; margin-top: 4px; }
+  .shubh { font-size: 12px; color: var(--gold-light); margin-bottom: 6px; letter-spacing: 2px; }
+
+  main { max-width: 720px; margin: 0 auto; padding: 20px 14px 40px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (min-width: 560px) { .grid { grid-template-columns: 1fr 1fr 1fr; } }
+
+  .card {
+    background: #fff; border: 2px solid #eee0c8; border-radius: 14px;
+    padding: 18px 12px; text-align: center; text-decoration: none; color: var(--ink);
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    transition: transform .12s, box-shadow .12s; position: relative;
+  }
+  .card:active { transform: scale(.97); }
+  .card.live { border-color: var(--gold); box-shadow: 0 4px 14px rgba(201,162,39,.25); }
+  .card.soon { opacity: .75; }
+  .card .icon { font-size: 34px; line-height: 1; }
+  .card h2 { font-size: 16px; font-weight: 700; }
+  .card p { font-size: 12px; opacity: .7; line-height: 1.35; }
+  .chip {
+    font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 20px; margin-top: 4px;
+  }
+  .chip.live { background: #e6f6e6; color: #1e7e34; border: 1px solid #b7e2b7; }
+  .chip.soon { background: #f5f0e4; color: #8a6d1d; border: 1px solid #e4d9b7; }
+
+  .promise {
+    margin-top: 26px; background: #fff; border: 1px solid #eee0c8; border-radius: 12px;
+    padding: 14px 16px; font-size: 13px; line-height: 1.6;
+  }
+  .promise b { color: var(--maroon); }
+  footer { text-align: center; padding: 18px; font-size: 12px; opacity: .6; }
+  #cfgBadge { display: block; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="shubh">॥ श्री गणेशाय नमः ॥</div>
+  <h1>Sanskriti <span>Print Suite</span></h1>
+  <p>दुकान का पूरा software — एक जगह</p>
+</header>
+
+<main>
+  <div class="grid" id="moduleGrid"></div>
+
+  <div class="promise">
+    <b>हमारे उसूल:</b> आसान (कम clicks) • तेज़ • सालों-साल चलने लायक •
+    <b>कोई hardcode नहीं</b> — हर size, हर दाम config से बदलता है।
+    आपकी photos आपके device से बाहर नहीं जातीं। 🔒
+  </div>
+
+  <footer>
+    CSC Print Cafe • Sanskriti Print Suite v0.1 (P0+P1)
+    <span id="cfgBadge"></span>
+  </footer>
+</main>
+
+<script src="js/core-config.js"></script>
+<script>
+(async function () {
+  await SUITE.load();
+  SUITE.badge(document.getElementById("cfgBadge"));
+
+  const modules = [
+    { icon: "📷", name: "Photo Studio", desc: "Passport, Visa, Exam photos — exact size, sheet print", href: "photo.html", live: true },
+    { icon: "🪪", name: "ID Card", desc: "Aadhaar, PAN, Voter ID — PVC card print", soon: true },
+    { icon: "📄", name: "Resume + Biodata", desc: "Profession-wise latest formats, 2 मिनट में तैयार", soon: true },
+    { icon: "📖", name: "Photo Album", desc: "AI design + आपकी photos — ready albums", soon: true },
+    { icon: "🧰", name: "PDF Tools", desc: "Merge, compress, JPG ↔ PDF", soon: true },
+    { icon: "💌", name: "Invitations", desc: "शादी-तिलक के cards, WhatsApp HD", soon: true },
+  ];
+
+  const grid = document.getElementById("moduleGrid");
+  for (const m of modules) {
+    const a = document.createElement("a");
+    a.className = "card " + (m.live ? "live" : "soon");
+    a.href = m.live ? m.href : "#";
+    if (!m.live) a.addEventListener("click", (e) => e.preventDefault());
+    a.innerHTML =
+      '<div class="icon">' + m.icon + "</div>" +
+      "<h2>" + m.name + "</h2>" +
+      "<p>" + m.desc + "</p>" +
+      '<span class="chip ' + (m.live ? "live" : "soon") + '">' + (m.live ? "● चालू" : "जल्द आ रहा है") + "</span>";
+    grid.appendChild(a);
+  }
+})();
+</script>
+</body>
+</html>

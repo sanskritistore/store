@@ -1,0 +1,20 @@
+{
+  "v": 1,
+  "updated": "2026-10-13",
+  "note": "Album sizes + types (Module D — P4). Template Maker se bante hain, config-driven.",
+  "album_sizes_mm": [
+    [305, 914], [305, 762], [305, 457], [457, 610], [406, 610],
+    [305, 305], [203, 610], [254, 762], [210, 297], [297, 420], [203, 254], [127, 178]
+  ],
+  "album_types": [
+    "wedding", "engagement", "pre-wedding", "birthday", "baby",
+    "anniversary", "portfolio", "mundan", "school", "travel"
+  ],
+  "slot_types": ["photo", "text", "qr"],
+  "sample_catalog": {
+    "note": "50+ AI-designed sample albums pehle se; customer sirf photos swap karega, design locked",
+    "preview_dpi": 72,
+    "print_dpi": 300,
+    "watermark": true
+  }
+}

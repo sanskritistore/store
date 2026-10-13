@@ -1,0 +1,12 @@
+{
+  "v": 1,
+  "updated": "2026-10-13",
+  "note": "ID Card types (Module B — P2). CR80 = 85.6 x 53.98 mm. Naya Aadhaar: photo + QR only, printed details nahi.",
+  "card_stock": { "cr80": { "w_mm": 85.6, "h_mm": 53.98, "dpi": 300 } },
+  "id_types": [
+    { "id": "aadhaar-new", "label": "आधार (नया format)", "layout": "photo_qr_only", "fields": [], "note": "sirf photo + QR — naye niyam" },
+    { "id": "aadhaar-old", "label": "आधार (पुराना)", "layout": "full", "fields": ["name", "dob", "aadhaar_no", "address"] },
+    { "id": "voter-id", "label": "वोटर ID", "layout": "full", "fields": ["name", "epic_no", "address"] },
+    { "id": "pan", "label": "PAN", "layout": "full", "fields": ["name", "father", "dob", "pan_no"] }
+  ]
+}
