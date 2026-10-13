@@ -441,8 +441,23 @@
    for(let ox=0;ox<w;ox++){const sx0=Math.floor(ox*iw/w),sx1=Math.max(sx0+1,Math.ceil((ox+1)*iw/w));
     let m=255;for(let sy=sy0;sy<sy1;sy++){const base=sy*iw;for(let sx=sx0;sx<sx1;sx++){const a=d[(base+sx)*4+3];if(a<m)m=a}}
     mn[oy*w+ox]=m}}
-  const tr=p=>mn[p]<16;
-  /* regions label करो — border flood नहीं: collage cells किनारे से छूती हैं, इसलिए बाद में filter से background हटाएँगे */
+   const tr=p=>mn[p]<16;
+  /* 1) divider LINES पकड़ो: column/row में opaque गिनती — अधूरी lines भी peak देती हैं */
+  const colP=new Uint32Array(w),rowP=new Uint32Array(h);
+  for(let yy=0;yy<h;yy++)for(let xx=0;xx<w;xx++)if(!tr(yy*w+xx)){colP[xx]++;rowP[yy]++}
+  const lines=(arr,dim,span)=>{const runs=[];let st=-1;
+   for(let i=0;i<=arr.length;i++){const on=i<arr.length&&arr[i]>span*0.12;
+    if(on&&st<0)st=i;else if(!on&&st>=0){runs.push((st+i-1)/2);st=-1}}
+   const out=[];runs.forEach(r=>{if(!out.length||r-out[out.length-1]>dim*0.04)out.push(r)});
+   return out.map(v=>v/dim*100)};
+  const vL=lines(colP,w,h),hL=lines(rowP,h,w);
+  if(!vL.length||!hL.length)return[]; /* grid नहीं → single-window flow */
+  const xs=[0,...vL,100],ys=[0,...hL,100],cells=[];
+  for(let r=0;r<ys.length-1;r++)for(let cc=0;cc<xs.length-1;cc++){
+   const cw=xs[cc+1]-xs[cc],ch=ys[r+1]-ys[r];
+   if(cw>=4&&ch>=4)cells.push({x:xs[cc],y:ys[r],w:cw,h:ch,shape:'rect'})}
+  if(cells.length<2)return[];
+  /* 2) cell के भीतर बंद region (circle ring का अंदर वाला हिस्सा) → उस cell का असली window+shape */
   const lab=new Int32Array(w*h).fill(-1),regs=[],per=w*2+h*2;
   for(let i=0;i<w*h;i++){
    if(!tr(i)||lab[i]>=0)continue;
@@ -455,16 +470,20 @@
     if(y>0&&tr(p-w)&&lab[p-w]<0){lab[p-w]=id;q.push(p-w)}
     if(y<h-1&&tr(p+w)&&lab[p+w]<0){lab[p+w]=id;q.push(p+w)}}
    regs.push({x0,y0,x1,y1,cnt,touch})}
-  return regs.filter(r=>{
+  regs.filter(r=>{
    const area=r.cnt/(w*h),bw=r.x1-r.x0+1,bh=r.y1-r.y0+1,fill=r.cnt/(bw*bh),edge=r.touch/per;
-   return area>=0.015&&area<=0.55&&fill>=0.45&&edge<=0.45 /* बड़ा/cिनारे-घेरा हुआ = background, पतला ring-corner = noise */
-  }).map(r=>{
-   const bw=r.x1-r.x0+1,bh=r.y1-r.y0+1,fill=r.cnt/(bw*bh);
+   return area>=0.015&&area<=0.55&&fill>=0.45&&edge<=0.45
+  }).forEach(r=>{
+   const bw=(r.x1-r.x0+1)/w*100,bh=(r.y1-r.y0+1)/h*100,fill=r.cnt/((r.x1-r.x0+1)*(r.y1-r.y0+1));
    let shape='rect';
-   if(Math.abs(bw/bh-1)<0.12&&Math.abs(fill-0.785)<0.09)shape='circle';
+   if(Math.abs((r.x1-r.x0+1)/(r.y1-r.y0+1)-1)<0.12&&Math.abs(fill-0.785)<0.09)shape='circle';
    else if(fill<0.88)shape='oval';
-   return{x:+(r.x0/w*100).toFixed(1),y:+(r.y0/h*100).toFixed(1),w:+(bw/w*100).toFixed(1),h:+(bh/h*100).toFixed(1),shape,cnt:r.cnt}
-  }).sort((a,b)=>b.cnt-a.cnt) /* सबसे बड़ा slot = window 0 (main photo) */
+   const rg={x:r.x0/w*100,y:r.y0/h*100,w:bw,h:bh,shape};
+   const cx=rg.x+rg.w/2,cy=rg.y+rg.h/2;
+   const cell=cells.find(cl=>cx>=cl.x&&cx<=cl.x+cl.w&&cy>=cl.y&&cy<=cl.y+cl.h);
+   if(cell&&rg.w*rg.h>=cell.w*cell.h*0.5){cell.x=rg.x;cell.y=rg.y;cell.w=rg.w;cell.h=rg.h;cell.shape=rg.shape}});
+  return cells.map(c2=>({x:+c2.x.toFixed(1),y:+c2.y.toFixed(1),w:+c2.w.toFixed(1),h:+c2.h.toFixed(1),shape:c2.shape,cnt:c2.w*c2.h})
+  ).sort((a,b)=>b.cnt-a.cnt) /* सबसे बड़ा slot = window 0 (main photo) */
  }catch(e){return[]}}
  /* --- frame image upload --- */
  let imgFile=null,sampFile=null;
