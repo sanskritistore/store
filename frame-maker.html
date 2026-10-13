@@ -480,8 +480,11 @@
    else if(fill<0.88)shape='oval';
    const rg={x:r.x0/w*100,y:r.y0/h*100,w:bw,h:bh,shape};
    const cx=rg.x+rg.w/2,cy=rg.y+rg.h/2;
-   const cell=cells.find(cl=>cx>=cl.x&&cx<=cl.x+cl.w&&cy>=cl.y&&cy<=cl.y+cl.h);
-   if(cell&&rg.w*rg.h>=cell.w*cell.h*0.5){cell.x=rg.x;cell.y=rg.y;cell.w=rg.w;cell.h=rg.h;cell.shape=rg.shape}});
+    const cell=cells.find(cl=>cx>=cl.x&&cx<=cl.x+cl.w&&cy>=cl.y&&cy<=cl.y+cl.h);
+    /* region cell के अंदर सिमा हो (circle ring की तरह) तभी cell को replace करे — line-gap से जुड़े बड़े regions नहीं */
+    if(cell&&rg.w*rg.h>=cell.w*cell.h*0.5
+     &&rg.x>=cell.x-2&&rg.y>=cell.y-2&&rg.x+rg.w<=cell.x+cell.w+2&&rg.y+rg.h<=cell.y+cell.h+2){
+     cell.x=rg.x;cell.y=rg.y;cell.w=rg.w;cell.h=rg.h;cell.shape=rg.shape}});
   return cells.map(c2=>({x:+c2.x.toFixed(1),y:+c2.y.toFixed(1),w:+c2.w.toFixed(1),h:+c2.h.toFixed(1),shape:c2.shape,cnt:c2.w*c2.h})
   ).sort((a,b)=>b.cnt-a.cnt) /* सबसे बड़ा slot = window 0 (main photo) */
  }catch(e){return[]}}
