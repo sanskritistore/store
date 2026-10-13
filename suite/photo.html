@@ -33,6 +33,20 @@
   .crop-wrap { position:relative; margin:0 auto; background:#222; border-radius:10px; overflow:hidden;
     touch-action:none; user-select:none; }
   .crop-wrap canvas { display:block; }
+  /* crop corners — असली crop tool जैसे निशान */
+  .cc { position:absolute; width:24px; height:24px; border:4px solid #fff; pointer-events:none; z-index:6;
+    filter:drop-shadow(0 0 3px rgba(0,0,0,.8)); }
+  .cc.tl { top:5px; left:5px; border-right:none; border-bottom:none; }
+  .cc.tr { top:5px; right:5px; border-left:none; border-bottom:none; }
+  .cc.bl { bottom:5px; left:5px; border-right:none; border-top:none; }
+  .cc.br { bottom:5px; right:5px; border-left:none; border-top:none; }
+  .crop-hint { text-align:center; font-size:13px; font-weight:600; color:var(--maroon); margin-top:6px; }
+  .ver { font-size:10px; background:var(--gold); color:var(--maroon); border-radius:6px; padding:1px 6px; vertical-align:middle; }
+  /* मोटा slider — उंगली से पकड़ने में आसान */
+  input[type=range] { -webkit-appearance:none; appearance:none; height:8px; border-radius:4px; background:#e6d9bd; flex:1; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:30px; height:30px; border-radius:50%;
+    background:var(--maroon); border:3px solid #fff; box-shadow:0 1px 5px rgba(0,0,0,.35); cursor:pointer; }
+  input[type=range]::-moz-range-thumb { width:26px; height:26px; border-radius:50%; background:var(--maroon); border:3px solid #fff; cursor:pointer; }
   .guide { position:absolute; pointer-events:none; border:2px dashed rgba(255,255,255,.85);
     border-radius:50%; box-shadow:0 0 0 9999px rgba(0,0,0,.35); }
   .guide-line { position:absolute; left:0; right:0; pointer-events:none;
@@ -79,7 +93,7 @@
 
 <header>
   <a href="index.html">←</a>
-  <h1>📷 Photo Studio</h1>
+  <h1>📷 Photo Studio <span class="ver">v0.4</span></h1>
 </header>
 
 <main>
@@ -94,13 +108,15 @@
   </div>
 
   <div class="editor" id="editor">
-    <div class="step-title" id="editorTitle">3. Photo ठीक करें — चेहरा गोले में रखें</div>
+    <div class="step-title" id="editorTitle">3. ✂️ CROP करें — photo खींचें/zoom करें, चेहरा गोले में रखें</div>
     <div class="crop-wrap" id="cropWrap">
       <canvas id="cropCanvas"></canvas>
       <div class="guide" id="guide"></div>
       <div class="guide-line" id="guideTop"></div>
       <div class="guide-line" id="guideBottom"></div>
+      <div class="cc tl"></div><div class="cc tr"></div><div class="cc bl"></div><div class="cc br"></div>
     </div>
+    <div class="crop-hint">✂️ यही CROP tool है — photo को उंगली से खींचें (drag), नीचे slider से zoom करें, चेहरा गोले में रखें</div>
     <div class="controls">
       <div class="row">
         <label>Zoom</label>
@@ -328,7 +344,7 @@
     } else {
       tray[0].img = ph.cv; tray[0].orig = src; tray[0].w = ph.w; tray[0].h = ph.h; // वही photo — crop update
     }
-    $("editorTitle").textContent = "3. Photo ठीक करें — चेहरा गोले में रखें";
+    $("editorTitle").textContent = "3. ✂️ CROP करें — photo खींचें/zoom करें, चेहरा गोले में रखें";
     $("nextBtn").textContent = "आगे — Sheet बनाएँ →";
     $("sheetArea").style.display = "block";
     buildSheets();
