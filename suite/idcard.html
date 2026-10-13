@@ -97,7 +97,7 @@
 
 <header>
   <a href="index.html">←</a>
-  <h1>🪪 ID Card Print <span class="ver">v0.2</span></h1>
+  <h1>🪪 ID Card Print <span class="ver">v0.3</span></h1>
 </header>
 
 <main>
@@ -106,7 +106,7 @@
 
   <div class="upload-zone" id="uploadZone">
     <div class="big">📄</div>
-    <p id="uploadTitle">2. Card की photo या e-PDF डालें (tap करें)</p>
+    <p id="uploadTitle">2. Card डालें (photo या e-PDF) — ⚡ अपने आप पहचान लेंगे</p>
     <small>e-Aadhaar PDF चलेगी — password = नाम के 4 अक्षर + जन्म साल 🔒<br>Photo आपके device से बाहर नहीं जाती</small>
     <input type="file" id="fileInput" accept="image/*,.pdf" style="display:none">
   </div>
@@ -141,12 +141,12 @@
     </div>
   </div>
 
-  <div class="sheet-area" id="sheetArea" style="display:none">
+  <div class="sheet-area" id="sheetArea">
     <div class="step-title">5. Print कैसे करेंगे?</div>
     <div class="sizes" id="modeList" style="margin-bottom:10px">
-      <button class="size-chip on" data-m="a4">A4 Sheet<small>5 cards — काटकर laminate</small></button>
+      <button class="size-chip" data-m="a4">A4 Sheet<small>5 cards — काटकर laminate</small></button>
       <button class="size-chip" data-m="tray1">L805 Tray · 1 card<small>PVC card सीधे</small></button>
-      <button class="size-chip" data-m="tray2">L805 Tray · 2 cards<small>PVC cards सीधे</small></button>
+      <button class="size-chip on" data-m="tray2">L805 Tray · 2 cards<small>PVC cards सीधे</small></button>
     </div>
     <div class="step-title" id="sheetTitle">6. Sheet (300 DPI)</div>
     <div class="trayQuick" id="trayQuick"></div>
@@ -167,6 +167,7 @@
     <div class="crop-hint" id="trayHint" style="display:none">🖨️ पहले FRONT print करें → tray में cards पलटें → BACK print करें</div>
   </div>
 
+  <div id="okMsg" style="display:none; background:#e8f5e9; color:#1b5e20; border:1px solid #a5d6a7; border-radius:8px; padding:10px 12px; font-size:13px; margin-top:12px"></div>
   <div id="err" style="display:none; background:#fdecea; color:#b3261e; border:1px solid #f5c6c0; border-radius:8px; padding:10px 12px; font-size:13px; margin-top:12px"></div>
   <span id="cfgBadge"></span>
 </main>
@@ -176,10 +177,12 @@
 <script src="js/core-config.js"></script>
 <script src="js/core-photo.js"></script>
 <script src="js/core-crop.js"></script>
+<script src="js/core-detect.js"></script>
 <script>
 (async function () {
   const $ = (id) => document.getElementById(id);
   const err = (m) => { const e = $("err"); e.style.display = m ? "block" : "none"; e.textContent = m || ""; };
+  const ok = (m) => { const e = $("okMsg"); e.style.display = m ? "block" : "none"; e.textContent = m || ""; };
   const busy = (on, msg) => { $("busy").style.display = on ? "flex" : "none"; $("busyMsg").textContent = msg || ""; };
 
   await SUITE.load();
@@ -192,7 +195,7 @@
   const SHEET = SUITE.sheet(PRINT.sheet_id);
   const CARD_W = SUITE.mmToPx(STOCK.w_mm, STOCK.dpi), CARD_H = SUITE.mmToPx(STOCK.h_mm, STOCK.dpi);
   const TRAY = CFG.trays["epson-l805"];
-  let printMode = "a4"; // "a4" | "tray1" | "tray2"
+  let printMode = "tray2"; // "a4" | "tray1" | "tray2" — default: Dev की L805 tray
   const trayCapacity = () => (printMode === "tray1" ? 1 : 2);
   const ASPECT = STOCK.w_mm / STOCK.h_mm;
 
@@ -254,6 +257,36 @@
     busy(true, isPdf ? "PDF खुल रही है..." : "Photo खुल रही है...");
     try {
       srcPage = isPdf ? await loadPdf(f) : SUITE_PHOTO.trimMargins(await SUITE_PHOTO.load(f));
+      // ⚡ auto card पहचान — मिला तो सीधे tray में, नहीं तो manual crop box
+      const found = SUITE_DETECT.cards(srcPage, ASPECT);
+      if (found.length >= 2) {
+        const fR = found[0], bR = found[1];
+        tray.push({
+          front: { cv: SUITE_PHOTO.cropTo(srcPage, fR, CARD_W, CARD_H), orig: srcPage },
+          back: { cv: SUITE_PHOTO.cropTo(srcPage, bR, CARD_W, CARD_H), orig: srcPage },
+          copies: 1,
+        });
+        renderSheet();
+        ok("⚡ Front + Back दोनों अपने आप मिल गए — sheet पर तैयार!");
+        $("sheetArea").scrollIntoView({ behavior: "smooth" });
+        busy(false); e.target.value = ""; return;
+      }
+      if (found.length === 1) {
+        const cv1 = SUITE_PHOTO.cropTo(srcPage, found[0], CARD_W, CARD_H);
+        const last = tray[tray.length - 1];
+        if (last && !last.back) { // पिछले card का BACK बाकी था → यही उसका back
+          last.back = { cv: cv1, orig: srcPage };
+          ok("⚡ पिछले card का BACK जुड़ गया!");
+        } else {
+          tray.push({ front: { cv: cv1, orig: srcPage }, back: null, copies: 1 });
+          ok("⚡ FRONT मिल गया! अब BACK वाली photo डालें (या ✏️ crop से)।");
+        }
+        renderSheet();
+        $("sheetArea").scrollIntoView({ behavior: "smooth" });
+        busy(false); e.target.value = ""; return;
+      }
+      // 0 मिला → manual crop flow
+      ok("");
       $("editor").style.display = "block";
       $("editorTitle").textContent = side === "front" ? "✂️ FRONT crop करें — card के आगे वाले हिस्से पर box" : "✂️ BACK crop करें — card के पीछे वाले हिस्से पर box";
       $("okBtn").textContent = side === "front" ? "✓ Front पक्का — अब BACK →" : "✓ Card तैयार — preview →";
@@ -286,7 +319,7 @@
       front = { cv: cropCard(), orig: srcPage };
       if (editIdx >= 0) { // re-edit: सीधे back भी फिर से (origB से)
         side = "back";
-        srcPage = tray[editIdx].back.orig;
+        srcPage = tray[editIdx].back ? tray[editIdx].back.orig : srcPage;
         $("editorTitle").textContent = "✂️ BACK crop करें — card के पीछे वाले हिस्से पर box";
         $("okBtn").textContent = "✓ Crop save करें";
         cropEd.setImage(srcPage);
@@ -393,9 +426,22 @@
 
     if (!tray.length) {
       const pv0 = $("sheetPreview");
-      pv0.getContext("2d").clearRect(0, 0, pv0.width, pv0.height);
+      const scale0 = 340 / sheetW;
+      pv0.width = Math.round(sheetW * scale0);
+      pv0.height = Math.round(sheetH * scale0);
+      const g0 = pv0.getContext("2d");
+      g0.fillStyle = "#fff"; g0.fillRect(0, 0, pv0.width, pv0.height);
+      if (isTray) { // खाली slots dashed — "यहाँ card आएगा"
+        g0.strokeStyle = "rgba(122,31,42,0.4)"; g0.lineWidth = 2; g0.setLineDash([8, 7]);
+        slots.forEach((p) => g0.strokeRect(p.x * scale0, p.y * scale0, p.w * scale0, p.h * scale0));
+        g0.setLineDash([]);
+        g0.fillStyle = "rgba(122,31,42,0.5)";
+        g0.font = "600 13px Mukta, sans-serif";
+        g0.textAlign = "center";
+        slots.forEach((p, i) => g0.fillText("यहाँ card " + (i + 1), (p.x + p.w / 2) * scale0, (p.y + p.h / 2) * scale0));
+      }
       $("previewWrap").querySelectorAll(".slotX").forEach((x) => x.remove());
-      $("sheetInfo").textContent = "Tray खाली है — ऊपर से card जोड़ें।";
+      $("sheetInfo").textContent = "ऊपर से card डालें — ⚡ अपने आप slot में आ जाएगा।";
       $("overWarn").style.display = "none";
       toggleBtns();
       renderTray(0);
@@ -432,16 +478,25 @@
       vis.forEach((t, i) => {
         const p = slots[i];
         ctx.drawImage(t.front.cv, p.x, p.y, p.w, p.h);
-        ctxBack.drawImage(t.back.cv, p.x, p.y, p.w, p.h);
+        if (t.back) ctxBack.drawImage(t.back.cv, p.x, p.y, p.w, p.h);
       });
       sheetOut = { front: cv, back: cvBack, count: vis.length };
     } else {
       vis.forEach((t, i) => {
         const p = slots[i];
         ctx.drawImage(t.front.cv, p.x, p.y, CARD_W, CARD_H);
-        ctx.drawImage(t.back.cv, p.x + CARD_W + pairGap, p.y, CARD_W, CARD_H);
         ctx.strokeStyle = "rgba(0,0,0,0.3)"; ctx.lineWidth = 1;
         ctx.strokeRect(p.x + 0.5, p.y + 0.5, CARD_W - 1, CARD_H - 1);
+        if (t.back) {
+          ctx.drawImage(t.back.cv, p.x + CARD_W + pairGap, p.y, CARD_W, CARD_H);
+        } else {
+          ctx.fillStyle = "#f3ead8";
+          ctx.fillRect(p.x + CARD_W + pairGap, p.y, CARD_W, CARD_H);
+          ctx.fillStyle = "rgba(122,31,42,0.6)";
+          ctx.font = "600 28px Mukta, sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText("BACK बाकी", p.x + CARD_W + pairGap + CARD_W / 2, p.y + CARD_H / 2);
+        }
         ctx.strokeRect(p.x + CARD_W + pairGap + 0.5, p.y + 0.5, CARD_W - 1, CARD_H - 1);
       });
       sheetOut = { canvas: cv, count: vis.length };
@@ -509,7 +564,8 @@
       const tc = th.getContext("2d");
       tc.fillStyle = "#fff"; tc.fillRect(0, 0, tw, thH);
       tc.drawImage(t.front.cv, 0, 0, tw / 2 - 2, thH);
-      tc.drawImage(t.back.cv, tw / 2 + 2, 0, tw / 2 - 2, thH);
+      if (t.back) tc.drawImage(t.back.cv, tw / 2 + 2, 0, tw / 2 - 2, thH);
+      else { tc.fillStyle = "#f3ead8"; tc.fillRect(tw / 2 + 2, 0, tw / 2 - 2, thH); tc.fillStyle = "#7a1f2a"; tc.font = "9px sans-serif"; tc.textAlign = "center"; tc.fillText("BACK बाकी", tw * 0.75, thH / 2); }
       th.className = "trayThumbCard";
       d.appendChild(th);
       const row = document.createElement("div");
