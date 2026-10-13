@@ -148,6 +148,13 @@
      <button class="btn btn-o" id="cvb" type="button" style="flex:none">चुनें</button>
      <a class="btn btn-p" id="cvd" style="display:none;flex:none;text-decoration:none">⬇️ WebP</a>
     </div>
+    <div style="display:flex;gap:10px;align-items:center;margin-top:8px;background:#faf4fd;border:1.5px dashed #c8a8d8;border-radius:12px;padding:10px">
+     <img id="trth" style="width:54px;height:54px;object-fit:cover;border-radius:10px;display:none;border:1px solid #eee">
+     <div style="flex:1" id="trinfo"><b style="font-size:14px">✨ Transparent Tool (AI)</b><br>
+     <small style="color:#7a5f8a">Frame की सीधी photo चुनो → background अपने आप मिटेगा — Photoshop/Canva की ज़रूरत नहीं! (13-10 Dev)</small></div>
+     <button class="btn btn-o" id="trb" type="button" style="flex:none">चुनें</button>
+     <input type="file" id="trf" accept="image/*" hidden>
+    </div>
     <input type="file" id="cvf" accept="image/*" hidden>
     <input type="file" id="fsamp" accept="image/*" hidden>
     <input type="file" id="exsamp" accept="image/*" hidden>
@@ -366,20 +373,32 @@
   const c=document.createElement('canvas');c.width=w;c.height=h;
   const g=c.getContext('2d',{willReadFrequently:true});g.drawImage(im,0,0,w,h);
   const d=g.getImageData(0,0,w,h).data,tr=p=>d[p*4+3]<16;
+  /* 13-10: किनारे से जुड़ा transparent = background (AI tool का मिटाया हिस्सा), window नहीं —
+     पहले border से flood करके bg mark करो, फिर center BFS सिर्फ़ भीतर के transparent को window माने */
+  const bg=new Uint8Array(w*h),bst=[];
+  for(let x=0;x<w;x++){if(tr(x))bst.push(x);if(tr((h-1)*w+x))bst.push((h-1)*w+x)}
+  for(let y=0;y<h;y++){if(tr(y*w))bst.push(y*w);if(tr(y*w+w-1))bst.push(y*w+w-1)}
+  while(bst.length){const p=bst.pop();if(bg[p])continue;bg[p]=1;
+   const x=p%w,y=(p/w)|0;
+   if(x>0&&!bg[p-1]&&tr(p-1))bst.push(p-1);
+   if(x<w-1&&!bg[p+1]&&tr(p+1))bst.push(p+1);
+   if(y>0&&!bg[p-w]&&tr(p-w))bst.push(p-w);
+   if(y<h-1&&!bg[p+w]&&tr(p+w))bst.push(p+w)}
+  const trIn=p=>tr(p)&&!bg[p]; /* असली window candidate: transparent पर bg नहीं */
   // center से BFS — heart जैसी नोक वाली shapes (जिनकी gap किनारे से जुड़ी हो) भी सही पकड़ में आएँ
   let c0=Math.floor(w/2)+Math.floor(h/2)*w;
-  if(!tr(c0)){outer:for(let r=2;r<Math.min(w,h)/3;r+=3){for(let dx=-r;dx<=r;dx+=3){for(let dy=-r;dy<=r;dy+=3){
+  if(!trIn(c0)){outer:for(let r=2;r<Math.min(w,h)/3;r+=3){for(let dx=-r;dx<=r;dx+=3){for(let dy=-r;dy<=r;dy+=3){
    const x=(w>>1)+dx,y=(h>>1)+dy;if(x<0||y<0||x>=w||y>=h)continue;
-   if(tr(y*w+x)){c0=y*w+x;break outer}}}}}
-  if(!tr(c0))return null;
+   if(trIn(y*w+x)){c0=y*w+x;break outer}}}}}
+  if(!trIn(c0))return null;
   const seen=new Uint8Array(w*h),st=[c0];seen[c0]=1;
   let x0=w,y0=h,x1=-1,y1=-1,n=0;
   while(st.length){const p=st.pop(),x=p%w,y=(p/w)|0;n++;
    if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;
-   if(x>0&&!seen[p-1]&&tr(p-1)){seen[p-1]=1;st.push(p-1)}
-   if(x<w-1&&!seen[p+1]&&tr(p+1)){seen[p+1]=1;st.push(p+1)}
-   if(y>0&&!seen[p-w]&&tr(p-w)){seen[p-w]=1;st.push(p-w)}
-   if(y<h-1&&!seen[p+w]&&tr(p+w)){seen[p+w]=1;st.push(p+w)}}
+   if(x>0&&!seen[p-1]&&trIn(p-1)){seen[p-1]=1;st.push(p-1)}
+   if(x<w-1&&!seen[p+1]&&trIn(p+1)){seen[p+1]=1;st.push(p+1)}
+   if(y>0&&!seen[p-w]&&trIn(p-w)){seen[p-w]=1;st.push(p-w)}
+   if(y<h-1&&!seen[p+w]&&trIn(p+w)){seen[p+w]=1;st.push(p+w)}}
   if(n<w*h*0.005)return null;
   /* 12-10 शाम (Dev: "PNG का अंदरूनी हिस्सा अपने-आप photo area बने") — mask भी बनाओ:
      window bbox तक cropped, region = opaque white — photo stage पर असली shape में कटे */
@@ -421,7 +440,9 @@
   const cv=document.createElement('canvas');cv.width=im.naturalWidth;cv.height=im.naturalHeight;
   cv.getContext('2d').drawImage(im,0,0);URL.revokeObjectURL(im.src);
   cv.toBlob(b=>res(b),'image/webp',0.94)};im.src=URL.createObjectURL(file)})}
- $('#ff').onchange=async e=>{const f=e.target.files[0];if(!f)return;
+ /* frame image accept — manual PNG upload और AI Transparent Tool दोनों यहीं से (13-10) */
+ let aiPunch=false; /* AI से बनी image — save पर अंदर का window shape में punch होगा */
+ async function acceptFrameImage(f,fromAI){
   const kb0=Math.round(f.size/1024);
   imgFile=await toWebP(f);
   const kb1=Math.round(imgFile.size/1024);
@@ -434,7 +455,48 @@
    $('#dimg').src=CFG.frames.demo[1%CFG.frames.demo.length];applyPos();
    const aw=autoWindow(im);
    if(aw){W={x:aw.x,y:aw.y,w:aw.w,h:aw.h};pngMask=aw.mask||'';draw();toast('✅ Photo की जगह PNG से अपने आप मिल गई — photo असली shape में कटेगी!')}
-   else{pngMask='';draw();toast('अब photo की जगह drag करके चुनें 👆')}};im.src=ev.target.result};rd.readAsDataURL(imgFile)};
+   else{pngMask='';draw();if(!fromAI)toast('अब photo की जगह drag करके चुनें 👆')}};im.src=ev.target.result};rd.readAsDataURL(imgFile)}
+ $('#ff').onchange=async e=>{const f=e.target.files[0];if(!f)return;aiPunch=false;await acceptFrameImage(f,false)};
+ /* --- ✨ Transparent Tool (AI) — 13-10 Dev: "frame photo → अंदर+बाहर दोनों transparent, shadow असली आएगी" --- */
+ $('#trb').onclick=()=>$('#trf').click();
+ $('#trf').onchange=async e=>{const f=e.target.files[0];if(!f)return;e.target.value='';
+  const info=$('#trinfo');
+  try{
+   info.innerHTML='⏳ <b>AI model load हो रहा…</b><br><small>पहली बार 1-2 मिनट लग सकते हैं — फिर हमेशा तुरंत चलेगा</small>';
+   const mod=await import('https://esm.sh/@imgly/background-removal@1.7.0');
+   const blob=await mod.removeBackground(f,{model:'isnet_quint8',progress:(k,cur,tot)=>{
+    const pct=tot?Math.round(cur/tot*100):'';
+    info.innerHTML='⏳ <b>background मिट रहा है… '+(pct!==''?pct+'%':'')+'</b><br><small>AI browser में ही चल रहा है — photo कहीं नहीं जाती 🔒</small>'}});
+   await acceptFrameImage(new File([blob],'frame-ai.png',{type:'image/png'}),true);
+   aiPunch=true;
+   const th=$('#trth');th.src=URL.createObjectURL(blob);th.style.display='block';
+   info.innerHTML='✅ <b>Background मिट गया!</b><br><small>अब नीचे stage पर photo की जगह drag करो → save दबाओ — अंदर का हिस्सा भी अपने आप खाली होगा ✨</small>';
+   toast('✨ Transparent PNG तैयार! अब photo की जगह drag करो 👆');
+  }catch(err){console.error(err);info.innerHTML='❌ <b>नहीं बनी</b> — photo दोबारा चुनो (साफ़ photo में frame अच्छे कटता है)'}};
+ /* --- window punch: dragged box को shape में खाली करो (AI image के लिए) --- */
+ function shapePath(g,x,y,w,h,s){
+  g.beginPath();
+  if(s==='rounded'&&g.roundRect){g.roundRect(x,y,w,h,Math.min(w,h)*0.08)}
+  else if(s==='oval'||s==='circle'){g.ellipse(x+w/2,y+h/2,w/2,h/2,0,0,7)}
+  else if(s==='heart'){const cx=x+w/2;g.moveTo(cx,y+h*0.95);
+   g.bezierCurveTo(x-w*0.12,y+h*0.45,x+w*0.22,y-h*0.18,cx,y+h*0.32);
+   g.bezierCurveTo(x+w*0.78,y-h*0.18,x+w*1.12,y+h*0.45,cx,y+h*0.95)}
+  else if(s==='egg'){g.ellipse(x+w/2,y+h/2,w*0.42,h/2,0,0,7)}
+  else if(s==='bean'){g.ellipse(x+w/2,y+h/2,w/2*0.95,h/2*0.78,0.55,0,7)}
+  else{g.rect(x,y,w,h)}}
+ async function applyPunch(){ /* AI image: dragged window को shape में खाली करो → imgFile/W/pngMask अपडेट */
+  const url=await new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(imgFile)});
+  const im=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=url});
+  const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;
+  const g=c.getContext('2d');g.drawImage(im,0,0);
+  g.globalCompositeOperation='destination-out';
+  shapePath(g,W.x/100*c.width,W.y/100*c.height,W.w/100*c.width,W.h/100*c.height,$('#fshape').value);
+  g.fill();
+  imgFile=await new Promise(res=>c.toBlob(res,'image/webp',0.94));
+  const pim=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=c.toDataURL('image/png')});
+  const aw=autoWindow(pim);
+  if(aw){W={x:aw.x,y:aw.y,w:aw.w,h:aw.h};pngMask=aw.mask||''}
+  aiPunch=false}
  /* --- variants (mask + card thumb) browser में बनाओ — server कभी 5400px PNG decode न करे (12-10 रात speed fix) --- */
  async function mkVariants(){
   const out={};
@@ -458,6 +520,7 @@
   const name=$('#fname').value.trim();
   if(!name){toast('frame का नाम लिखें');return}
   const btn=$('#fsave');btn.disabled=true;btn.textContent='⏳ save हो रहा…';
+  if(aiPunch&&imgFile){try{await applyPunch()}catch(e){console.warn('punch',e)}} /* AI image — window punch पहले, फिर सामान्य save */
   if(EDIT){ /* ✏️ update mode — same frame PATCH, नया नहीं बनता; image दोबारा upload करना ज़रूरी नहीं (12-10 Dev bug fix) */
    try{const nid=EDIT.id.replace('fr-c','');
     const r=await fetch(B+'/store/frames/'+nid,{method:'PATCH',headers:Object.assign({'Content-Type':'application/json'},hdr()),
