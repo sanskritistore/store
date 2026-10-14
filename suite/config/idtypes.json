@@ -1,6 +1,6 @@
 {
-  "v": 1,
-  "updated": "2026-10-13",
+  "v": 2,
+  "updated": "2026-10-14",
   "note": "ID Card types (Module B — P2). CR80 = 85.6 x 53.98 mm. Naya Aadhaar: photo + QR only, printed details nahi.",
   "card_stock": {
     "cr80": {
@@ -47,6 +47,48 @@
         "father",
         "dob",
         "pan_no"
+      ]
+    },
+    {
+      "id": "ayushman",
+      "label": "आयुष्मान card",
+      "layout": "full",
+      "fields": [
+        "name",
+        "abha_no",
+        "district"
+      ],
+      "note": "PM-JAY योजना"
+    },
+    {
+      "id": "abha",
+      "label": "ABHA health ID",
+      "layout": "full",
+      "fields": [
+        "name",
+        "abha_no",
+        "dob"
+      ]
+    },
+    {
+      "id": "eshram",
+      "label": "ई-श्रम card",
+      "layout": "full",
+      "fields": [
+        "name",
+        "uan_no",
+        "dob"
+      ],
+      "note": "मज़दूर भाईों का"
+    },
+    {
+      "id": "dl",
+      "label": "Driving Licence",
+      "layout": "full",
+      "fields": [
+        "name",
+        "dl_no",
+        "dob"
       ]
     }
   ],

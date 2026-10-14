@@ -16,6 +16,50 @@
       return cv; // canvas me — aage sab canvas par
     },
 
+    /** ✨ Auto-enhance: फीका scan/photo निखारो — luma levels stretch + saturation हल्का boost
+        (per-channel stretch नहीं — warna card का नीला/रंग बिगड़ता; luma stretch रंग सुरक्षित रखता है) */
+    enhance(cv, saturation) {
+      saturation = saturation || 1.16;
+      const ctx = cv.getContext("2d");
+      const { width: w, height: h } = cv;
+      const im = ctx.getImageData(0, 0, w, h);
+      const d = im.data;
+      const hist = new Uint32Array(256);
+      const luma = new Uint8Array(w * h);
+      for (let i = 0, j = 0; i < d.length; i += 4, j++) {
+        const l = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) | 0;
+        luma[j] = l; hist[l]++;
+      }
+      const total = w * h;
+      let acc = 0, lo = 0, hi = 255;
+      for (let v = 0; v < 256; v++) { acc += hist[v]; if (acc >= total * 0.015) { lo = v; break; } }
+      acc = 0;
+      for (let v = 0; v < 256; v++) { acc += hist[v]; if (acc >= total * 0.985) { hi = v; break; } }
+      if (hi - lo < 40) { // पहले से ही अच्छा contrast — सिर्फ़ saturation
+        for (let i = 0; i < d.length; i += 4) {
+          const l = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+          d[i] = l + (d[i] - l) * saturation; d[i + 1] = l + (d[i + 1] - l) * saturation; d[i + 2] = l + (d[i + 2] - l) * saturation;
+        }
+        ctx.putImageData(im, 0, 0);
+        return cv;
+      }
+      const L = new Float32Array(256);
+      for (let v = 0; v < 256; v++) L[v] = Math.max(0, Math.min(255, ((v - lo) * 255) / (hi - lo)));
+      for (let i = 0; i < d.length; i += 4) {
+        const l = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+        const nl = L[l | 0];
+        const k = l > 0 ? nl / l : 0; // luma ratio — रंग के अनुपात बने रहें
+        d[i] = d[i] * k; d[i + 1] = d[i + 1] * k; d[i + 2] = d[i + 2] * k;
+      }
+      // saturation boost (levels के बाद)
+      for (let i = 0; i < d.length; i += 4) {
+        const l = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+        d[i] = l + (d[i] - l) * saturation; d[i + 1] = l + (d[i + 1] - l) * saturation; d[i + 2] = l + (d[i + 2] - l) * saturation;
+      }
+      ctx.putImageData(im, 0, 0);
+      return cv;
+    },
+
     /** Scan/photo ke safed kinare auto-kaato */
     trimMargins(cv, threshold) {
       threshold = threshold || 245;

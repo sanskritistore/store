@@ -79,6 +79,8 @@
   .chPad { display:flex; gap:5px; flex-wrap:wrap; margin-top:8px; align-items:center; }
   .chPad button { padding:8px 12px; border-radius:8px; border:1.5px solid #d9c9a8; background:#fff; font-size:16px; font-weight:800; cursor:pointer; }
   .chPad button:active { background:#f0e5cd; }
+  .chToggle { display:block; margin:10px auto 0; padding:7px 18px; border-radius:20px; border:1.5px solid #c9b48a; background:#fff; font:600 14px Mukta; color:#6b5a3e; cursor:pointer; }
+  .chToggle.on { background:#1a5c2e; color:#fff; border-color:#1a5c2e; }
   .chSide { padding:8px 13px !important; font-size:13.5px !important; }
   .chSide.on { background:#7a1f2a !important; color:#fff !important; border-color:#7a1f2a !important; }
   .sheet-preview { background:#fff; border:1px solid #e6d9bd; border-radius:10px; padding:10px; text-align:center; }
@@ -112,7 +114,7 @@
 
 <header>
   <a href="index.html">←</a>
-  <h1>🪪 ID Card Print <span class="ver">v0.9</span></h1>
+  <h1>🪪 ID Card Print <span class="ver">v1.0</span></h1>
 </header>
 
 <main>
@@ -190,6 +192,7 @@
       <button data-n="big">＋</button>
       <button data-n="small">－</button>
     </div>
+    <button class="chToggle on" id="chEnh">✨ रंग निखारें: ON</button>
     <button class="btn btn-main" id="chOk" style="width:100%; margin-top:10px">✓ सही है — sheet में जोड़ें</button>
     <button class="btn btn-soft" id="chManual" style="width:100%; margin-top:6px">✏️ गलत कटा है — खुद crop करूँगा</button>
   </div>
@@ -226,9 +229,9 @@
 <div id="busy"><div id="busyMsg">खुल रहा है...</div></div>
 
 <script src="js/core-config.js"></script>
-<script src="js/core-photo.js?v=5"></script>
+<script src="js/core-photo.js?v=7"></script>
 <script src="js/core-crop.js?v=5"></script>
-<script src="js/core-detect.js?v=5"></script>
+<script src="js/core-detect.js?v=7"></script>
 <script>
 (async function () {
   const $ = (id) => document.getElementById(id);
@@ -364,7 +367,13 @@
     y = Math.max(0, Math.min(srcPage.height - h, y));
     return { x, y, w, h };
   }
-  function chCrop(side) { return { cv: SUITE_PHOTO.cropTo(srcPage, chRectOf(side), CARD_W, CARD_H), orig: srcPage }; }
+  let chEnhOn = true;
+  $("chEnh").onclick = () => { chEnhOn = !chEnhOn; $("chEnh").textContent = chEnhOn ? "✨ रंग निखारें: ON" : "✨ रंग निखारें: OFF"; $("chEnh").classList.toggle("on", chEnhOn); chRefresh(); };
+  function chCrop(side) {
+    const cv = SUITE_PHOTO.cropTo(srcPage, chRectOf(side), CARD_W, CARD_H);
+    if (chEnhOn) SUITE_PHOTO.enhance(cv);
+    return { cv, orig: srcPage };
+  }
   function chChips(elId, side) {
     const el = $(elId);
     el.innerHTML = "";
@@ -389,6 +398,7 @@
     }
     const r = side ? chRectOf(side) : chFound[idx];
     g.drawImage(srcPage, r.x, r.y, r.w, r.h, 0, 0, 300, 190);
+    if (chEnhOn) SUITE_PHOTO.enhance(cvEl);
   }
   function chRefresh() {
     chChips("chF", "f"); chChips("chB", "b");
@@ -408,6 +418,7 @@
     $("editor").style.display = "none";
     $("cardReady").style.display = "none";
     $("backZone").style.display = "none";
+    $("chooser").style.display = "block"; // पहले दिखाओ — warna parent width 0 नापकर canvas छोटा बनता है और CSS stretch से outlines खिसक जाते हैं!
     const th = $("chThumb");
     const maxW = th.parentElement.clientWidth || 320;
     const sc = maxW / srcPage.width;
@@ -428,7 +439,6 @@
     const last = tray[tray.length - 1];
     if (found.length === 1 && last && !last.back) chSel = { f: -1, b: 0 };
     chRefresh();
-    $("chooser").style.display = "block";
     $("chooser").scrollIntoView({ behavior: "smooth" });
   }
   function openManual() {
