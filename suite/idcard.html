@@ -341,8 +341,12 @@
     slog("PDF tool तैयार — PDF पढ़ी जा रही...", true);
     const task = m.getDocument({ data: buf });
     task.onPassword = (cb, reason) => {
-      if (reason === 3) slog("Password गलत — फिर try करें", false);
-      askPassword().then((pw) => cb(pw || ""));
+      if (reason >= 2) slog("Password गलत — फिर try करें", false);
+      busy(false); // पर्दा हटाओ — warna password खाना नीचे छिपा रहता है
+      askPassword().then((pw) => {
+        busy(true, "PDF पढ़ी जा रही है...");
+        cb(pw || "");
+      });
     };
     const doc = await task.promise;
     slog("PDF खुल गई (" + doc.numPages + " page) — render हो रही...", true);
