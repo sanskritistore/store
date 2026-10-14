@@ -26,6 +26,18 @@ window.SUITE_DETECT = {
       h: Math.min(src.height - r.y * inv, r.h * inv),
     });
 
+    // bleed margin: कटरन लाइन के ठीक अंदर काटने से header/strip सट जाती है —
+    // print bleed की तरह थोड़ी सफ़ेद किनारी छोड़ो (ऊपर 3%, नीचे 4%, बाएँ-दाएँ 2%)
+    const bleed = (r) => {
+      const px = r.w * 0.02, pt = r.h * 0.03, pb = r.h * 0.04;
+      const x = Math.max(0, r.x - px), y = Math.max(0, r.y - pt);
+      return {
+        x, y,
+        w: Math.min(src.width - x, r.w + 2 * px),
+        h: Math.min(src.height - y, r.h + pt + pb),
+      };
+    };
+
     // ── bg रंग: border ring median ──
     const ring = [];
     const bw = Math.max(2, Math.round(w * 0.03)), bh = Math.max(2, Math.round(h * 0.03));
@@ -39,7 +51,7 @@ window.SUITE_DETECT = {
     const bg = [medC(0), medC(1), medC(2)];
 
     // ── mask: bg से अलग pixels ──
-    const THR2 = 14 * 14 * 3;
+    const THR2 = 28 * 28 * 3; // 14²×3 से बढ़ाया: e-Aadhaar का हल्का नीला page-tint (diff ~1500) content न बने
     const mask = new Uint8Array(w * h);
     for (let i = 0, j = 0; i < d.length; i += 4, j++) {
       const dr = d[i] - bg[0], dg = d[i + 1] - bg[1], db = d[i + 2] - bg[2];
@@ -66,9 +78,12 @@ window.SUITE_DETECT = {
         if (pw * ph > 0.10 * w * h && (pw < w * 0.96 || ph < h * 0.96)) {
           // page bbox → src से काटकर दोबारा detect (एक ही बार)
           const inv0 = 1 / sc;
-          // 2% inset — gray किनारे बाहर, inner ring को शुद्ध paper रंग मिले
-          const sx = Math.max(0, Math.round((px1 + pw * 0.02) * inv0)), sy = Math.max(0, Math.round((py1 + ph * 0.02) * inv0));
-          const sw = Math.min(src.width - sx, Math.round(pw * 0.96 * inv0)), sh = Math.min(src.height - sy, Math.round(ph * 0.96 * inv0));
+          // 1.5% OUTSET — block के बाहर की सफ़ेद margin साथ रखो: border-ring शुद्ध paper रहे (bg रंग सही)
+          // और content की border lines कटे नहीं (inset card की किनारी line काट देता था!)
+          const mx0 = w * 0.015, my0 = h * 0.015;
+          const sx = Math.max(0, Math.round((px1 - mx0) * inv0)), sy = Math.max(0, Math.round((py1 - my0) * inv0));
+          const ex = Math.min(w, Math.round(px2 + mx0)), ey = Math.min(h, Math.round(py2 + my0));
+          const sw = Math.min(src.width - sx, Math.round((ex - px1 + 1) * inv0)), sh = Math.min(src.height - sy, Math.round((ey - py1 + 1) * inv0));
           const sub = document.createElement("canvas");
           sub.width = sw; sub.height = sh;
           sub.getContext("2d").drawImage(src, sx, sy, sw, sh, 0, 0, sw, sh);
@@ -120,7 +135,7 @@ window.SUITE_DETECT = {
         if (picked.length >= 4) break;
       }
       picked.sort((a, b) => (Math.abs(a.y - b.y) < Math.min(a.h, b.h) * 0.3 ? a.x - b.x : a.y - b.y));
-      return picked.map(toSrc);
+      return picked.map((r) => bleed(toSrc(r)));
     };
 
     // ═══ dashed cut-guides mask से हटाओ (अकेली भरी row/col, पड़ोस खाली) ═══
@@ -298,6 +313,13 @@ window.SUITE_DETECT = {
         const ctxA = (rf[y - 3] + rf[y - 2] + rf[y + 2] + rf[y + 3]) / 4;
         if (f > ctxA * 1.8 + 0.08 && rowSpan(y) >= 0.7) spikes.push(y);
       }
+      // band-edge rows: मोटी पट्टी की सीमा (fill एक तरफ़ ठोस, दूसरी तरफ़ खाली) — spike ratio इन्हें चूक जाता है
+      for (let y = 4; y < h - 4; y++) {
+        const up = (rf[y - 3] + rf[y - 2]) / 2, dn = (rf[y + 2] + rf[y + 3]) / 2;
+        const f = rf[y];
+        if (f >= 0.4 && rowSpan(y) >= 0.7 && (up < 0.16 || dn < 0.16) && Math.max(f - up, f - dn) > 0.28) spikes.push(y);
+      }
+      spikes.sort((a, b) => a - b);
       const hlines = [];
       for (const y of spikes) {
         const last = hlines[hlines.length - 1];
@@ -314,6 +336,7 @@ window.SUITE_DETECT = {
           pairs.push([hYs[a], hYs[b]]);
         }
       pairs.sort((p, q) => q[1] - p[1]);
+      let solo = null; const cands = [];
       for (const [y1, y2] of pairs) {
         const bh2 = y2 - y1;
         const cf = new Float32Array(w);
@@ -343,29 +366,130 @@ window.SUITE_DETECT = {
         const bounds = [cL];
         for (const vx of vXs) if (vx > cL + w * 0.1 && vx < cR - w * 0.1) bounds.push(vx);
         bounds.push(cR);
+        // घुमावदार strips/rotated-text spikes card को टुकड़ों में काट देती हैं।
+        // छोटे (<18%) टुकड़े = strips। नियम: टुकड़ा तभी बड़े cell में मिलाओ जब उसका aspect
+        // card-range [1.2,2.4] से बाहर हो और मिलाने से ठीक हो (strip card के अंदर है);
+        // वरना टुकड़े को separator मानकर छोड़ दो (strip दो cards के बीच है)।
+        const rawCells = [];
+        for (let v = 0; v < bounds.length - 1; v++) rawCells.push([bounds[v], bounds[v + 1]]);
+        const isBig = (c) => c[1] - c[0] >= w * 0.18;
+        const bigs = rawCells.filter(isBig);
+        for (const bc of bigs) {
+          const aspOf = (c) => (c[1] - c[0]) / bh2;
+          let guard = 0;
+          while ((aspOf(bc) < 1.2 || aspOf(bc) > 2.4) && guard++ < 8) {
+            const i = rawCells.indexOf(bc);
+            const L = i > 0 && !isBig(rawCells[i - 1]) ? rawCells[i - 1] : null;
+            const R = i < rawCells.length - 1 && !isBig(rawCells[i + 1]) ? rawCells[i + 1] : null;
+            if (!L && !R) break;
+            const aL = L ? Math.abs(aspOf([L[0], bc[1]]) - 1.586) : 99;
+            const aR = R ? Math.abs(aspOf([bc[0], R[1]]) - 1.586) : 99;
+            if (aL <= aR && L) { bc[0] = L[0]; rawCells.splice(i - 1, 1); }
+            else if (R) { bc[1] = R[1]; rawCells.splice(i + 1, 1); }
+            else break;
+          }
+        }
+        // बचे छोटे टुकड़े separators — bounds = bigs के किनारे
+        bounds.length = 0;
+        bigs.sort((p, q) => p[0] - q[0]);
+        for (const bc of bigs) { if (!bounds.length) bounds.push(bc[0]); bounds.push(bc[1]); }
         const rects = [];
+        const loose = [];
         for (let v = 0; v < bounds.length - 1; v++) {
           const x1 = bounds[v], x2 = bounds[v + 1];
           const rw = x2 - x1;
+          let dense = 0;
+          for (let yy = y1; yy <= y2; yy++) for (let xx = x1; xx < x2; xx++) dense += dark[yy * w + xx];
           if (rw < w * 0.2) continue;
           const asp = rw / bh2;
           if (asp < 1.2 || asp > 2.4) continue;
-          let dense = 0;
-          for (let yy = y1; yy <= y2; yy++) for (let xx = x1; xx < x2; xx++) dense += dark[yy * w + xx];
-          if (dense / (rw * bh2) < 0.18) continue;
-          rects.push({ x: x1, y: y1, w: rw, h: bh2 });
+          const dn = dense / (rw * bh2);
+          if (dn >= 0.18) rects.push({ x: x1, y: y1, w: rw, h: bh2 });
+          else if (dn >= 0.06) loose.push({ x: x1, y: y1, w: rw, h: bh2 }); // photo वाला front card: हल्की photo-bg → कम density
         }
-        if (rects.length >= 2) { // असली card-जोड़ी: दोनों का aspect लगभग बराबर (दबाव दोनों पर एकसमान)
-          const a0 = rects[0].w / rects[0].h, a1 = rects[1].w / rects[1].h;
-          if (Math.abs(a0 - a1) / a1 > 0.1) continue;
+        const all = rects.concat(loose).sort((p, q) => p.x - q.x);
+        if (all.length >= 2) { // असली card-जोड़ी: दोनों का aspect लगभग बराबर — photo वाला हल्का card भी चले
+          const a0 = all[0].w / all[0].h, a1 = all[1].w / all[1].h;
+          if (Math.abs(a0 - a1) / a1 <= 0.1) {
+            // असली cards पेज के सबसे नीचे होते हैं → पहली कसौटी = सबसे बड़ा y2;
+            // बराबर y2 पर aspect CR80 (≈1.586) के करीब वाली पट्टी (ढीली/कसी हुई हार जाए)
+            const score = (Math.abs(a0 - 1.586) + Math.abs(a1 - 1.586)) / 2;
+            cands.push({ y2, score, cells: all });
+          }
         }
-        if (rects.length) return dedupeSort(rects);
+        if (rects.length === 1 && !solo) solo = rects; // PAN जैसी अकेली-card letter के लिए fallback
+      }
+      if (cands.length) {
+        cands.sort((p, q) => q.y2 - p.y2 || p.score - q.score);
+        return dedupeSort(cands[0].cells);
+      }
+      return solo || [];
+    };
+
+    // Stage D: निचले हिस्से में लंबी continuous vertical borders (card के solid किनारे) से aligned जोड़ी
+    const stageD = () => {
+      const y0 = Math.round(h * 0.5), y1m = Math.round(h * 0.97);
+      const zh = y1m - y0;
+      // हर col का सबसे लंबा continuous mask-run (border = लंबा, text strokes = छोटे)
+      const vcols = [];
+      for (let x = 1; x < w - 1; x++) {
+        let best = 0, run = 0;
+        for (let y = y0; y < y1m; y++) {
+          if (mask[y * w + x]) { run++; if (run > best) best = run; }
+          else run = 0;
+        }
+        if (best >= zh * 0.28) vcols.push(x);
+      }
+      // group करो (≤4px)
+      const vg = [];
+      for (const x of vcols) {
+        const last = vg[vg.length - 1];
+        if (last && x - last[last.length - 1] <= 4) last.push(x);
+        else vg.push([x]);
+      }
+      const vX = vg.map((g) => Math.round(g.reduce((a, b) => a + b) / g.length));
+      if (vX.length < 4) return [];
+      // आस-पास की border-jोड़ी = card candidates
+      const cands = [];
+      for (let i = 0; i + 1 < vX.length; i++) {
+        const x1 = vX[i], x2 = vX[i + 1];
+        const cw = x2 - x1;
+        if (cw < w * 0.2 || cw > w * 0.7) continue;
+        // row-extent: box के अंदर content rows
+        let ry1 = -1, ry2 = -1, dens = 0;
+        for (let y = y0; y < y1m; y++) {
+          let c = 0;
+          for (let x = x1 + 1; x < x2; x++) c += mask[y * w + x];
+          dens += c;
+          if (c / cw > 0.2) { if (ry1 < 0) ry1 = y; ry2 = y; }
+        }
+        if (ry1 < 0) continue;
+        const ch = ry2 - ry1 + 1;
+        const asp = cw / ch;
+        if (asp < 1.15 || asp > 2.5) continue;
+        if (dens / (cw * zh) < 0.1) continue;
+        cands.push({ x: x1, y: ry1, w: cw, h: ch, asp });
+      }
+      for (let i = 0; i < cands.length; i++) {
+        for (let j = i + 1; j < cands.length; j++) {
+          const A = cands[i], B = cands[j];
+          const ov = Math.min(A.y + A.h, B.y + B.h) - Math.max(A.y, B.y);
+          if (ov < Math.min(A.h, B.h) * 0.6) continue;
+          if (Math.abs(A.h - B.h) / B.h > 0.18) continue;
+          if (Math.abs(A.asp - B.asp) / B.asp > 0.15) continue;
+          return dedupeSort([{ x: A.x, y: A.y, w: A.w, h: A.h }, { x: B.x, y: B.y, w: B.w, h: B.h }]);
+        }
       }
       return [];
     };
 
+    const rA = stageA();
     if (rA.length >= 2) return rA; // tinted cards पर A भरोसेमंद
+    const rC = stageC();
     if (rC.length >= 2) return rC; // कट-रेखा grid (e-Aadhaar letter)
+    const rB = stageB();
+    const rD = stageD();
+    if (rD.length >= 2) return rD; // नीचे aligned जोड़ी = पक्की letter पहचान
     let best = rA;
     if (rC.length > best.length) best = rC;
     if (rB.length > best.length) best = rB;
