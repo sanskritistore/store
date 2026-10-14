@@ -19,8 +19,9 @@ window.SUITE_CROP = {
       wrap.style.width = winW + "px";
       wrap.style.height = winH + "px";
       cvs.width = winW; cvs.height = winH;
-      let rw = winW * 0.94, rh = rw / aspect;
-      if (rh > winH * 0.94) { rh = winH * 0.94; rw = rh * aspect; }
+      let rw = winW * 0.94, rh;
+      if (aspect > 0) { rh = rw / aspect; if (rh > winH * 0.94) { rh = winH * 0.94; rw = rh * aspect; } }
+      else rh = winH * 0.94; // FREE size — पूरा page खुला
       crop = { x: (winW - rw) / 2, y: (winH - rh) / 2, w: rw, h: rh };
       draw();
     }
@@ -87,10 +88,18 @@ window.SUITE_CROP = {
         const ay = drag.mode.includes("t") ? crop.y + crop.h : crop.y;
         let w2 = Math.abs(p.x - ax);
         w2 = Math.min(w2, drag.mode.includes("l") ? ax : winW - ax);
-        let h2 = w2 / aspect;
         const maxH = drag.mode.includes("t") ? ay : winH - ay;
-        if (h2 > maxH) { h2 = maxH; w2 = h2 * aspect; }
-        if (w2 < MIN) { w2 = MIN; h2 = w2 / aspect; }
+        let h2;
+        if (aspect > 0) { // locked (photo studio के fixed sizes)
+          h2 = w2 / aspect;
+          if (h2 > maxH) { h2 = maxH; w2 = h2 * aspect; }
+          if (w2 < MIN) { w2 = MIN; h2 = w2 / aspect; }
+        } else { // FREE size — Dev: "crop में size NIL रखो, जितना काटना है उतना" (14 Oct)
+          h2 = Math.abs(p.y - ay);
+          h2 = Math.min(h2, maxH);
+          if (w2 < MIN) w2 = MIN;
+          if (h2 < MIN) h2 = MIN;
+        }
         crop.w = w2; crop.h = h2;
         crop.x = drag.mode.includes("l") ? ax - w2 : ax;
         crop.y = drag.mode.includes("t") ? ay - h2 : ay;

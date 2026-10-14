@@ -231,7 +231,7 @@
 <script src="js/core-config.js"></script>
 <script src="js/core-photo.js?v=7"></script>
 <script src="js/core-crop.js?v=5"></script>
-<script src="js/core-detect.js?v=53"></script>
+<script src="js/core-detect.js?v=57"></script>
 <script>
 (async function () {
   const $ = (id) => document.getElementById(id);
@@ -305,7 +305,7 @@
   let sheetOut = null;
 
   const cropEd = SUITE_CROP.create($("cropWrap"), $("cropCanvas"));
-  cropEd.setAspect(ASPECT);
+  cropEd.setAspect(0); // Dev (14 Oct): crop में size NIL — free size, जितना काटना है उतना. Size सिर्फ़ Epson/A4 format का काम
 
   // pdf.js lazy loader (fail-soft)
   let _pdfjs = null;
@@ -351,7 +351,7 @@
     const doc = await task.promise;
     slog("PDF खुल गई (" + doc.numPages + " page) — render हो रही...", true);
     const pg = await doc.getPage(1);
-    const vp = pg.getViewport({ scale: 3 });
+    const vp = pg.getViewport({ scale: 300 / 72 }); // Dev: 300 DPI पर काटो — print sharp
     const cv = document.createElement("canvas");
     cv.width = vp.width; cv.height = vp.height;
     await pg.render({ canvasContext: cv.getContext("2d"), viewport: vp }).promise;
@@ -373,10 +373,157 @@
   }
   let chEnhOn = true;
   $("chEnh").onclick = () => { chEnhOn = !chEnhOn; $("chEnh").textContent = chEnhOn ? "✨ रंग निखारें: ON" : "✨ रंग निखारें: OFF"; $("chEnh").classList.toggle("on", chEnhOn); chRefresh(); };
+  // ── crop-time edge refine (Dev की नई PDF, 14 Oct): detection rect के किनारों पर
+  // फालतू junk (frame/cut-lines, ✂, ऊपर के card का टुकड़ा) न आए — FULL resolution पर
+  // हर किनारे को सबसे चौड़ी सफ़ेद gap में रखो (gap का 75% margin content तरफ़ छोड़कर) ──
+  function refineCrop(src, r) {
+    const M = 0.09;
+    const rx = Math.max(0, Math.floor(r.x - r.w * M)), ry = Math.max(0, Math.floor(r.y - r.h * M));
+    const rw = Math.min(src.width - rx, Math.ceil(r.w * (1 + 2 * M))), rh = Math.min(src.height - ry, Math.ceil(r.h * (1 + 2 * M)));
+    const sc = Math.min(1, 480 / rw);
+    const cw = Math.max(8, Math.round(rw * sc)), ch = Math.max(8, Math.round(rh * sc));
+    const c = document.createElement("canvas"); c.width = cw; c.height = ch;
+    const g = c.getContext("2d");
+    g.drawImage(src, rx, ry, rw, rh, 0, 0, cw, ch);
+    const d = g.getImageData(0, 0, cw, ch).data;
+    const ink = new Uint8Array(cw * ch);
+    const band = new Uint8Array(cw * ch); // रंगदार pixel — card की colored bands (तिरंगा/लाल strip/नीली bar)
+    for (let i = 0, j = 0; i < d.length; i += 4, j++) {
+      const R = d[i], G = d[i + 1], B = d[i + 2];
+      const mx = Math.max(R, G, B), mn = Math.min(R, G, B);
+      ink[j] = (mx < 232 || mx - mn > 18) ? 1 : 0; // गहरा या रंगदार = ink (हल्का tricolor भी पकड़ में)
+      band[j] = (mx - mn > 30 && mx > 60) ? 1 : 0; // सिर्फ़ रंगदार — काली frame/cut-line/✂ इसमें नहीं आती
+    }
+    const lx = (r.x - rx) * sc, ly = (r.y - ry) * sc, lw = r.w * sc, lh = r.h * sc;
+    const rowInk = (y) => { // बीच 60% में — किनारे की vertical junk lines हर row poison न करें
+      if (y < 0 || y >= ch) return 1;
+      let n = 0; const x0 = Math.round(lx + lw * 0.2), x1 = Math.round(lx + lw * 0.8);
+      for (let x = x0; x <= x1; x++) { let v = 0; for (let k = -3; k <= 3; k++) { const xx = x + k; if (xx >= 0 && xx < cw && ink[y * cw + xx]) { v = 1; break; } } n += v; }
+      return n / Math.max(1, x1 - x0 + 1);
+    };
+    const colInk = (x) => { // बीच 60% rows में — ऊपर/नीचे की horizontal dashed lines poison न करें
+      if (x < 0 || x >= cw) return 1;
+      let n = 0; const y0 = Math.round(ly + lh * 0.2), y1 = Math.round(ly + lh * 0.8);
+      for (let y = y0; y <= y1; y++) { let v = 0; for (let k = -3; k <= 3; k++) { const yy = y + k; if (yy >= 0 && yy < ch && ink[yy * cw + x]) { v = 1; break; } } n += v; }
+      return n / Math.max(1, y1 - y0 + 1);
+    };
+    const THR = 0.02, gapMin = Math.max(3, Math.round(lh * 0.02));
+    // सारी white runs; फिर content के सबसे नज़दीक वाली चुनो — सबसे चौड़ी नहीं!
+    // (page की खाली margin सबसे चौड़ी होती है, पर काटना junk और content के बीच की gap पर है)
+    const runs = (vals) => {
+      const out = []; let gs = -1;
+      for (let i = 0; i <= vals.length; i++) {
+        const white = i < vals.length && vals[i] < THR;
+        if (white && gs < 0) gs = i;
+        if (!white && gs >= 0) { if (i - gs >= gapMin) out.push({ s: gs, e: i - 1, w: i - gs }); gs = -1; }
+      }
+      return out;
+    };
+    let nx = r.x, ny = r.y, nx2 = r.x + r.w, ny2 = r.y + r.h;
+    // ── पहला प्रयास: colored-band anchor (Aadhaar की solid bands card के exact किनारे) ──
+    const bandRow = (y) => { // बीच 60% में रंगदार fraction
+      if (y < 0 || y >= ch) return 0;
+      let n = 0; const x0 = Math.round(lx + lw * 0.2), x1 = Math.round(lx + lw * 0.8);
+      for (let x = x0; x <= x1; x++) n += band[y * cw + x];
+      return n / Math.max(1, x1 - x0 + 1);
+    };
+    // 1) TOP solid band ढूँढो — मोटी band होनी चाहिए (>50% रंगदार, कई rows तक);
+    //    letter की पतली लाल rule-line 1-2 rows होती है → फ़ेल ✓
+    let bandTop = -1;
+    {
+      const y0 = Math.max(0, Math.round(ly - lh * 0.10)), y1 = Math.min(ch - 1, Math.round(ly + lh * 0.12));
+      const need = Math.max(3, Math.round(lh * 0.03));
+      for (let y = y0; y <= y1; y++) {
+        if (bandRow(y) > 0.5) {
+          let ok = 0; for (let k = 0; k < need && y + k <= y1; k++) if (bandRow(y + k) > 0.45) ok++;
+          if (ok >= need - 1) { bandTop = y; break; }
+        }
+      }
+    }
+    if (bandTop >= 0) {
+      ny = ry + (bandTop - 1) / sc;
+      // 2) band zone में solid किनारे → LEFT/RIGHT (काली frame/cut-lines अदृश्य)
+      const za = bandTop, zb = Math.min(ch - 1, bandTop + Math.max(3, Math.round(lh * 0.05)));
+      const solidCol = (x) => { let n = 0; for (let y = za; y <= zb; y++) n += band[y * cw + x]; return n / (zb - za + 1) >= 0.6; };
+      { // LEFT
+        const x0 = Math.max(0, Math.round(lx - lw * 0.04)), x1 = Math.min(cw - 1, Math.round(lx + lw * 0.06));
+        for (let x = x0; x <= x1; x++) if (solidCol(x)) { nx = rx + (x - 1) / sc; break; }
+      }
+      { // RIGHT
+        const x0 = Math.max(0, Math.round(lx + lw - lw * 0.06)), x1 = Math.min(cw - 1, Math.round(lx + lw + lw * 0.04));
+        for (let x = x1; x >= x0; x--) if (solidCol(x)) { nx2 = rx + (x + 2) / sc; break; }
+      }
+    }
+    { // BOTTOM: आखिरी ink row तक जाओ (contact bar का काला text भी content है!) —
+      // अगर वो block मोटी काली cut-line है तो उसके ऊपर रुको, वरना content के नीचे +margin
+      const y0 = Math.max(0, Math.round(ly + lh * 0.85)), y1 = Math.min(ch - 1, Math.round(ly + lh * 1.08));
+      let last = -1;
+      for (let y = y1; y >= y0; y--) if (rowInk(y) > 0.02) { last = y; break; }
+      if (last >= 0) {
+        let bs = last; while (bs - 1 >= y0 && rowInk(bs - 1) > 0.02) bs--;
+        const strong = rowInk(last) > 0.3 && bandRow(last) < 0.1 && (last - bs + 1) <= Math.max(3, Math.round(lh * 0.025));
+        ny2 = ry + (strong ? bs - 2 : last + 3) / sc;
+      }
+    }
+    // 3) per-edge fallbacks: पतली लंबी junk LINE ढूँढो (frame/dashes/fold-line ≤8px, लंबी) →
+    //    उसके बाहर काटो; न मिले तो white-gap method
+    const lineRuns = (vals) => {
+      const out = []; let s = -1;
+      for (let i = 0; i <= vals.length; i++) {
+        const ink = i < vals.length && vals[i] >= 0.55;
+        if (ink && s < 0) s = i;
+        if (!ink && s >= 0) { if (i - s <= 8) out.push({ s, e: i - 1 }); s = -1; }
+      }
+      return out;
+    };
+    if (nx === r.x) { // LEFT: content से बाईं ओर आखिरी junk line के बाहर
+      const x0 = Math.max(0, Math.round(lx - lw * 0.04)), x1 = Math.min(cw - 1, Math.round(lx + lw * 0.10));
+      const vals = []; for (let x = x0; x <= x1; x++) vals.push(colInk(x));
+      const junk = lineRuns(vals).filter((L) => x0 + L.s <= lx + lw * 0.08).pop();
+      if (junk) nx = rx + (x0 + junk.e + 2) / sc;
+      else {
+        const vv = vals.map((v) => (v >= 0.55 ? 1 : v < THR ? 0 : 0.5));
+        const rs = runs(vv); const b = rs[rs.length - 1];
+        if (b) { const mg = Math.min(b.w * 0.75, lw * 0.025); nx = rx + (x0 + b.e - mg) / sc; }
+      }
+    }
+    if (nx2 === r.x + r.w) { // RIGHT: पहली junk line के बाईं ओर
+      const x0 = Math.max(0, Math.round(lx + lw - lw * 0.10)), x1 = Math.min(cw - 1, Math.round(lx + lw + lw * 0.04));
+      const vals = []; for (let x = x0; x <= x1; x++) vals.push(colInk(x));
+      const junk = lineRuns(vals).filter((L) => x0 + L.e >= lx + lw - lw * 0.08)[0];
+      if (junk) nx2 = rx + (x0 + junk.s - 2) / sc;
+      else {
+        const vv = vals.map((v) => (v >= 0.55 ? 1 : v < THR ? 0 : 0.5));
+        const b = runs(vv)[0];
+        if (b) { const mg = Math.min(b.w * 0.75, lw * 0.025); nx2 = rx + (x0 + b.s + mg) / sc; }
+      }
+    }
+    { // TOP: junk ऊपर — edge = gap के निचले छोर से margin ऊपर
+      if (ny !== r.y) { /* band anchor मिल गया — gap method skip */ } else {
+      const y0 = Math.max(0, Math.round(ly - lh * 0.10)), y1 = Math.min(ch - 1, Math.round(ly + lh * 0.09));
+      const vals = []; for (let y = y0; y <= y1; y++) vals.push(rowInk(y));
+      const rs = runs(vals); const b = rs[rs.length - 1]; // सबसे नीचे वाली gap = content के ऊपर
+      if (b) { const mg = Math.min(b.w * 0.75, lh * 0.04); const t = y0 + b.e - mg; ny = ry + t / sc; }
+      }
+    }
+    const out = { x: nx, y: ny, w: Math.max(20, nx2 - nx), h: Math.max(20, ny2 - ny) };
+    return out;
+  }
   function chCrop(side) {
-    const cv = SUITE_PHOTO.cropTo(srcPage, chRectOf(side), CARD_W, CARD_H);
+    // Dev की विधि (14 Oct): FREE-SIZE crop — जहाँ card है वहीं काटो, कोई forced 85×55 stretch नहीं।
+    // फिर Epson/A4 format में FIT (नीचे drawFit) — Photoshop में crop → template में set जैसा।
+    const r = refineCrop(srcPage, chRectOf(side));
+    const cv = document.createElement("canvas");
+    cv.width = Math.max(8, Math.round(r.w)); cv.height = Math.max(8, Math.round(r.h));
+    cv.getContext("2d").drawImage(srcPage, r.x, r.y, r.w, r.h, 0, 0, cv.width, cv.height);
     if (chEnhOn) SUITE_PHOTO.enhance(cv);
     return { cv, orig: srcPage };
+  }
+  // काटा हुआ हिस्सा format box में FIT — contain + center (stretch कभी नहीं)
+  function drawFit(g, img, x, y, w, h) {
+    const s = Math.min(w / img.width, h / img.height);
+    const dw = img.width * s, dh = img.height * s;
+    g.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
   }
   function chChips(elId, side) {
     const el = $(elId);
@@ -400,7 +547,7 @@
       g.fillText("—", 150, 100);
       return;
     }
-    const r = side ? chRectOf(side) : chFound[idx];
+    const r = refineCrop(srcPage, side ? chRectOf(side) : chFound[idx]);
     g.drawImage(srcPage, r.x, r.y, r.w, r.h, 0, 0, 300, 190);
     if (chEnhOn) SUITE_PHOTO.enhance(cvEl);
   }
@@ -570,8 +717,8 @@
         pv.width = pw; pv.height = ch;
         const ctx = pv.getContext("2d");
         ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, pw, ch);
-        ctx.drawImage(front.cv, 0, 0, pw / 2 - g / 2, ch);
-        ctx.drawImage(back.cv, pw / 2 + g / 2, 0, pw / 2 - g / 2, ch);
+        drawFit(ctx, front.cv, 0, 0, pw / 2 - g / 2, ch);
+        drawFit(ctx, back.cv, pw / 2 + g / 2, 0, pw / 2 - g / 2, ch);
         $("cardReady").style.display = "block";
         $("cardReady").scrollIntoView({ behavior: "smooth" });
       }
@@ -702,18 +849,18 @@
       });
       vis.forEach((t, i) => {
         const p = slots[i];
-        ctx.drawImage(t.front.cv, p.x, p.y, p.w, p.h);
-        if (t.back) ctxBack.drawImage(t.back.cv, p.x, p.y, p.w, p.h);
+        drawFit(ctx, t.front.cv, p.x, p.y, p.w, p.h); // Epson format 85×55 तैयार है — बस FIT करो
+        if (t.back) drawFit(ctxBack, t.back.cv, p.x, p.y, p.w, p.h);
       });
       sheetOut = { front: cv, back: cvBack, count: vis.length };
     } else {
       vis.forEach((t, i) => {
         const p = slots[i];
-        ctx.drawImage(t.front.cv, p.x, p.y, CARD_W, CARD_H);
+        drawFit(ctx, t.front.cv, p.x, p.y, CARD_W, CARD_H);
         ctx.strokeStyle = "rgba(0,0,0,0.3)"; ctx.lineWidth = 1;
         ctx.strokeRect(p.x + 0.5, p.y + 0.5, CARD_W - 1, CARD_H - 1);
         if (t.back) {
-          ctx.drawImage(t.back.cv, p.x + CARD_W + pairGap, p.y, CARD_W, CARD_H);
+          drawFit(ctx, t.back.cv, p.x + CARD_W + pairGap, p.y, CARD_W, CARD_H);
         } else {
           ctx.fillStyle = "#f3ead8";
           ctx.fillRect(p.x + CARD_W + pairGap, p.y, CARD_W, CARD_H);
@@ -788,8 +935,8 @@
       th.width = tw; th.height = thH;
       const tc = th.getContext("2d");
       tc.fillStyle = "#fff"; tc.fillRect(0, 0, tw, thH);
-      tc.drawImage(t.front.cv, 0, 0, tw / 2 - 2, thH);
-      if (t.back) tc.drawImage(t.back.cv, tw / 2 + 2, 0, tw / 2 - 2, thH);
+      drawFit(tc, t.front.cv, 0, 0, tw / 2 - 2, thH);
+      if (t.back) drawFit(tc, t.back.cv, tw / 2 + 2, 0, tw / 2 - 2, thH);
       else { tc.fillStyle = "#f3ead8"; tc.fillRect(tw / 2 + 2, 0, tw / 2 - 2, thH); tc.fillStyle = "#7a1f2a"; tc.font = "9px sans-serif"; tc.textAlign = "center"; tc.fillText("BACK बाकी", tw * 0.75, thH / 2); }
       th.className = "trayThumbCard";
       d.appendChild(th);

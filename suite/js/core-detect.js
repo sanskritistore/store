@@ -27,9 +27,9 @@ window.SUITE_DETECT = {
     });
 
     // bleed margin: कटरन लाइन के ठीक अंदर काटने से header/strip सट जाती है —
-    // print bleed की तरह थोड़ी सफ़ेद किनारी छोड़ो (ऊपर 0.5% — असली काम snapTop करता है, नीचे 4%, बाएँ-दाएँ 2%)
+    // print bleed की तरह थोड़ी सफ़ेद किनारी छोड़ो (ऊपर/बाएँ/दाएँ 0.5% — असली काम snapTop/snapX करते हैं, नीचे 4%)
     const bleed = (r) => {
-      const px = r.w * 0.02, pt = r.h * 0.005, pb = r.h * 0.04;
+      const px = r.w * 0.005, pt = r.h * 0.005, pb = r.h * 0.04;
       const x = Math.max(0, r.x - px), y = Math.max(0, r.y - pt);
       return {
         x, y,
@@ -40,13 +40,52 @@ window.SUITE_DETECT = {
 
     // ── top-edge snap (Dev की सीख, 14 Oct): ऊपर की फालतू line (mini-panel का text / ऊपर वाले
     // card की मेरा आधार पट्टी) crop में कभी न आए — top को सबसे चौड़ी सफ़ेद गैप में रखो ──
+    // dilated scan: pixel तभी सफ़ेद जब ±4px पड़ोस में भी ink न हो — ऐसे हल्की dashed
+    // cut-lines / ✂ निशान "सफ़ेद gap" नहीं बन पाते (नई PDF की L805 sheet से सीख, 14 Oct)
+    // row scan सिर्फ़ बीच के 60% हिस्से में: किनारों की vertical frame/cut lines हर row में
+    // ink डालकर सारी gaps खा जाती हैं (synthetic frame test से पकड़ा, 14 Oct)
     const inkRowAt = (y, r) => {
       if (y < 0 || y >= h) return 1;
       let c = 0;
-      const x0 = Math.max(0, Math.round(r.x)), x1 = Math.min(w - 1, Math.round(r.x + r.w));
+      const x0 = Math.max(0, Math.round(r.x + r.w * 0.2)), x1 = Math.min(w - 1, Math.round(r.x + r.w * 0.8));
       if (x1 <= x0) return 1;
-      for (let x = x0; x <= x1; x++) c += mask[y * w + x];
+      for (let x = x0; x <= x1; x++) {
+        let ink = 0;
+        for (let k = -4; k <= 4; k++) {
+          const xx = x + k;
+          if (xx >= 0 && xx < w && mask[y * w + xx]) { ink = 1; break; }
+        }
+        c += ink;
+      }
       return c / (x1 - x0 + 1);
+    };
+    const inkColAt = (x, r) => {
+      if (x < 0 || x >= w) return 1;
+      let c = 0;
+      const y0 = Math.max(0, Math.round(r.y + r.h * 0.2)), y1 = Math.min(h - 1, Math.round(r.y + r.h * 0.8));
+      if (y1 <= y0) return 1;
+      for (let y = y0; y <= y1; y++) {
+        let ink = 0;
+        for (let k = -4; k <= 4; k++) {
+          const yy = y + k;
+          if (yy >= 0 && yy < h && mask[yy * w + x]) { ink = 1; break; }
+        }
+        c += ink;
+      }
+      return c / (y1 - y0 + 1);
+    };
+    const widestGap = (vals, thr, gapMin) => {
+      let best = null, gs = -1;
+      for (let i = 0; i <= vals.length; i++) {
+        const white = i < vals.length && vals[i] < thr;
+        if (white && gs < 0) gs = i;
+        if (!white && gs >= 0) {
+          const gw = i - gs;
+          if (gw >= gapMin && (!best || gw > best.w)) best = { s: gs, e: i - 1, w: gw };
+          gs = -1;
+        }
+      }
+      return best;
     };
     const snapTop = (r) => {
       const y0 = Math.max(0, Math.round(r.y));
@@ -67,13 +106,55 @@ window.SUITE_DETECT = {
           }
         } else y++;
       }
-      if (!best) return r;
+      if (!best) { return r; }
       const gapH = best.ge - best.gs + 1;
       const margin = Math.min(Math.round(gapH * 0.75), Math.round(r.h * 0.04)); // gap के निचले हिस्से को header के ऊपर margin छोड़ो
       const top = Math.max(0, best.ge - margin);
       const dy = y0 - top; // + = ऊपर बढ़ा, − = नीचे समेटा (junk अंदर था)
       if (Math.abs(dy) < 2) return r;
       return { ...r, y: top, h: Math.max(8, r.h + dy) };
+    };
+
+    // ── side-edge snap: बाएँ/दाएँ किनारे भी widest सफ़ेद gap में रखो — काली frame lines,
+    // dashed cut-guides, ✂ निशान crop से बाहर रहें (Dev की नई PDF से सीख, 14 Oct) ──
+    const snapX = (r) => {
+      const thr = 0.008;
+      const gapMin = Math.max(3, Math.round(r.w * 0.015));
+      let rx = Math.round(r.x), rw = Math.round(r.w);
+      const base = { y: r.y, h: r.h };
+      // LEFT: junk बाहर (बाईं ओर), content अंदर — edge = gap के दाहिने छोर से margin पीछे
+      {
+        const wOut = Math.round(rw * 0.04), wIn = Math.round(rw * 0.06);
+        const x0 = Math.max(0, rx - wOut), x1 = Math.min(w - 1, rx + wIn);
+        if (x1 > x0) {
+          const vals = [];
+          for (let xx = x0; xx <= x1; xx++) vals.push(inkColAt(xx, base));
+          const g = widestGap(vals, thr, gapMin);
+          if (g) {
+            const mg = Math.min(Math.round(g.w * 0.75), Math.round(rw * 0.025));
+            const nx = x0 + g.e - mg;
+            const dx = rx - nx;
+            if (Math.abs(dx) >= 2) { rx = nx; rw += dx; }
+          }
+        }
+      }
+      // RIGHT: junk बाहर (दाईं ओर) — edge = gap के बाएँ छोर से margin आगे
+      {
+        const wOut = Math.round(rw * 0.04), wIn = Math.round(rw * 0.06);
+        const x0 = Math.max(0, rx + rw - wIn), x1 = Math.min(w - 1, rx + rw + wOut);
+        if (x1 > x0) {
+          const vals = [];
+          for (let xx = x0; xx <= x1; xx++) vals.push(inkColAt(xx, base));
+          const g = widestGap(vals, thr, gapMin);
+          if (g) {
+            const mg = Math.min(Math.round(g.w * 0.75), Math.round(rw * 0.025));
+            const nr = x0 + g.s + mg;
+            const dx = rx + rw - nr;
+            if (Math.abs(dx) >= 2) rw = nr - rx;
+          }
+        }
+      }
+      return { ...r, x: rx, w: Math.max(8, rw) };
     };
 
     // ── bg रंग: border ring median ──
@@ -173,7 +254,7 @@ window.SUITE_DETECT = {
         if (picked.length >= 4) break;
       }
       picked.sort((a, b) => (Math.abs(a.y - b.y) < Math.min(a.h, b.h) * 0.3 ? a.x - b.x : a.y - b.y));
-      return picked.map((r) => bleed(toSrc(snapTop(r))));
+      return picked.map((r) => bleed(toSrc(snapX(snapTop(r)))));
     };
 
     // ═══ dashed cut-guides mask से हटाओ (अकेली भरी row/col, पड़ोस खाली) ═══
@@ -522,12 +603,12 @@ window.SUITE_DETECT = {
     };
 
     const rA = stageA();
-    if (rA.length >= 2) return rA; // tinted cards पर A भरोसेमंद
+    if (rA.length >= 2) { return rA; } // tinted cards पर A भरोसेमंद
     const rC = stageC();
-    if (rC.length >= 2) return rC; // कट-रेखा grid (e-Aadhaar letter)
+    if (rC.length >= 2) { return rC; } // कट-रेखा grid (e-Aadhaar letter)
     const rB = stageB();
     const rD = stageD();
-    if (rD.length >= 2) return rD; // नीचे aligned जोड़ी = पक्की letter पहचान
+    if (rD.length >= 2) { return rD; } // नीचे aligned जोड़ी = पक्की letter पहचान
     let best = rA;
     if (rC.length > best.length) best = rC;
     if (rB.length > best.length) best = rB;
