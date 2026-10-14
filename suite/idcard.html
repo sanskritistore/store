@@ -97,7 +97,7 @@
 
 <header>
   <a href="index.html">←</a>
-  <h1>🪪 ID Card Print <span class="ver">v0.4</span></h1>
+  <h1>🪪 ID Card Print <span class="ver">v0.5</span></h1>
 </header>
 
 <main>
@@ -112,6 +112,15 @@
   </div>
 
   <div id="okMsg" style="display:none; background:#e8f5e9; color:#1b5e20; border:1px solid #a5d6a7; border-radius:8px; padding:10px 12px; font-size:14px; margin-top:10px; font-weight:600"></div>
+  <div id="pwRow" style="display:none; margin-top:10px; background:#fff8e1; border:1.5px solid #f0c36d; border-radius:10px; padding:10px">
+    <div style="font-size:14px; font-weight:700; color:#7a5b00">🔒 PDF locked है — password डालें</div>
+    <div style="font-size:12px; color:#8a6d1a; margin:4px 0 8px">e-Aadhaar: नाम के पहले 4 अक्षर CAPITAL + जन्म साल (जैसे DEVI1990)</div>
+    <div style="display:flex; gap:8px">
+      <input id="pwInput" placeholder="जैसे DEVI1990" style="flex:1; padding:10px; border:1.5px solid #d9b455; border-radius:8px; font-size:16px">
+      <button id="pwOk" style="padding:10px 18px; background:#7a1f2a; color:#fff; border:none; border-radius:8px; font-weight:700">खोलें</button>
+    </div>
+  </div>
+  <div id="statusLog" style="display:none; margin-top:10px; background:#fdf8ef; border:1px solid #e5d6b8; border-radius:10px; padding:8px 10px; font-size:12.5px; line-height:1.7; max-height:170px; overflow-y:auto; color:#5c4a32"></div>
   <div id="err" style="display:none; background:#fdecea; color:#b3261e; border:1px solid #f5c6c0; border-radius:8px; padding:10px 12px; font-size:14px; margin-top:10px; font-weight:600"></div>
 
   <div class="editor" id="editor" style="display:none">
@@ -176,9 +185,9 @@
 <div id="busy"><div id="busyMsg">खुल रहा है...</div></div>
 
 <script src="js/core-config.js"></script>
-<script src="js/core-photo.js"></script>
-<script src="js/core-crop.js"></script>
-<script src="js/core-detect.js"></script>
+<script src="js/core-photo.js?v=5"></script>
+<script src="js/core-crop.js?v=5"></script>
+<script src="js/core-detect.js?v=5"></script>
 <script>
 (async function () {
   const $ = (id) => document.getElementById(id);
@@ -189,6 +198,18 @@
     if (m) e.scrollIntoView({ behavior: "smooth", block: "center" });
   };
   const ok = (m) => { const e = $("okMsg"); e.style.display = m ? "block" : "none"; e.textContent = m || ""; };
+  const slog = (m, st) => {
+    const el = $("statusLog");
+    el.style.display = "block";
+    const line = document.createElement("div");
+    line.textContent = (st === false ? "❌ " : st === true ? "✅ " : "⏳ ") + m;
+    if (st === false) { line.style.color = "#b3261e"; line.style.fontWeight = "700"; }
+    if (st === true) line.style.color = "#1b5e20";
+    el.appendChild(line);
+    el.scrollTop = el.scrollHeight;
+  };
+  window.addEventListener("error", (e) => slog("JS Error: " + (e.message || "अज्ञात गड़बड़ी"), false));
+  window.addEventListener("unhandledrejection", (e) => slog("Error: " + ((e.reason && e.reason.message) || e.reason || "async गड़बड़ी"), false));
   const busy = (on, msg) => { $("busy").style.display = on ? "flex" : "none"; $("busyMsg").textContent = msg || ""; };
 
   await SUITE.load();
@@ -239,23 +260,42 @@
     _pdfjs = m;
     return m;
   }
+  let pwResolve = null;
+  $("pwOk").onclick = () => {
+    const pw = ($("pwInput").value || "").trim();
+    $("pwRow").style.display = "none";
+    if (pwResolve) { const r = pwResolve; pwResolve = null; r(pw); }
+  };
+  const askPassword = () => new Promise((res) => {
+    pwResolve = res;
+    $("pwInput").value = "";
+    $("pwRow").style.display = "block";
+    $("pwRow").scrollIntoView({ behavior: "smooth", block: "center" });
+    slog("PDF locked है — password डालकर खोलें दबाएँ");
+  });
   async function loadPdf(file) {
     const buf = await file.arrayBuffer();
     busy(true, "PDF tool खुल रहा है (पहली बार 10-20 sec)...");
+    slog("PDF tool खुल रहा है...");
     const m = await Promise.race([
       pdfLib(),
       new Promise((_, rej) => setTimeout(() => rej(new Error("PDF tool internet से load नहीं हुआ — net ठीक करके फिर try करें")), 25000)),
     ]);
     busy(true, "PDF पढ़ी जा रही है...");
-    const doc = await m.getDocument({
-      data: buf,
-      onPassword: (cb) => cb(prompt("PDF का password दें\n(e-Aadhaar: नाम के पहले 4 अक्षर CAPITAL में + जन्म साल — जैसे DEVI1990)") || ""),
-    }).promise;
+    slog("PDF tool तैयार — PDF पढ़ी जा रही...", true);
+    const task = m.getDocument({ data: buf });
+    task.onPassword = (cb, reason) => {
+      if (reason === 3) slog("Password गलत — फिर try करें", false);
+      askPassword().then((pw) => cb(pw || ""));
+    };
+    const doc = await task.promise;
+    slog("PDF खुल गई (" + doc.numPages + " page) — render हो रही...", true);
     const pg = await doc.getPage(1);
     const vp = pg.getViewport({ scale: 3 });
     const cv = document.createElement("canvas");
     cv.width = vp.width; cv.height = vp.height;
     await pg.render({ canvasContext: cv.getContext("2d"), viewport: vp }).promise;
+    slog("Page render हो गई — card ढूंढ रहे...", true);
     return cv;
   }
 
@@ -266,10 +306,13 @@
     err("");
     const isPdf = f.type === "application/pdf" || /\.pdf$/i.test(f.name);
     busy(true, isPdf ? "PDF खुल रही है..." : "Photo खुल रही है...");
+    slog("File चुनी: " + f.name + " (" + Math.round(f.size / 1024) + " KB)");
     try {
       srcPage = isPdf ? await loadPdf(f) : SUITE_PHOTO.trimMargins(await SUITE_PHOTO.load(f));
+      if (!isPdf) slog("Photo खुल गई (" + srcPage.width + "×" + srcPage.height + ") — card ढूंढ रहे...", true);
       // ⚡ auto card पहचान — मिला तो सीधे tray में, नहीं तो manual crop box
       const found = SUITE_DETECT.cards(srcPage, ASPECT);
+      slog(found.length ? found.length + " card जैसे हिस्से मिले" : "Card अपने आप नहीं मिला — नीचे box से ठीक करें", !!found.length);
       if (found.length >= 2) {
         const fR = found[0], bR = found[1];
         tray.push({
@@ -303,7 +346,10 @@
       $("okBtn").textContent = side === "front" ? "✓ Front पक्का — अब BACK →" : "✓ Card तैयार — preview →";
       cropEd.setImage(srcPage);
       $("editor").scrollIntoView({ behavior: "smooth" });
-    } catch (ex) { err("⚠️ " + (ex.message || "File नहीं खुली") + (isPdf ? " — password सही था?" : "")); }
+    } catch (ex) {
+      slog("गड़बड़ी: " + (ex.message || "File नहीं खुली"), false);
+      err("⚠️ " + (ex.message || "File नहीं खुली") + (isPdf ? " — password सही था?" : ""));
+    }
     busy(false);
     e.target.value = "";
   };
