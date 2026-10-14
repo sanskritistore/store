@@ -53,10 +53,17 @@ window.SUITE_DETECT = {
       let py1 = -1, py2 = -1;
       for (let y = 0; y < h; y++) if (rf0[y] > 0.5) { if (py1 < 0) py1 = y; py2 = y; }
       let px1 = -1, px2 = -1;
-      for (let x = 0; x < w; x++) if (cf0[x] > 0.5) { if (px1 < 0) px1 = x; px2 = x; }
+      if (py1 >= 0) { // cols को सिर्फ़ band rows के अंदर नापो — पतली पट्टी (band) भी पकड़ में आए
+        const bandH = py2 - py1 + 1;
+        for (let x = 0; x < w; x++) {
+          let c = 0;
+          for (let y = py1; y <= py2; y++) c += mask[y * w + x];
+          if (c / bandH > 0.5) { if (px1 < 0) px1 = x; px2 = x; }
+        }
+      }
       if (py1 >= 0 && px1 >= 0) {
         const pw = px2 - px1 + 1, ph = py2 - py1 + 1;
-        if (pw * ph > 0.55 * w * h && (pw < w * 0.96 || ph < h * 0.96)) {
+        if (pw * ph > 0.10 * w * h && (pw < w * 0.96 || ph < h * 0.96)) {
           // page bbox → src से काटकर दोबारा detect (एक ही बार)
           const inv0 = 1 / sc;
           // 2% inset — gray किनारे बाहर, inner ring को शुद्ध paper रंग मिले
@@ -66,7 +73,8 @@ window.SUITE_DETECT = {
           sub.width = sw; sub.height = sh;
           sub.getContext("2d").drawImage(src, sx, sy, sw, sh, 0, 0, sw, sh);
           const inner = this.cards(sub, aspect, 1);
-          return inner.map((r) => ({ x: r.x + sx, y: r.y + sy, w: r.w, h: r.h }));
+          if (inner.length) return inner.map((r) => ({ x: r.x + sx, y: r.y + sy, w: r.w, h: r.h }));
+          // inner खाली → पूरी image पर आगे बढ़ो (desk photo जैसे छोटे block पर वापसी)
         }
       }
     }
@@ -228,9 +236,16 @@ window.SUITE_DETECT = {
           }
         }
       }
+      // जोड़ी-भरोसा: strict aspect में 2 न बने, पर 2+ blocks का aspect एक-जैसा हो (screenshot में दबी file) → ढीली सीमा
+      let pool = found, relaxed = false;
+      if (found.filter((r) => aspectOk(r.w, r.h, 0.2)).length < 2 && found.length >= 2) {
+        const sim = found.filter((r, i) => found.some((q, j) => i !== j && Math.abs(r.w / r.h - q.w / q.h) / (q.w / q.h) < 0.08));
+        if (sim.length >= 2) { pool = sim; relaxed = true; }
+      }
       const out = [];
-      for (let r of found) {
-        if (!aspectOk(r.w, r.h, 0.2)) continue;
+      for (let r of pool) {
+        if (relaxed) { const a2 = r.w / r.h; if (a2 < 1.2 || a2 > 2.4) continue; }
+        else if (!aspectOk(r.w, r.h, 0.2)) continue;
         // density guard: असली card घना होता है (≥25% content); बिखरी photo/blobs नहीं
         let dense = 0;
         for (let yy = r.y; yy < r.y + r.h; yy++)
@@ -295,8 +310,7 @@ window.SUITE_DETECT = {
       for (let a = 0; a < hYs.length; a++)
         for (let b = a + 1; b < hYs.length; b++) {
           const bh2 = hYs[b] - hYs[a];
-          if (bh2 < h * 0.08 || bh2 > h * 0.3) continue; // card पट्टी की असली ऊँचाई (A4 पर ~18%)
-          if (hYs[a] < h * 0.4 || hYs[b] < h * 0.55) continue;
+          if (bh2 < h * 0.06 || bh2 > h * 0.35) continue; // card पट्टी की ऊँचाई (A4 पर ~18%, छोटी file में ज़्यादा)
           pairs.push([hYs[a], hYs[b]]);
         }
       pairs.sort((p, q) => q[1] - p[1]);
@@ -341,16 +355,17 @@ window.SUITE_DETECT = {
           if (dense / (rw * bh2) < 0.18) continue;
           rects.push({ x: x1, y: y1, w: rw, h: bh2 });
         }
+        if (rects.length >= 2) { // असली card-जोड़ी: दोनों का aspect लगभग बराबर (दबाव दोनों पर एकसमान)
+          const a0 = rects[0].w / rects[0].h, a1 = rects[1].w / rects[1].h;
+          if (Math.abs(a0 - a1) / a1 > 0.1) continue;
+        }
         if (rects.length) return dedupeSort(rects);
       }
       return [];
     };
 
-    const rA = stageA();
     if (rA.length >= 2) return rA; // tinted cards पर A भरोसेमंद
-    const rC = stageC();
     if (rC.length >= 2) return rC; // कट-रेखा grid (e-Aadhaar letter)
-    const rB = stageB();
     let best = rA;
     if (rC.length > best.length) best = rC;
     if (rB.length > best.length) best = rB;
