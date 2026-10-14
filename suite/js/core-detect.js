@@ -27,15 +27,53 @@ window.SUITE_DETECT = {
     });
 
     // bleed margin: कटरन लाइन के ठीक अंदर काटने से header/strip सट जाती है —
-    // print bleed की तरह थोड़ी सफ़ेद किनारी छोड़ो (ऊपर 3%, नीचे 4%, बाएँ-दाएँ 2%)
+    // print bleed की तरह थोड़ी सफ़ेद किनारी छोड़ो (ऊपर 0.5% — असली काम snapTop करता है, नीचे 4%, बाएँ-दाएँ 2%)
     const bleed = (r) => {
-      const px = r.w * 0.02, pt = r.h * 0.03, pb = r.h * 0.04;
+      const px = r.w * 0.02, pt = r.h * 0.005, pb = r.h * 0.04;
       const x = Math.max(0, r.x - px), y = Math.max(0, r.y - pt);
       return {
         x, y,
         w: Math.min(src.width - x, r.w + 2 * px),
         h: Math.min(src.height - y, r.h + pt + pb),
       };
+    };
+
+    // ── top-edge snap (Dev की सीख, 14 Oct): ऊपर की फालतू line (mini-panel का text / ऊपर वाले
+    // card की मेरा आधार पट्टी) crop में कभी न आए — top को सबसे चौड़ी सफ़ेद गैप में रखो ──
+    const inkRowAt = (y, r) => {
+      if (y < 0 || y >= h) return 1;
+      let c = 0;
+      const x0 = Math.max(0, Math.round(r.x)), x1 = Math.min(w - 1, Math.round(r.x + r.w));
+      if (x1 <= x0) return 1;
+      for (let x = x0; x <= x1; x++) c += mask[y * w + x];
+      return c / (x1 - x0 + 1);
+    };
+    const snapTop = (r) => {
+      const y0 = Math.max(0, Math.round(r.y));
+      const winUp = Math.round(r.h * 0.10), winDown = Math.round(r.h * 0.09);
+      const thr = 0.008; // 0.8% ink = content row
+      const gapMin = Math.max(3, Math.round(r.h * 0.02));
+      const s = Math.max(0, y0 - winUp), e = Math.min(h - 1, y0 + winDown);
+      let best = null, y = s;
+      while (y <= e) {
+        if (inkRowAt(y, r) < thr) {
+          const gs = y;
+          while (y <= e && inkRowAt(y, r) < thr) y++;
+          const gw = y - gs;
+          if (gw >= gapMin) {
+            const center = (gs + y - 1) / 2;
+            const score = gw * 1000 - Math.abs(center - y0); // सबसे चौड़ी gap; बराबर हो तो y0 के करीब
+            if (!best || score > best.score) best = { gs, ge: y - 1, score };
+          }
+        } else y++;
+      }
+      if (!best) return r;
+      const gapH = best.ge - best.gs + 1;
+      const margin = Math.min(Math.round(gapH * 0.75), Math.round(r.h * 0.04)); // gap के निचले हिस्से को header के ऊपर margin छोड़ो
+      const top = Math.max(0, best.ge - margin);
+      const dy = y0 - top; // + = ऊपर बढ़ा, − = नीचे समेटा (junk अंदर था)
+      if (Math.abs(dy) < 2) return r;
+      return { ...r, y: top, h: Math.max(8, r.h + dy) };
     };
 
     // ── bg रंग: border ring median ──
@@ -135,7 +173,7 @@ window.SUITE_DETECT = {
         if (picked.length >= 4) break;
       }
       picked.sort((a, b) => (Math.abs(a.y - b.y) < Math.min(a.h, b.h) * 0.3 ? a.x - b.x : a.y - b.y));
-      return picked.map((r) => bleed(toSrc(r)));
+      return picked.map((r) => bleed(toSrc(snapTop(r))));
     };
 
     // ═══ dashed cut-guides mask से हटाओ (अकेली भरी row/col, पड़ोस खाली) ═══
