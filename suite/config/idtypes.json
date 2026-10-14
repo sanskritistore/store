@@ -4,8 +4,8 @@
   "note": "ID Card types (Module B — P2). CR80 = 85.6 x 53.98 mm. Naya Aadhaar: photo + QR only, printed details nahi.",
   "card_stock": {
     "cr80": {
-      "w_mm": 85.6,
-      "h_mm": 53.98,
+      "w_mm": 85,
+      "h_mm": 55,
       "dpi": 300
     }
   },
