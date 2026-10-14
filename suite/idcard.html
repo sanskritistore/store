@@ -66,6 +66,16 @@
   .bg-dot.on { border-color:var(--maroon); box-shadow:0 0 0 2px #fff,0 0 0 4px var(--maroon); }
 
   .sheet-area { margin-top:16px; }
+  .chRect { position:absolute; border:2.5px dashed #c9a227; border-radius:6px; box-sizing:border-box; }
+  .chRect b { position:absolute; top:-11px; left:-7px; background:#c9a227; color:#fff; font-size:12px; width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; }
+  .chRect.f { border-color:#1b5e20; border-style:solid; box-shadow:0 0 0 2px rgba(27,94,32,.25); }
+  .chRect.f b { background:#1b5e20; }
+  .chRect.b { border-color:#1565c0; border-style:solid; box-shadow:0 0 0 2px rgba(21,101,192,.25); }
+  .chRect.b b { background:#1565c0; }
+  .chChip { padding:7px 13px; border-radius:8px; border:1.5px solid #d9c9a8; background:#fff; font-weight:800; font-size:15px; cursor:pointer; margin:0 5px 5px 0; }
+  .chChip.on { background:#7a1f2a; color:#fff; border-color:#7a1f2a; }
+  .chChip.none.on { background:#5b5b5b; border-color:#5b5b5b; }
+  .chPrev { width:calc(50% - 4px); border:1.5px solid #e2d3b4; border-radius:8px; background:#fff; }
   .sheet-preview { background:#fff; border:1px solid #e6d9bd; border-radius:10px; padding:10px; text-align:center; }
   .sheet-preview canvas { max-width:100%; height:auto; border:1px solid #ddd; }
   .info { font-size:13px; margin:8px 0; opacity:.8; }
@@ -97,7 +107,7 @@
 
 <header>
   <a href="index.html">←</a>
-  <h1>🪪 ID Card Print <span class="ver">v0.7</span></h1>
+  <h1>🪪 ID Card Print <span class="ver">v0.8</span></h1>
 </header>
 
 <main>
@@ -151,6 +161,22 @@
     <div class="row" style="margin-top:8px">
       <button class="btn btn-main" id="addCardBtn" style="width:100%">✓ Card tray में जोड़ें →</button>
     </div>
+  </div>
+
+  <div id="chooser" style="display:none; margin-top:14px; background:#fffdf7; border:1.5px solid #e8d9b8; border-radius:12px; padding:12px">
+    <div class="step-title" style="margin-top:0">⚡ Card मिले! Number देखकर पक्का करें:</div>
+    <div style="position:relative">
+      <canvas id="chThumb" style="width:100%; border-radius:8px; border:1px solid #e2d3b4; display:block"></canvas>
+      <div id="chOutlines" style="position:absolute; left:0; top:0; width:100%; height:100%; pointer-events:none"></div>
+    </div>
+    <div style="margin-top:10px; font-size:14px; font-weight:700; color:#4a3b22">FRONT (आगे): <span id="chF"></span></div>
+    <div style="margin-top:6px; font-size:14px; font-weight:700; color:#4a3b22">BACK (पीछे): <span id="chB"></span></div>
+    <div style="display:flex; gap:8px; margin-top:8px">
+      <canvas id="chPrevF" class="chPrev"></canvas>
+      <canvas id="chPrevB" class="chPrev"></canvas>
+    </div>
+    <button class="btn btn-main" id="chOk" style="width:100%; margin-top:10px">✓ सही है — sheet में जोड़ें</button>
+    <button class="btn btn-soft" id="chManual" style="width:100%; margin-top:6px">✏️ गलत कटा है — खुद crop करूँगा</button>
   </div>
 
   <div class="sheet-area" id="sheetArea">
@@ -311,6 +337,103 @@
     return cv;
   }
 
+  // ── Card chooser: system guess + 1-tap confirm ──
+  let chFound = [], chSel = { f: -1, b: -1 };
+  function chCrop(i) { return { cv: SUITE_PHOTO.cropTo(srcPage, chFound[i], CARD_W, CARD_H), orig: srcPage }; }
+  function chChips(elId, side) {
+    const el = $(elId);
+    el.innerHTML = "";
+    const mk = (label, idx, none) => {
+      const c = document.createElement("button");
+      c.className = "chChip" + (none ? " none" : "") + (chSel[side] === idx ? " on" : "");
+      c.textContent = label;
+      c.onclick = () => { chSel[side] = chSel[side] === idx ? -1 : idx; chRefresh(); };
+      el.appendChild(c);
+    };
+    chFound.forEach((_, i) => mk(String(i + 1), i, false));
+    mk("— कोई नहीं", -1, true);
+  }
+  function chPreview(cvEl, idx) {
+    const g = cvEl.getContext("2d");
+    cvEl.width = 300; cvEl.height = 190;
+    g.fillStyle = "#faf6ec"; g.fillRect(0, 0, 300, 190);
+    if (idx < 0) {
+      g.fillStyle = "#b0a188"; g.font = "700 16px Mukta, sans-serif"; g.textAlign = "center";
+      g.fillText("—", 150, 100);
+      return;
+    }
+    const r = chFound[idx];
+    g.drawImage(srcPage, r.x, r.y, r.w, r.h, 0, 0, 300, 190);
+  }
+  function chRefresh() {
+    chChips("chF", "f"); chChips("chB", "b");
+    document.querySelectorAll(".chRect").forEach((d, i) => {
+      d.className = "chRect" + (chSel.f === i ? " f" : "") + (chSel.b === i ? " b" : "");
+    });
+    chPreview($("chPrevF"), chSel.f);
+    chPreview($("chPrevB"), chSel.b);
+    $("chOk").style.opacity = (chSel.f < 0 && chSel.b < 0) ? 0.45 : 1;
+  }
+  function showChooser(found) {
+    chFound = found;
+    $("editor").style.display = "none";
+    $("cardReady").style.display = "none";
+    $("backZone").style.display = "none";
+    const th = $("chThumb");
+    const maxW = th.parentElement.clientWidth || 320;
+    const sc = maxW / srcPage.width;
+    th.width = Math.round(maxW); th.height = Math.round(srcPage.height * sc);
+    th.getContext("2d").drawImage(srcPage, 0, 0, th.width, th.height);
+    const ow = $("chOutlines");
+    ow.innerHTML = "";
+    const dpr = th.width / maxW; // =1 normally
+    found.forEach((r, i) => {
+      const d = document.createElement("div");
+      d.className = "chRect";
+      d.style.left = (r.x * sc) + "px"; d.style.top = (r.y * sc) + "px";
+      d.style.width = (r.w * sc) + "px"; d.style.height = (r.h * sc) + "px";
+      d.innerHTML = "<b>" + (i + 1) + "</b>";
+      ow.appendChild(d);
+    });
+    chSel = { f: 0, b: found.length >= 2 ? 1 : -1 };
+    const last = tray[tray.length - 1];
+    if (found.length === 1 && last && !last.back) chSel = { f: -1, b: 0 };
+    chRefresh();
+    $("chooser").style.display = "block";
+    $("chooser").scrollIntoView({ behavior: "smooth" });
+  }
+  function openManual() {
+    $("chooser").style.display = "none";
+    ok("");
+    $("editor").style.display = "block";
+    $("editorTitle").textContent = side === "front" ? "✂️ FRONT crop करें — card के आगे वाले हिस्से पर box" : "✂️ BACK crop करें — card के पीछे वाले हिस्से पर box";
+    $("okBtn").textContent = side === "front" ? "✓ Front पक्का — अब BACK →" : "✓ Card तैयार — preview →";
+    cropEd.setImage(srcPage);
+    $("editor").scrollIntoView({ behavior: "smooth" });
+  }
+  $("chManual").onclick = openManual;
+  $("chOk").onclick = () => {
+    const { f, b } = chSel;
+    if (f < 0 && b < 0) return;
+    const last = tray[tray.length - 1];
+    if (f >= 0 && b >= 0) {
+      tray.push({ front: chCrop(f), back: chCrop(b), copies: 1 });
+      ok("⚡ Front + Back sheet में!", true);
+    } else if (f >= 0) {
+      tray.push({ front: chCrop(f), back: null, copies: 1 });
+      ok("⚡ FRONT sheet में! BACK बाद में डालना।", true);
+    } else if (last && !last.back) {
+      last.back = chCrop(b);
+      ok("⚡ पिछले card का BACK जुड़ गया!", true);
+    } else {
+      err("⚠️ FRONT भी चुनें — अकेला BACK किसी card से जुड़ना चाहिए");
+      return;
+    }
+    $("chooser").style.display = "none";
+    renderSheet();
+    setTimeout(() => $("sheetArea").scrollIntoView({ behavior: "smooth" }), 150);
+  };
+
   $("uploadZone").onclick = () => $("fileInput").click();
   $("fileInput").onchange = async (e) => {
     const f = e.target.files[0];
@@ -325,39 +448,12 @@
       // ⚡ auto card पहचान — मिला तो सीधे tray में, नहीं तो manual crop box
       const found = SUITE_DETECT.cards(srcPage, ASPECT);
       slog(found.length ? found.length + " card जैसे हिस्से मिले" : "Card अपने आप नहीं मिला — नीचे box से ठीक करें", !!found.length);
-      if (found.length >= 2) {
-        const fR = found[0], bR = found[1];
-        tray.push({
-          front: { cv: SUITE_PHOTO.cropTo(srcPage, fR, CARD_W, CARD_H), orig: srcPage },
-          back: { cv: SUITE_PHOTO.cropTo(srcPage, bR, CARD_W, CARD_H), orig: srcPage },
-          copies: 1,
-        });
-        renderSheet();
-        ok("⚡ Front + Back दोनों अपने आप मिल गए!", true);
-        setTimeout(() => $("sheetArea").scrollIntoView({ behavior: "smooth" }), 150);
-        busy(false); e.target.value = ""; return;
-      }
-      if (found.length === 1) {
-        const cv1 = SUITE_PHOTO.cropTo(srcPage, found[0], CARD_W, CARD_H);
-        const last = tray[tray.length - 1];
-        if (last && !last.back) { // पिछले card का BACK बाकी था → यही उसका back
-          last.back = { cv: cv1, orig: srcPage };
-          ok("⚡ पिछले card का BACK जुड़ गया!", true);
-        } else {
-          tray.push({ front: { cv: cv1, orig: srcPage }, back: null, copies: 1 });
-          ok("⚡ FRONT मिल गया! अब BACK वाली photo डालें।", true);
-        }
-        renderSheet();
-        setTimeout(() => $("sheetArea").scrollIntoView({ behavior: "smooth" }), 150);
+      if (found.length >= 1) {
+        showChooser(found);
         busy(false); e.target.value = ""; return;
       }
       // 0 मिला → manual crop flow
-      ok("");
-      $("editor").style.display = "block";
-      $("editorTitle").textContent = side === "front" ? "✂️ FRONT crop करें — card के आगे वाले हिस्से पर box" : "✂️ BACK crop करें — card के पीछे वाले हिस्से पर box";
-      $("okBtn").textContent = side === "front" ? "✓ Front पक्का — अब BACK →" : "✓ Card तैयार — preview →";
-      cropEd.setImage(srcPage);
-      $("editor").scrollIntoView({ behavior: "smooth" });
+      openManual();
     } catch (ex) {
       slog("गड़बड़ी: " + (ex.message || "File नहीं खुली"), false);
       err("⚠️ " + (ex.message || "File नहीं खुली") + (isPdf ? " — password सही था?" : ""));
