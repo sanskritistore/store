@@ -97,7 +97,7 @@
 
 <header>
   <a href="index.html">←</a>
-  <h1>🪪 ID Card Print <span class="ver">v0.5</span></h1>
+  <h1>🪪 ID Card Print <span class="ver">v0.6</span></h1>
 </header>
 
 <main>
@@ -197,7 +197,19 @@
     e.textContent = m || "";
     if (m) e.scrollIntoView({ behavior: "smooth", block: "center" });
   };
-  const ok = (m) => { const e = $("okMsg"); e.style.display = m ? "block" : "none"; e.textContent = m || ""; };
+  const ok = (m, goSheet) => {
+    const e = $("okMsg");
+    e.style.display = m ? "block" : "none";
+    if (!m) { e.textContent = ""; return; }
+    if (goSheet) {
+      e.innerHTML = "";
+      const b = document.createElement("div");
+      b.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer";
+      b.innerHTML = "<span>" + m + "</span><span style='background:#1b5e20;color:#fff;padding:8px 14px;border-radius:8px;font-size:14px;white-space:nowrap'>👇 Sheet देखें</span>";
+      b.onclick = () => $("sheetArea").scrollIntoView({ behavior: "smooth" });
+      e.appendChild(b);
+    } else e.textContent = m;
+  };
   const slog = (m, st) => {
     const el = $("statusLog");
     el.style.display = "block";
@@ -321,8 +333,8 @@
           copies: 1,
         });
         renderSheet();
-        ok("⚡ Front + Back दोनों अपने आप मिल गए — sheet पर तैयार!");
-        $("sheetArea").scrollIntoView({ behavior: "smooth" });
+        ok("⚡ Front + Back दोनों अपने आप मिल गए!", true);
+        setTimeout(() => $("sheetArea").scrollIntoView({ behavior: "smooth" }), 150);
         busy(false); e.target.value = ""; return;
       }
       if (found.length === 1) {
@@ -330,13 +342,13 @@
         const last = tray[tray.length - 1];
         if (last && !last.back) { // पिछले card का BACK बाकी था → यही उसका back
           last.back = { cv: cv1, orig: srcPage };
-          ok("⚡ पिछले card का BACK जुड़ गया!");
+          ok("⚡ पिछले card का BACK जुड़ गया!", true);
         } else {
           tray.push({ front: { cv: cv1, orig: srcPage }, back: null, copies: 1 });
-          ok("⚡ FRONT मिल गया! अब BACK वाली photo डालें (या ✏️ crop से)।");
+          ok("⚡ FRONT मिल गया! अब BACK वाली photo डालें।", true);
         }
         renderSheet();
-        $("sheetArea").scrollIntoView({ behavior: "smooth" });
+        setTimeout(() => $("sheetArea").scrollIntoView({ behavior: "smooth" }), 150);
         busy(false); e.target.value = ""; return;
       }
       // 0 मिला → manual crop flow
