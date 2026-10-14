@@ -76,6 +76,11 @@
   .chChip.on { background:#7a1f2a; color:#fff; border-color:#7a1f2a; }
   .chChip.none.on { background:#5b5b5b; border-color:#5b5b5b; }
   .chPrev { width:calc(50% - 4px); border:1.5px solid #e2d3b4; border-radius:8px; background:#fff; }
+  .chPad { display:flex; gap:5px; flex-wrap:wrap; margin-top:8px; align-items:center; }
+  .chPad button { padding:8px 12px; border-radius:8px; border:1.5px solid #d9c9a8; background:#fff; font-size:16px; font-weight:800; cursor:pointer; }
+  .chPad button:active { background:#f0e5cd; }
+  .chSide { padding:8px 13px !important; font-size:13.5px !important; }
+  .chSide.on { background:#7a1f2a !important; color:#fff !important; border-color:#7a1f2a !important; }
   .sheet-preview { background:#fff; border:1px solid #e6d9bd; border-radius:10px; padding:10px; text-align:center; }
   .sheet-preview canvas { max-width:100%; height:auto; border:1px solid #ddd; }
   .info { font-size:13px; margin:8px 0; opacity:.8; }
@@ -107,7 +112,7 @@
 
 <header>
   <a href="index.html">←</a>
-  <h1>🪪 ID Card Print <span class="ver">v0.8</span></h1>
+  <h1>🪪 ID Card Print <span class="ver">v0.9</span></h1>
 </header>
 
 <main>
@@ -174,6 +179,16 @@
     <div style="display:flex; gap:8px; margin-top:8px">
       <canvas id="chPrevF" class="chPrev"></canvas>
       <canvas id="chPrevB" class="chPrev"></canvas>
+    </div>
+    <div class="chPad">
+      <button class="chSide on" id="chSideF">FRONT हिलाओ</button>
+      <button class="chSide" id="chSideB">BACK हिलाओ</button>
+      <button data-n="up">⬆️</button>
+      <button data-n="down">⬇️</button>
+      <button data-n="left">⬅️</button>
+      <button data-n="right">➡️</button>
+      <button data-n="big">＋</button>
+      <button data-n="small">－</button>
     </div>
     <button class="btn btn-main" id="chOk" style="width:100%; margin-top:10px">✓ सही है — sheet में जोड़ें</button>
     <button class="btn btn-soft" id="chManual" style="width:100%; margin-top:6px">✏️ गलत कटा है — खुद crop करूँगा</button>
@@ -338,8 +353,18 @@
   }
 
   // ── Card chooser: system guess + 1-tap confirm ──
-  let chFound = [], chSel = { f: -1, b: -1 };
-  function chCrop(i) { return { cv: SUITE_PHOTO.cropTo(srcPage, chFound[i], CARD_W, CARD_H), orig: srcPage }; }
+  let chFound = [], chSel = { f: -1, b: -1 }, chAdj = { f: { x: 0, y: 0, s: 1 }, b: { x: 0, y: 0, s: 1 } }, chSide = "f";
+  function chRectOf(side) {
+    const i = chSel[side];
+    if (i < 0) return null;
+    const r = chFound[i], a = chAdj[side];
+    const w = r.w * a.s, h = r.h * a.s;
+    let x = r.x + r.w / 2 - w / 2 + a.x, y = r.y + r.h / 2 - h / 2 + a.y;
+    x = Math.max(0, Math.min(srcPage.width - w, x));
+    y = Math.max(0, Math.min(srcPage.height - h, y));
+    return { x, y, w, h };
+  }
+  function chCrop(side) { return { cv: SUITE_PHOTO.cropTo(srcPage, chRectOf(side), CARD_W, CARD_H), orig: srcPage }; }
   function chChips(elId, side) {
     const el = $(elId);
     el.innerHTML = "";
@@ -353,7 +378,7 @@
     chFound.forEach((_, i) => mk(String(i + 1), i, false));
     mk("— कोई नहीं", -1, true);
   }
-  function chPreview(cvEl, idx) {
+  function chPreview(cvEl, idx, side) {
     const g = cvEl.getContext("2d");
     cvEl.width = 300; cvEl.height = 190;
     g.fillStyle = "#faf6ec"; g.fillRect(0, 0, 300, 190);
@@ -362,16 +387,20 @@
       g.fillText("—", 150, 100);
       return;
     }
-    const r = chFound[idx];
+    const r = side ? chRectOf(side) : chFound[idx];
     g.drawImage(srcPage, r.x, r.y, r.w, r.h, 0, 0, 300, 190);
   }
   function chRefresh() {
     chChips("chF", "f"); chChips("chB", "b");
+    const sc = parseFloat($("chOutlines").dataset.sc || 1);
     document.querySelectorAll(".chRect").forEach((d, i) => {
       d.className = "chRect" + (chSel.f === i ? " f" : "") + (chSel.b === i ? " b" : "");
+      const r = chSel.f === i ? chRectOf("f") : chSel.b === i ? chRectOf("b") : chFound[i];
+      d.style.left = (r.x * sc) + "px"; d.style.top = (r.y * sc) + "px";
+      d.style.width = (r.w * sc) + "px"; d.style.height = (r.h * sc) + "px";
     });
-    chPreview($("chPrevF"), chSel.f);
-    chPreview($("chPrevB"), chSel.b);
+    chPreview($("chPrevF"), chSel.f, "f");
+    chPreview($("chPrevB"), chSel.b, "b");
     $("chOk").style.opacity = (chSel.f < 0 && chSel.b < 0) ? 0.45 : 1;
   }
   function showChooser(found) {
@@ -390,12 +419,12 @@
     found.forEach((r, i) => {
       const d = document.createElement("div");
       d.className = "chRect";
-      d.style.left = (r.x * sc) + "px"; d.style.top = (r.y * sc) + "px";
-      d.style.width = (r.w * sc) + "px"; d.style.height = (r.h * sc) + "px";
       d.innerHTML = "<b>" + (i + 1) + "</b>";
       ow.appendChild(d);
     });
+    ow.dataset.sc = sc;
     chSel = { f: 0, b: found.length >= 2 ? 1 : -1 };
+    chAdj = { f: { x: 0, y: 0, s: 1 }, b: { x: 0, y: 0, s: 1 } };
     const last = tray[tray.length - 1];
     if (found.length === 1 && last && !last.back) chSel = { f: -1, b: 0 };
     chRefresh();
@@ -411,19 +440,35 @@
     cropEd.setImage(srcPage);
     $("editor").scrollIntoView({ behavior: "smooth" });
   }
+  $("chSideF").onclick = () => { chSide = "f"; $("chSideF").classList.add("on"); $("chSideB").classList.remove("on"); };
+  $("chSideB").onclick = () => { chSide = "b"; $("chSideB").classList.add("on"); $("chSideF").classList.remove("on"); };
+  document.querySelectorAll(".chPad [data-n]").forEach((btn) => {
+    btn.onclick = () => {
+      const a = chAdj[chSide];
+      const step = srcPage.width * 0.015;
+      const n = btn.dataset.n;
+      if (n === "up") a.y -= step;
+      if (n === "down") a.y += step;
+      if (n === "left") a.x -= step;
+      if (n === "right") a.x += step;
+      if (n === "big") a.s *= 1.04;
+      if (n === "small") a.s /= 1.04;
+      chRefresh();
+    };
+  });
   $("chManual").onclick = openManual;
   $("chOk").onclick = () => {
     const { f, b } = chSel;
     if (f < 0 && b < 0) return;
     const last = tray[tray.length - 1];
     if (f >= 0 && b >= 0) {
-      tray.push({ front: chCrop(f), back: chCrop(b), copies: 1 });
+      tray.push({ front: chCrop("f"), back: chCrop("b"), copies: 1 });
       ok("⚡ Front + Back sheet में!", true);
     } else if (f >= 0) {
-      tray.push({ front: chCrop(f), back: null, copies: 1 });
+      tray.push({ front: chCrop("f"), back: null, copies: 1 });
       ok("⚡ FRONT sheet में! BACK बाद में डालना।", true);
     } else if (last && !last.back) {
-      last.back = chCrop(b);
+      last.back = chCrop("b");
       ok("⚡ पिछले card का BACK जुड़ गया!", true);
     } else {
       err("⚠️ FRONT भी चुनें — अकेला BACK किसी card से जुड़ना चाहिए");
