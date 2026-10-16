@@ -6,35 +6,46 @@
 <link rel="stylesheet" href="assets/css/store.css?v=13"></head><body>
 <header id="hd"></header>
 <section class="sec wrap">
- <h2>📚 फोटो एल्बम</h2><p class="sub">जो design दिखेगा, वही छपकर मिलेगा ✓ Design चुनें → अपनी photos डालें → ✨ AI खुद album बना देगा</p>
+ <h2>📚 फोटो एल्बम Packages</h2><p class="sub">पूरा package एक click में ✓ Album Book + 💎 Acrylic + 🔑 Keychain — design पसंद करें, pages पलटकर देखें, फिर photos डालें — ✨ AI खुद album बना देगा</p>
  <div class="flt" id="flts">
   <button class="chip on" data-f="all">सभी</button>
   <button class="chip" data-f="wedding">शादी 💍</button>
-  <button class="chip" data-f="royal">रॉयल 👑</button>
-  <button class="chip" data-f="modern">मॉडर्न ✨</button>
+  <button class="chip" data-f="engagement">सगाई 💎</button>
+  <button class="chip" data-f="prewedding">प्री-वेडिंग ✨</button>
+  <button class="chip" data-f="baby">बेबी 👶</button>
+  <button class="chip" data-f="birthday">बर्थडे 🎂</button>
  </div>
  <div class="grid" id="list"></div>
- <p class="sub" style="margin-top:18px;text-align:center">💡 Album चुनने के बाद अपने फ़ोन से photos डालिए — AI हर photo को सही जगह खुद लगा देगा।<br>नाम-तारीख बदल सकते हैं, फिर WhatsApp पर order हो जाएगा।</p>
+ <p class="sub" style="margin-top:18px;text-align:center">💡 Package खोलकर book के pages पलटकर देखिए — जो design दिखेगा, वही छपकर मिलेगा।<br>नाम-तारीख और photos आपकी अपनी लगेंगी।</p>
 </section>
 <footer id="ft"></footer>
 <style>
 .abwall{position:relative;border-radius:11px 11px 0 0;overflow:hidden;aspect-ratio:3/2;background:#241A13}
 .abwall img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s}
 .fcard:hover .abwall img{transform:scale(1.05)}
-.abplay{position:absolute;right:6px;bottom:6px;background:#fffdf8f0;border:1.5px solid #E3D7C3;border-radius:9px;padding:3px 8px;font-size:11.5px;font-weight:700;color:#8E2A32}
+.abpack{position:absolute;left:6px;bottom:6px;background:#fffdf8f0;border:1.5px solid #E3D7C3;border-radius:9px;padding:3px 8px;font-size:11px;font-weight:700;color:#8E2A32}
+.abinc{list-style:none;margin:6px 0 2px;padding:0;font-size:12px;color:#5c4a33;line-height:1.55}
+.abinc li{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.absz{display:inline-block;font-size:11px;font-weight:700;color:#8a6d1d;background:#f5eeda;border:1px solid #e4d9b7;border-radius:8px;padding:2px 8px;margin-top:5px}
+.abpr{font-size:17px;font-weight:800;color:var(--brand);margin-top:6px}
+.abpr s{font-size:12.5px;color:#9c8b73;font-weight:600;margin-left:5px}
+.absave{font-size:11px;color:#1e7e34;font-weight:700}
 </style>
-<script src="assets/js/store.js?v=27"></script>
+<script src="assets/js/store.js?v=28"></script>
 <script>(async()=>{await loadCfg();shell('album');
- const A=await fetch('config/albums.json?v='+Date.now()).then(r=>r.json()).catch(()=>({albums:[]}));
+ const A=await fetch('config/albums.json?v='+Date.now()).then(r=>r.json()).catch(()=>({packages:[]}));
  function card(a){
-  return `<a class="fcard card" href="album-builder.html?tpl=${a.tpl}">
-   <div class="abwall"><img src="${a.img}" alt="${a.name}" loading="lazy"><span class="abplay">✨ AI बनाएगा</span></div>
+  const save=Math.round((1-a.price/a.mrp)*100);
+  return `<a class="fcard card" href="album-view.html?pkg=${a.id}">
+   <div class="abwall"><img src="${a.cover}" alt="${a.name}" loading="lazy"><span class="abpack">📖 ${a.pages} pages</span></div>
    <span class="fcode">${a.code}</span>
    <h4>${a.name}</h4><div class="rt">⭐ ${a.rating} • ${a.en}</div>
-   <div class="from">${fmt(a.base)} से शुरू</div>
-   <span class="btn btn-p">अभी बनाएं</span></a>`}
+   <ul class="abinc">${a.includes.map(i=>`<li>${i}</li>`).join('')}</ul>
+   <span class="absz">📐 ${a.size} • ${a.pages} pages</span>
+   <div class="abpr">${fmt(a.price)}<s>${fmt(a.mrp)}</s> <span class="absave">${save}% कम</span></div>
+   <span class="btn btn-p">📖 Pages देखें</span></a>`}
  function render(flt){
-  const as=A.albums.filter(a=>flt==='all'||a.cat===flt);
+  const as=A.packages.filter(a=>flt==='all'||a.cat===flt);
   $('#list').innerHTML=as.map(card).join('');}
  render('all');
  $$('#flts .chip').forEach(c=>c.onclick=()=>{$$('#flts .chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');render(c.dataset.f)});

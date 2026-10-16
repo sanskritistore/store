@@ -1,11 +1,268 @@
 {
- "albums":[
-  {"id":"t06","code":"B001","name":"शाही विवाह","en":"Royal Maroon-Gold","cat":"wedding","img":"albums/c06.jpg","tpl":"albums/t06.json","rating":4.8,"base":1499},
-  {"id":"t07","code":"B002","name":"गुलबाग","en":"Sage-Champagne 2026","cat":"wedding","img":"albums/c07.jpg","tpl":"albums/t07.json","rating":4.7,"base":1499},
-  {"id":"t08","code":"B003","name":"मेहराब Teal","en":"Arch + Golden Palms","cat":"royal","img":"albums/c08.jpg","tpl":"albums/t08.json","rating":4.9,"base":1699},
-  {"id":"t09","code":"B004","name":"Spotlight Fan","en":"5-Photo Fan + Spotlight","cat":"modern","img":"albums/c09.jpg","tpl":"albums/t09.json","rating":4.8,"base":1699},
-  {"id":"t10","code":"B005","name":"Editorial Magazine","en":"Fashion Magazine Style","cat":"modern","img":"albums/c10.jpg","tpl":"albums/t10.json","rating":4.7,"base":1599},
-  {"id":"t11","code":"B006","name":"Royal Navy","en":"Navy + Gold Haveli","cat":"royal","img":"albums/c11.jpg","tpl":"albums/t11.json","rating":4.8,"base":1699},
-  {"id":"t12","code":"B007","name":"Watercolor Garden","en":"Soft Watercolor","cat":"modern","img":"albums/c12.jpg","tpl":"albums/t12.json","rating":4.7,"base":1599}
+ "packages": [
+  {
+   "id": "t06",
+   "code": "B001",
+   "name": "शाही विवाह Package",
+   "en": "Royal Maroon-Gold",
+   "cat": "wedding",
+   "cover": "albums/c06.jpg",
+   "size": "12×18 inch",
+   "pages": 20,
+   "includes": [
+    "📖 Premium Album Book — 20 pages",
+    "💎 Acrylic Photo Frame 8×12",
+    "🔑 Acrylic Keychain ×2"
+   ],
+   "price": 4499,
+   "mrp": 6499,
+   "rating": 4.8,
+   "tpls": [
+    "albums/t06.json",
+    "albums/t06-p1.json",
+    "albums/t06-p2.json",
+    "albums/t06-p3.json"
+   ]
+  },
+  {
+   "id": "t07",
+   "code": "B002",
+   "name": "गुलबाग Package",
+   "en": "Sage-Champagne 2026",
+   "cat": "wedding",
+   "cover": "albums/c07.jpg",
+   "size": "12×18 inch",
+   "pages": 20,
+   "includes": [
+    "📖 Premium Album Book — 20 pages",
+    "💎 Acrylic Photo Frame 8×12",
+    "🔑 Acrylic Keychain ×2"
+   ],
+   "price": 4299,
+   "mrp": 5999,
+   "rating": 4.7,
+   "tpls": [
+    "albums/t07.json",
+    "albums/t07-p1.json",
+    "albums/t07-p2.json",
+    "albums/t07-p3.json"
+   ]
+  },
+  {
+   "id": "t08",
+   "code": "B003",
+   "name": "मेहराब Teal Package",
+   "en": "Arch + Golden Palms",
+   "cat": "wedding",
+   "cover": "albums/c08.jpg",
+   "size": "12×18 inch",
+   "pages": 20,
+   "includes": [
+    "📖 Premium Album Book — 20 pages",
+    "💎 Acrylic Photo Frame 8×12",
+    "🔑 Acrylic Keychain ×2"
+   ],
+   "price": 4699,
+   "mrp": 6499,
+   "rating": 4.9,
+   "tpls": [
+    "albums/t08.json",
+    "albums/t08-p1.json",
+    "albums/t08-p2.json",
+    "albums/t08-p3.json"
+   ]
+  },
+  {
+   "id": "t09",
+   "code": "B004",
+   "name": "Spotlight Fan Package",
+   "en": "5-Photo Fan",
+   "cat": "wedding",
+   "cover": "albums/c09.jpg",
+   "size": "12×18 inch",
+   "pages": 20,
+   "includes": [
+    "📖 Premium Album Book — 20 pages",
+    "💎 Acrylic Photo Frame 8×12",
+    "🔑 Acrylic Keychain ×2"
+   ],
+   "price": 4699,
+   "mrp": 6499,
+   "rating": 4.8,
+   "tpls": [
+    "albums/t09.json",
+    "albums/t09-p1.json",
+    "albums/t09-p2.json",
+    "albums/t09-p3.json"
+   ]
+  },
+  {
+   "id": "t11",
+   "code": "B005",
+   "name": "Royal Navy Package",
+   "en": "Navy + Gold Haveli",
+   "cat": "wedding",
+   "cover": "albums/c11.jpg",
+   "size": "12×18 inch",
+   "pages": 20,
+   "includes": [
+    "📖 Premium Album Book — 20 pages",
+    "💎 Acrylic Photo Frame 8×12",
+    "🔑 Acrylic Keychain ×2"
+   ],
+   "price": 4499,
+   "mrp": 6299,
+   "rating": 4.8,
+   "tpls": [
+    "albums/t11.json",
+    "albums/t11-p1.json",
+    "albums/t11-p2.json",
+    "albums/t11-p3.json"
+   ]
+  },
+  {
+   "id": "t02",
+   "code": "E001",
+   "name": "सगाई Classic Package",
+   "en": "Engagement Ring",
+   "cat": "engagement",
+   "cover": "albums/c02.jpg",
+   "size": "12×18 inch",
+   "pages": 20,
+   "includes": [
+    "📖 Premium Album Book — 20 pages",
+    "💎 Acrylic Photo Frame 8×12",
+    "🔑 Acrylic Keychain ×2"
+   ],
+   "price": 3999,
+   "mrp": 5499,
+   "rating": 4.7,
+   "tpls": [
+    "albums/t02.json",
+    "albums/t02-p1.json",
+    "albums/t02-p2.json",
+    "albums/t02-p3.json"
+   ]
+  },
+  {
+   "id": "t12",
+   "code": "E002",
+   "name": "Watercolor Garden Package",
+   "en": "Soft Watercolor",
+   "cat": "engagement",
+   "cover": "albums/c12.jpg",
+   "size": "12×18 inch",
+   "pages": 20,
+   "includes": [
+    "📖 Premium Album Book — 20 pages",
+    "💎 Acrylic Photo Frame 8×12",
+    "🔑 Acrylic Keychain ×2"
+   ],
+   "price": 4199,
+   "mrp": 5799,
+   "rating": 4.7,
+   "tpls": [
+    "albums/t12.json",
+    "albums/t12-p1.json",
+    "albums/t12-p2.json",
+    "albums/t12-p3.json"
+   ]
+  },
+  {
+   "id": "t03",
+   "code": "BB01",
+   "name": "नन्हे कदम Baby Package",
+   "en": "Baby Square Album",
+   "cat": "baby",
+   "cover": "albums/c03.jpg",
+   "size": "12×12 inch",
+   "pages": 16,
+   "includes": [
+    "📖 Album Book — 16 pages",
+    "💎 Acrylic Photo 6×8",
+    "🔑 Acrylic Keychain ×1"
+   ],
+   "price": 3499,
+   "mrp": 4999,
+   "rating": 4.9,
+   "tpls": [
+    "albums/t03.json",
+    "albums/t03-p1.json",
+    "albums/t03-p2.json",
+    "albums/t03-p3.json"
+   ]
+  },
+  {
+   "id": "t04",
+   "code": "BD01",
+   "name": "जन्मदिन Package",
+   "en": "Birthday Celebration",
+   "cat": "birthday",
+   "cover": "albums/c04.jpg",
+   "size": "12×18 inch",
+   "pages": 16,
+   "includes": [
+    "📖 Album Book — 16 pages",
+    "💎 Acrylic Photo 6×8",
+    "🔑 Acrylic Keychain ×1"
+   ],
+   "price": 3299,
+   "mrp": 4699,
+   "rating": 4.7,
+   "tpls": [
+    "albums/t04.json",
+    "albums/t04-p1.json",
+    "albums/t04-p2.json",
+    "albums/t04-p3.json"
+   ]
+  },
+  {
+   "id": "t05",
+   "code": "PW01",
+   "name": "Pre-Wedding Package",
+   "en": "Cinematic Spread",
+   "cat": "prewedding",
+   "cover": "albums/c05.jpg",
+   "size": "12×18 inch",
+   "pages": 20,
+   "includes": [
+    "📖 Premium Album Book — 20 pages",
+    "💎 Acrylic Photo Frame 8×12",
+    "🔑 Acrylic Keychain ×2"
+   ],
+   "price": 4999,
+   "mrp": 6999,
+   "rating": 4.8,
+   "tpls": [
+    "albums/t05.json",
+    "albums/t05-p1.json",
+    "albums/t05-p2.json",
+    "albums/t05-p3.json"
+   ]
+  },
+  {
+   "id": "t10",
+   "code": "PW02",
+   "name": "Editorial Package",
+   "en": "Fashion Magazine",
+   "cat": "prewedding",
+   "cover": "albums/c10.jpg",
+   "size": "12×18 inch",
+   "pages": 20,
+   "includes": [
+    "📖 Premium Album Book — 20 pages",
+    "💎 Acrylic Photo Frame 8×12",
+    "🔑 Acrylic Keychain ×2"
+   ],
+   "price": 4799,
+   "mrp": 6799,
+   "rating": 4.7,
+   "tpls": [
+    "albums/t10.json",
+    "albums/t10-p1.json",
+    "albums/t10-p2.json",
+    "albums/t10-p3.json"
+   ]
+  }
  ]
 }

@@ -29,11 +29,19 @@ header span{font-size:12px;color:#999;flex:1;white-space:nowrap;overflow:hidden;
 .trow input{flex:1;padding:9px;border:1px solid #444;border-radius:8px;background:#292524;color:#eee;font-size:15px}
 #toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:#16a34a;color:#fff;padding:9px 18px;border-radius:20px;font-size:14px;display:none;z-index:9;box-shadow:0 4px 16px #0008;white-space:nowrap}
 .hint{font-size:12px;color:#888;text-align:center;padding:4px 0 8px}
+#pgstrip{display:flex;gap:7px;overflow-x:auto;padding:7px 10px;background:#1a120c;scrollbar-width:none}
+#pgstrip::-webkit-scrollbar{display:none}
+.pgt{flex:none;width:88px;border:2px solid #4a3826;border-radius:8px;overflow:hidden;position:relative;cursor:pointer;background:#000}
+.pgt.on{border-color:#f0c060;box-shadow:0 0 10px #f0c06066}
+.pgt canvas{width:100%;display:block}
+.pgt .pb{position:absolute;right:3px;bottom:3px;background:#000a;color:#8f8;font-size:10px;padding:1px 5px;border-radius:7px;font-weight:700}
+.pgt .pn{position:absolute;left:3px;top:3px;background:#000a;color:#f0c060;font-size:10px;padding:1px 5px;border-radius:7px;font-weight:700}
 </style>
 </head>
 <body>
 <header><a href="album.html" style="color:#e8c98a;text-decoration:none;font-size:18px;padding-right:2px">←</a><b>🙏 Sanskriti Album</b><span id="tname">—</span></header>
 <div id="stage"><canvas id="pageCv"></canvas></div>
+<div id="pgstrip"></div>
 <div class="hint" id="hint">photo की जगह छुओ → नीचे से अपनी photo चुनो · ✨ AI भरो = सब automatic</div>
 <div id="sheet"></div>
 <div id="bar">
@@ -50,8 +58,10 @@ header span{font-size:12px;color:#999;flex:1;white-space:nowrap;overflow:hidden;
 'use strict';
 /* ================= STATE ================= */
 const $=id=>document.getElementById(id);
+const $$=s=>[...document.querySelectorAll(s)];
 const cv=$('pageCv'), ctx=cv.getContext('2d');
-const S={ W:18, H:12, bg:{c1:'#241611',c2:'#120a07',grad:true}, items:[], sel:-1, scale:30 };
+const S={ W:18, H:12, bg:{c1:'#241611',c2:'#120a07',grad:true}, items:[], sel:-1, scale:30, pages:[], pg:0 };
+let PKG=null;
 const photos=[];               // customer uploads [{img,name}]
 let TPL_NAME='Demo Design', ORDERED=false;
 const WM='CSC PRINT CAFE • PREVIEW';
@@ -60,6 +70,61 @@ function toast(m,bad){ const t=$('toast'); t.textContent=m; t.style.background=b
 /* ================= ENGINE (Template Maker v1.4) ================= */
 function hexA(hex,a){ const n=parseInt(hex.slice(1),16); return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`; }
 
+function flourPath(c){
+  /* असली wedding-album style: outline फूल (पंखुड़ी+केशर+सुनहरा बीच) + टहनी पर जोड़ी पत्तियाँ */
+  const bez=(p,t)=>{ const u=1-t;
+    return [u*u*u*p[0][0]+3*u*u*t*p[1][0]+3*u*t*t*p[2][0]+t*t*t*p[3][0],
+            u*u*u*p[0][1]+3*u*u*t*p[1][1]+3*u*t*t*p[2][1]+t*t*t*p[3][1]]; };
+  const bezTan=(p,t)=>{ const u=1-t;
+    const dx=3*u*u*(p[1][0]-p[0][0])+6*u*t*(p[2][0]-p[1][0])+3*t*t*(p[3][0]-p[2][0]);
+    const dy=3*u*u*(p[1][1]-p[0][1])+6*u*t*(p[2][1]-p[1][1])+3*t*t*(p[3][1]-p[2][1]);
+    return Math.atan2(dy,dx); };
+  const flower=(cx,cy,R,rot)=>{
+    c.save(); c.translate(cx,cy); c.rotate(rot||0);
+    const P=6, lw=c.lineWidth;
+    for(let i=0;i<P;i++){ c.save(); c.rotate(i*Math.PI*2/P);
+      c.beginPath(); c.ellipse(R*0.50,0,R*0.48,R*0.26,0,0,7); c.stroke(); c.restore(); }
+    c.lineWidth=lw*0.55;
+    for(let i=0;i<12;i++){ const a=i*Math.PI/6+Math.PI/12;
+      c.beginPath(); c.moveTo(Math.cos(a)*R*0.20,Math.sin(a)*R*0.20);
+      c.lineTo(Math.cos(a)*R*0.42,Math.sin(a)*R*0.42); c.stroke(); }
+    c.lineWidth=lw; c.restore();
+    c.beginPath(); c.arc(cx,cy,R*0.17,0,7); c.fill();
+  };
+  const leaf=(x,y,ang,len)=>{
+    c.save(); c.translate(x,y); c.rotate(ang);
+    c.beginPath(); c.moveTo(0,0);
+    c.quadraticCurveTo(len*0.38,-len*0.32, len,0);
+    c.quadraticCurveTo(len*0.38, len*0.32, 0,0); c.stroke();
+    const lw=c.lineWidth; c.lineWidth=lw*0.55;
+    c.beginPath(); c.moveTo(len*0.10,0); c.lineTo(len*0.88,0); c.stroke();
+    c.lineWidth=lw; c.restore();
+  };
+  const berry=(x,y)=>{ c.beginPath(); c.arc(x,y,0.016,0,7); c.fill(); };
+  const stemWithLeaves=(p,leafLen,side)=>{
+    c.beginPath(); c.moveTo(p[0][0],p[0][1]);
+    c.bezierCurveTo(p[1][0],p[1][1],p[2][0],p[2][1],p[3][0],p[3][1]); c.stroke();
+    [0.30,0.45,0.60,0.75,0.90].forEach((t,i)=>{
+      const [x,y]=bez(p,t), a=bezTan(p,t);
+      const dir=(i%2? 1:-1)*side;
+      leaf(x,y, a+dir*1.05, leafLen*(1-t*0.35));
+    });
+  };
+  // टहनियाँ: corner से दोनों किनारों के साथ
+  stemWithLeaves([[0.06,0.16],[0.30,0.04],[0.62,0.14],[0.98,0.05]], 0.13, 1);   // bottom edge
+  stemWithLeaves([[0.16,0.06],[0.04,0.30],[0.14,0.62],[0.05,0.98]], 0.13, -1);  // side edge
+  stemWithLeaves([[0.04,0.04],[0.16,0.10],[0.10,0.16],[0.22,0.22]], 0.10, 1);   // diagonal sprig
+  // फूल cluster — corner की ओर
+  flower(0.36,0.36,0.17,0.3);
+  flower(0.185,0.50,0.125,1.2);
+  flower(0.50,0.185,0.125,-0.6);
+  flower(0.155,0.155,0.10,0.8);
+  // berries: छोटे सुनहरे दाने
+  berry(0.62,0.30); berry(0.68,0.34); berry(0.64,0.38);
+  berry(0.30,0.62); berry(0.34,0.68); berry(0.38,0.64);
+  berry(0.78,0.16); berry(0.16,0.78);
+}
+function hexA(hex,a){ const n=parseInt(hex.slice(1),16); return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`; }
 function drawDecor(c,it,sc){
   c.save();
   c.strokeStyle=it.c; c.fillStyle=it.c;
@@ -241,20 +306,56 @@ function watermark(c,W,H){
 }
 
 /* ================= TEMPLATE LOAD ================= */
+function tplToPage(d){
+  return {W:d.W,H:d.H,bg:d.bg,name:d.name||'पेज',items:d.items.map(it=>{
+    if(it.kind==='photo'){ const o={...it}; delete o.photoData; o.photo=null; return o; }
+    return it; })};
+}
+function applyPage(i){
+  if(!S.pages.length) return;
+  S.pg=i; const p=S.pages[i];
+  S.W=p.W; S.H=p.H; S.bg=p.bg; S.items=p.items; S.sel=-1;
+  fit(); draw();
+  $$('#pgstrip .pgt').forEach((t,j)=>t.classList.toggle('on',j===i));
+}
+function renderPages(){
+  const st=$('pgstrip'); st.innerHTML='';
+  if(S.pages.length<2){ st.style.display='none'; return; }
+  st.style.display='flex';
+  const NAMES=['📕 Cover','📖 पेज 1','📖 पेज 2','📖 पेज 3','📖 पेज 4','📖 पेज 5'];
+  S.pages.forEach((p,i)=>{
+    const t=document.createElement('div'); t.className='pgt'+(i===S.pg?' on':'');
+    const c=document.createElement('canvas');
+    const dpi=110/p.W; c.width=110; c.height=Math.round(p.H*dpi);
+    const x=c.getContext('2d');
+    if(p.bg&&p.bg.grad){const g=x.createLinearGradient(0,0,c.width,c.height);g.addColorStop(0,p.bg.c1);g.addColorStop(1,p.bg.c2);x.fillStyle=g;}
+    else x.fillStyle=(p.bg&&p.bg.c1)||'#222';
+    x.fillRect(0,0,c.width,c.height);
+    p.items.forEach(it=>drawItem(x,it,dpi,true));
+    t.appendChild(c);
+    const tot=p.items.filter(it=>it.kind==='photo').length;
+    const fil=p.items.filter(it=>it.kind==='photo'&&it.photo).length;
+    const b=document.createElement('span'); b.className='pb'; b.textContent=fil+'/'+tot; b.style.color=fil===tot?'#7f7':'#fc6';
+    const nm=document.createElement('span'); nm.className='pn'; nm.textContent=NAMES[i]||('पेज '+(i+1));
+    t.appendChild(b); t.appendChild(nm);
+    t.onclick=()=>applyPage(i);
+    st.appendChild(t);
+  });
+}
 function loadTemplate(j){
   try{
     const d=typeof j==='string'? JSON.parse(j): j;
     TPL_NAME=d.name||'Design'; $('tname').textContent=TPL_NAME;
-    S.W=d.W; S.H=d.H; S.bg=d.bg; S.sel=-1;
-    S.items=d.items.map(it=>{
-      if(it.kind==='photo'){
-        const o={...it}; delete o.photoData; o.photo=null;   // customer की photo आएगी
-        return o;
-      }
-      return it;
-    });
-    fit(); draw(); toast('📂 '+TPL_NAME+' तैयार ✓');
+    S.pages=[tplToPage(d)]; S.pg=0;
+    applyPage(0); renderPages();
+    toast('📂 '+TPL_NAME+' तैयार ✓');
   }catch(e){ toast('⚠️ template नहीं खुली',1); }
+}
+function loadPackage(tpls,name){
+  TPL_NAME=name; $('tname').textContent=name;
+  S.pages=tpls.map(tplToPage); S.pg=0;
+  applyPage(0); renderPages();
+  toast('📦 '+name+' — '+S.pages.length+' page designs ✓');
 }
 
 /* demo template — Spotlight fan (बिना photos) */
@@ -279,7 +380,8 @@ $('filePhotos').onchange=async e=>{
   renderStrip(); openSheet('photos');
   toast(photos.length+' photos ✓ — ✨ AI भरो दबाओ');
 };
-function usedSet(){ const u=new Set(); S.items.forEach(it=>{ if(it.kind==='photo'&&it.photo) u.add(it.photo); }); return u; }
+function allPageItems(){ return S.pages.length? S.pages.flatMap(p=>p.items): S.items; }
+function usedSet(){ const u=new Set(); allPageItems().forEach(it=>{ if(it.kind==='photo'&&it.photo) u.add(it.photo); }); return u; }
 function renderStrip(){
   const u=usedSet();
   const sh=$('sheet');
@@ -298,31 +400,34 @@ function renderStrip(){
 function assignPhoto(img){
   const sl=S.items[S.sel];
   if(!sl||sl.kind!=='photo'){ toast('पहले ऊपर photo की जगह छुओ',1); return; }
-  const other=S.items.find(it=>it.kind==='photo'&&it.photo===img);
+  const other=allPageItems().find(it=>it.kind==='photo'&&it.photo===img);
   if(other&&other!==sl){ other.photo=sl.photo; other.pr=sl.pr; }  // swap
   sl.photo=img; sl.pr=img.width/img.height;
-  draw(); renderStrip(); toast('✓ लग गई');
+  draw(); renderStrip(); renderPages(); toast('✓ लग गई');
 }
 
 /* ================= AI AUTO-FILL ================= */
 function aiFill(){
   if(!photos.length){ toast('पहले 📷 Photos डालो',1); $('filePhotos').click(); return; }
-  const slots=S.items.filter(it=>it.kind==='photo');
   const u=usedSet();
-  const avail=photos.map(p=>p.img).filter(im=>!u.has(im));
-  const empty=slots.filter(s=>!s.photo).sort((a,b)=>b.w*b.h-a.w*a.h);   // बड़ी जगह पहले
-  let n=0;
-  for(const sl of empty){
-    if(!avail.length) break;
-    const sr=sl.w/sl.h;
-    let bi=0,bs=1e9;
-    avail.forEach((im,i)=>{ const sc=Math.abs(Math.log((im.width/im.height)/sr)); if(sc<bs){bs=sc;bi=i;} });
-    const im=avail.splice(bi,1)[0];
-    sl.photo=im; sl.pr=im.width/im.height; n++;
+  const pool=photos.map(p=>p.img).filter(im=>!u.has(im));
+  let n=0; const startPg=S.pg;
+  const idxs=S.pages.length? S.pages.map((_,i)=>i): [0];
+  for(const i of idxs){
+    applyPage(i);
+    const empty=S.items.filter(s=>s.kind==='photo'&&!s.photo).sort((a,b)=>b.w*b.h-a.w*a.h);
+    for(const sl of empty){
+      if(!pool.length) pool.push(...photos.map(p=>p.img));   // photos कम हों तो फिर से इस्तेमाल
+      const sr=sl.w/sl.h;
+      let bi=0,bs=1e9;
+      pool.forEach((im,j)=>{ const sc=Math.abs(Math.log((im.width/im.height)/sr)); if(sc<bs){bs=sc;bi=j;} });
+      const im=pool.splice(bi,1)[0];
+      sl.photo=im; sl.pr=im.width/im.height; n++;
+    }
   }
-  draw(); renderStrip();
-  const left=S.items.filter(it=>it.kind==='photo'&&!it.photo).length;
-  toast(n?`✨ ${n} photo लगा दी!`+(left?` · ${left} जगह खाली`:' · पूरा album तैयार 🎉'):'सब जगह पहले से भरी है ✓');
+  applyPage(startPg); renderPages(); renderStrip();
+  const left=allPageItems().filter(it=>it.kind==='photo'&&!it.photo).length;
+  toast(n?`✨ ${n} photo लगा दी (पूरी book)!`+(left?` · ${left} जगह खाली`:' · पूरा album तैयार 🎉'):'सब जगह पहले से भरी है ✓');
 }
 $('btnAI').onclick=aiFill;
 
@@ -374,19 +479,21 @@ $('btnSave').onclick=()=>{
   o.fillRect(0,0,oc.width,oc.height);
   S.items.forEach(it=>drawItem(o,it,sc,true));
   if(!ORDERED) watermark(o,oc.width,oc.height);
-  const a=document.createElement('a'); a.download='Mera-Album-Preview.jpg';
+  const a=document.createElement('a'); a.download='Mera-Album-'+(S.pages.length>1?('Page'+(S.pg+1)+'-'):'')+'Preview.jpg';
   a.href=oc.toDataURL('image/jpeg',0.88); a.click();
   toast('💾 Preview photo download हो गई');
 };
 
 /* ================= ORDER ================= */
 $('btnOrder').onclick=()=>{
-  const filled=S.items.filter(it=>it.kind==='photo'&&it.photo).length;
-  const total=S.items.filter(it=>it.kind==='photo').length;
+  const all=allPageItems().filter(it=>it.kind==='photo');
+  const filled=all.filter(it=>it.photo).length, total=all.length;
   if(filled<total){ toast(`⚠️ ${total-filled} जगह खाली है — ✨ AI भरो दबाओ`,1); return; }
   const nm=prompt('आपका नाम:'); if(nm==null) return;
   const ph=prompt('आपका मोबाइल नंबर:'); if(ph==null) return;
-  const msg='🙏 नमस्ते! मुझे photo album बनवाना है।\n📖 Design: '+TPL_NAME+'\n👤 नाम: '+nm+'\n📱 मेरा नंबर: '+ph+'\n📷 Photos: '+photos.length+' (अभी भेज रहा/रही हूँ)\n— Sanskriti Album';
+  let msg='🙏 नमस्ते! मुझे photo album बनवाना है।\n📖 Package: '+TPL_NAME;
+  if(PKG) msg+='\n📦 '+PKG.includes.join(' + ')+'\n💰 Price: '+PKG.price+' ('+PKG.size+', '+PKG.pages+' pages)';
+  msg+='\n👤 नाम: '+nm+'\n📱 मेरा नंबर: '+ph+'\n📷 Photos: '+photos.length+' (अभी भेज रहा/रही हूँ)\n— Sanskriti Album';
   window.open('https://wa.me/919873152325?text='+encodeURIComponent(msg),'_blank');
   toast('🛒 WhatsApp खुल रहा है — वहाँ photos भेज दो');
 };
@@ -395,8 +502,17 @@ $('btnOrder').onclick=()=>{
 (async()=>{
   try{ await document.fonts.load('60px SanskritiScript'); }catch(_){}
   const q=new URLSearchParams(location.search);
-  const tpl=q.get('tpl');
-  if(tpl){ try{ const r=await fetch(tpl); loadTemplate(await r.text()); }catch(_){ loadTemplate(DEMO); } }
+  const tpl=q.get('tpl'), pkg=q.get('pkg');
+  if(pkg){
+    try{
+      const A=await fetch('config/albums.json?v='+Date.now()).then(r=>r.json());
+      const p=A.packages.find(x=>x.id===pkg);
+      if(p){ PKG=p; const tpls=await Promise.all(p.tpls.map(u=>fetch(u+'?v='+Date.now()).then(r=>r.json())));
+        loadPackage(tpls,p.name); }
+      else loadTemplate(DEMO);
+    }catch(_){ loadTemplate(DEMO); }
+  }
+  else if(tpl){ try{ const r=await fetch(tpl); loadTemplate(await r.text()); }catch(_){ loadTemplate(DEMO); } }
   else loadTemplate(DEMO);
   fit(); draw();
 })();

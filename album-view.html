@@ -1,0 +1,92 @@
+<!DOCTYPE html><html lang="hi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#8E2A32">
+<title>संस्कृति — 📖 Album Preview</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪔</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/store.css?v=13">
+<style>
+.vb{max-width:860px;margin:0 auto;padding:14px 14px 30px}
+.vhead{text-align:center;margin-bottom:10px}
+.vhead h2{font-size:21px;font-weight:800}
+.vhead .sub2{color:var(--muted);font-size:13.5px;margin-top:2px}
+.stage{position:relative;background:#1d1410;border-radius:16px;padding:14px 42px;box-shadow:0 14px 34px rgba(30,15,8,.35)}
+.stage canvas{width:100%;display:block;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.5);background:#111}
+.arw{position:absolute;top:50%;transform:translateY(-50%);width:38px;height:38px;border-radius:50%;border:1.5px solid #e4d9b7;background:#fffdf8;color:#8E2A32;font-size:18px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,.25);user-select:none}
+.arw:active{transform:translateY(-50%) scale(.92)}
+.arw.l{left:6px}.arw.r{right:6px}
+.dots{display:flex;gap:7px;justify-content:center;margin-top:11px}
+.dots i{width:8px;height:8px;border-radius:50%;background:#d8c9ad;cursor:pointer}
+.dots i.on{background:#8E2A32;transform:scale(1.25)}
+.pgname{text-align:center;color:#8a6d1d;font-size:13px;font-weight:700;margin-top:5px}
+.vinfo{background:#fff;border:2px solid #eee0c8;border-radius:14px;padding:14px 16px;margin-top:14px}
+.vinfo ul{list-style:none;margin:8px 0;padding:0}
+.vinfo li{font-size:14.5px;padding:4px 0;border-bottom:1px dashed #f0e4cc}
+.vinfo li:last-child{border:0}
+.vpr{display:flex;align-items:baseline;gap:9px;margin-top:9px}
+.vpr b{font-size:24px;color:var(--brand)}
+.vpr s{color:#9c8b73}
+.vpr span{color:#1e7e34;font-weight:700;font-size:13px}
+.vcta{display:block;text-align:center;background:var(--brand);color:#fff;font-weight:800;font-size:17px;padding:14px;border-radius:13px;margin-top:13px;text-decoration:none;box-shadow:0 8px 20px rgba(142,42,50,.35)}
+.vcta:active{transform:scale(.98)}
+.vnote{text-align:center;color:var(--muted);font-size:12.5px;margin-top:9px;line-height:1.6}
+@media(max-width:560px){.stage{padding:10px 40px}}
+</style></head><body>
+<header id="hd"></header>
+<div class="vb">
+ <div class="vhead"><h2 id="vname">…</h2><div class="sub2" id="vsub">उंगली से पलटकर पूरी book देखें 👆</div></div>
+ <div class="stage" id="stage">
+  <canvas id="cv"></canvas>
+  <div class="arw l" id="prev">‹</div>
+  <div class="arw r" id="next">›</div>
+ </div>
+ <div class="dots" id="dots"></div>
+ <div class="pgname" id="pgname"></div>
+ <div class="vinfo">
+  <b>📦 इस package में:</b>
+  <ul id="vinc"></ul>
+  <div class="vpr"><b id="vpr"></b><s id="vmrp"></s><span id="vsave"></span></div>
+  <div style="font-size:12.5px;color:#8a6d1d;font-weight:700">📐 <span id="vsz"></span></div>
+ </div>
+ <a class="vcta" id="vgo" href="#">✓ यह Design चुनें — अपनी photos डालें</a>
+ <div class="vnote">असली book <b id="vpg"></b> की होगी — यही designs हर page पर आएँगे।<br>नाम-तारीख और photos आपकी अपनी लगेंगी। ✨ AI खुद सजा देगा।</div>
+</div>
+<footer id="ft"></footer>
+<script src="assets/js/store.js?v=28"></script>
+<script src="albums/engine.js"></script>
+<script>(async()=>{await loadCfg();shell('');
+ const id=qp('pkg')||'t08';
+ const A=await fetch('config/albums.json?v='+Date.now()).then(r=>r.json());
+ const p=A.packages.find(x=>x.id===id)||A.packages[0];
+ document.title='संस्कृति — '+p.name;
+ $('#vname').textContent='📖 '+p.name;
+ $('#vsub').textContent=p.en+' — उंगली से पलटकर पूरी book देखें 👆';
+ $('#vinc').innerHTML=p.includes.map(i=>`<li>${i}</li>`).join('');
+ $('#vpr').textContent=fmt(p.price); $('#vmrp').textContent=fmt(p.mrp);
+ $('#vsave').textContent=Math.round((1-p.price/p.mrp)*100)+'% कम';
+ $('#vsz').textContent=p.size+' • '+p.pages+' pages';
+ $('#vpg').textContent=p.pages+' pages';
+ $('#vgo').href='album-builder.html?pkg='+p.id;
+ // templates + demo photos
+ const tpls=await Promise.all(p.tpls.map(u=>fetch(u+'?v='+Date.now()).then(r=>r.json())));
+ const DSET=(p.cat==='baby')?['baby1','baby2','baby3']:(p.cat==='birthday')?['bday1','bday2','bday3']:['couple1','couple2','couple3','couple4','couple5','couple6','couple7'];
+ const demo=await Engine.loadPhotos(DSET.map(n=>'albums/demo/'+n+'.jpg'));
+ const cv=$('#cv'); let cur=0;
+ const names=['📕 Cover','📖 पेज Design 1','📖 पेज Design 2','📖 पेज Design 3'];
+ $('#dots').innerHTML=tpls.map((_,i)=>`<i data-i="${i}"></i>`).join('');
+ $$('#dots i').forEach(d=>d.onclick=()=>go(+d.dataset.i));
+ async function go(i){
+  cur=(i+tpls.length)%tpls.length;
+  const dpi=Math.min(1600,Math.round(innerWidth*1.6))/tpls[cur].W;
+  await Engine.renderPage(cv,tpls[cur],demo,dpi);
+  $('#pgname').textContent=names[cur]+'  •  '+(cur+1)+'/'+tpls.length;
+  $$('#dots i').forEach((d,j)=>d.classList.toggle('on',j===cur));
+ }
+ $('#prev').onclick=()=>go(cur-1);
+ $('#next').onclick=()=>go(cur+1);
+ let tx=null;
+ $('#stage').addEventListener('touchstart',e=>tx=e.touches[0].clientX,{passive:true});
+ $('#stage').addEventListener('touchend',e=>{if(tx==null)return;const dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>40)go(cur+(dx<0?1:-1));tx=null},{passive:true});
+ document.onkeydown=e=>{if(e.key==='ArrowLeft')go(cur-1);if(e.key==='ArrowRight')go(cur+1)};
+ go(0);
+})()</script>
+</body></html>
