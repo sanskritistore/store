@@ -43,6 +43,7 @@
  <div class="pgname" id="pgname"></div>
  <div class="vinfo">
   <b>📦 इस package में:</b>
+  <div id="vsamp" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:9px"></div>
   <ul id="vinc"></ul>
   <div class="vpr"><b id="vpr"></b><s id="vmrp"></s><span id="vsave"></span></div>
   <div style="font-size:12.5px;color:#8a6d1d;font-weight:700">📐 <span id="vsz"></span></div>
@@ -61,6 +62,7 @@
  $('#vname').textContent='📖 '+p.name;
  $('#vsub').textContent=p.en+' — उंगली से पलटकर पूरी book देखें 👆';
  $('#vinc').innerHTML=p.includes.map(i=>`<li>${i}</li>`).join('');
+ $('#vsamp').innerHTML=(A.samples||[]).map(sm=>`<div style="background:#faf6ee;border:1px solid #eee0c8;border-radius:10px;overflow:hidden;text-align:center"><img src="${sm.img}" style="width:100%;aspect-ratio:1;object-fit:cover;display:block"><span style="font-size:11px;font-weight:700;color:#8a6d1d;display:block;padding:3px 2px">${sm.label}</span></div>`).join('');
  $('#vpr').textContent=fmt(p.price); $('#vmrp').textContent=fmt(p.mrp);
  $('#vsave').textContent=Math.round((1-p.price/p.mrp)*100)+'% कम';
  $('#vsz').textContent=p.size+' • '+p.pages+' pages';

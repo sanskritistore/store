@@ -12,7 +12,8 @@
    "includes": [
     "📖 Premium Album Book — 20 pages",
     "💎 Acrylic Photo Frame 8×12",
-    "🔑 Acrylic Keychain ×2"
+    "🔑 Acrylic Keychain ×2",
+    "📅 Photo Calendar 2027"
    ],
    "price": 4499,
    "mrp": 6499,
@@ -36,7 +37,8 @@
    "includes": [
     "📖 Premium Album Book — 20 pages",
     "💎 Acrylic Photo Frame 8×12",
-    "🔑 Acrylic Keychain ×2"
+    "🔑 Acrylic Keychain ×2",
+    "📅 Photo Calendar 2027"
    ],
    "price": 4299,
    "mrp": 5999,
@@ -60,7 +62,8 @@
    "includes": [
     "📖 Premium Album Book — 20 pages",
     "💎 Acrylic Photo Frame 8×12",
-    "🔑 Acrylic Keychain ×2"
+    "🔑 Acrylic Keychain ×2",
+    "📅 Photo Calendar 2027"
    ],
    "price": 4699,
    "mrp": 6499,
@@ -84,7 +87,8 @@
    "includes": [
     "📖 Premium Album Book — 20 pages",
     "💎 Acrylic Photo Frame 8×12",
-    "🔑 Acrylic Keychain ×2"
+    "🔑 Acrylic Keychain ×2",
+    "📅 Photo Calendar 2027"
    ],
    "price": 4699,
    "mrp": 6499,
@@ -108,7 +112,8 @@
    "includes": [
     "📖 Premium Album Book — 20 pages",
     "💎 Acrylic Photo Frame 8×12",
-    "🔑 Acrylic Keychain ×2"
+    "🔑 Acrylic Keychain ×2",
+    "📅 Photo Calendar 2027"
    ],
    "price": 4499,
    "mrp": 6299,
@@ -132,7 +137,8 @@
    "includes": [
     "📖 Premium Album Book — 20 pages",
     "💎 Acrylic Photo Frame 8×12",
-    "🔑 Acrylic Keychain ×2"
+    "🔑 Acrylic Keychain ×2",
+    "📅 Photo Calendar 2027"
    ],
    "price": 3999,
    "mrp": 5499,
@@ -156,7 +162,8 @@
    "includes": [
     "📖 Premium Album Book — 20 pages",
     "💎 Acrylic Photo Frame 8×12",
-    "🔑 Acrylic Keychain ×2"
+    "🔑 Acrylic Keychain ×2",
+    "📅 Photo Calendar 2027"
    ],
    "price": 4199,
    "mrp": 5799,
@@ -180,7 +187,8 @@
    "includes": [
     "📖 Album Book — 16 pages",
     "💎 Acrylic Photo 6×8",
-    "🔑 Acrylic Keychain ×1"
+    "🔑 Acrylic Keychain ×1",
+    "📅 Photo Calendar 2027"
    ],
    "price": 3499,
    "mrp": 4999,
@@ -204,7 +212,8 @@
    "includes": [
     "📖 Album Book — 16 pages",
     "💎 Acrylic Photo 6×8",
-    "🔑 Acrylic Keychain ×1"
+    "🔑 Acrylic Keychain ×1",
+    "📅 Photo Calendar 2027"
    ],
    "price": 3299,
    "mrp": 4699,
@@ -228,7 +237,8 @@
    "includes": [
     "📖 Premium Album Book — 20 pages",
     "💎 Acrylic Photo Frame 8×12",
-    "🔑 Acrylic Keychain ×2"
+    "🔑 Acrylic Keychain ×2",
+    "📅 Photo Calendar 2027"
    ],
    "price": 4999,
    "mrp": 6999,
@@ -252,7 +262,8 @@
    "includes": [
     "📖 Premium Album Book — 20 pages",
     "💎 Acrylic Photo Frame 8×12",
-    "🔑 Acrylic Keychain ×2"
+    "🔑 Acrylic Keychain ×2",
+    "📅 Photo Calendar 2027"
    ],
    "price": 4799,
    "mrp": 6799,
@@ -263,6 +274,24 @@
     "albums/t10-p2.json",
     "albums/t10-p3.json"
    ]
+  }
+ ],
+ "samples": [
+  {
+   "img": "albums/demo/pkg-book.jpg",
+   "label": "📖 Album Book"
+  },
+  {
+   "img": "albums/demo/pkg-frame.jpg",
+   "label": "💎 Acrylic Frame"
+  },
+  {
+   "img": "albums/demo/pkg-keychain.jpg",
+   "label": "🔑 Keychain"
+  },
+  {
+   "img": "albums/demo/pkg-calendar.jpg",
+   "label": "📅 Calendar"
   }
  ]
 }
