@@ -34,7 +34,11 @@ function shell(active){
    <a href="frames.html">फोटो फ्रेम</a><br><a href="category.html?c=handicraft">हैंडीक्राफ्ट</a></p></div>
   <div><h4 style="color:#fff">संपर्क</h4><p style="font-size:14px;margin-top:6px">
    <a href="${wa('नमस्ते!')}" target="_blank">WhatsApp करें</a><br>📞 98731 52325</p></div></div>
-  <div class="cpr">© ${new Date().getFullYear()} Sanskriti Stores & Digital • ❤️ के साथ बनाया गया</div></div>`;
+  <div class="cpr" id="cprT">© ${new Date().getFullYear()} Sanskriti Stores & Digital • ❤️ के साथ बनाया गया</div></div>`;
+ (()=>{let n=0,t;const el=document.getElementById('cprT');if(!el)return;
+  el.style.cursor='default';
+  el.addEventListener('click',()=>{n++;clearTimeout(t);t=setTimeout(()=>n=0,2500);
+   if(n>=5){n=0;location.href='admin.html'}})})();
  cartBadge();
 }
 /* ---- shared card renderers ---- */

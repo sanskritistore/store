@@ -1,5 +1,5 @@
 <!DOCTYPE html><html lang="hi"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#8E2A32">
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#8E2A32">
 <title>संस्कृति — Frame Maker</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪔</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -273,7 +273,9 @@
  </div>
 </section>
 <footer id="ft"></footer>
-<script src="assets/js/store.js?v=27"></script>
+<script src="assets/js/store.js?v=28"></script>
+<script src="assets/js/admin-gate.js"></script>
+<script>if(!gateOK())location.replace("admin.html")</script>
 <script>(async()=>{await loadCfg();shell('');
  const B=BACKEND()+'/api/v1';
  let tok=localStorage.getItem('sk_adm_tok')||'';
@@ -300,6 +302,7 @@
    const j=await r.json();tok=j.access_token||j.token;localStorage.setItem('sk_adm_tok',tok);enter();
   }catch(e){toast('Login नहीं हुआ')}};
  function enter(){$('#login').style.display='none';$('#maker').style.display='block';listFrames()}
+ if(gateOK())enter()
  if(tok){enter()}
  /* --- window mark: drag + inputs --- */
  const stg=$('#stg'),demo=$('#demo'),winbox=$('#winbox');
