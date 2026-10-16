@@ -9,8 +9,8 @@
 .vhead{text-align:center;margin-bottom:10px}
 .vhead h2{font-size:21px;font-weight:800}
 .vhead .sub2{color:var(--muted);font-size:13.5px;margin-top:2px}
-.stage{position:relative;background:#1d1410;border-radius:16px;padding:14px 42px;box-shadow:0 14px 34px rgba(30,15,8,.35)}
-.stage canvas{width:100%;display:block;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.5);background:#111}
+.stage{position:relative;background:#fffdf8;border:1.5px solid #eee0c8;border-radius:16px;padding:14px 42px;box-shadow:0 10px 26px rgba(90,58,32,.15)}
+.stage canvas{width:100%;display:block;border-radius:8px;box-shadow:0 4px 14px rgba(60,40,25,.28)}
 .arw{position:absolute;top:50%;transform:translateY(-50%);width:38px;height:38px;border-radius:50%;border:1.5px solid #e4d9b7;background:#fffdf8;color:#8E2A32;font-size:18px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,.25);user-select:none}
 .arw:active{transform:translateY(-50%) scale(.92)}
 .arw.l{left:6px}.arw.r{right:6px}
@@ -29,7 +29,7 @@
 .vcta{display:block;text-align:center;background:var(--brand);color:#fff;font-weight:800;font-size:17px;padding:14px;border-radius:13px;margin-top:13px;text-decoration:none;box-shadow:0 8px 20px rgba(142,42,50,.35)}
 .vcta:active{transform:scale(.98)}
 .vnote{text-align:center;color:var(--muted);font-size:12.5px;margin-top:9px;line-height:1.6}
-@media(max-width:560px){.stage{padding:10px 40px}}
+@media(max-width:560px){.stage{padding:12px 34px}.arw{width:32px;height:32px;font-size:16px}.arw.l{left:6px}.arw.r{right:6px}}
 </style></head><body>
 <header id="hd"></header>
 <div class="vb">
@@ -40,6 +40,7 @@
   <div class="arw r" id="next">›</div>
  </div>
  <div class="dots" id="dots"></div>
+ <div id="rot" style="display:none;text-align:center;font-size:12px;color:#8a6d1d;font-weight:700;margin-top:2px">💡 फ़ोन घुमा लो — page बड़ा दिखेगा 🔄</div>
  <div class="pgname" id="pgname"></div>
  <div class="vinfo">
   <b>📦 इस package में:</b>
@@ -82,6 +83,7 @@
   cur=(i+tpls.length)%tpls.length;
   const dpi=Math.min(1600,Math.round(innerWidth*1.6))/tpls[cur].W;
   await Engine.renderPage(cv,tpls[cur],demo,dpi);
+  $('#rot').style.display=(tpls[cur].W>2*tpls[cur].H&&innerWidth<560)?'block':'none';
   $('#pgname').textContent=names[cur]+'  •  '+(cur+1)+'/'+tpls.length;
   $$('#dots i').forEach((d,j)=>d.classList.toggle('on',j===cur));
  }
