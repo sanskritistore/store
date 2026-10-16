@@ -39,6 +39,9 @@ function shell(active){
   el.style.cursor='default';
   el.addEventListener('click',()=>{n++;clearTimeout(t);t=setTimeout(()=>n=0,2500);
    if(n>=5){n=0;location.href='admin.html'}})})();
+ /* header की ऊँचाई → --hdh (sticky tools के लिए, हर page) */
+ const _hdh=()=>document.documentElement.style.setProperty('--hdh',document.getElementById('hd').offsetHeight+'px');
+ _hdh();addEventListener('resize',_hdh);setTimeout(_hdh,600);
  cartBadge();
 }
 /* ---- shared card renderers ---- */
