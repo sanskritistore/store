@@ -3,7 +3,15 @@
 <title>संस्कृति — फ्रेम preview</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪔</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/store.css?v=13"></head><body>
+<link rel="stylesheet" href="assets/css/store.css?v=13"><style>
+@media(max-width:799px){
+ #stage{position:sticky;top:var(--hdh,104px);z-index:40;min-height:0;padding:12px;box-shadow:0 8px 18px rgba(60,40,25,.20)}
+ #stage .fr{width:min(200px,58%)}
+ #stage.wall .fr{width:min(175px,54%)}
+ #stage .fr.rt-32{width:min(240px,70%)}
+}
+</style>
+</head><body>
 <header id="hd"></header>
 <section class="pv wrap">
  <div class="stage" id="stage">
@@ -58,6 +66,8 @@
 <footer id="ft"></footer>
 <script src="assets/js/store.js?v=28"></script>
 <script>(async()=>{await loadCfg();await loadCustomFrames();shell('frames');
+ const _hdh=()=>document.documentElement.style.setProperty('--hdh',document.getElementById('hd').offsetHeight+'px');
+ _hdh();addEventListener('resize',_hdh);
  const F=CFG.frames.frames.find(f=>f.id===qp('frame'))||CFG.frames.frames[0];
  if(!F){document.querySelector('#fr').innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#8a7a5c;font-weight:700;text-align:center;padding:20px">⏳ frame load नहीं हुआ — page refresh करें<br><small>(internet या server धीमा है)</small></div>';return}
  if(F.custom&&F.img)F.img=F.img+'&w=1600'; // 12-10 रात: display के लिए हल्का webp (5400px PNG की जगह) — print file server पर full-quality बनती है
