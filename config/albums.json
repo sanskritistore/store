@@ -1,0 +1,11 @@
+{
+ "albums":[
+  {"id":"t06","code":"B001","name":"शाही विवाह","en":"Royal Maroon-Gold","cat":"wedding","img":"albums/c06.jpg","tpl":"albums/t06.json","rating":4.8,"base":1499},
+  {"id":"t07","code":"B002","name":"गुलबाग","en":"Sage-Champagne 2026","cat":"wedding","img":"albums/c07.jpg","tpl":"albums/t07.json","rating":4.7,"base":1499},
+  {"id":"t08","code":"B003","name":"मेहराब Teal","en":"Arch + Golden Palms","cat":"royal","img":"albums/c08.jpg","tpl":"albums/t08.json","rating":4.9,"base":1699},
+  {"id":"t09","code":"B004","name":"Spotlight Fan","en":"5-Photo Fan + Spotlight","cat":"modern","img":"albums/c09.jpg","tpl":"albums/t09.json","rating":4.8,"base":1699},
+  {"id":"t10","code":"B005","name":"Editorial Magazine","en":"Fashion Magazine Style","cat":"modern","img":"albums/c10.jpg","tpl":"albums/t10.json","rating":4.7,"base":1599},
+  {"id":"t11","code":"B006","name":"Royal Navy","en":"Navy + Gold Haveli","cat":"royal","img":"albums/c11.jpg","tpl":"albums/t11.json","rating":4.8,"base":1699},
+  {"id":"t12","code":"B007","name":"Watercolor Garden","en":"Soft Watercolor","cat":"modern","img":"albums/c12.jpg","tpl":"albums/t12.json","rating":4.7,"base":1599}
+ ]
+}
