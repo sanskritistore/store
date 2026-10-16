@@ -1,0 +1,1820 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌸 संस्कृति डॉक स्टूडियो — फ़ोन फ़ोटो → साफ़ प्रिंट</title>
+<style>
+:root{--bg:#0f1115;--panel:#171a21;--panel2:#1d212b;--line:#2a2f3a;--txt:#e8e6df;--mut:#8a8f9a;--acc:#ff9933;--grn:#2ea36b;--blu:#3b82f6;}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--txt); height:100vh; display:flex; flex-direction:column; overflow:hidden;}
+header{padding:10px 18px; background:var(--panel); border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between;}
+header h1{font-size:20px; font-weight:800;}
+header h1 .badge{background:var(--grn); color:#fff; font-size:11px; padding:3px 10px; border-radius:20px; margin-left:8px; vertical-align:middle;}
+header .sub{font-size:12px; color:var(--mut); margin-top:2px;}
+#btnPrintTop{background:linear-gradient(135deg,#22c55e,#16a34a); color:#fff; border:0; padding:10px 22px; border-radius:10px; font-size:16px; font-weight:800; cursor:pointer;}
+#btnPrintTop:disabled{opacity:.4; cursor:default;}
+main{flex:1; display:flex; overflow:hidden;}
+/* left: doc list */
+#left{width:220px; background:var(--panel); border-right:1px solid var(--line); display:flex; flex-direction:column; padding:12px; gap:10px; overflow-y:auto;}
+#btnAdd{background:var(--panel2); border:1.5px dashed var(--line); color:var(--txt); border-radius:10px; padding:16px; font-size:14px; font-weight:700; cursor:pointer; text-align:center;}
+#btnAdd:hover{border-color:var(--acc);}
+.docItem{background:var(--panel2); border:2px solid var(--line); border-radius:10px; padding:6px; cursor:pointer; position:relative;}
+.docItem.on{border-color:var(--acc);}
+.docItem img{width:100%; border-radius:6px; display:block; background:#000;}
+.docItem .nm{font-size:11px; color:var(--mut); margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.docItem .del{position:absolute; top:2px; right:2px; background:#000a; color:#f66; border:0; border-radius:6px; width:22px; height:22px; cursor:pointer; font-size:13px;}
+/* center: editor */
+#center{flex:1; display:flex; flex-direction:column; overflow:hidden;}
+#stage{flex:1; overflow:auto; display:flex; align-items:center; justify-content:center; position:relative; background:#0a0c10;}
+#viewCv{max-width:96%; max-height:96%; box-shadow:0 4px 30px #000a; cursor:crosshair;}
+#editTools{background:var(--panel); border-top:1px solid var(--line); padding:10px 14px; display:flex; gap:14px; align-items:center; flex-wrap:wrap;}
+#editTools .grp{display:flex; align-items:center; gap:8px;}
+#editTools label{font-size:12px; color:var(--mut);}
+button.tool{background:var(--panel2); border:1px solid var(--line); color:var(--txt); border-radius:8px; padding:7px 12px; cursor:pointer; font-size:13px; font-weight:700;}
+button.tool:hover{border-color:var(--acc);}
+button.tool.on{background:#123524; border-color:var(--grn); color:#7df0b5;}
+input[type=range]{accent-color:var(--acc);}
+#emptyMsg{color:var(--mut); text-align:center; font-size:15px; line-height:1.9;}
+/* right: sheet */
+#right{width:330px; background:var(--panel); border-left:1px solid var(--line); display:flex; flex-direction:column; padding:12px; gap:10px;}
+#right h3{font-size:14px; color:var(--acc);}
+#sheetWrap{flex:1; overflow:auto; background:#0a0c10; border-radius:10px; display:flex; align-items:flex-start; justify-content:center; padding:10px;}
+#sheetCv{width:100%; box-shadow:0 4px 20px #000a;}
+#toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#123524; color:#7df0b5; border:1px solid var(--grn); padding:12px 24px; border-radius:12px; font-size:14px; font-weight:700; opacity:0; transition:opacity .3s; pointer-events:none; z-index:99; max-width:90vw; text-align:center;}
+#printArea{display:none;}
+@media print{
+  body>*{display:none !important;}
+  #printArea{display:block !important;}
+  @page{size:A4; margin:0;}
+  #printArea img{width:210mm; height:297mm; display:block; page-break-after:always;}
+  body{height:auto; overflow:visible; background:#fff;}
+}
+</style>
+<script src="assets/js/admin-gate.js"></script>
+<script>gateRequire()</script>
+</head>
+<body>
+<header>
+  <div>
+    <h1>🌸 संस्कृति डॉक स्टूडियो <span class="badge">FREE v2.0 ✨</span></h1>
+    <div class="sub">फ़ोन से खींची document फ़ोटो → अपने आप कटाई • सीधी • साफ़ → A4 प्रिंट</div>
+  </div>
+  <button id="btnPrintTop" disabled>🖨️ PRINT — A4</button>
+</header>
+<main>
+  <div id="left">
+    <div style="font-size:11px;font-weight:800;color:var(--acc);margin:2px 2px 6px;">① पहले type चुनो 👇 ② फिर photo डालो</div>
+    <div style="display:flex;gap:6px;">
+      <button id="btnDocs" class="modeBtn" data-kind="doc" style="flex:1.2;padding:11px 4px;border-radius:10px;border:2px solid var(--line);background:var(--panel);color:var(--txt);font-weight:800;cursor:pointer;font-size:12px;line-height:1.35;">📄 A4 Document<br><span style="font-weight:500;font-size:10px;">1 photo → पूरा page</span></button>
+      <button id="btnCards" class="modeBtn" data-kind="card" style="flex:1;padding:11px 4px;border-radius:10px;border:2px solid var(--line);background:var(--panel);color:var(--txt);font-weight:800;cursor:pointer;font-size:12px;line-height:1.35;">🔗 Card PAIR<br><span style="font-weight:500;font-size:10px;">आधार·वोटर front+back</span></button>
+      <button id="btnPan" class="modeBtn" data-kind="pan" style="flex:1;padding:11px 4px;border-radius:10px;border:2px solid var(--line);background:var(--panel);color:var(--txt);font-weight:800;cursor:pointer;font-size:12px;line-height:1.35;">🟦 PAN<br><span style="font-weight:500;font-size:10px;">single card</span></button>
+    </div>
+    <div id="modeHint" style="font-size:10px;opacity:.7;margin:4px 2px 0;">कोई type नहीं चुनी — software खुद अंदाज़ा लगाएगा</div>
+    <button id="btnAdd" style="margin-top:8px;">📁 फ़ोटो चुनें<br><span style="font-size:11px;color:var(--mut)">(एक साथ कई)</span></button>
+    <button id="btnAutoAll" style="width:100%;margin-top:8px;padding:10px;border-radius:10px;border:1px solid var(--line);background:#f59e0b22;color:var(--acc);font-weight:800;cursor:pointer;">⚡ सब AUTO करो</button>
+    <div style="margin-top:8px;padding:8px;border:1px dashed var(--line);border-radius:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
+        <b style="font-size:12px;">📚 Samples (<span id="smpN">0</span>)</b>
+        <button id="btnSmpAdd" style="padding:5px 8px;border-radius:8px;border:1px solid var(--acc);background:transparent;color:var(--acc);font-weight:700;cursor:pointer;font-size:11px;">⭐ चुनी photo → sample</button>
+      </div>
+      <div style="display:flex;gap:4px;margin-top:6px;">
+        <select id="smpType" style="flex:1;padding:4px;border-radius:6px;background:var(--panel);color:var(--txt);border:1px solid var(--line);font-size:11px;">
+          <option>आधार</option><option>वोटर</option><option>PAN</option><option>आयुष्मान</option><option>ABHA</option><option>DL</option><option>राशन</option><option>ID</option><option>अन्य</option>
+        </select>
+        <select id="smpSide" style="width:76px;padding:4px;border-radius:6px;background:var(--panel);color:var(--txt);border:1px solid var(--line);font-size:11px;">
+          <option value="front">FRONT</option><option value="back">BACK</option>
+        </select>
+      </div>
+      <div id="smpList" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;"></div>
+      <div style="font-size:9.5px;opacity:.6;margin-top:4px;">नीचे list से photo चुनो → नाम+side → ⭐ — software front/back पहचानना सीखेगा</div>
+    </div>
+    <div id="docList"></div>
+  </div>
+  <div id="center">
+    <div id="stage">
+      <div id="emptyMsg">📄<br>बाईं ओर से फ़ोटो चुनें<br><span style="font-size:12px">आधार • PAN • Voter • कोई document — डालते ही अपने आप print-ready</span></div>
+    </div>
+    <div id="editTools" style="display:none">
+      <div class="grp">
+        <button class="tool" id="btnAutoCrop">✂️ AUTO काटें</button>
+        <button class="tool" id="btnAutoStraight">📐 AUTO सीधा</button>
+        <button class="tool" id="btnRot90" title="उल्टी/तिरछी photo ठीक करें">↻ 90°</button>
+        <button class="tool" id="btnPersp" title="तिरछे/झुके document को बिल्कुल सीधा करें (4 कोने चुनें)">⬠ Perspective</button>
+        <button class="tool" id="btnPerspX" style="display:none">✕ रद्द</button>
+        <button class="tool" id="btnOrig" style="display:none" title="मूल photo वापस लाएँ">↺ मूल</button>
+      </div>
+      <div class="grp">
+        <label>सीधा:</label>
+        <input type="range" id="sRot" min="-15" max="15" step="0.5" value="0" style="width:110px">
+        <span id="vRot" style="font-size:12px; min-width:44px;">0°</span>
+      </div>
+      <div class="grp">
+        <label>सफ़ाई:</label>
+        <button class="tool modeBtn on" data-m="clean">✨ साफ़ (Print)</button>
+        <button class="tool modeBtn" data-m="bw">⬛ काला-सफ़ेद</button>
+        <button class="tool modeBtn" data-m="orig">🎨 Original</button>
+      </div>
+      <div class="grp">
+        <button class="tool" id="btnCompare">👁️ पहले/बाद</button>
+      </div>
+    </div>
+  </div>
+  <div id="right">
+    <h3>📋 A4 Sheet — <span id="pgInfo">0 पेज</span></h3>
+    <div style="display:flex;gap:6px;align-items:center;justify-content:center;">
+      <button class="tool" id="pgPrev">◀</button>
+      <span id="pgLabel" style="font-size:12px;color:var(--mut);">—</span>
+      <button class="tool" id="pgNext">▶</button>
+      <button class="tool" id="pgSwap" title="front/back उल्टाओ" style="display:none;color:var(--acc);border-color:var(--acc);">⇄</button>
+      <button class="tool" id="pgFlip" title="उल्टा card सीधा करो (180°)" style="display:none;color:var(--acc);border-color:var(--acc);">🔃</button>
+    </div>
+    <div id="sheetWrap"><canvas id="sheetCv"></canvas></div>
+  </div>
+</main>
+<div id="toast"></div>
+<input type="file" id="fileInp" accept="image/*" multiple style="display:none">
+<div id="printArea"></div>
+<style id="pageStyle">@page{size:210mm 297mm; margin:0;}</style>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const DPI=300, MM=DPI/25.4;
+const S={docs:[], cur:-1, compare:false, drag:null, _sel:new Set()};
+let toastT=null;
+function toast(m){ const t=$('toast'); t.textContent=m; t.style.opacity=1; clearTimeout(toastT); toastT=setTimeout(()=>t.style.opacity=0,4000); }
+function uid(){ return 'd'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
+/* ================= IMAGE LOAD ================= */
+$('btnAdd').addEventListener('click',()=>$('fileInp').click());
+/* दो बड़े buttons: चुनी (या सब) photos का type एक click में */
+/* ================= 🔗 PAIR ENGINE + 📚 SAMPLE LIBRARY ================= */
+function _mkPairSig(src){
+  // upload के समय की मूल photo: किनारों की ring = मेज़/background का रंग
+  const W=48, H=Math.max(8,Math.round(48*src.height/src.width));
+  const cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+  const c=cv.getContext('2d'); c.drawImage(src,0,0,W,H);
+  const d=c.getImageData(0,0,W,H).data;
+  let r=0,g=0,b=0,n=0;
+  const ring=(x,y)=>{const i=(y*W+x)*4;r+=d[i];g+=d[i+1];b+=d[i+2];n++;};
+  for(let x=0;x<W;x++){ring(x,0);ring(x,H-1);}
+  for(let y=1;y<H-1;y++){ring(0,y);ring(W-1,y);}
+  return {br:r/n,bg:g/n,bb:b/n, aspect:src.width/src.height, area:src.width*src.height};
+}
+function _ahash(src){
+  const cv=document.createElement('canvas'); cv.width=8; cv.height=8;
+  const c=cv.getContext('2d'); c.drawImage(src,0,0,8,8);
+  const d=c.getImageData(0,0,8,8).data;
+  let g=[],sum=0;
+  for(let i=0;i<64;i++){const l=d[i*4]*3+d[i*4+1]*4+d[i*4+2]*2; g.push(l); sum+=l;}
+  const avg=sum/64; let bits='';
+  for(const l of g) bits+=(l>avg?'1':'0');
+  return bits;
+}
+function _dhash(src){
+  const cv=document.createElement('canvas'); cv.width=9; cv.height=8;
+  const c=cv.getContext('2d'); c.drawImage(src,0,0,9,8);
+  const d=c.getImageData(0,0,9,8).data;
+  let bits='';
+  for(let y=0;y<8;y++)for(let x=0;x<8;x++){
+    const i=(y*9+x)*4, j=(y*9+x+1)*4;
+    bits+=((d[i]*3+d[i+1]*4+d[i+2]*2)>(d[j]*3+d[j+1]*4+d[j+2]*2)?'1':'0');
+  }
+  return bits;
+}
+const _ham=(a,b)=>{let n=0;for(let i=0;i<a.length;i++)if(a[i]!==b[i])n++;return n;};
+function _loadLib(){ try{return JSON.parse(localStorage.getItem('sanskriti_samples')||'[]');}catch(e){return[];} }
+function _saveLib(a){ try{localStorage.setItem('sanskriti_samples',JSON.stringify(a));}catch(e){toast('⚠️ memory भर गई');} }
+function _classifySide(doc){
+  const lib=_loadLib(); if(!lib.length) return null;
+  const pc=(doc&&doc.width!==undefined&&doc.tag===undefined&&doc.crop===undefined)?doc:processed(doc);
+  const ah=_ahash(pc), dh=_dhash(pc);
+  let best=null,bd=999;
+  lib.forEach(smp=>{
+    const d=_ham(ah,smp.ah)+_ham(dh,smp.dh);
+    if(d<bd){bd=d;best=smp;}
+  });
+  return (bd<=26)? {side:best.side,name:best.name,dist:bd} : null;
+}
+function pairMatch(targets){
+  // GLOBAL best-match: सब possible जोड़ों को score से sort — सबसे मिलती जोड़ी पहले
+  const geo=(A,B)=> Math.abs(Math.log(A.aspect/B.aspect))*2.0
+    + (Math.abs(A.br-B.br)+Math.abs(A.bg-B.bg)+Math.abs(A.bb-B.bb))/255
+    + Math.abs(Math.log(A.area/B.area))*1.2;
+  const cls=new Map(targets.map(d=>[d.id,_classifySide(d)]));
+  const content=(A,B)=>{
+    const ca=cls.get(A.id), cb=cls.get(B.id);
+    if(ca&&cb){
+      if(ca.name===cb.name) return ca.side!==cb.side? -0.35 : 0.60;  // same card F+B खिंचो, F+F दूर
+      return 0.60;                                                   // अलग card type कभी न जोड़ो
+    }
+    return 0;
+  };
+  const edges=[];
+  for(let i=0;i<targets.length;i++)for(let j=i+1;j<targets.length;j++){
+    const A=targets[i], B=targets[j];
+    edges.push({a:A,b:B,score:geo(A._pairSig||_mkPairSig(rotCanvas(A)), B._pairSig||_mkPairSig(rotCanvas(B))) + content(A,B)});
+  }
+  edges.sort((x,y)=>x.score-y.score);
+  const used=new Set(), pairs=[];
+  for(const e of edges){
+    if(e.score>0.45) break;
+    if(used.has(e.a.id)||used.has(e.b.id)) continue;
+    used.add(e.a.id); used.add(e.b.id);
+    pairs.push([e.a,e.b]);
+  }
+  targets.forEach(d=>{ if(!used.has(d.id)) pairs.push([d]); });
+  let auto=0;
+  pairs.forEach(p=>{
+    if(p.length===1){ p[0].tag='af'; p[0]._autoTag=false; p[0]._pid=null; return; }
+    let f=p[0], b=p[1];
+    const cf=cls.get(f.id), cb=cls.get(b.id);
+    if(cf&&cb&&cf.side!==cb.side){ if(cf.side==='back'){ const t=f;f=b;b=t; } auto++; }
+    else if(cf&&!cb&&cf.side==='back'){ const t=f;f=b;b=t; auto++; }
+    else if(cb&&!cf&&cb.side==='front'){ const t=f;f=b;b=t; auto++; }
+    f.tag='af'; b.tag='ab'; f._autoTag=false; b._autoTag=false;
+    const pid=uid();
+    f._pid=pid; b._pid=pid;
+  });
+  return {pairs, auto};
+}
+
+function applyType(kind){
+  const ids=S._sel.size? S._sel : new Set(S.docs.map(d=>d.id));
+  const targets=S.docs.filter(d=>ids.has(d.id));
+  if(!targets.length){ toast('पहले photo डालो'); return; }
+  if(kind==='card'){
+    const r=pairMatch(targets);
+    const n=r.pairs.filter(p=>p.length===2).length;
+    toast('🔗 '+n+' जोड़ी तैयार'+(r.auto?' ('+r.auto+' sample से पहचानी)':'')+' — गलत हो तो ⇄ दबाओ ✓');
+  }else if(kind==='pan'){
+    targets.forEach(d=>{ d.tag='pan'; d._autoTag=false; d._pid=null; });
+    toast('🟦 '+targets.length+' PAN — single ऊपर 1 page ✓');
+  }else{
+    targets.forEach(d=>{ d.tag='doc'; d._autoTag=false; d._pid=null; });
+    toast('📄 '+targets.length+' Document — हर photo अलग A4 page ✓');
+  }
+  S._sel.clear(); renderAll();
+}
+/* ---- Mode: पहले type, फिर photo ---- */
+S.mode=null;
+function setMode(kind){
+  S.mode=(S.mode===kind)?null:kind;   // दोबारा दबाओ तो हट जाए
+  document.querySelectorAll('.modeBtn').forEach(b=>{
+    const on=(b.dataset.kind===S.mode);
+    b.style.borderColor=on?'var(--acc)':'var(--line)';
+    b.style.background=on?'#f59e0b22':'var(--panel)';
+    b.style.boxShadow=on?'0 0 0 2px #f59e0b55':'none';
+  });
+  const nm={doc:'📄 A4 Document',card:'🔗 Card PAIR',pan:'🟦 PAN'};
+  $('modeHint').innerHTML=S.mode?('<b style="color:var(--acc)">'+nm[S.mode]+' mode ON</b> — अब photo डालो, सब उसी तरह set होंगे'):'कोई type नहीं चुनी — software खुद अंदाज़ा लगाएगा';
+  if(S.mode&&S.docs.length) applyType(S.mode);       // पहले से photos हों तो उन पर भी लागू
+}
+$('btnCards').addEventListener('click',()=>setMode('card'));
+$('btnPan').addEventListener('click',()=>setMode('pan'));
+/* ---- 📚 Samples UI ---- */
+function renderSamples(){
+  const lib=_loadLib();
+  $('smpN').textContent=lib.length;
+  const L=$('smpList'); L.innerHTML='';
+  lib.forEach((smp,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='position:relative;width:58px;text-align:center;';
+    d.innerHTML='<img src="'+smp.thumb+'" style="width:58px;height:38px;object-fit:cover;border-radius:5px;border:1px solid var(--line);">'
+      +'<div style="font-size:9px;opacity:.8;">'+smp.name+' '+(smp.side==='front'?'F':'B')+'</div>'
+      +'<button data-i="'+i+'" style="position:absolute;top:-5px;right:-5px;width:15px;height:15px;border-radius:50%;background:#ef4444;color:#fff;border:none;font-size:9px;cursor:pointer;line-height:1;">×</button>';
+    d.querySelector('button').onclick=e=>{ const a=_loadLib(); a.splice(+e.target.dataset.i,1); _saveLib(a); renderSamples(); };
+    L.appendChild(d);
+  });
+}
+$('btnSmpAdd').addEventListener('click',()=>{
+  const doc=S.docs[S.cur];
+  if(!doc){ toast('पहले नीचे list से photo चुनो'); return; }
+  const pc=processed(doc);
+  const th=document.createElement('canvas');
+  const sc=96/Math.max(pc.width,pc.height);
+  th.width=Math.max(8,Math.round(pc.width*sc)); th.height=Math.max(8,Math.round(pc.height*sc));
+  th.getContext('2d').drawImage(pc,0,0,th.width,th.height);
+  const lib=_loadLib();
+  lib.push({name:$('smpType').value, side:$('smpSide').value,
+            ah:_ahash(pc), dh:_dhash(pc), thumb:th.toDataURL('image/jpeg',0.7)});
+  _saveLib(lib); renderSamples();
+  toast('📚 '+$('smpType').value+' '+$('smpSide').value+' याद किया ✓');
+});
+renderSamples();
+$('btnDocs').addEventListener('click',()=>setMode('doc'));
+$('btnAutoAll').addEventListener('click',()=>{
+  if(!S.docs.length){ toast('पहले फ़ोटो चुनें'); return; }
+  S._autoQ.push(...S.docs);
+  runAutoQueue();
+});
+$('fileInp').addEventListener('change',async e=>{
+  const files=[...e.target.files]; e.target.value='';
+  if(!files.length) return;
+  for(const f of files){
+    try{
+      const bmp=await createImageBitmap(f);
+      // बहुत बड़ी photo को 2400px तक सीमित (speed)
+      const sc=Math.min(1, 2400/Math.max(bmp.width,bmp.height));
+      const cv=document.createElement('canvas');
+      cv.width=Math.round(bmp.width*sc); cv.height=Math.round(bmp.height*sc);
+      cv.getContext('2d').drawImage(bmp,0,0,cv.width,cv.height);
+      const doc={id:uid(), name:f.name, src:cv, rot:0, crop:{x:0,y:0,w:1,h:1}, mode:'clean', _proc:null,
+                 tag:(S.mode==='doc'?'doc':S.mode==='pan'?'pan':''), _autoTag:!!S.mode&&S.mode!=='card'};
+      doc._pairSig=_mkPairSig(cv);   // मूल photo की पहचान-निशानी (मेज़ रंग + आकार)
+      S.docs.push(doc);
+      S._autoQ.push(doc);
+    }catch(err){ console.error(err); toast('⚠️ '+f.name+' नहीं खुली'); }
+  }
+  if(S.cur<0&&S.docs.length) S.cur=0;
+  renderAll();
+  runAutoQueue();
+});
+/* AUTO queue — एक-एक करके पूरा processing (UI जिंदा रहे) */
+S._autoQ=[];
+let _autoBusy=false;
+function runAutoQueue(){
+  if(_autoBusy) return;
+  const doc=S._autoQ.shift();
+  if(!doc){
+    try{ autoTypes(); renderAll(); }catch(e){ console.error(e); }
+    toast(S.mode==='doc'?'✅ Document तैयार — पूरे A4 page पर! अब 🖨️ PRINT दबाओ'
+        :S.mode==='pan'?'✅ PAN तैयार — page के ऊपर! अब 🖨️ PRINT दबाओ'
+        :'✅ सब print-ready — अब 🖨️ PRINT दबाओ');
+    return;
+  }
+  _autoBusy=true;
+  const idx=S.docs.indexOf(doc)+1;
+  toast('⚡ AUTO '+idx+'/'+S.docs.length+' — '+doc.name.slice(0,18)+'…');
+  setTimeout(()=>{
+    try{ autoProcess(doc); }catch(e){ console.error(e); doc.crop={x:0,y:0,w:1,h:1}; }
+    try{ renderAll(); }catch(e){ console.error(e); }
+    _autoBusy=false;
+    runAutoQueue();
+  },40);
+}
+
+/* ================= AUTO CROP (document border ढूंढना) ================= */
+function _largestBox(m,W,H){
+  const lbl=new Int32Array(W*H).fill(-1);
+  let bestArea=0, bestBox=null, bestLbl=-1, nc=0; const stack=[];
+  for(let s0=0;s0<W*H;s0++){
+    if(!m[s0]||lbl[s0]>=0) continue;
+    let area=0,minX=W,minY=H,maxX=0,maxY=0;
+    stack.length=0; stack.push(s0); lbl[s0]=nc;
+    while(stack.length){
+      const i=stack.pop(), x=i%W, y=(i/W)|0;
+      area++; if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y;
+      if(x>0&&m[i-1]&&lbl[i-1]<0){lbl[i-1]=nc;stack.push(i-1);}
+      if(x<W-1&&m[i+1]&&lbl[i+1]<0){lbl[i+1]=nc;stack.push(i+1);}
+      if(y>0&&m[i-W]&&lbl[i-W]<0){lbl[i-W]=nc;stack.push(i-W);}
+      if(y<H-1&&m[i+W]&&lbl[i+W]<0){lbl[i+W]=nc;stack.push(i+W);}
+    }
+    if(area>bestArea){bestArea=area;bestBox={minX,minY,maxX,maxY};bestLbl=nc;}
+    nc++;
+  }
+  return {area:bestArea, box:bestBox, lbl:bestLbl, map:lbl};
+}
+function _morphClose(m,W,H,it){
+  for(let t=0;t<it;t++){
+    const o=m.slice();
+    for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){
+      const i=y*W+x;
+      if(!o[i]&&((o[i-1]&&o[i+1])||(o[i-W]&&o[i+W]))) m[i]=1;
+    }
+  }
+  return m;
+}
+function _candScore(area,box,W,H){
+  if(!box) return -1;
+  const bw=box.maxX-box.minX, bh=box.maxY-box.minY;
+  if(bw<4||bh<4) return -1;
+  const ar=bw/bh, fill=area/(bw*bh), frac=area/(W*H);
+  let sc=0;
+  if(fill>=0.45&&fill<=0.99) sc+=2;
+  if(frac>=0.06&&frac<=0.92) sc+=1;
+  if(ar>=0.35&&ar<=2.6) sc+=1;
+  // edge-touch penalty: असली doc कभी-कभार ही 3-4 किनारों को छूता है
+  let touch=0;
+  if(box.minX<=1)touch++; if(box.maxX>=W-2)touch++;
+  if(box.minY<=1)touch++; if(box.maxY>=H-2)touch++;
+  if(touch>=3) sc-=2; else sc+=1;
+  return sc;
+}
+function autoCrop(src){
+  const W=300, sc=W/src.width, H=Math.round(src.height*sc);
+  const sm=document.createElement("canvas"); sm.width=W; sm.height=H;
+  const c=sm.getContext("2d"); c.drawImage(src,0,0,W,H);
+  const d=c.getImageData(0,0,W,H).data;
+  const gray=new Uint8Array(W*H);
+  for(let i=0;i<W*H;i++){ const j=i*4; gray[i]=(d[j]*0.3+d[j+1]*0.59+d[j+2]*0.11)|0; }
+  // A: corner-bg color diff
+  const corners=[[0,0],[W-1,0],[0,H-1],[W-1,H-1]];
+  const samples=corners.map(([x,y])=>{ const i=(y*W+x)*4; return [d[i],d[i+1],d[i+2]]; });
+  const bg=[0,1,2].map(k=>samples.map(s2=>s2[k]).sort((a,b)=>a-b)[2]);
+  const mA=new Uint8Array(W*H);
+  for(let i=0;i<W*H;i++){
+    const j=i*4;
+    const dr=d[j]-bg[0], dg=d[j+1]-bg[1], db=d[j+2]-bg[2];
+    mA[i]=(dr*dr+dg*dg+db*db>900)?1:0;
+  }
+  _morphClose(mA,W,H,2);
+  const rA=_largestBox(mA,W,H);
+  // B: Otsu bright mask
+  const hist=new Int32Array(256);
+  for(let i=0;i<W*H;i++)hist[gray[i]]++;
+  let sAll=0; for(let i=0;i<256;i++)sAll+=i*hist[i];
+  let sB=0,wB=0,bestV=0,thr=128;
+  for(let t=0;t<256;t++){
+    wB+=hist[t]; if(!wB)continue;
+    const wF=W*H-wB; if(!wF)break;
+    sB+=t*hist[t];
+    const v=wB*wF*Math.pow(sB/wB-(sAll-sB)/wF,2);
+    if(v>bestV){bestV=v;thr=t;}
+  }
+  const mB=new Uint8Array(W*H);
+  for(let i=0;i<W*H;i++) mB[i]=gray[i]>thr?1:0;
+  _morphClose(mB,W,H,2);
+  const rB=_largestBox(mB,W,H);
+  // C: edge density (textured doc vs चिकना bg)
+  const e=new Float32Array(W*H);
+  for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){
+    const i=y*W+x;
+    e[i]=Math.abs(gray[i+1]-gray[i-1])+Math.abs(gray[i+W]-gray[i-W]);
+  }
+  const se=Array.from(e).filter(v=>v>0).sort((a,b)=>a-b);
+  const eth=se.length?se[(se.length*0.80)|0]:60;
+  const mC=new Uint8Array(W*H);
+  for(let i=0;i<W*H;i++) mC[i]=e[i]>eth?1:0;
+  _morphClose(mC,W,H,3);
+  const rC=_largestBox(mC,W,H);
+  // best candidate (tie → छोटा/tighter box)
+  const cands=[rA,rB,rC].map(r=>({r, sc:_candScore(r.area,r.box,W,H)}));
+  cands.sort((a,b)=> b.sc-a.sc || a.r.area-b.r.area);
+  const win=cands[0];
+  const pr=_paperFallback(src);   // paper-mask: रंगीन/फूलदार bg पर card की exact सीमा
+  if(win.sc<2||!win.r.box) return pr||null;
+  const b=win.r.box, bw=b.maxX-b.minX, bh=b.maxY-b.minY;
+  const total=W*H;
+  if(win.r.area<total*0.04||win.r.area>total*0.985) return pr||null;
+  const padX=bw*0.03, padY=bh*0.03;
+  const winObj={ minX:Math.max(0,(b.minX-padX)/sc), minY:Math.max(0,(b.minY-padY)/sc),
+           maxX:(b.maxX+padX)/sc, maxY:(b.maxY+padY)/sc, _sc:win.sc,
+           _comp:win.r, _boxPx:{minX:b.minX,minY:b.minY,maxX:b.maxX,maxY:b.maxY}, _W:W, _H:H, _scl:sc };
+  // winner बहुत ढीला (कपड़ा/फूल घिर गए) → paper box कसा हुआ हो तो वही
+  if(pr){
+    const wa=(winObj.maxX-winObj.minX)*(winObj.maxY-winObj.minY);
+    const pa=(pr.maxX-pr.minX)*(pr.maxY-pr.minY);
+    if(pa<wa*0.75) return pr;
+  }
+  return winObj;
+}
+/* Fallback: रंगीन/फूलदार कपड़े पर card — "paper mask" (कम-rang उज्ज्वल) + coverage walk */
+function _paperFallback(src){
+  const W=300, sc=W/src.width, H=Math.round(src.height*sc);
+  const sm=document.createElement("canvas"); sm.width=W; sm.height=H;
+  const c=sm.getContext("2d"); c.drawImage(src,0,0,W,H);
+  const d=c.getImageData(0,0,W,H).data;
+  const paper=new Uint8Array(W*H);
+  for(let i=0;i<W*H;i++){ const j=i*4,r=d[j],g=d[j+1],b=d[j+2];
+    const mx=Math.max(r,g,b),mn=Math.min(r,g,b);
+    paper[i]=(mx>110 && (mx-mn)<mx*0.30)?1:0;
+  }
+  _morphClose(paper,W,H,3);
+  const rP=_largestBox(paper,W,H);
+  if(!rP.box) return null;
+  const minX=rP.box.minX, maxX=rP.box.maxX;
+  const bw=Math.max(1,maxX-minX);
+  const frac=new Float32Array(H);
+  for(let y=0;y<H;y++){ let cnt=0;
+    for(let x=minX;x<=maxX;x++) cnt+=paper[y*W+x];
+    frac[y]=cnt/bw;
+  }
+  const sf=new Float32Array(H);
+  for(let y=0;y<H;y++){ let a=0,n=0; for(let k=-2;k<=2;k++){ if(y+k>=0&&y+k<H){a+=frac[y+k];n++;} } sf[y]=a/n; }
+  let band=null,cur=null;
+  for(let y=0;y<H;y++){
+    if(sf[y]>0.75){ if(!cur)cur={y0:y}; cur.y1=y; }
+    else{ if(cur&&(!band||(cur.y1-cur.y0)>(band.y1-band.y0)))band=cur; cur=null; }
+  }
+  if(cur&&(!band||(cur.y1-cur.y0)>(band.y1-band.y0)))band=cur;
+  if(!band||(band.y1-band.y0)<H*0.04) return null;
+  let top=band.y0,gap=0;
+  for(let y=band.y0;y>Math.round(H*0.02);y--){ if(sf[y]>0.55){top=y;gap=0;} else if(++gap>8) break; }
+  let bot=band.y1; gap=0;
+  for(let y=band.y1;y<H-Math.round(H*0.02);y++){ if(sf[y]>0.55){bot=y;gap=0;} else if(++gap>8) break; }
+  const ch=Math.max(1,bot-top);
+  let lx=minX,rx=maxX;
+  while(lx<maxX){ let cnt=0; for(let y=top;y<=bot;y++)cnt+=paper[y*W+lx]; if(cnt/ch>0.55)break; lx++; }
+  while(rx>minX){ let cnt=0; for(let y=top;y<=bot;y++)cnt+=paper[y*W+rx]; if(cnt/ch>0.55)break; rx--; }
+  const fh=bot-top, fw=rx-lx;
+  const asp=fw/Math.max(1,fh);
+  const docMode=(typeof S!=='undefined'&&S.mode==='doc');
+  if(docMode?(asp<0.45||asp>2.4):(asp<1.2||asp>2.1)) return null;   // A4 खड़ा भी चले
+  if(fh<H*0.05||fw<W*0.2) return null;
+  const padX=fw*0.03, padY=fh*0.03;
+  return { minX:Math.max(0,(lx-padX)/sc), minY:Math.max(0,(top-padY)/sc),
+           maxX:(rx+padX)/sc, maxY:(bot+padY)/sc, _sc:2 };
+}
+function autoCrop_OLD_DISABLED(src){
+  const W=420, sc=W/src.width, H=Math.round(src.height*sc);
+  const sm=document.createElement('canvas'); sm.width=W; sm.height=H;
+  const c=sm.getContext('2d'); c.drawImage(src,0,0,W,H);
+  const d=c.getImageData(0,0,W,H).data;
+  // कोनों से bg रंग (median)
+  const corners=[[0,0],[W-1,0],[0,H-1],[W-1,H-1]];
+  const samples=corners.map(([x,y])=>{ const i=(y*W+x)*4; return [d[i],d[i+1],d[i+2]]; });
+  const bg=[0,1,2].map(k=>samples.map(s=>s[k]).sort((a,b)=>a-b)[2]);
+  // mask: bg से अलग pixels
+  const m=new Uint8Array(W*H);
+  for(let i=0;i<W*H;i++){
+    const j=i*4;
+    const dr=d[j]-bg[0], dg=d[j+1]-bg[1], db=d[j+2]-bg[2];
+    m[i]=(dr*dr+dg*dg+db*db>900)?1:0;
+  }
+  // morph close (1px gap भरो) ×2
+  for(let t=0;t<2;t++){
+    const o=m.slice();
+    for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){
+      const i=y*W+x;
+      if(!o[i]&&(o[i-1]&&o[i+1])||(o[i-W]&&o[i+W])) m[i]=1;
+    }
+  }
+  // largest connected component (4-way BFS)
+  const lbl=new Int32Array(W*H).fill(-1); let bestArea=0, bestBox=null, nc=0;
+  const stack=[];
+  for(let s0=0;s0<W*H;s0++){
+    if(!m[s0]||lbl[s0]>=0) continue;
+    let area=0, minX=W, minY=H, maxX=0, maxY=0;
+    stack.length=0; stack.push(s0); lbl[s0]=nc;
+    while(stack.length){
+      const i=stack.pop(), x=i%W, y=(i/W)|0;
+      area++; if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y;
+      if(x>0&&m[i-1]&&lbl[i-1]<0){lbl[i-1]=nc;stack.push(i-1);}
+      if(x<W-1&&m[i+1]&&lbl[i+1]<0){lbl[i+1]=nc;stack.push(i+1);}
+      if(y>0&&m[i-W]&&lbl[i-W]<0){lbl[i-W]=nc;stack.push(i-W);}
+      if(y<H-1&&m[i+W]&&lbl[i+W]<0){lbl[i+W]=nc;stack.push(i+W);}
+    }
+    if(area>bestArea){ bestArea=area; bestBox={minX,minY,maxX,maxY}; }
+    nc++;
+  }
+  const total=W*H;
+  if(!bestBox||bestArea<total*0.06||bestArea>total*0.985) return null;
+  return {minX:bestBox.minX/sc, minY:bestBox.minY/sc, maxX:bestBox.maxX/sc, maxY:bestBox.maxY/sc}; // src px
+}
+// src px box → doc के rotated space में normalized crop
+function cropFor(doc){
+  const box=autoCrop(doc.src);
+  if(!box) return {x:0,y:0,w:1,h:1};
+  const W=doc.src.width, H=doc.src.height;
+  if(!doc.rot){
+    const px=(box.maxX-box.minX)*0.02, py=(box.maxY-box.minY)*0.02;
+    const x=Math.max(0,box.minX-px), y=Math.max(0,box.minY-py);
+    const x2=Math.min(W,box.maxX+px), y2=Math.min(H,box.maxY+py);
+    return {x:x/W, y:y/H, w:(x2-x)/W, h:(y2-y)/H};
+  }
+  // rotation mapping: card center → rotated canvas
+  const rad=doc.rot*Math.PI/180, cs=Math.cos(rad), snA=Math.abs(Math.sin(rad));
+  const RC=rotCanvas(doc), RCW=RC.width, RCH=RC.height;
+  const cx=(box.minX+box.maxX)/2, cy=(box.minY+box.maxY)/2;
+  const dxc=cx-W/2, dyc=cy-H/2;
+  const rcx=cs*dxc-Math.sin(rad)*dyc+RCW/2, rcy=Math.sin(rad)*dxc+cs*dyc+RCH/2;
+  const bw=box.maxX-box.minX, bh=box.maxY-box.minY;
+  let phi=(Math.abs(doc.rot)%90)*Math.PI/180;
+  if(phi>Math.PI/4) phi=Math.PI/2-phi;
+  if(phi<0.05){
+    // θ≈0 या ≈90: घूमा box लगभग axis-aligned — exact corner bbox (wedges नहीं)
+    const pts=[[box.minX,box.minY],[box.maxX,box.minY],[box.minX,box.maxY],[box.maxX,box.maxY]].map(([px,py])=>{
+      const dx=px-W/2, dy=py-H/2;
+      return [cs*dx-Math.sin(rad)*dy+RCW/2, Math.sin(rad)*dx+cs*dy+RCH/2];
+    });
+    const xs=pts.map(p=>p[0]), ys=pts.map(p=>p[1]);
+    const x=Math.max(0,Math.min(...xs)), x2=Math.min(RCW,Math.max(...xs));
+    const y=Math.max(0,Math.min(...ys)), y2=Math.min(RCH,Math.max(...ys));
+    return {x:x/RCW, y:y/RCH, w:(x2-x)/RCW, h:(y2-y)/RCH};
+  }
+  // बीच का कोण: घूमे rect के अंदर का सबसे बड़ा सीधा rect (table wedges बाहर)
+  const cphi=Math.cos(phi), sphi=Math.sin(phi);
+  let iw=bw*cphi-bh*sphi, ih=bh*cphi-bw*sphi;
+  if(iw<bw*0.4||ih<bh*0.4){ iw=bw*0.9; ih=bh*0.9; }
+  iw*=0.97; ih*=0.97;
+  const x=rcx-iw/2, y=rcy-ih/2;
+  return {x:Math.max(0,x/RCW), y:Math.max(0,y/RCH), w:Math.min(1,iw/RCW), h:Math.min(1,ih/RCH)};
+}
+
+/* ================= AUTO STRAIGHTEN (projection profile) ================= */
+/* उल्टा या सीधा? — text lines की ink ऊपर ज़्यादा (हिंदी headline + English ascenders) */
+function _upScore(src, angle){
+  const maxS=300, sc=Math.min(1,maxS/Math.max(src.width,src.height));
+  const rad=angle*Math.PI/180;
+  const rw=Math.abs(src.width*Math.cos(rad))+Math.abs(src.height*Math.sin(rad));
+  const rh=Math.abs(src.width*Math.sin(rad))+Math.abs(src.height*Math.cos(rad));
+  const W=Math.max(40,Math.round(rw*sc)), H=Math.max(40,Math.round(rh*sc));
+  const cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+  const c=cv.getContext('2d');
+  c.fillStyle='#fff'; c.fillRect(0,0,W,H);
+  c.save(); c.translate(W/2,H/2); c.rotate(rad);
+  c.drawImage(src,-src.width*sc/2,-src.height*sc/2,src.width*sc,src.height*sc);
+  c.restore();
+  const d=c.getImageData(0,0,W,H).data;
+  const dark=new Float32Array(H);
+  for(let y=0;y<H;y++){
+    let n=0;
+    for(let x=0;x<W;x++){
+      const i=(y*W+x)*4;
+      if(d[i]*0.299+d[i+1]*0.587+d[i+2]*0.114<120) n++;
+    }
+    dark[y]=n;
+  }
+  const thr=Math.max(3, W*0.02);
+  let sum=0, cnt=0, y=0;
+  while(y<H){
+    if(dark[y]>thr){
+      let y2=y; while(y2<H&&dark[y2]>thr) y2++;
+      const lh=y2-y;
+      if(lh>=3&&lh<=30){
+        const t=Math.max(1,Math.round(lh/3));
+        let top=0, bot=0;
+        for(let k=0;k<t;k++){ top+=dark[y+k]||0; bot+=dark[y2-1-k]||0; }
+        sum+=(top-bot)/(top+bot+1);
+        cnt++;
+      }
+      y=y2;
+    }else y++;
+  }
+  return cnt? sum/cnt : 0;
+}
+
+function autoStraighten(doc){
+  const src=doc.src, W=360, sc=W/src.width, H=Math.round(src.height*sc);
+  const sm=document.createElement('canvas'); sm.width=W; sm.height=H;
+  let best={ang:0,score:-1};
+  // पहले मोटा base angle (0/90/-90/180) — फिर उसके आसपास बारीक़
+  const bases=[0,90,-90]; // 180 नहीं — row profile में 0 और 180 एक जैसे
+  const cands=[];
+  for(const b of bases) for(let a=b-6;a<=b+6;a+=3) cands.push(a);
+  let rough={ang:0,score:-1};
+  for(const a of cands){
+    const sc2=_straightScore(sm,src,a,W,H);
+    if(sc2>rough.score) rough={ang:a,score:sc2};
+  }
+  for(let a=rough.ang-3;a<=rough.ang+3;a+=0.5){
+    const sc2=_straightScore(sm,src,a,W,H);
+    if(sc2>best.score) best={ang:a,score:sc2};
+  }
+  // उल्टा तो नहीं? text की up-ness से जाँच (0/90/−90 सब पर काम)
+  let fin=best.ang;
+  const u1=_upScore(src,fin), u2=_upScore(src,fin+180);
+  if(u2>u1+0.12){ fin=((fin+180+180)%360)-180; }
+  return fin;
+}
+function _straightScore(sm,src,a,W,H){
+  const sc=W/src.width;
+  const c=sm.getContext('2d');
+    c.fillStyle='#fff'; c.fillRect(0,0,W,H);
+    c.save(); c.translate(W/2,H/2); c.rotate(a*Math.PI/180);
+    c.drawImage(src,-src.width*sc/2,-src.height*sc/2,src.width*sc,src.height*sc); c.restore();
+    const d=c.getImageData(0,0,W,H).data;
+    const rows=new Float32Array(H), cols=new Float32Array(W);
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){ if(d[(y*W+x)*4]<110){ rows[y]++; cols[x]++; } }
+    const vr=(arr)=>{ let m=0; for(const q of arr)m+=q; m/=arr.length; let t=0; for(const q of arr)t+=(q-m)*(q-m); return t; };
+    // सही दिशा: text lines horizontal → row variance ऊँचा; bg transitions row/col में बराबर → घटाने पर cancel
+    return vr(rows)-0.8*vr(cols);
+}
+
+/* ================= ENHANCE (print सफ़ाई) ================= */
+/* ================= PERSPECTIVE WARP (4-कोना सीधा करना) ================= */
+// unit square (0,0),(1,0),(1,1),(0,1) → quad (pts) mapping: H (8 unknowns)
+function _homography(pts){
+  const U=[[0,0],[1,0],[1,1],[0,1]];
+  const A=[],B=[];
+  for(let i=0;i<4;i++){
+    const [u,v]=U[i], X=pts[i].x, Y=pts[i].y;
+    A.push([u,v,1,0,0,0,-u*X,-v*X]); B.push(X);
+    A.push([0,0,0,u,v,1,-u*Y,-v*Y]); B.push(Y);
+  }
+  // Gaussian elimination 8×8
+  for(let col=0;col<8;col++){
+    let piv=col;
+    for(let r=col+1;r<8;r++) if(Math.abs(A[r][col])>Math.abs(A[piv][col])) piv=r;
+    [A[col],A[piv]]=[A[piv],A[col]]; [B[col],B[piv]]=[B[piv],B[col]];
+    const dv=A[col][col]||1e-9;
+    for(let r=0;r<8;r++){
+      if(r===col) continue;
+      const f=A[r][col]/dv;
+      for(let c=col;c<8;c++) A[r][c]-=f*A[col][c];
+      B[r]-=f*B[col];
+    }
+  }
+  const h=new Array(8);
+  for(let i=0;i<8;i++) h[i]=B[i]/(A[i][i]||1e-9);
+  return h;
+}
+function warpPerspective(RC, ptsN){
+  const RW=RC.width, RH=RC.height;
+  const pts=ptsN.map(p=>({x:p.x*RW, y:p.y*RH}));
+  const d01=Math.hypot(pts[1].x-pts[0].x, pts[1].y-pts[0].y);
+  const d32=Math.hypot(pts[2].x-pts[3].x, pts[2].y-pts[3].y);
+  const d03=Math.hypot(pts[3].x-pts[0].x, pts[3].y-pts[0].y);
+  const d12=Math.hypot(pts[2].x-pts[1].x, pts[2].y-pts[1].y);
+  let wOut=Math.round((d01+d32)/2), hOut=Math.round((d03+d12)/2);
+  const cap=2400/Math.max(wOut,hOut);
+  if(cap<1){ wOut=Math.round(wOut*cap); hOut=Math.round(hOut*cap); }
+  wOut=Math.max(60,wOut); hOut=Math.max(60,hOut);
+  const H=_homography(pts);
+  const sd=RC.getContext('2d').getImageData(0,0,RW,RH).data;
+  const out=document.createElement('canvas'); out.width=wOut; out.height=hOut;
+  const octx=out.getContext('2d');
+  const oid=octx.createImageData(wOut,hOut), od=oid.data;
+  for(let y=0;y<hOut;y++){
+    const v=(y+0.5)/hOut;
+    for(let x=0;x<wOut;x++){
+      const u=(x+0.5)/wOut;
+      const den=H[6]*u+H[7]*v+1;
+      let X=(H[0]*u+H[1]*v+H[2])/den, Y=(H[3]*u+H[4]*v+H[5])/den;
+      const o=(y*wOut+x)*4;
+      if(X<0||Y<0||X>RW-1||Y>RH-1){ od[o]=od[o+1]=od[o+2]=255; od[o+3]=255; continue; }
+      const x0=X|0, y0=Y|0, x1=Math.min(RW-1,x0+1), y1=Math.min(RH-1,y0+1);
+      const tx=X-x0, ty=Y-y0;
+      const i00=(y0*RW+x0)*4, i10=(y0*RW+x1)*4, i01=(y1*RW+x0)*4, i11=(y1*RW+x1)*4;
+      for(let ch=0;ch<3;ch++){
+        const a=sd[i00+ch]*(1-tx)+sd[i10+ch]*tx, b=sd[i01+ch]*(1-tx)+sd[i11+ch]*tx;
+        od[o+ch]=a*(1-ty)+b*ty;
+      }
+      od[o+3]=255;
+    }
+  }
+  octx.putImageData(oid,0,0);
+  return out;
+}
+
+function enhance(cv, mode){
+  if(mode==='orig') return cv;
+  const w=cv.width,h=cv.height;
+  const out=document.createElement('canvas'); out.width=w; out.height=h;
+  const ctx=cv.getContext('2d');
+  const id=ctx.getImageData(0,0,w,h), d=id.data;
+  // 1) bg estimate — सिर्फ़ LUMINANCE की grid (per-channel divide = color धब्बे!)
+  const gw=Math.max(6,Math.round(w/26)), gh=Math.max(6,Math.round(h/26));
+  const bgs=new Float32Array(gw*gh), cnt=new Float32Array(gw*gh);
+  for(let y=0;y<h;y++){
+    const gy=Math.min(gh-1,(y*gh/h)|0);
+    for(let x=0;x<w;x++){
+      const gx=Math.min(gw-1,(x*gw/w)|0), i=(y*w+x)*4;
+      bgs[gy*gw+gx]+=d[i]*0.299+d[i+1]*0.587+d[i+2]*0.114; cnt[gy*gw+gx]++;
+    }
+  }
+  for(let i=0;i<gw*gh;i++){ if(cnt[i]) bgs[i]/=cnt[i]; }
+  // grid smoothing (एक pass box blur — धब्बेदार correction नहीं)
+  const sm=new Float32Array(gw*gh);
+  for(let gy=0;gy<gh;gy++)for(let gx=0;gx<gw;gx++){
+    let sum=0,n=0;
+    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+      const nx=gx+dx, ny=gy+dy;
+      if(nx>=0&&nx<gw&&ny>=0&&ny<gh){ sum+=bgs[ny*gw+nx]; n++; }
+    }
+    sm[gy*gw+gx]=sum/n;
+  }
+  const bgAt=(x,y)=>{
+    const fx=Math.min(gw-1.001,Math.max(0,(x/w)*(gw-1))), fy=Math.min(gh-1.001,Math.max(0,(y/h)*(gh-1)));
+    const x0=fx|0, y0=fy|0, tx=fx-x0, ty=fy-y0;
+    const i00=y0*gw+x0, i10=y0*gw+Math.min(gw-1,x0+1), i01=Math.min(gh-1,y0+1)*gw+x0, i11=Math.min(gh-1,y0+1)*gw+Math.min(gw-1,x0+1);
+    const a=sm[i00]*(1-tx)+sm[i10]*tx, b=sm[i01]*(1-tx)+sm[i11]*tx;
+    return Math.max(30,a*(1-ty)+b*ty);
+  };
+  // 2) flat-field — EK scale तीनों channels पर (रंग वैसा ही), gain capped 3.2×
+  const lum=new Float32Array(w*h);
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    const i=(y*w+x)*4;
+    let g=238/bgAt(x,y); if(g>3.2)g=3.2; else if(g<0.75)g=0.75;
+    let r=d[i]*g, gg=d[i+1]*g, b=d[i+2]*g;
+    // सफ़ेद push: लगभग-सफ़ेद → पूरा सफ़ेद (साफ़ margin)
+    if(r>224&&gg>224&&b>224){ r=255; gg=255; b=255; }
+    d[i]=r>255?255:r; d[i+1]=gg>255?255:gg; d[i+2]=b>255?255:b;
+    lum[y*w+x]=d[i]*0.299+d[i+1]*0.587+d[i+2]*0.114;
+  }
+  // 3) हल्का contrast (percentile 3→97) — luminance पर, channels पर same map
+  const hist=new Int32Array(256);
+  for(let i=0;i<w*h;i++) hist[Math.min(255,lum[i]|0)]++;
+  let acc=0, lo=0, hi=255; const tot=w*h;
+  for(let i=0;i<256;i++){ acc+=hist[i]; if(acc>tot*0.03){lo=i;break;} }
+  acc=0;
+  for(let i=255;i>=0;i--){ acc+=hist[i]; if(acc>tot*0.03){hi=i;break;} }
+  const rng=Math.max(30,hi-lo);
+  const map=new Uint8ClampedArray(256);
+  for(let i=0;i<256;i++) map[i]=(i-lo)*255/rng;
+  if(mode==='clean'){
+    for(let i=0;i<w*h*4;i+=4){ d[i]=map[d[i]]; d[i+1]=map[d[i+1]]; d[i+2]=map[d[i+2]]; }
+  }else{ // bw
+    for(let i=0;i<w*h;i++){
+      const v=map[lum[i]|0];
+      const t=1/(1+Math.exp(-(v-150)/9));
+      const o=t*255, j=i*4;
+      d[j]=d[j+1]=d[j+2]=o;
+    }
+  }
+  // 4) हल्की sharpening (text कड़क) — unsharp 0.30
+  const src2=new Uint8ClampedArray(d);
+  const A=0.30;
+  for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){
+    const i=(y*w+x)*4;
+    for(let ch=0;ch<3;ch++){
+      const blur=(src2[i-4+ch]+src2[i+4+ch]+src2[i-w*4+ch]+src2[i+w*4+ch])*0.25;
+      const v=src2[i+ch]+A*(src2[i+ch]-blur);
+      d[i+ch]=v<0?0:v>255?255:v;
+    }
+  }
+  const octx=out.getContext('2d');
+  const oid=octx.createImageData(w,h); oid.data.set(d); octx.putImageData(oid,0,0);
+  return out;
+}
+
+/* ================= PIPELINE: src → rotate → crop → enhance ================= */
+function rotCanvas(doc){
+  const key=doc.rot+'_'+doc.src.width+'x'+doc.src.height;
+  if(doc._rc&&doc._rcKey===key) return doc._rc;
+  if(!doc.rot) return doc.src;
+  const src=doc.src, rad=doc.rot*Math.PI/180;
+  const rw=Math.abs(src.width*Math.cos(rad))+Math.abs(src.height*Math.sin(rad));
+  const rh=Math.abs(src.width*Math.sin(rad))+Math.abs(src.height*Math.cos(rad));
+  const rc=document.createElement('canvas'); rc.width=Math.round(rw); rc.height=Math.round(rh);
+  const rctx=rc.getContext('2d');
+  rctx.fillStyle='#fff'; rctx.fillRect(0,0,rc.width,rc.height);
+  rctx.save(); rctx.translate(rc.width/2,rc.height/2); rctx.rotate(rad);
+  rctx.drawImage(src,-src.width/2,-src.height/2); rctx.restore();
+  doc._rc=rc; doc._rcKey=key;
+  return rc;
+}
+function processed(doc){
+  const key=doc.rot+'|'+doc.crop.x+','+doc.crop.y+','+doc.crop.w+','+doc.crop.h+'|'+doc.mode;
+  if(doc._proc&&doc._key===key) return doc._proc;
+  const rc=rotCanvas(doc);
+  // crop
+  const cx=Math.round(doc.crop.x*rc.width), cy=Math.round(doc.crop.y*rc.height);
+  const cw=Math.max(10,Math.round(doc.crop.w*rc.width)), ch=Math.max(10,Math.round(doc.crop.h*rc.height));
+  const cc=document.createElement('canvas'); cc.width=cw; cc.height=ch;
+  cc.getContext('2d').drawImage(rc,cx,cy,cw,ch,0,0,cw,ch);
+  // enhance
+  doc._proc=enhance(cc,doc.mode); doc._key=key;
+  return doc._proc;
+}
+
+/* ================= EDITOR VIEW (crop box खींचना) ================= */
+const view={cv:$('viewCv'), zoom:1};
+function renderEditor(){
+  const st=$('stage');
+  if(S.cur<0||!S.docs[S.cur]){ st.innerHTML=''; st.appendChild($('emptyMsg')||Object.assign(document.createElement('div'),{id:'emptyMsg',innerHTML:'📄<br>बाईं ओर से फ़ोटो चुनें'})); $('editTools').style.display='none'; return; }
+  $('editTools').style.display='flex';
+  let el=$('viewCv');
+  if(!el||!st.contains(el)){
+    st.innerHTML='';
+    el=document.createElement('canvas'); el.id='viewCv';
+    el.style.cssText='max-width:96%; max-height:96%; box-shadow:0 4px 30px #000a; cursor:crosshair;';
+    st.appendChild(el);
+    bindEditorEvents(el);
+  }
+  const doc=S.docs[S.cur];
+  $('sRot').value=doc.rot; $('vRot').textContent=doc.rot+'°'; // slider sync
+  $('btnPersp').textContent=S.persp?'✓ Warp करो':'⬠ Perspective';
+  $('btnPerspX').style.display=S.persp?'':'none';
+  $('btnOrig').style.display=doc._orig?'':'none';
+  if(S.persp){ renderPersp(el,doc); return; }
+  const disp=S.compare?doc.src:processed(doc);
+  const maxW=860, sc=Math.min(1,maxW/disp.width);
+  el.width=Math.round(disp.width*sc); el.height=Math.round(disp.height*sc);
+  const c=el.getContext('2d');
+  c.drawImage(disp,0,0,el.width,el.height);
+  view.scale=sc;
+  if(!S.compare) drawCropBox(el,c);
+}
+function drawCropBox(el,c){
+  const doc=S.docs[S.cur];
+  // processed canvas = crop के बाद — box दिखाने के लिए rotated view पर crop area:
+  // सरलता: box को full-canvas overlay की जगह सिर्फ corners hint — नहीं!
+  // crop box rotated-canvas space में है; view processed दिखाता है (कटा हुआ) —
+  // इसलिए box दिखाना है तो rotated-uncut view बनाओ:
+  const rad=doc.rot*Math.PI/180;
+  const src=doc.src;
+  const rw=Math.abs(src.width*Math.cos(rad))+Math.abs(src.height*Math.sin(rad));
+  const rh=Math.abs(src.width*Math.sin(rad))+Math.abs(src.height*Math.cos(rad));
+  const rc=document.createElement('canvas'); rc.width=Math.round(rw); rc.height=Math.round(rh);
+  const rctx=rc.getContext('2d');
+  rctx.fillStyle='#fff'; rctx.fillRect(0,0,rc.width,rc.height);
+  rctx.save(); rctx.translate(rc.width/2,rc.height/2); rctx.rotate(rad);
+  rctx.drawImage(src,-src.width/2,-src.height/2); rctx.restore();
+  const sc=Math.min(1,860/rc.width);
+  el.width=Math.round(rc.width*sc); el.height=Math.round(rc.height*sc);
+  c.drawImage(rc,0,0,el.width,el.height);
+  view.scale=sc;
+  const x=doc.crop.x*el.width, y=doc.crop.y*el.height, w=doc.crop.w*el.width, h=doc.crop.h*el.height;
+  c.fillStyle='rgba(0,0,0,0.45)';
+  c.fillRect(0,0,el.width,y); c.fillRect(0,y+h,el.width,el.height-y-h);
+  c.fillRect(0,y,x,h); c.fillRect(x+w,y,el.width-x-w,h);
+  c.strokeStyle='#ff9933'; c.lineWidth=2; c.strokeRect(x,y,w,h);
+  const hs=9;
+  c.fillStyle='#fff';
+  for(const [hx,hy] of [[x,y],[x+w,y],[x,y+h],[x+w,y+h]]){
+    c.fillRect(hx-hs/2,hy-hs/2,hs,hs);
+    c.strokeRect(hx-hs/2,hy-hs/2,hs,hs);
+  }
+}
+function bindEditorEvents(el){
+  el.addEventListener('pointerdown',e=>{
+    const doc=S.docs[S.cur]; if(!doc) return;
+    const r=el.getBoundingClientRect();
+    const kx=el.width/r.width, ky=el.height/r.height;      // CSS-सिकुड़न सुधार (mobile पर canvas छोटा दिखता है)
+    const px=(e.clientX-r.left)*kx, py=(e.clientY-r.top)*ky;
+    if(S.persp){
+      const HS=18*kx;
+      for(let i=0;i<4;i++){
+        const X=S.persp.pts[i].x*el.width, Y=S.persp.pts[i].y*el.height;
+        if(Math.abs(px-X)<HS&&Math.abs(py-Y)<HS){
+          try{el.setPointerCapture(e.pointerId);}catch(_){}
+          S.drag={persp:i};
+          return;
+        }
+      }
+      return;
+    }
+    // rotated canvas px में crop corners
+    const rcx=doc.crop.x*el.width, rcy=doc.crop.y*el.height;
+    const rcx2=rcx+doc.crop.w*el.width, rcy2=rcy+doc.crop.h*el.height;
+    const HS=16*kx;
+    let hnd=null;
+    if(Math.abs(px-rcx)<HS&&Math.abs(py-rcy)<HS)hnd='nw';
+    else if(Math.abs(px-rcx2)<HS&&Math.abs(py-rcy)<HS)hnd='ne';
+    else if(Math.abs(px-rcx)<HS&&Math.abs(py-rcy2)<HS)hnd='sw';
+    else if(Math.abs(px-rcx2)<HS&&Math.abs(py-rcy2)<HS)hnd='se';
+    else if(px>rcx&&px<rcx2&&py>rcy&&py<rcy2)hnd='mv';
+    if(!hnd)return;
+    try{el.setPointerCapture(e.pointerId);}catch(_){}
+    S.drag={hnd, sx:px, sy:py, f0:{...doc.crop}};
+  });
+  el.addEventListener('pointermove',e=>{
+    if(!S.drag)return;
+    const doc=S.docs[S.cur];
+    const r=el.getBoundingClientRect();
+    const kx=el.width/r.width, ky=el.height/r.height;
+    const px=(e.clientX-r.left)*kx, py=(e.clientY-r.top)*ky;
+    if(S.drag.persp!==undefined){
+      const i=S.drag.persp;
+      S.persp.pts[i]={
+        x:Math.min(0.995,Math.max(0.005,px/el.width)),
+        y:Math.min(0.995,Math.max(0.005,py/el.height))
+      };
+      renderPersp(el,doc);
+      return;
+    }
+    const dx=(px-S.drag.sx)/el.width, dy=(py-S.drag.sy)/el.height;
+    const f=S.drag.f0, R=f.x+f.w, B=f.y+f.h;
+    let nx=f.x,ny=f.y,nw=f.w,nh=f.h;
+    if(S.drag.hnd==='mv'){ nx=f.x+dx; ny=f.y+dy; }
+    else{
+      if(S.drag.hnd.includes('w')){ nx=Math.min(f.x+dx,R-0.02); nw=R-nx; }
+      if(S.drag.hnd.includes('e')){ nw=Math.max(0.02,f.w+dx); }
+      if(S.drag.hnd.includes('n')){ ny=Math.min(f.y+dy,B-0.02); nh=B-ny; }
+      if(S.drag.hnd.includes('s')){ nh=Math.max(0.02,f.h+dy); }
+    }
+    doc.crop={x:nx,y:ny,w:nw,h:nh};
+    clampCrop(doc); doc._proc=null;
+    renderEditorLight();
+  });
+  el.addEventListener('pointerup',()=>{ if(S.drag){ S.drag=null; renderAll(); } });
+}
+/* ================= FINAL सीधाई — कटाई के बाद 0/90/180/270 check ================= */
+function _rotateCanvas(src, ang){
+  const rad=ang*Math.PI/180;
+  const rw=Math.abs(src.width*Math.cos(rad))+Math.abs(src.height*Math.sin(rad));
+  const rh=Math.abs(src.width*Math.sin(rad))+Math.abs(src.height*Math.cos(rad));
+  const cv=document.createElement('canvas'); cv.width=Math.round(rw); cv.height=Math.round(rh);
+  const c=cv.getContext('2d');
+  c.fillStyle='#fff'; c.fillRect(0,0,cv.width,cv.height);
+  c.save(); c.translate(cv.width/2,cv.height/2); c.rotate(rad);
+  c.drawImage(src,-src.width/2,-src.height/2); c.restore();
+  return cv;
+}
+function _bestUp(pc, margin){
+  margin = margin||0.10;
+  // सिर्फ़ 0 vs 180 — 90° की दिशा straighten stage पहले ही ठीक कर चुका;
+  // landscape card को गलती से 90° घुमाना विनाशकारी था (doc2 case)
+  let best=0, bu=_upScore(pc,0);
+  const u=_upScore(pc,180);
+  if(u>bu+margin){ best=180; }
+  return best;
+}
+
+/* ================= AUTO TYPE — PAN पहचान + आधार जोड़ी ================= */
+function _isPan(doc){
+  // PAN = ऊपर गहरा नीला header (enhanced crop पर); पर पूरी photo नीली (sleeve) हो तो नहीं
+  const _topBlue=(src)=>{
+    const W=120, H=Math.max(20,Math.round(120*src.height/src.width));
+    const cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+    const c=cv.getContext('2d'); c.drawImage(src,0,0,W,H);
+    const d=c.getImageData(0,0,W,H).data;
+    let m=0;
+    for(let y=0;y<H*0.4;y++){
+      let deep=0;
+      for(let x=0;x<W;x++){
+        const i=(y*W+x)*4, r=d[i],g=d[i+1],b=d[i+2];
+        if(b>90&&b>r+28&&b>g+15) deep++;
+      }
+      m=Math.max(m,deep/W);
+    }
+    return m;
+  };
+  const enh=_topBlue(processed(doc));
+  const rc=rotCanvas(doc);
+  const bx=Math.round(doc.crop.x*rc.width), by=Math.round(doc.crop.y*rc.height);
+  const bw=Math.max(10,Math.round(doc.crop.w*rc.width)), bh=Math.max(10,Math.round(doc.crop.h*rc.height));
+  const bc=document.createElement('canvas'); bc.width=bw; bc.height=bh;
+  bc.getContext('2d').drawImage(rc,bx,by,bw,bh,0,0,bw,bh);
+  const raw=_topBlue(bc);
+  return enh>0.15 && raw<0.5;
+}
+function autoTypes(){
+  if(S.mode==='doc'){ S.docs.forEach(d=>{d.tag='doc';d._autoTag=true;}); return; }
+  if(S.mode==='pan'){ S.docs.forEach(d=>{d.tag='pan';d._autoTag=true;}); return; }
+  if(S.mode==='card'){ try{pairMatch(S.docs);}catch(e){console.error(e);} return; }
+  const cards=[];
+  S.docs.forEach(d=>{
+    if(d.tag && !d._autoTag){ if(['af','ab'].includes(d.tag)) cards.push(d); return; } // आपका manual tag अछूता
+    const RC=rotCanvas(d);
+    const a=(d.crop.w*RC.width)/(d.crop.h*RC.height);
+    if(a>1.2&&a<2.2){ cards.push(d); }
+    else if(a>=0.75&&a<1.05){ d.tag='any'; d._autoTag=true; }
+    else { d.tag='doc'; d._autoTag=true; }
+  });
+  let expect='af';
+  cards.forEach(d=>{
+    if(d.tag && !d._autoTag){ if(d.tag==='af') expect='ab'; return; } // manual front के बाद back
+    d.tag=expect; d._autoTag=true;
+    expect=(expect==='af'?'ab':'af');                // upload order: front फिर back
+  });
+}
+
+/* ---- A4 AUTO PERSPECTIVE: मूल photo पर ही paper-mask से 4 कोने पहचानो ----
+   rotation से पहले चलता है (spillover नहीं), सिर्फ़ paper mask (mask A/B/C नहीं —
+   वही v1.8 के folder-warp का कारण थे), quadFromComp के strict gates, fail → null (bbox flow) */
+/* hull → exactly 4 corners:
+   1) extremes (rectangle/quad के लिए EXACT: min(x+y)=TL, max(x-y)=TR, max(x+y)=BR, min(x-y)=BL)
+   2) fail → RDP + angle-prune (180° के सबसे करीब कोना हटाते जाओ जब तक 4 न बचें) */
+function _quad4Fit(hull, compArea){
+  if(hull.length<4) return null;
+  // 1) extremes
+  let tl=hull[0],br=hull[0],tr=hull[0],bl=hull[0];
+  for(const p of hull){
+    const a=p.x+p.y, b=p.x-p.y;
+    if(a<tl.x+tl.y)tl=p; if(a>br.x+br.y)br=p;
+    if(b>tr.x-tr.y)tr=p; if(b<bl.x-bl.y)bl=p;
+  }
+  let q=[tl,tr,br,bl];
+  const uniq=new Set(q.map(p=>p.x+','+p.y));
+  if(uniq.size===4 && _quadAnglesOK(q)){
+    const qa=_quadArea(q);
+    if(qa>compArea*0.82 && qa<compArea*2.4) return q;
+  }
+  // 2) RDP + angle-prune
+  const per=hull.reduce((s2,p,i)=>{ const r=hull[(i+1)%hull.length]; return s2+Math.hypot(r.x-p.x,r.y-p.y); },0);
+  let ap=null;
+  for(const k of [0.012,0.02,0.03,0.045,0.06,0.085]){
+    const t=_rdp(hull, per*k);
+    if(t.length<=8){ ap=t; break; }
+  }
+  if(!ap) ap=_rdp(hull, per*0.085);
+  while(ap.length>4){
+    let bi=0, bang=1e9;
+    for(let i=0;i<ap.length;i++){
+      const p0=ap[(i+ap.length-1)%ap.length], p1=ap[i], p2=ap[(i+1)%ap.length];
+      const v1x=p0.x-p1.x,v1y=p0.y-p1.y,v2x=p2.x-p1.x,v2y=p2.y-p1.y;
+      const dot=v1x*v2x+v1y*v2y;
+      const m1=Math.hypot(v1x,v1y)||1e-9, m2=Math.hypot(v2x,v2y)||1e-9;
+      const ang=Math.acos(Math.max(-1,Math.min(1,dot/(m1*m2))))*180/Math.PI;
+      const dev=180-ang;              // 180° से कितनी दूर — सबसे कम दूर (सबसे सीधा) हटाओ
+      if(dev<bang){ bang=dev; bi=i; }
+    }
+    ap.splice(bi,1);
+  }
+  if(ap.length!==4) return null;
+  if(!_quadAnglesOK(ap)) return null;
+  const qa=_quadArea(ap);
+  if(qa<compArea*0.82||qa>compArea*2.4) return null;
+  return ap;
+}
+
+function _docQuad(src){
+  const W=360, sc=W/src.width, H=Math.round(src.height*sc);
+  const sm=document.createElement('canvas'); sm.width=W; sm.height=H;
+  const c=sm.getContext('2d'); c.drawImage(src,0,0,W,H);
+  const d=c.getImageData(0,0,W,H).data;
+  const paper=new Uint8Array(W*H);
+  for(let i=0;i<W*H;i++){ const j=i*4,r=d[j],g=d[j+1],b=d[j+2];
+    const mx=Math.max(r,g,b),mn=Math.min(r,g,b);
+    paper[i]=(mx>110 && (mx-mn)<mx*0.30)?1:0;
+  }
+  _morphClose(paper,W,H,3);
+  const comp=_largestBox(paper,W,H);
+  if(!comp.box) return null;
+  if(comp.area<W*H*0.10||comp.area>W*H*0.97) return null;
+  // boundary → hull → exactly 4 corners
+  const m=comp.map, L=comp.lbl;
+  const pts=[];
+  for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){
+    const i=y*W+x;
+    if(m[i]===L&&(m[i-1]!==L||m[i+1]!==L||m[i-W]!==L||m[i+W]!==L)) pts.push({x,y});
+  }
+  if(pts.length<30) return null;
+  const hull=_hull(pts);
+  let q=_quad4Fit(hull, comp.area);
+  if(!q) return null;
+  // क्रम: centroid sort → TL से शुरू (quadFromComp जैसा)
+  const cx=q.reduce((a,p)=>a+p.x,0)/4, cy=q.reduce((a,p)=>a+p.y,0)/4;
+  q.sort((a,b)=>Math.atan2(a.y-cy,a.x-cx)-Math.atan2(b.y-cy,b.x-cx));
+  let st=0;
+  for(let i=1;i<4;i++) if(q[i].x+q[i].y<q[st].x+q[st].y) st=i;
+  const q2=[]; for(let i=0;i<4;i++) q2.push(q[(st+i)%4]);
+  q=q2.map(p=>({x:p.x/sc, y:p.y/sc}));
+  if(_quadArea(q)<src.width*src.height*0.08) return null;
+  return q;   // [TL,TR,BR,BL] src px में
+}
+
+/* ================= FULL AUTO — photo डालो → print-ready ================= */
+function autoProcess(doc){
+  /* A4 mode: पहले खुद 4 कोने पहचानो → एक warp में rotation+perspective+crop पूरा */
+  if(S.mode==='doc'){
+    try{
+      const q=_docQuad(doc.src);
+      if(q){
+        doc._orig=doc._orig||doc.src;
+        doc.src=warpPerspective(doc.src, q.map(p=>({x:p.x/doc.src.width, y:p.y/doc.src.height})));
+        doc.rot=0; doc._rc=null; doc._rcKey=null;
+        doc.crop={x:0.012,y:0.012,w:0.976,h:0.976};
+        edgeSnap(doc); clampCrop(doc);
+        _docPortrait(doc);       // आड़ा निकले तो खड़ा
+        _finalUpright(doc);      // margin+text से उल्टा हो तो सीधा
+        doc.tag=''; doc._proc=null;
+        return 'warp';
+      }
+    }catch(e){ console.warn('docQuad',e); }
+    // कोने न मिले तो नीचे भरोसेमंद bbox flow — और 📐/⬠ manual tool हमेशा है
+  }
+  doc.rot=autoStraighten(doc);                 // 1) दिशा
+  const RC=rotCanvas(doc);
+  let det=autoCrop(RC);                         // 2) document ढूंढो (mask सहित)
+  if(det){ // बहुत छोटा box = QR/कोने पर अटक गया — भरोसा नहीं
+    const frac=((det.maxX-det.minX)*(det.maxY-det.minY))/(RC.width*RC.height);
+    if(frac<0.08) det=null;
+  }
+  if(det){
+    const quad=(S.mode==='doc')?null:(det._comp?quadFromComp(det._comp, det._boxPx, det._W, det._H, det._scl):null);   // A4 mode: auto-warp बंद — 📐 4-कोना tool है
+    if(quad){
+      // quad कितना तिरछा? axis-aligned हो तो warp की ज़रूरत नहीं
+      const aTop=Math.abs(Math.atan2(quad[1].y-quad[0].y, quad[1].x-quad[0].x)*180/Math.PI);
+      const dev=Math.min(aTop%90, 90-(aTop%90));
+
+      // quad भरोसेमंद? — (1) काफी बड़ा हो (2) aspect detected box से मिलता हो
+      const qW=(Math.hypot(quad[1].x-quad[0].x,quad[1].y-quad[0].y)+Math.hypot(quad[2].x-quad[3].x,quad[2].y-quad[3].y))/2;
+      const qH=(Math.hypot(quad[3].x-quad[0].x,quad[3].y-quad[0].y)+Math.hypot(quad[2].x-quad[1].x,quad[2].y-quad[1].y))/2;
+      const qArea=qW*qH, imgArea=RC.width*RC.height;
+      const detA=(det.maxX-det.minX)/(det.maxY-det.minY);
+      const trust = qArea>imgArea*0.12 && Math.abs(Math.log((qW/qH)/detA))<0.35;
+      if(dev>2.5 && trust){
+        const out=warpPerspective(RC, quad.map(p=>({x:p.x/RC.width, y:p.y/RC.height})));
+        doc._orig=doc._orig||doc.src;
+        doc.src=out; doc.rot=0; doc._rc=null; doc._rcKey=null;
+        doc.crop={x:0.012,y:0.012,w:0.976,h:0.976};  // किनार की गंदगी बाहर
+        edgeSnap(doc); clampCrop(doc);
+        _finalUpright(doc);                         // warp के बाद भी सीधाई ज़रूरी
+        doc.tag=''; doc._proc=null;
+        return 'warp';
+      }
+    }
+    doc.crop={ x:det.minX/RC.width, y:det.minY/RC.height,
+               w:(det.maxX-det.minX)/RC.width, h:(det.maxY-det.minY)/RC.height };
+  }else{
+    doc.crop={x:0,y:0,w:1,h:1};
+  }
+  edgeSnap(doc); clampCrop(doc);                // 3) किनार पर snap
+  _finalUpright(doc);                            // 4) FINAL सीधाई
+  if(S.mode==='doc') _docPortrait(doc);          // 5) A4 हमेशा खड़ा — sideways आए तो 90° सुधारो
+  doc.tag=''; doc._proc=null; doc._rc=null;
+  return 'crop';
+}
+/* A4 दस्तावेज़ खड़ा ही होता है — crop चौड़ा (landscape) निकले तो 90° घुमाकर खड़ा करो;
+   दिशा (घड़ी/उल्टी) बाद में 3-signal upright तय करता है */
+function _docPortrait(doc){
+  try{
+    const RC=rotCanvas(doc);
+    const w=doc.crop.w*RC.width, h=doc.crop.h*RC.height;
+    if(w<=h*1.15) return;                        // पहले से खड़ा ✓
+    const bx=Math.round(doc.crop.x*RC.width), by=Math.round(doc.crop.y*RC.height);
+    const bw=Math.max(10,Math.round(doc.crop.w*RC.width)), bh=Math.max(10,Math.round(doc.crop.h*RC.height));
+    const bc=document.createElement('canvas'); bc.width=bw; bc.height=bh;
+    bc.getContext('2d').drawImage(RC,bx,by,bw,bh,0,0,bw,bh);
+    doc.src=_rotateCanvas(bc,-90);
+    doc.rot=0; doc.crop={x:0,y:0,w:1,h:1};
+    doc._rc=null; doc._rcKey=null; doc._proc=null;
+    edgeSnap(doc); clampCrop(doc);               // bg किनारे काटो
+    _finalUpright(doc);                          // margin+text से उल्टा हो तो सीधा
+  }catch(e){ console.warn('docPortrait',e); }
+}
+/* FINAL सीधाई: कटी/warp हुई photo उल्टी तो नहीं? — दोनों paths से call */
+function flip180(doc){
+  // raw crop को 180° bake करो (enhance-free), साफ़ caches
+  const rc2=rotCanvas(doc);
+  const bx=Math.round(doc.crop.x*rc2.width), by=Math.round(doc.crop.y*rc2.height);
+  const bw=Math.max(10,Math.round(doc.crop.w*rc2.width)), bh=Math.max(10,Math.round(doc.crop.h*rc2.height));
+  const bc=document.createElement('canvas'); bc.width=bw; bc.height=bh;
+  bc.getContext('2d').drawImage(rc2,bx,by,bw,bh,0,0,bw,bh);
+  doc.src=_rotateCanvas(bc,180);
+  doc.rot=0; doc.crop={x:0,y:0,w:1,h:1};   // bc = crop-region ही नया src बना — crop full ही रहता है
+  doc._rc=null; doc._rcKey=null; doc._proc=null;
+}
+function _finalUpright(doc){
+  try{
+    const rc2=rotCanvas(doc);
+    const bx=Math.round(doc.crop.x*rc2.width), by=Math.round(doc.crop.y*rc2.height);
+    const bw=Math.max(10,Math.round(doc.crop.w*rc2.width)), bh=Math.max(10,Math.round(doc.crop.h*rc2.height));
+    const bc=document.createElement('canvas'); bc.width=bw; bc.height=bh;
+    bc.getContext('2d').drawImage(rc2,bx,by,bw,bh,0,0,bw,bh);   // enhance-free crop
+    const r0=_upScore(bc,0), r180=_upScore(bc,180);
+    const en=enhance(bc,doc.mode);
+    const e0=_upScore(en,0), e180=_upScore(en,180);
+    if(S.mode==='doc'){
+      // A4 दस्तावेज़: text-asymmetry + खाली-margin तीनों राज़ी हों तभी पलटो
+      // (अकेला _upScore script पर निर्भर — English नीचे-भारी, Hindi शिरोरेखा ऊपर-भारी;
+      //  margin signal (पलटने पर खाली जगह ऊपर चली जाती है) script से आज़ाद — veto का काम)
+      const W2=bc.width,H2=bc.height, dd=bc.getContext('2d').getImageData(0,0,W2,H2).data;
+      let fY=-1,lY=-1;
+      for(let y=0;y<H2;y++){ let n=0; for(let x=0;x<W2;x+=3){ const i=(y*W2+x)*4; if(dd[i]*0.299+dd[i+1]*0.587+dd[i+2]*0.114<120) n++; } if(n>W2*0.02){ if(fY<0)fY=y; lY=y; } }
+      if(fY>=0){
+        const blankT=fY/H2, blankB=(H2-1-lY)/H2;
+        const marginUpside = blankT > blankB*1.3 + 0.03;
+        if(marginUpside && r0>r180+0.15 && e0>e180+0.15){ flip180(doc); return; }
+      }
+      return;  // doc mode: बाक़ी card-rules मत चलाओ
+    }
+    // (A) दोनों text-signals राज़ी हों तभी auto-180 (झूठी घुमाई बिल्कुल नहीं)
+    if(r180>r0+0.15 && e180>e0+0.15){ flip180(doc); return; }
+    // नोट: samples से orientation मत पूछो — lamination/glare से hash धोखा खाता है
+    // (yellow back गलत पलटा था)। उल्टी photos के लिए 🔃 button है — एक tap, हमेशा सही।
+  }catch(e){ console.warn('upright bake',e); }
+}
+
+/* ================= QUAD DETECTION — आड़े-तिरछे doc के 4 कोने खुद ढूंढो ================= */
+function _hull(pts){
+  // Andrew monotone chain
+  const p=pts.slice().sort((a,b)=>a.x-b.x||a.y-b.y);
+  const cross=(o,a,b)=>(a.x-o.x)*(b.y-o.y)-(a.y-o.y)*(b.x-o.x);
+  const lower=[], upper=[];
+  for(const q of p){
+    while(lower.length>=2&&cross(lower[lower.length-2],lower[lower.length-1],q)<=0) lower.pop();
+    lower.push(q);
+  }
+  for(let i=p.length-1;i>=0;i--){
+    const q=p[i];
+    while(upper.length>=2&&cross(upper[upper.length-2],upper[upper.length-1],q)<=0) upper.pop();
+    upper.push(q);
+  }
+  lower.pop(); upper.pop();
+  return lower.concat(upper);
+}
+function _rdp(pts, eps){
+  if(pts.length<=3) return pts.slice();
+  // closed polyline → open with farthest pair as anchors (सरल: पहले+आधे वाला point)
+  const n=pts.length;
+  const keep=new Uint8Array(n); keep[0]=1;
+  const stack=[[0,n-1]];
+  keep[n-1]=1;
+  while(stack.length){
+    const [a,b]=stack.pop();
+    const A=pts[a], B=pts[b];
+    const dx=B.x-A.x, dy=B.y-A.y, len=Math.hypot(dx,dy)||1e-9;
+    let mx=-1, mi=-1;
+    // wrap-around segment
+    for(let i=1;;i++){
+      const idx=(a+i)%n;
+      if(idx===b) break;
+      const P=pts[idx];
+      const d=Math.abs(dy*P.x-dx*P.y+B.x*A.y-B.y*A.x)/len;
+      if(d>mx){mx=d;mi=idx;}
+    }
+    if(mx>eps){ keep[mi]=1; stack.push([a,mi],[mi,b]); }
+  }
+  const out=[];
+  for(let i=0;i<n;i++) if(keep[i]) out.push(pts[i]);
+  return out;
+}
+function _quadArea(q){
+  let a=0;
+  for(let i=0;i<4;i++){ const j=(i+1)%4; a+=q[i].x*q[j].y-q[j].x*q[i].y; }
+  return Math.abs(a)/2;
+}
+function _quadAnglesOK(q){
+  for(let i=0;i<4;i++){
+    const p0=q[(i+3)%4], p1=q[i], p2=q[(i+1)%4];
+    const v1x=p0.x-p1.x, v1y=p0.y-p1.y, v2x=p2.x-p1.x, v2y=p2.y-p1.y;
+    const dot=v1x*v2x+v1y*v2y;
+    const m1=Math.hypot(v1x,v1y)||1e-9, m2=Math.hypot(v2x,v2y)||1e-9;
+    const ang=Math.acos(Math.max(-1,Math.min(1,dot/(m1*m2))))*180/Math.PI;
+    if(ang<50||ang>130) return false;
+  }
+  return true;
+}
+// mask के largest component से 4-कोना quad (src px में) — या null
+function quadFromComp(comp, box, W, H, sc){
+  if(!comp||!comp.map||comp.lbl<0) return null;
+  const m=comp.map, L=comp.lbl;
+  // boundary points
+  const pts=[];
+  for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){
+    const i=y*W+x;
+    if(m[i]===L&&(m[i-1]!==L||m[i+1]!==L||m[i-W]!==L||m[i+W]!==L)) pts.push({x,y});
+  }
+  if(pts.length<30) return null;
+  const hull=_hull(pts);
+  if(hull.length<4) return null;
+  const per=hull.reduce((s,p,i)=>{ const q=hull[(i+1)%hull.length]; return s+Math.hypot(q.x-p.x,q.y-p.y); },0);
+  let quad=null;
+  for(const epsK of [0.025,0.04,0.06,0.085]){
+    const ap=_rdp(hull, per*epsK);
+    if(ap.length===4){ quad=ap; break; }
+  }
+  if(!quad) return null;
+  if(!_quadAnglesOK(quad)) return null;
+  const qa=_quadArea(quad), ca=comp.area;
+  if(qa<ca*0.88||qa>ca*1.6) return null;           // quad को component के करीब होना चाहिए
+  const bw=box.maxX-box.minX, bh=box.maxY-box.minY;
+  if(qa<bw*bh*0.55) return null;                    // bbox के मुकाबले बहुत छोटा न हो
+  // centroid से क्रम: TL,TR,BR,BL
+  const cx=quad.reduce((s,p)=>s+p.x,0)/4, cy=quad.reduce((s,p)=>s+p.y,0)/4;
+  quad.sort((a,b)=>Math.atan2(a.y-cy,a.x-cx)-Math.atan2(b.y-cy,b.x-cx));
+  // सबसे ऊपर-बाएँ से शुरू
+  let st=0;
+  for(let i=1;i<4;i++) if(quad[i].x+quad[i].y<quad[st].x+quad[st].y) st=i;
+  const q=[]; for(let i=0;i<4;i++) q.push(quad[(st+i)%4]);
+  // q[0]=TL, q[1] ऊपर-दायाँ होना चाहिए (atan2 order से) — sanity
+  return q.map(p=>({x:p.x/sc, y:p.y/sc}));
+}
+
+/* ================= EDGE SNAP — card की असली किनार पर box चिपकाओ ================= */
+function edgeSnap(doc){
+  if(!doc.crop) return;
+  const RC=rotCanvas(doc), RW=RC.width, RH=RC.height;
+  const d=RC.getContext('2d').getImageData(0,0,RW,RH).data;
+  const cr=doc.crop;
+  let L=cr.x*RW, R=(cr.x+cr.w)*RW, T=cr.y*RH, B=(cr.y+cr.h)*RH;
+  const winX=Math.max(8,cr.w*RW*0.14), winY=Math.max(8,cr.h*RH*0.14);
+  const gray=(x,y)=>d[(y*RW+x)*4];
+  // किनार की ताक़त = खड़ी line के साथ gradient का योग (बीच के 80% हिस्से में)
+  const vScore=(x)=>{
+    let s=0;
+    for(let y=Math.round(T+(B-T)*0.1); y<B-(B-T)*0.1; y+=2){
+      if(x>0&&x<RW-1&&y>=0&&y<RH) s+=Math.abs(gray(x+1,y)-gray(x-1,y));
+    }
+    return s;
+  };
+  const hScore=(y)=>{
+    let s=0;
+    for(let x=Math.round(L+(R-L)*0.1); x<R-(R-L)*0.1; x+=2){
+      if(y>0&&y<RH-1&&x>=0&&x<RW) s+=Math.abs(gray(x,y+1)-gray(x,y-1));
+    }
+    return s;
+  };
+  // सबसे बाहरी मज़बूत edge (border हमेशा box के बाहरी छोर के पास) — अंदर की colored strip से बचो
+  const scanOuter=(center,win,fn,dir)=>{
+    // window में max score → threshold; फिर बाहर से अंदर आते हुए पहली line जो threshold पार करे
+    let mx=0;
+    for(let p=Math.max(1,center-win); p<=center+win; p++) mx=Math.max(mx,fn(Math.round(p)));
+    const thr=Math.max(20, mx*0.30);
+    const start=dir>0?Math.max(1,center-win):center+win;
+    const end=dir>0?center+win:Math.max(1,center-win);
+    for(let p=start; dir>0?p<=end:p>=end; p+=dir){
+      if(fn(Math.round(p))>=thr) return p; // पहली (सबसे बाहरी) मज़बूत edge
+    }
+    return center; // कोई edge नहीं → वैसा का वैसा
+  };
+  const nL=scanOuter(L,winX,vScore,1), nR=scanOuter(R,winX,vScore,-1);
+  const nT=scanOuter(T,winY,hScore,1), nB=scanOuter(B,winY,hScore,-1);
+  // 0.25% अंदर (halo काटो)
+  const insX=(nR-nL)*0.004, insY=(nB-nT)*0.004;
+  if(nR-nL>20){ cr.x=(nL+insX)/RW; cr.w=(nR-nL-2*insX)/RW; }
+  if(nB-nT>20){ cr.y=(nT+insY)/RH; cr.h=(nB-nT-2*insY)/RH; }
+}
+
+function clampCrop(doc){
+  const c=doc.crop;
+  c.w=Math.min(1,Math.max(0.02,c.w)); c.h=Math.min(1,Math.max(0.02,c.h));
+  c.x=Math.min(1-c.w,Math.max(0,c.x)); c.y=Math.min(1-c.h,Math.max(0,c.y));
+}
+function renderPersp(el,doc){
+  const RC=rotCanvas(doc);
+  const sc=Math.min(1,860/RC.width);
+  el.width=Math.round(RC.width*sc); el.height=Math.round(RC.height*sc);
+  const c=el.getContext('2d');
+  c.drawImage(RC,0,0,el.width,el.height);
+  view.scale=sc;
+  const pts=S.persp.pts;
+  c.strokeStyle='#a855f7'; c.lineWidth=3;
+  c.beginPath();
+  pts.forEach((p,i)=>{ const X=p.x*el.width, Y=p.y*el.height; i?c.lineTo(X,Y):c.moveTo(X,Y); });
+  c.closePath(); c.stroke();
+  c.fillStyle='#a855f722'; c.fill();
+  pts.forEach((p,i)=>{
+    const X=p.x*el.width, Y=p.y*el.height;
+    c.fillStyle='#a855f7';
+    c.beginPath(); c.arc(X,Y,11,0,7); c.fill();
+    c.fillStyle='#fff'; c.font='bold 13px sans-serif'; c.textAlign='center'; c.textBaseline='middle';
+    c.fillText(i+1,X,Y);
+  });
+  c.fillStyle='#a855f7'; c.font='bold 14px sans-serif'; c.textAlign='center';
+  c.fillText('⬠ 4 कोनों को document के कोनों पर खींचें → ✓ Warp करो', el.width/2, 22);
+}
+
+function renderEditorLight(){
+  // drag के दौरान सिर्फ box redraw (fast)
+  const el=$('viewCv'); if(!el)return;
+  const doc=S.docs[S.cur];
+  const c=el.getContext('2d');
+  const rad=doc.rot*Math.PI/180, src=doc.src;
+  const rw=Math.abs(src.width*Math.cos(rad))+Math.abs(src.height*Math.sin(rad));
+  const rh=Math.abs(src.width*Math.sin(rad))+Math.abs(src.height*Math.cos(rad));
+  const rc=document.createElement('canvas'); rc.width=Math.round(rw); rc.height=Math.round(rh);
+  const rctx=rc.getContext('2d');
+  rctx.fillStyle='#fff'; rctx.fillRect(0,0,rc.width,rc.height);
+  rctx.save(); rctx.translate(rc.width/2,rc.height/2); rctx.rotate(rad);
+  rctx.drawImage(src,-src.width/2,-src.height/2); rctx.restore();
+  const sc=Math.min(1,860/rc.width);
+  el.width=Math.round(rc.width*sc); el.height=Math.round(rc.height*sc);
+  c.drawImage(rc,0,0,el.width,el.height);
+  view.scale=sc;
+  drawCropBoxOverlay(el,c,doc);
+}
+function drawCropBoxOverlay(el,c,doc){
+  const x=doc.crop.x*el.width, y=doc.crop.y*el.height, w=doc.crop.w*el.width, h=doc.crop.h*el.height;
+  c.fillStyle='rgba(0,0,0,0.45)';
+  c.fillRect(0,0,el.width,y); c.fillRect(0,y+h,el.width,el.height-y-h);
+  c.fillRect(0,y,x,h); c.fillRect(x+w,y,el.width-x-w,h);
+  c.strokeStyle='#ff9933'; c.lineWidth=2; c.strokeRect(x,y,w,h);
+  const hs=9; c.fillStyle='#fff';
+  for(const [hx,hy] of [[x,y],[x+w,y],[x,y+h],[x+w,y+h]]){ c.fillRect(hx-hs/2,hy-hs/2,hs,hs); c.strokeRect(hx-hs/2,hy-hs/2,hs,hs); }
+}
+
+/* ================= DOC LIST ================= */
+/* ================= 📐 4-कोना PERSPECTIVE — खुद 4 कोने चुनो, 100% सही ================= */
+function openQuad(doc){
+  const RC=rotCanvas(doc);                       // पूरी सीधी-की हुई photo (crop से पहले)
+  const ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.94);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:10px;';
+  const ttl=document.createElement('div');
+  ttl.innerHTML='<b style="color:#f59e0b;font-size:16px;">📐 4 गोल निशान document के 4 कोनों पर खींचकर रखो</b><div style="color:#aaa;font-size:12px;">फिर ✓ दबाओ — document बिल्कुल सीधा हो जाएगा</div>';
+  ttl.style.textAlign='center';
+  const wrap=document.createElement('div');
+  wrap.style.cssText='position:relative;line-height:0;touch-action:none;';
+  const cv=document.createElement('canvas');
+  const maxW=Math.min(innerWidth*0.92,900), maxH=innerHeight*0.66;
+  const sc=Math.min(maxW/RC.width,maxH/RC.height);
+  const vw=Math.max(60,Math.round(RC.width*sc)), vh=Math.max(60,Math.round(RC.height*sc));
+  cv.width=vw; cv.height=vh;
+  wrap.appendChild(cv);
+  // default: auto-detected box (मिले तो), वरना 8% अंदर
+  let pts=null;
+  try{ const det=autoCrop(RC);
+    if(det){ pts=[{x:det.minX/RC.width,y:det.minY/RC.height},{x:det.maxX/RC.width,y:det.minY/RC.height},
+                  {x:det.maxX/RC.width,y:det.maxY/RC.height},{x:det.minX/RC.width,y:det.maxY/RC.height}]; }
+  }catch(e){}
+  if(!pts) pts=[{x:.08,y:.08},{x:.92,y:.08},{x:.92,y:.92},{x:.08,y:.92}];
+  const pts0=pts.map(p=>({...p}));
+  const COLS=['#22c55e','#3b82f6','#f97316','#ec4899'];
+  const hs=pts.map((p,i)=>{
+    const h=document.createElement('div');
+    h.style.cssText='position:absolute;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;background:'+COLS[i]+';border:3px solid #fff;box-shadow:0 1px 6px #000;cursor:grab;z-index:3;touch-action:none;';
+    wrap.appendChild(h);
+    h.addEventListener('pointerdown',e=>{ e.preventDefault(); h.setPointerCapture(e.pointerId);
+      const mv=e2=>{ const r=cv.getBoundingClientRect();
+        p.x=Math.min(1,Math.max(0,(e2.clientX-r.left)/r.width));
+        p.y=Math.min(1,Math.max(0,(e2.clientY-r.top)/r.height)); draw(); };
+      const up=()=>{ h.removeEventListener('pointermove',mv); h.removeEventListener('pointerup',up); };
+      h.addEventListener('pointermove',mv); h.addEventListener('pointerup',up);
+    });
+    return h;
+  });
+  function draw(){
+    const c=cv.getContext('2d');
+    c.drawImage(RC,0,0,vw,vh);
+    c.strokeStyle='#f59e0b'; c.lineWidth=3; c.setLineDash([10,7]);
+    c.beginPath();
+    pts.forEach((p,i)=>{ const X=p.x*vw,Y=p.y*vh; i?c.lineTo(X,Y):c.moveTo(X,Y); });
+    c.closePath(); c.stroke(); c.setLineDash([]);
+    c.fillStyle='rgba(245,158,11,.13)'; c.fill();
+    hs.forEach((h,i)=>{ h.style.left=(pts[i].x*vw)+'px'; h.style.top=(pts[i].y*vh)+'px'; });
+  }
+  draw();
+  ov._pts=pts; ov._draw=draw;                    // test/debug हुक
+  const bar=document.createElement('div');
+  bar.style.cssText='display:flex;gap:10px;';
+  const ok=document.createElement('button'); ok.textContent='✓ सीधा करो';
+  ok.style.cssText='padding:12px 22px;border-radius:10px;border:none;background:#22c55e;color:#fff;font-weight:800;font-size:15px;cursor:pointer;';
+  const rs=document.createElement('button'); rs.textContent='↺ कोने reset';
+  rs.style.cssText='padding:12px 16px;border-radius:10px;border:1px solid #666;background:#222;color:#fff;font-weight:700;cursor:pointer;';
+  const no=document.createElement('button'); no.textContent='✗ बंद';
+  no.style.cssText='padding:12px 16px;border-radius:10px;border:1px solid #666;background:#222;color:#fff;font-weight:700;cursor:pointer;';
+  rs.onclick=()=>{ pts.forEach((p,i)=>{p.x=pts0[i].x;p.y=pts0[i].y;}); draw(); };
+  no.onclick=()=>ov.remove();
+  ok.onclick=()=>{
+    // क्रम ठीक: centroid के गिर्द sort + सबसे ऊपर-बाएँ से शुरू (क्रॉस खींचा हो तो भी)
+    const cx=pts.reduce((a,p)=>a+p.x,0)/4, cy=pts.reduce((a,p)=>a+p.y,0)/4;
+    const o=pts.slice().sort((a,b)=>Math.atan2(a.y-cy,a.x-cx)-Math.atan2(b.y-cy,b.x-cx));
+    let st=0; for(let i=1;i<4;i++) if(o[i].x+o[i].y<o[st].x+o[st].y) st=i;
+    const q=[0,1,2,3].map(k=>o[(st+k)%4]);
+    doc._orig=doc._orig||doc.src;
+    doc.src=warpPerspective(RC,q);
+    doc.rot=0; doc.crop={x:0.012,y:0.012,w:0.976,h:0.976};
+    doc._rc=null; doc._rcKey=null; doc._proc=null;
+    edgeSnap(doc); clampCrop(doc);
+    if(S.mode==='doc') _docPortrait(doc);
+    _finalUpright(doc);
+    ov.remove(); renderAll();
+    toast('📐 4-कोना सीधा हो गया ✓');
+  };
+  bar.appendChild(ok); bar.appendChild(rs); bar.appendChild(no);
+  ov.appendChild(ttl); ov.appendChild(wrap); ov.appendChild(bar);
+  document.body.appendChild(ov);
+}
+
+function renderList(){
+  const L=$('docList'); L.innerHTML='';
+  S.docs.forEach((doc,i)=>{
+    const d=document.createElement('div');
+    d.className='docItem'+(i===S.cur?' on':'');
+    d.style.position='relative';
+    const cb=document.createElement('input');
+    cb.type='checkbox'; cb.checked=S._sel.has(doc.id);
+    cb.title='चुनो';
+    cb.style.cssText='position:absolute;top:5px;left:5px;width:17px;height:17px;accent-color:#f59e0b;z-index:2;cursor:pointer;';
+    cb.addEventListener('click',e=>{ e.stopPropagation(); if(cb.checked)S._sel.add(doc.id); else S._sel.delete(doc.id); });
+    d.appendChild(cb);
+    const img=document.createElement('img');
+    img.src=processed(doc).toDataURL('image/jpeg',0.7);
+    const nm=document.createElement('div'); nm.className='nm'; nm.textContent=(i+1)+'. '+doc.name;
+    // type tag (page grouping)
+    if(!doc.tag){
+      const pc=processed(doc), ar=pc.width/pc.height;
+      doc.tag=(ar>=1.25&&ar<=2.1)?'af':(ar<0.95?'doc':'any'); doc._autoTag=true;
+    }
+    const tg=document.createElement('select');
+    tg.style.cssText='width:100%;margin-top:4px;background:var(--panel);color:var(--txt);border:1px solid var(--line);border-radius:6px;font-size:11px;padding:3px;';
+    tg.innerHTML='<option value="af">आधार Front</option><option value="ab">आधार Back</option><option value="pan">PAN</option><option value="doc">Document</option><option value="any">अन्य</option>';
+    tg.value=doc.tag;
+    tg.addEventListener('click',e=>e.stopPropagation());
+    tg.addEventListener('change',e=>{ doc.tag=e.target.value; doc._autoTag=false; doc._pid=null; renderSheet(); });
+    nm.appendChild(tg);
+    const fl=document.createElement('button');
+    fl.textContent='🔃'; fl.title='180° घुमाओ (उल्टा है तो)';
+    fl.style.cssText='position:absolute;top:5px;right:26px;width:22px;height:22px;border-radius:6px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:12px;line-height:1;z-index:2;';
+    fl.addEventListener('click',e=>{ e.stopPropagation(); flip180(doc); renderAll(); });
+    d.appendChild(fl);
+    const pq=document.createElement('button');
+    pq.textContent='📐'; pq.title='4-कोना perspective crop — खुद 4 कोने चुनो';
+    pq.style.cssText='position:absolute;top:5px;right:50px;width:22px;height:22px;border-radius:6px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:12px;line-height:1;z-index:2;';
+    pq.addEventListener('click',e=>{ e.stopPropagation(); openQuad(doc); });
+    d.appendChild(pq);
+    const del=document.createElement('button'); del.className='del'; del.textContent='✕';
+    del.addEventListener('click',e=>{ e.stopPropagation(); S.docs.splice(i,1);
+      if(S.cur>=S.docs.length)S.cur=S.docs.length-1;
+      S.docs.forEach(dd=>dd._proc=null);
+      renderAll(); });
+    d.appendChild(img); d.appendChild(nm); d.appendChild(del);
+    d.addEventListener('click',()=>{ S.cur=i; renderAll(); });
+    L.appendChild(d);
+  });
+  $('btnPrintTop').disabled=!S.docs.length;
+}
+
+/* ================= A4 SHEET — type-wise pages ================= */
+function buildPages(){
+  // pages: [{kind:'aadhaar',docs:[f,b?]},{kind:'pan',doc},{kind:'doc',doc},{kind:'grid',docs:[...]}]
+  const pages=[];
+  const Fs=S.docs.filter(d=>d.tag==='af'), Bs=S.docs.filter(d=>d.tag==='ab');
+  const pans=S.docs.filter(d=>d.tag==='pan'), docs=S.docs.filter(d=>d.tag==='doc');
+  const anys=S.docs.filter(d=>d.tag==='any'||!d.tag);
+  const usedB=new Set(), doneF=new Set();
+  // स्पष्ट जोड़ियाँ (_pid — PAIR engine से) पहले
+  for(const f of Fs){
+    if(!f._pid) continue;
+    const b=Bs.find(bb=>bb._pid===f._pid && !usedB.has(bb.id));
+    if(b){ usedB.add(b.id); doneF.add(f.id); pages.push({kind:'aadhaar', docs:[f,b]}); }
+  }
+  // बाकी FIFO
+  for(const f of Fs){
+    if(doneF.has(f.id)) continue;
+    let b=null;
+    for(const bb of Bs){ if(!usedB.has(bb.id)){ b=bb; usedB.add(bb.id); break; } }
+    pages.push({kind:'aadhaar', docs:b?[f,b]:[f]});
+  }
+  for(const bb of Bs) if(!usedB.has(bb.id)) pages.push({kind:'aadhaar', docs:[bb]});
+  for(const p of pans) pages.push({kind:'pan', docs:[p]});
+  for(const d of docs) pages.push({kind:'doc', docs:[d]});
+  for(let i=0;i<anys.length;i+=10) pages.push({kind:'grid', docs:anys.slice(i,i+10)});
+  return pages;
+}
+function sheetPages(){ return buildPages().length; }
+function gridFor(n){
+  if(n<=1)return[1,1]; if(n<=2)return[1,2]; if(n<=4)return[2,2];
+  if(n<=6)return[2,3]; if(n<=8)return[2,4]; return[2,5];
+}
+function drawSheet(ctx,PW,PH,pageIdx){
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,PW,PH);
+  // version footer — printout से पता चले कौनसा version छपा
+  const _fk=PW/(210*MM);
+  ctx.fillStyle='#bbb'; ctx.font=(11*_fk)+'px sans-serif'; ctx.textAlign='left';
+  ctx.fillText('🌸 संस्कृति Doc Studio v1.7 — FREE', 8*MM*_fk*0.9, PH-4*MM*_fk);
+  const pages=buildPages(); const pg=pages[pageIdx]; if(!pg) return;
+  const k=PW/(210*MM);                       // preview भी इसी से — mm हमेशा सही
+  const mm=v=>v*MM*k;
+  const C_W=mm(85), C_H=mm(55), CX=(PW-C_W)/2;   // असली card आकार 85×55mm
+  const cutBox=(x,y,w,h)=>{
+    ctx.strokeStyle='#999'; ctx.lineWidth=Math.max(1.2,1.5*k);
+    ctx.setLineDash([8*k,6*k]); ctx.strokeRect(x,y,w,h); ctx.setLineDash([]);
+  };
+  // card photo को 85×55 box में भरो (किनार ज़रा-सा crop होकर — photocopy look)
+  const drawCardAt=(pc,y)=>{
+    const sc=Math.max(C_W/pc.width, C_H/pc.height);   // cover
+    const w=pc.width*sc, h=pc.height*sc;
+    ctx.save(); ctx.beginPath(); ctx.rect(CX,y,C_W,C_H); ctx.clip();
+    ctx.drawImage(pc,CX+(C_W-w)/2,y+(C_H-h)/2,w,h);
+    ctx.restore();
+    cutBox(CX,y,C_W,C_H);
+  };
+  const drawFitIn=(pc,x,y,cw,ch,cut)=>{
+    const sc=Math.min(cw/pc.width,ch/pc.height)*0.99;
+    const w=pc.width*sc, h=pc.height*sc;
+    ctx.drawImage(pc,x+(cw-w)/2,y+(ch-h)/2,w,h);
+    if(cut) cutBox(x+(cw-w)/2,y+(ch-h)/2,w,h);
+  };
+  if(pg.kind==='aadhaar'){
+    // standard photocopy: front ऊपर, back नीचे — दोनों 85×55mm center
+    drawCardAt(processed(pg.docs[0]), mm(20));
+    if(pg.docs[1]) drawCardAt(processed(pg.docs[1]), mm(20+55+12));
+  }else if(pg.kind==='pan'){
+    drawCardAt(processed(pg.docs[0]), mm(20));
+  }else if(pg.kind==='doc'){
+    const m=mm(10);
+    drawFitIn(processed(pg.docs[0]),m,m,PW-2*m,PH-2*m,false);
+  }else{
+    const [cols,rows]=gridFor(pg.docs.length);
+    const m=mm(8), g2=mm(5);
+    const cw=(PW-2*m-(cols-1)*g2)/cols, ch2=(PH-2*m-(rows-1)*g2)/rows;
+    pg.docs.forEach((doc,i)=>{
+      const col=i%cols, row=(i/cols)|0;
+      drawFitIn(processed(doc),m+col*(cw+g2),m+row*(ch2+g2),cw,ch2,true);
+    });
+  }
+}
+
+function sheetPages(){ return buildPages().length; }
+function gridFor(n){
+  if(n<=1)return[1,1]; if(n<=2)return[1,2]; if(n<=4)return[2,2];
+  if(n<=6)return[2,3]; if(n<=8)return[2,4]; return[2,5];
+}
+S.pgCur=0;
+const PG_LABEL={aadhaar:'आधार Front+Back',pan:'PAN',doc:'Document',grid:'अन्य'};
+function renderSheet(){
+  const cv=$('sheetCv');
+  const PW=Math.round(210*MM/3), PH=Math.round(297*MM/3); // preview हल्का
+  cv.width=PW; cv.height=PH;
+  const pages=buildPages();
+  if(S.pgCur>=pages.length) S.pgCur=Math.max(0,pages.length-1);
+  drawSheet(cv.getContext('2d'),PW,PH,S.pgCur);
+  $('pgInfo').textContent=pages.length+' पेज';
+  $('pgLabel').textContent=pages.length?(S.pgCur+1)+'/'+(pages.length)+' — '+(PG_LABEL[pages[S.pgCur].kind]||''):'—';
+  $('pgSwap').style.display=(pages.length&&pages[S.pgCur].docs.length===2)?'':'none';
+  $('pgFlip').style.display=pages.length?'':'none';
+}
+$('pgPrev').addEventListener('click',()=>{ if(S.pgCur>0){S.pgCur--; renderSheet();} });
+$('pgNext').addEventListener('click',()=>{ if(S.pgCur<sheetPages()-1){S.pgCur++; renderSheet();} });
+$('pgSwap').addEventListener('click',()=>{
+  const p=buildPages()[S.pgCur];
+  if(!p||p.docs.length!==2) return;
+  p.docs[0].tag='ab'; p.docs[1].tag='af';
+  renderAll(); toast('⇄ front/back उल्ट गए');
+});
+$('pgFlip').addEventListener('click',()=>{
+  const p=buildPages()[S.pgCur];
+  if(!p) return;
+  p.docs.forEach(d=>flip180(d));
+  renderAll(); toast('🔃 180° घुमा दिया — देखो सीधा हुआ?');
+});
+
+/* ================= PRINT ================= */
+
+let _printing=false;
+$('btnPrintTop').addEventListener('click',()=>{
+  if(!S.docs.length||_printing)return;
+  _printing=true; setTimeout(()=>_printing=false,3000); // double-click / duplicate guard
+  const pa=$('printArea'); pa.innerHTML='';
+  const PW=Math.round(210*MM), PH=Math.round(297*MM);
+  const pages=buildPages();
+  for(let p=0;p<pages.length;p++){
+    if(!pages[p].docs.length) continue; // खाली page कभी नहीं
+    const cv=document.createElement('canvas'); cv.width=PW; cv.height=PH;
+    drawSheet(cv.getContext('2d'),PW,PH,p);
+    const img=document.createElement('img'); img.src=cv.toDataURL('image/jpeg',0.95);
+    pa.appendChild(img);
+  }
+  setTimeout(()=>window.print(),80);
+});
+
+/* ================= TOOL HANDLERS ================= */
+$('sRot').addEventListener('input',e=>{
+  const doc=S.docs[S.cur]; if(!doc)return;
+  doc.rot=+e.target.value; $('vRot').textContent=doc.rot+'°';
+  doc._proc=null; renderAll();
+});
+$('btnPersp').addEventListener('click',()=>{
+  const doc=S.docs[S.cur]; if(!doc)return;
+  if(!S.persp){
+    // शुरू: current crop box के कोनों से quad
+    const c=doc.crop||{x:0.05,y:0.05,w:0.9,h:0.9};
+    S.persp={pts:[{x:c.x,y:c.y},{x:c.x+c.w,y:c.y},{x:c.x+c.w,y:c.y+c.h},{x:c.x,y:c.y+c.h}]};
+    renderAll();
+    toast('⬠ 4 कोनों को document के असली कोनों पर खींचें');
+  }else{
+    // WARP करो
+    toast('⬠ सीधा किया जा रहा है…');
+    const pts=S.persp.pts.map(p=>({...p}));
+    setTimeout(()=>{
+      const RC=rotCanvas(doc);
+      const out=warpPerspective(RC,pts);
+      doc._orig=doc._orig||doc.src;
+      doc.src=out; doc.rot=0;
+      doc._rc=null; doc._rcKey=null;
+      doc.crop={x:0.005,y:0.005,w:0.99,h:0.99};
+      edgeSnap(doc); clampCrop(doc);
+      doc.tag=''; doc._proc=null;
+      S.persp=null; S._sel=new Set(); S.drag=null;
+      renderAll();
+      toast('⬠ एकदम सीधा ✓');
+    },60);
+  }
+});
+$('btnPerspX').addEventListener('click',()=>{ S.persp=null; S.drag=null; renderAll(); });
+$('btnOrig').addEventListener('click',()=>{
+  const doc=S.docs[S.cur]; if(!doc||!doc._orig)return;
+  doc.src=doc._orig; doc._orig=null;
+  doc.rot=0; doc._rc=null; doc._rcKey=null;
+  doc.crop={x:0,y:0,w:1,h:1}; doc.tag=''; doc._proc=null;
+  renderAll(); toast('↺ मूल photo वापस ✓');
+});
+$('btnRot90').addEventListener('click',()=>{
+  const doc=S.docs[S.cur]; if(!doc)return;
+  let r=(doc.rot+90)%360; if(r>180)r-=360;
+  doc.rot=r;
+  $('sRot').value=doc.rot; $('vRot').textContent=doc.rot+'°';
+  doc.crop=cropFor(doc); edgeSnap(doc); clampCrop(doc);
+  doc.tag=''; doc._proc=null; renderAll();
+  toast('↻ घुमाया ✓ — '+r+'°');
+});
+$('btnAutoCrop').addEventListener('click',()=>{
+  const doc=S.docs[S.cur]; if(!doc)return;
+  doc.crop=cropFor(doc); edgeSnap(doc); clampCrop(doc); doc._proc=null;
+  renderAll(); toast('✂️ AUTO कटाई ✓ — ठीक न लगे तो box खींचें');
+});
+$('btnAutoStraight').addEventListener('click',()=>{
+  const doc=S.docs[S.cur]; if(!doc)return;
+  toast('📐 सीधा किया जा रहा है…');
+  setTimeout(()=>{
+    doc.rot=autoStraighten(doc);
+    $('sRot').value=doc.rot; $('vRot').textContent=doc.rot+'°';
+    doc.crop=cropFor(doc); edgeSnap(doc); clampCrop(doc);
+    doc.tag=''; // नए आकार से type फिर से अंदाज़ा
+    doc._proc=null; renderAll();
+    toast('📐 सीधा ✓ ('+doc.rot+'°) + कटाई ✓');
+  },30);
+});
+document.querySelectorAll('.modeBtn').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.modeBtn').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  const mode=b.dataset.m;
+  S.docs.forEach(d=>{ d.mode=mode; d._proc=null; });
+  renderAll();
+  toast(mode==='clean'?'✨ साफ़ mode — B&W print साफ़ आएगा':mode==='bw'?'⬛ काला-सफ़ेद mode — सिर्फ स्याही और काग़ज़':'🎨 Original — बिना सफ़ाई');
+}));
+$('btnCompare').addEventListener('click',()=>{
+  S.compare=!S.compare;
+  $('btnCompare').classList.toggle('on',S.compare);
+  renderEditor();
+});
+
+/* ================= RENDER ALL ================= */
+function renderAll(){
+  renderList(); renderEditor(); renderSheet();
+}
+// emptyMsg को stage में रखो
+(function(){ const st=$('stage'); st.innerHTML=''; const em=document.createElement('div'); em.id='emptyMsg';
+  em.innerHTML='📄<br>बाईं ओर से फ़ोटो चुनें<br><span style="font-size:12px">आधार • PAN • Voter • कोई document — तेड़ी हो तो भी चलेगी</span>';
+  em.style.cssText='color:var(--mut); text-align:center; font-size:15px; line-height:1.9;';
+  st.appendChild(em); })();
+</script>
+</body>
+</html>
