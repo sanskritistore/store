@@ -1,0 +1,17 @@
+{
+  "faqs": [
+    {"keys":["otp","नहीं आया","code","ओटीपी"],"a":"📧 OTP कभी-कभी <b>Spam/Junk folder</b> में चला जाता है — वहाँ ज़रूर देखें। OTP 10 मिनट में expire हो जाता है, तो दोबारा register करें।"},
+    {"keys":["register","रजिस्टर","कैसे करें","शुरू कैसे"],"a":"Cyber Cafe page पर नाम, phone और email भरें → email में आया OTP डालें → आपकी User ID (जैसे SC-1001) मिल जाएगी → सारे tools खुल जाएँगे ✅"},
+    {"keys":["passport","पासपोर्ट","size","साइज़","फोटो कैसे"],"a":"📸 Photo Studio खोलें → अपनी फोटो upload करें → passport size अपने आप बन जाता है → एक sheet में कई फोटो download करें → किसी भी दुकान पर print कराएँ। <b>35x45mm</b> standard size।"},
+    {"keys":["background","बैकग्राउंड","पीछे का","हटाएँ","सफेद"],"a":"Photo Studio में background हटाने/बदलने का option है — upload के बाद background button दबाएँ और सफेद/हल्का background चुनें।"},
+    {"keys":["aadhaar","आधार","pan","पैन","id","card","कार्ड"],"a":"🪪 Card Studio खोलें → card की front और back photo upload करें → सही size में crop करें → PVC print sheet download करें।"},
+    {"keys":["document","डॉक्यूमेंट","दस्तावेज़","स्कैन","scan","फोटो से"],"a":"📄 Doc Studio खोलें → document की फोटो upload करें → अपने आप साफ़/सीधा होकर document जैसा बन जाएगा → download करके print करें।"},
+    {"keys":["download","डाउनलोड","save","कहाँ मिलेगा"],"a":"Download दबाते ही file आपके फ़ोन की <b>Downloads</b> folder में आ जाती है — gallery/files में देखें।"},
+    {"keys":["print","प्रिंट","छपाई","rate","कीमत","पैसा","price"],"a":"Tools बिल्कुल <b>free</b> हैं ✅ Print कराने के लिए हमारी दुकान पर आएँ या WhatsApp करें: <b>9873152325</b> — घर बैठे ऑर्डर हो जाएगा।"},
+    {"keys":["video","वीडियो","देखें","सीखें","कैसे चलाएँ","कैसे इस्तेमाल"],"a":"📹 हर tool की <b>कैसे use करें</b> वीडियो Cyber Cafe page पर ऊपर लगी है — 1 मिनट में सब समझ आ जाएगा!"},
+    {"keys":["काम नहीं","error","नहीं चल","खराब","problem","दिक्कत"],"a":"🙏 कोई दिक्कत हो तो: (1) page refresh करें, (2) दूसरी photo try करें (साफ़, seedhi photo best रहती है)। फिर भी न चले तो यहीं लिख दें — आपका सवाल सीधा दुकान तक पहुँचेगा।"},
+    {"keys":["user id","आईडी","sc-","कहाँ है","भूल गया"],"a":"Register करते ही आपकी User ID (SC-....) screen पर दिखती है — वही page पर ऊपर भी लिखी रहती है 👤। भूल जाएँ तो दोबारा उसी email से register करें — वही पुरानी ID मिल जाएगी।"},
+    {"keys":["फ्रेम","frame","एल्बम","album","ऑर्डर","order","फोटो फ्रेम"],"a":"🖼️ फोटो फ्रेम, एल्बम और Acrylic के लिए home page देखें — अपनी फोटो upload करके live preview देखकर WhatsApp पर ऑर्डर करें: <b>9873152325</b>"}
+  ],
+  "fallback":"यह सवाल नया है — <b>दुकान तक पहुँचा दिया गया है</b> ✅ जल्दी जवाब मिलेगा। तुरंत पूछना हो तो WhatsApp करें: <b>9873152325</b>"
+}

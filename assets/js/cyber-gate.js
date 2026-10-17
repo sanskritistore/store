@@ -19,5 +19,7 @@ window.SC=(()=>{
  async function track(tool,what){ const u=user(); if(!u)return; const a=await api(); if(!a)return;
   try{navigator.sendBeacon(a,new Blob([JSON.stringify({action:'use',userId:u.id,name:u.name,tool,what:what||''})],{type:'text/plain'}))}catch(e){} }
  function guard(tool){ if(!user()){ location.replace('category.html?c=cyber&need=1'); return true; } track(tool,'open'); return false; }
- return {user,logout,sendOtp,verifyOtp,track,guard};
+ async function sendSupport(tool,problem,userId,name){ const a=await api(); if(!a)return;
+  try{navigator.sendBeacon(a,new Blob([JSON.stringify({action:'support',userId:userId||'',name:name||'',tool,problem})],{type:'text/plain'}))}catch(e){} }
+ return {user,logout,sendOtp,verifyOtp,track,guard,sendSupport};
 })();

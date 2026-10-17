@@ -37,7 +37,7 @@
 </section>
 <footer id="ft"></footer>
 <script src="assets/js/store.js?v=30"></script>
-<script src="assets/js/cyber-gate.js?v=1"></script>
+<script src="assets/js/cyber-gate.js?v=2"></script>
 <script>(async()=>{await loadCfg();
  const id=qp('c'),cat=CFG.cats.find(x=>x.id===id)||CFG.cats[0];
  if(cat.custom){location.href='frames.html'}
@@ -73,4 +73,5 @@
    if(r.ok){showUser();toast('🎉 Registration हो गया! आपकी ID: '+r.user.id);SC.track('register','otp')}
    else msg.textContent='❌ '+(r.msg||'गलत OTP');}};
  $$('#toolswrap a').forEach(a=>a.addEventListener('click',()=>SC.track('tool',a.getAttribute('href'))));
-})();</script></body></html>
+})();</script><script src="assets/js/help-box.js?v=1"></script><script>addEventListener("load",()=>HB.init("cyber-cafe"))</script>
+</body></html>
