@@ -24,6 +24,9 @@
 .tcard:hover{border-color:#C9A227;box-shadow:0 6px 18px rgba(142,42,50,.12)}
 .login input{width:100%;padding:12px;border:1.5px solid #E3D7C3;border-radius:10px;font:inherit;margin:6px 0 12px}
 .topbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin:18px 0}
+.ccr h1{font-size:20px;margin:6px 0}.ccr h2{font-size:15px;margin:14px 0 6px;color:#8E2A32}.ccr .chip{display:inline-block;background:#f3ece7;border-radius:16px;padding:5px 12px;margin:0 6px 6px 0;font-size:13px}
+.ccr table{width:100%;border-collapse:collapse;font-size:12.5px;background:#fff;margin-bottom:8px}.ccr th{background:#8E2A32;color:#fff;padding:6px 8px;text-align:left}.ccr td{border-bottom:1px solid #eee;padding:6px 8px;vertical-align:top}
+.ccr a{color:#8E2A32;font-weight:700}
 </style></head><body>
 <header id="hd"></header>
 <section class="wrap" id="app">
@@ -51,6 +54,9 @@
   </div>
   <h2 style="margin:0 0 10px">🖨️ ऑर्डर कतार <button class="btn btn-o" id="ref" style="font-size:12px;padding:5px 10px">🔄</button></h2>
   <div id="list"></div>
+  <h2 style="margin:22px 0 10px">👥 Cyber Cafe — Users • Points • Messages</h2>
+  <div class="ccr"><p style="margin:0 0 8px;color:#666;font-size:13px">Registrations, points requests और support messages — सब एक जगह:</p>
+  <button class="btn btn-p" id="ccref" style="font-size:15px;padding:12px 22px">📊 Cyber Cafe Report खोलें ↗</button></div>
  </div>
 </section>
 <footer id="ft"></footer>
@@ -118,5 +124,7 @@
     try{await api('/store/orders/'+b.dataset.del,{method:'DELETE'});loadOrders()}catch(e){toast('नहीं हटा')}});
   }catch(e){list.innerHTML='<p>ऑर्डर list नहीं खुली — दोबारा login करें</p>'}}
  $('#ref').onclick=loadOrders;$('#out').onclick=gateLogout;
+ /* === Cyber Cafe report — एक click में खोलें (Google iframe अनुमति नहीं देता) === */
+ $('#ccref').onclick=()=>window.open('https://script.google.com/macros/s/AKfycbwOEWREDkK9wj_RsjHGQg1vsfBlMtvmbIuGuezCQhVF1HExUfF_B0xcH1XIqk8HaVSI/exec?admin=sanskriti786','_blank');
  if(gateOK()){$('#login').style.display='none';$('#orders').style.display='block';loadOrders()}
 })();</script></body></html>
