@@ -57,7 +57,7 @@ header span{font-size:12px;color:#999;flex:1;white-space:nowrap;overflow:hidden;
 <input type="file" id="filePhotos" accept="image/*" multiple hidden>
 <input type="file" id="fileTpl" accept=".json" hidden>
 <div id="toast"></div>
-<script src="albums/layouts.js?v=3"></script>
+<script src="albums/layouts.js?v=4"></script>
 <script>
 'use strict';
 /* ================= STATE ================= */
@@ -650,7 +650,7 @@ $('btnOrder').onclick=()=>{
       const p=A.packages.find(x=>x.id===pkg);
       if(p){ PKG=p; let tpls;
         try{ const cover=await fetch(p.tpls[0]+'?v='+Date.now()).then(r=>r.json());
-          tpls=[cover,...composePages(p.theme,19)];
+          tpls=[cover,...(p.wedding?composeWedding(p.theme,19):composePages(p.theme,19))];
         }catch(_){ tpls=await Promise.all(p.tpls.map(u=>fetch(u+'?v='+Date.now()).then(r=>r.json()))); }
         loadPackage(tpls,p.name); }
       else loadTemplate(DEMO);
