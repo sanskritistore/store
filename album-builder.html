@@ -36,6 +36,9 @@ header span{font-size:12px;color:#999;flex:1;white-space:nowrap;overflow:hidden;
 .pgt canvas{width:100%;display:block}
 .pgt .pb{position:absolute;right:3px;bottom:3px;background:#000a;color:#8f8;font-size:10px;padding:1px 5px;border-radius:7px;font-weight:700}
 .pgt .pn{position:absolute;left:3px;top:3px;background:#000a;color:#f0c060;font-size:10px;padding:1px 5px;border-radius:7px;font-weight:700}
+#sheet .abtns{display:flex;flex-wrap:wrap;gap:8px;padding:6px 10px 12px}
+#sheet .abtns button{flex:1 1 44%;padding:11px 6px;border:1px solid rgba(212,175,55,.5);border-radius:12px;background:#1c1410;color:#f2e3c6;font-weight:700;font-size:13px}
+#sheet .abtns button:active{background:#3a2a1a}
 </style>
 </head>
 <body>
@@ -231,11 +234,25 @@ function drawItem(c,it,sc,forExport){
       const o=oc.getContext('2d');
       const op=mkPath(0,0); o.clip(op);
       const sr=it.photo.width/it.photo.height, tr=W/H;
-      let dw,dh;
-      if(sr>tr){ dh=H; dw=H*sr; } else { dw=W; dh=W/sr; }
-      if(it.bw){ o.filter='grayscale(1)'; }
-      o.drawImage(it.photo, (W-dw)/2, (H-dh)/2, dw, dh);
-      if(it.bw){ o.filter='none'; }
+      const zoom=it.zoom||1, px=(it.px==null?0.5:it.px), py=(it.py==null?0.5:it.py);
+      if(it.fit==='blur'){
+        /* पूरी photo — कुछ नहीं कटेगा; पीछे धुंधला पसारा */
+        let bw2,bh2; if(sr>tr){ bh2=H; bw2=H*sr; } else { bw2=W; bh2=W/sr; }
+        o.save(); o.filter='blur('+Math.max(6,Math.round(W*0.03))+'px) brightness(0.82) saturate(1.15)';
+        o.drawImage(it.photo,(W-bw2)/2,(H-bh2)/2,bw2,bh2); o.restore();
+        let cw,ch; if(sr>tr){ cw=W*0.97; ch=cw/sr; } else { ch=H*0.97; cw=ch*sr; }
+        cw*=zoom; ch*=zoom;
+        if(it.bw){ o.filter='grayscale(1)'; }
+        o.drawImage(it.photo,(W-cw)*px,(H-ch)*py,cw,ch);
+        if(it.bw){ o.filter='none'; }
+      }else{
+        /* भरकर (cover) — zoom + खिसकाओ; default सिर-सुरक्षित */
+        let dw,dh; if(sr>tr){ dh=H; dw=H*sr; } else { dw=W; dh=W/sr; }
+        dw*=zoom; dh*=zoom;
+        if(it.bw){ o.filter='grayscale(1)'; }
+        o.drawImage(it.photo,(W-dw)*px,(H-dh)*py,dw,dh);
+        if(it.bw){ o.filter='none'; }
+      }
       if(it.fadeR>0){ /* radial fade — किनारे घुलकर गायब (Dev: photo apas me merge) */
         const f=Math.min(it.fadeR,0.92);
         o.globalCompositeOperation='destination-in';
@@ -414,12 +431,19 @@ function renderStrip(){
   });
   sh.appendChild(st);
 }
+/* box के हिसाब से photo fit — face कभी न कटे (Dev: customer photo portrait/square भी हो सकती है) */
+function smartFit(sl,im){
+  const pr=im.width/im.height, sr=sl.w/sl.h;
+  sl.pr=pr; sl.zoom=1; sl.px=0.5;
+  if(Math.abs(Math.log(pr/sr))>0.55){ sl.fit='blur'; sl.py=0.5; }  /* बहुत अलग आकार → पूरी photo, कुछ न कटे */
+  else{ sl.fit='cover'; sl.py=(pr<sr)?0.22:0.5; }                  /* ऊँची photo → ऊपर से (सिर सुरक्षित) */
+}
 function assignPhoto(img){
   const sl=S.items[S.sel];
   if(!sl||sl.kind!=='photo'){ toast('पहले ऊपर photo की जगह छुओ',1); return; }
   const other=allPageItems().find(it=>it.kind==='photo'&&it.photo===img);
-  if(other&&other!==sl){ other.photo=sl.photo; other.pr=sl.pr; }  // swap
-  sl.photo=img; sl.pr=img.width/img.height;
+  if(other&&other!==sl){ const old=sl.photo; other.photo=old; if(old) smartFit(other,old); }  // swap
+  sl.photo=img; smartFit(sl,img);
   draw(); renderStrip(); renderPages(); toast('✓ लग गई');
 }
 
@@ -433,13 +457,14 @@ function aiFill(){
   for(const i of idxs){
     applyPage(i);
     const empty=S.items.filter(s=>s.kind==='photo'&&!s.photo).sort((a,b)=>b.w*b.h-a.w*a.h);
+    const onPage=new Set();
     for(const sl of empty){
       if(!pool.length) pool.push(...photos.map(p=>p.img));   // photos कम हों तो फिर से इस्तेमाल
       const sr=sl.w/sl.h;
       let bi=0,bs=1e9;
-      pool.forEach((im,j)=>{ const sc=Math.abs(Math.log((im.width/im.height)/sr)); if(sc<bs){bs=sc;bi=j;} });
+      pool.forEach((im,j)=>{ let sc=Math.abs(Math.log((im.width/im.height)/sr)); if(onPage.has(im)) sc+=5; if(sc<bs){bs=sc;bi=j;} });  // एक page पर वही photo दोबारा न आए
       const im=pool.splice(bi,1)[0];
-      sl.photo=im; sl.pr=im.width/im.height; n++;
+      sl.photo=im; smartFit(sl,im); onPage.add(im); n++;
     }
   }
   applyPage(startPg); renderPages(); renderStrip();
@@ -459,8 +484,18 @@ cv.addEventListener('pointerdown',e=>{
     if(t.rot){ const rr=-t.rot*Math.PI/180,cx=t.x+t.w/2,cy=t.y+t.h/2,dx=p.x-cx,dy=p.y-cy;
       pp={x:cx+dx*Math.cos(rr)-dy*Math.sin(rr), y:cy+dx*Math.sin(rr)+dy*Math.cos(rr)}; }
     if(pp.x>=t.x&&pp.x<=t.x+t.w&&pp.y>=t.y&&pp.y<=t.y+t.h){
-      S.sel=i; draw(); openSheet('photos');
-      if(!t.photo&&!photos.length) $('filePhotos').click();
+      if(S.swapMode!=null&&S.swapMode!==i){   /* ⇄ दो photos की जगह बदलो */
+        const a=S.items[S.swapMode], tmp={};
+        ['photo','pr','zoom','px','py','fit'].forEach(k=>tmp[k]=a[k]);
+        ['photo','pr','zoom','px','py','fit'].forEach(k=>a[k]=t[k]);
+        ['photo','pr','zoom','px','py','fit'].forEach(k=>t[k]=tmp[k]);
+        S.swapMode=null; S.sel=-1; draw(); renderPages(); toast('⇄ photos बदल गईं ✓');
+        return;
+      }
+      S.swapMode=null;
+      S.sel=i; draw();
+      if(t.photo) openSheet('adjust');
+      else { openSheet('photos'); if(!photos.length) $('filePhotos').click(); }
       return;
     }
   }
@@ -481,7 +516,47 @@ function openTexts(){
 }
 function openSheet(mode){
   const sh=$('sheet'); sh.classList.add('open');
-  if(mode==='photos') renderStrip(); else openTexts();
+  if(mode==='photos') renderStrip();
+  else if(mode==='adjust') openAdjust();
+  else openTexts();
+}
+
+/* ============ PHOTO ADJUST PANEL (zoom / खिसकाओ / घुमाओ / बदलो) ============ */
+function openAdjust(){
+  const it=S.items[S.sel]; const sh=$('sheet');
+  if(!it||it.kind!=='photo'||!it.photo){ renderStrip(); return; }
+  sh.innerHTML='<div class="hint">📷 photo ठीक करो — ऊपर page में तुरंत दिखेगा</div>';
+  const mkS=(lab,min,max,val,fn)=>{
+    const row=document.createElement('div'); row.className='trow';
+    const l=document.createElement('label'); l.textContent=lab;
+    const inp=document.createElement('input'); inp.type='range'; inp.min=min; inp.max=max; inp.step='1'; inp.value=val;
+    inp.oninput=()=>{ fn(+inp.value); draw(); };
+    row.appendChild(l); row.appendChild(inp); return row;
+  };
+  sh.appendChild(mkS('🔍 Zoom', it.fit==='blur'?40:100, it.fit==='blur'?180:250, Math.round((it.zoom||1)*100), v=>it.zoom=v/100));
+  sh.appendChild(mkS('↔️ बाएँ-दाएँ',0,100,Math.round((it.px==null?0.5:it.px)*100), v=>it.px=v/100));
+  sh.appendChild(mkS('↕️ ऊपर-नीचे',0,100,Math.round((it.py==null?0.5:it.py)*100), v=>it.py=v/100));
+  const bar=document.createElement('div'); bar.className='abtns';
+  const mk=(t2,fn)=>{ const b=document.createElement('button'); b.innerHTML=t2; b.onclick=fn; bar.appendChild(b); };
+  mk(it.fit==='blur'?'📐 भरकर काटो':'🖼️ पूरी photo दिखाओ',()=>{
+    if(it.fit==='blur'){ it.fit='cover'; it.zoom=1; it.px=0.5; it.py=((it.photo.width/it.photo.height)<(it.w/it.h))?0.22:0.5; }
+    else { it.fit='blur'; it.zoom=1; it.px=0.5; it.py=0.5; }
+    draw(); openAdjust();
+  });
+  mk('🔄 90° घुमाओ',rotateSel);
+  mk('⇄ दूसरी photo से बदलो',()=>{ S.swapMode=S.sel; sh.classList.remove('open'); toast('अब page पर वो photo छुओ जिससे बदलनी है'); });
+  mk('❌ यहाँ से हटाओ',()=>{ it.photo=null; it.zoom=1; S.sel=-1; draw(); renderPages(); renderStrip(); sh.classList.remove('open'); toast('जगह खाली कर दी'); });
+  mk('✓ हो गया',()=>sh.classList.remove('open'));
+  sh.appendChild(bar);
+}
+function rotateSel(){
+  const it=S.items[S.sel]; if(!it||!it.photo) return;
+  const im=it.photo, nw=im.naturalWidth||im.width, nh=im.naturalHeight||im.height;
+  const c2=document.createElement('canvas'); c2.width=nh; c2.height=nw;
+  const x=c2.getContext('2d'); x.translate(nh/2,nw/2); x.rotate(Math.PI/2); x.drawImage(im,-nw/2,-nh/2);
+  const ni=new Image();
+  ni.onload=()=>{ it.photo=ni; it.pr=nh/nw; it.zoom=1; draw(); renderPages(); };
+  ni.src=c2.toDataURL('image/jpeg',0.92);
 }
 $('btnPhotos').onclick=()=>{ if(!photos.length) $('filePhotos').click(); else openSheet('photos'); };
 $('btnText').onclick=()=>openSheet('texts');

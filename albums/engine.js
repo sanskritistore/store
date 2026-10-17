@@ -161,11 +161,25 @@ function drawItem(c,it,sc,forExport){
       const o=oc.getContext('2d');
       const op=mkPath(0,0); o.clip(op);
       const sr=it.photo.width/it.photo.height, tr=W/H;
-      let dw,dh;
-      if(sr>tr){ dh=H; dw=H*sr; } else { dw=W; dh=W/sr; }
-      if(it.bw){ o.filter='grayscale(1)'; }
-      o.drawImage(it.photo, (W-dw)/2, (H-dh)/2, dw, dh);
-      if(it.bw){ o.filter='none'; }
+      const zoom=it.zoom||1, px=(it.px==null?0.5:it.px), py=(it.py==null?0.5:it.py);
+      if(it.fit==='blur'){
+        /* पूरी photo — कुछ नहीं कटेगा; पीछे धुंधला पसारा */
+        let bw2,bh2; if(sr>tr){ bh2=H; bw2=H*sr; } else { bw2=W; bh2=W/sr; }
+        o.save(); o.filter='blur('+Math.max(6,Math.round(W*0.03))+'px) brightness(0.82) saturate(1.15)';
+        o.drawImage(it.photo,(W-bw2)/2,(H-bh2)/2,bw2,bh2); o.restore();
+        let cw,ch; if(sr>tr){ cw=W*0.97; ch=cw/sr; } else { ch=H*0.97; cw=ch*sr; }
+        cw*=zoom; ch*=zoom;
+        if(it.bw){ o.filter='grayscale(1)'; }
+        o.drawImage(it.photo,(W-cw)*px,(H-ch)*py,cw,ch);
+        if(it.bw){ o.filter='none'; }
+      }else{
+        /* भरकर (cover) — zoom + खिसकाओ; default सिर-सुरक्षित */
+        let dw,dh; if(sr>tr){ dh=H; dw=H*sr; } else { dw=W; dh=W/sr; }
+        dw*=zoom; dh*=zoom;
+        if(it.bw){ o.filter='grayscale(1)'; }
+        o.drawImage(it.photo,(W-dw)*px,(H-dh)*py,dw,dh);
+        if(it.bw){ o.filter='none'; }
+      }
       if(it.fadeR>0){ /* radial fade — किनारे घुलकर गायब (Dev: photo apas me merge) */
         const f=Math.min(it.fadeR,0.92);
         o.globalCompositeOperation='destination-in';
@@ -226,14 +240,20 @@ async function renderPage(cv,tpl,photos,dpi){
   if(tpl.bg&&tpl.bg.grad){const g=c.createLinearGradient(0,0,cv.width,cv.height);g.addColorStop(0,tpl.bg.c1);g.addColorStop(1,tpl.bg.c2);c.fillStyle=g;}
   else c.fillStyle=(tpl.bg&&tpl.bg.c1)||'#222';
   c.fillRect(0,0,cv.width,cv.height);
-  // photo slots में photos बाँटो (round-robin)
+  // photo slots में photos बाँटो (aspect-match + सिर-सुरक्षित fit)
   const slots=tpl.items.filter(it=>it.kind==='photo');
-  let pi=0;
   const items=tpl.items.map(it=>({...it}));
+  const used=new Set();
   for(const it of items){
     if(it.kind==='photo'&&!it.photo&&photos&&photos.length){
-      const im=photos[pi%photos.length]; pi++;
+      if(used.size>=photos.length) used.clear();
+      const srr=it.w/it.h; let bi=0,bs=1e9;
+      photos.forEach((im,j)=>{ if(used.has(j))return; const sc=Math.abs(Math.log((im.width/im.height)/srr)); if(sc<bs){bs=sc;bi=j;} });
+      const im=photos[bi]; used.add(bi);
       it.photo=im; it.pr=im.width/im.height;
+      const m=Math.abs(Math.log((im.width/im.height)/srr));
+      if(m>0.55){ it.fit='blur'; it.px=0.5; it.py=0.5; }
+      else if((im.width/im.height)<srr){ it.py=0.22; }
     }
   }
   for(const it of items) drawItem(c,it,dpi,true);
