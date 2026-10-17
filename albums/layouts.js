@@ -57,6 +57,6 @@ function composeWedding(theme,n){
   });
   const out=[];
   for(let i=0;i<n;i++){ const t2=sub(seq[i%seq.length]);
-    out.push({name:t2.name,W:36,H:12,bg:{c1:th.c1,c2:th.c2,grad:th.c1!==th.c2},items:t2.items}); }
+    out.push({name:t2.name,beat:t2.beat,W:36,H:12,bg:{c1:th.c1,c2:th.c2,grad:th.c1!==th.c2},items:t2.items}); }
   return out;
 }

@@ -57,7 +57,7 @@
 <footer id="ft"></footer>
 <script src="assets/js/store.js?v=29"></script>
 <script src="albums/engine.js?v=3"></script>
-<script src="albums/layouts.js?v=4"></script>
+<script src="albums/layouts.js?v=5"></script>
 <script>(async()=>{await loadCfg();shell('');
  const id=qp('pkg')||'t08';
  const A=await fetch('config/albums.json?v='+Date.now()).then(r=>r.json());
@@ -80,6 +80,16 @@
  }catch(_){ tpls=await Promise.all(p.tpls.map(u=>fetch(u+'?v='+Date.now()).then(r=>r.json()))); }
  const DSET=(p.cat==='baby')?['baby1','baby2','baby3']:(p.cat==='birthday')?['bday1','bday2','bday3']:['couple1','couple2','couple3','couple4','couple5','couple6','couple7'];
  const demo=await Engine.loadPhotos(DSET.map(n=>'albums/demo/'+n+'.jpg'));
+ /* 💒 wedding story: हर beat की अपनी असली sample photos (हल्दी page पर हल्दी!) */
+ let wedMan={},wedCache={};
+ if(p.wedding){ try{ wedMan=await fetch('albums/demo/wed/manifest.json?v='+Date.now()).then(r=>r.json()); }catch(_){ } }
+ async function wedDemo(beat){
+  beat=beat||1; if(wedCache[beat])return wedCache[beat];
+  const f=wedMan[String(beat)]||[];
+  if(!f.length)return demo;
+  const ph=await Engine.loadPhotos(f.map(n=>'albums/demo/wed/'+n));
+  return wedCache[beat]=ph.length?ph:demo;
+ }
  const cv=$('#cv'); let cur=0;
  const names=tpls.map((t,i)=>i===0?'📕 Cover':'📖 '+(t.name||'Design '+i));
  $('#dots').innerHTML=tpls.map((_,i)=>`<i data-i="${i}"></i>`).join('');
@@ -87,7 +97,7 @@
  async function go(i){
   cur=(i+tpls.length)%tpls.length;
   const dpi=Math.min(1600,Math.round(innerWidth*1.6))/tpls[cur].W;
-  await Engine.renderPage(cv,tpls[cur],demo,dpi);
+  await Engine.renderPage(cv,tpls[cur],p.wedding?await wedDemo(tpls[cur].beat):demo,dpi);
   $('#rot').style.display=(tpls[cur].W>2*tpls[cur].H&&innerWidth<560)?'block':'none';
   $('#pgname').textContent=names[cur]+'  •  '+(cur+1)+'/'+tpls.length;
   $$('#dots i').forEach((d,j)=>d.classList.toggle('on',j===cur));
