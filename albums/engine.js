@@ -254,9 +254,8 @@ async function renderPage(cv,tpl,photos,dpi){
       photos.forEach((im,j)=>{ if(used.has(j))return; const sc=Math.abs(Math.log((im.width/im.height)/srr)); if(sc<bs){bs=sc;bi=j;} });
       const im=photos[bi]; used.add(bi);
       it.photo=im; it.pr=im.width/im.height;
-      const m=Math.abs(Math.log((im.width/im.height)/srr));
-      if(m>0.55){ it.fit='blur'; it.px=0.5; it.py=0.5; }
-      else if((im.width/im.height)<srr){ it.py=0.22; }
+      /* Dev 17 Oct: photo हमेशा FULL box भरे (cover) — blur पट्टियाँ नहीं; सिर-सुरक्षित crop */
+      if((im.width/im.height)<srr){ it.py=0.22; }
     }
   }
   for(const it of items) drawItem(c,it,dpi,true);

@@ -475,8 +475,7 @@ function renderStrip(){
 function smartFit(sl,im){
   const pr=im.width/im.height, sr=sl.w/sl.h;
   sl.pr=pr; sl.zoom=1; sl.px=0.5;
-  if(Math.abs(Math.log(pr/sr))>0.55){ sl.fit='blur'; sl.py=0.5; }  /* बहुत अलग आकार → पूरी photo, कुछ न कटे */
-  else{ sl.fit='cover'; sl.py=(pr<sr)?0.22:0.5; }                  /* ऊँची photo → ऊपर से (सिर सुरक्षित) */
+  sl.fit='cover'; sl.py=(pr<sr)?0.22:0.5;   /* Dev 17 Oct: हमेशा FULL box (cover) — blur पट्टियाँ नहीं; ऊँची photo → सिर सुरक्षित */
 }
 function assignPhoto(img){
   const sl=S.items[S.sel];
