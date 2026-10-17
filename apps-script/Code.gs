@@ -45,6 +45,20 @@ function doPost(e){
     return json({ok:true});
   }
 
+  if(d.action==='support'){
+    // Support box — customer की problem Sheet में (reply बाद में यहीं लिख देना)
+    sheet('Support',['userId','name','tool','problem','reply','status','time'])
+      .appendRow([d.userId||'', d.name||'', d.tool||'', d.problem||'', '', 'नया', new Date()]);
+    return json({ok:true});
+  }
+
+  if(d.action==='points'){
+    // Share & Earn — task का सबूत (link) pending में; Sheet में status बदलकर 'done' = verify
+    sheet('Points',['userId','name','task','link','points','status','time'])
+      .appendRow([d.userId||'', d.name||'', d.task||'', d.link||'', d.points||0, 'pending', new Date()]);
+    return json({ok:true});
+  }
+
   return json({ok:false,msg:'unknown action'});
 }
 
@@ -61,6 +75,17 @@ function doGet(e){
   h+='<h1>🖨️ Cyber Cafe — Admin Report</h1><div>'
     +'<span class="chip">👥 Users: '+(us.length-1)+'</span>'
     +'<span class="chip">📊 Usage: '+(ug.length-1)+'</span></div>';
+  // Points — pending पहले
+  const pt=sheet('Points',['userId','name','task','link','points','status','time']).getDataRange().getValues();
+  let pend=0; for(let i=1;i<pt.length;i++) if(pt[i][5]==='pending') pend++;
+  h+='<h2>🎁 Points Requests (pending: '+pend+') — verify: Sheet में status बदलो done</h2><table><tr><th>User</th><th>नाम</th><th>Task</th><th>Link</th><th>Points</th><th>Status</th><th>समय</th></tr>';
+  for(let i=pt.length-1;i>=1 && i>pt.length-100;i--) h+='<tr><td><b>'+pt[i][0]+'</b></td><td>'+pt[i][1]+'</td><td>'+pt[i][2]+'</td><td>'+(pt[i][3]?('<a href="'+pt[i][3]+'" target="_blank">देखो</a>'):'')+'</td><td>'+pt[i][4]+'</td><td>'+(pt[i][5]==='pending'?'⏳':'✅')+' '+pt[i][5]+'</td><td>'+pt[i][6]+'</td></tr>';
+  h+='</table>';
+  // Support messages
+  const sp=sheet('Support',['userId','name','tool','problem','reply','status','time']).getDataRange().getValues();
+  h+='<h2>💬 Support Messages ('+(sp.length-1)+')</h2><table><tr><th>User</th><th>नाम</th><th>Tool</th><th>Problem</th><th>Reply</th><th>Status</th><th>समय</th></tr>';
+  for(let i=sp.length-1;i>=1 && i>sp.length-100;i--) h+='<tr><td><b>'+sp[i][0]+'</b></td><td>'+sp[i][1]+'</td><td>'+sp[i][2]+'</td><td>'+sp[i][3]+'</td><td>'+sp[i][4]+'</td><td>'+sp[i][5]+'</td><td>'+sp[i][6]+'</td></tr>';
+  h+='</table>';
   h+='<h2>👥 Registered Users</h2><table><tr><th>User ID</th><th>नाम</th><th>Phone</th><th>Email</th><th>समय</th></tr>';
   for(let i=1;i<us.length;i++) h+='<tr><td><b>'+us[i][0]+'</b></td><td>'+us[i][1]+'</td><td>'+us[i][2]+'</td><td>'+us[i][3]+'</td><td>'+us[i][4]+'</td></tr>';
   h+='</table><h2>📊 Usage — किसने क्या किया (नए पहले)</h2><table><tr><th>User</th><th>नाम</th><th>Tool</th><th>क्या किया</th><th>समय</th></tr>';
