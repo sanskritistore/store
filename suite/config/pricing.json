@@ -1,7 +1,7 @@
 {
   "v": 1,
   "updated": "2026-10-13",
-  "note": "Print Cafe counter pricing — price aisa ke nuksan na ho. currency INR.",
+  "note": "Sanskriti Store counter pricing — price aisa ke nuksan na ho. currency INR.",
   "photo_prints": [
     { "size": "passport-in", "copies": 8, "price": 100, "label": "पासपोर्ट 8 copies" },
     { "size": "passport-in", "copies": 16, "price": 180, "label": "पासपोर्ट 16 copies" },

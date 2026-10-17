@@ -3,7 +3,7 @@
   "updated": "2026-10-13",
   "note": "SaaS plans (P6) + public pricing. tenant_id har jagah; default tenant 'printcafe' = tenant #0 unlimited.",
   "tenants": [
-    { "id": "printcafe", "name": "CSC Print Cafe (खुद)", "plan": "unlimited", "modules": "all" }
+    { "id": "printcafe", "name": "Sanskriti Store (खुद)", "plan": "unlimited", "modules": "all" }
   ],
   "plans": [
     { "id": "free", "price": 0, "sheets_per_day": 5, "watermark": true, "modules": ["photo"] },
