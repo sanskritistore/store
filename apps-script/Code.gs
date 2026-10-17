@@ -90,5 +90,5 @@ function doGet(e){
   for(let i=1;i<us.length;i++) h+='<tr><td><b>'+us[i][0]+'</b></td><td>'+us[i][1]+'</td><td>'+us[i][2]+'</td><td>'+us[i][3]+'</td><td>'+us[i][4]+'</td></tr>';
   h+='</table><h2>📊 Usage — किसने क्या किया (नए पहले)</h2><table><tr><th>User</th><th>नाम</th><th>Tool</th><th>क्या किया</th><th>समय</th></tr>';
   for(let i=ug.length-1;i>=1 && i>ug.length-300;i--) h+='<tr><td><b>'+ug[i][0]+'</b></td><td>'+ug[i][1]+'</td><td>'+ug[i][2]+'</td><td>'+ug[i][3]+'</td><td>'+ug[i][4]+'</td></tr>';
-  return HtmlService.createHtmlOutput(h+'</table>');
+  return HtmlService.createHtmlOutput(h+'</table>').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
