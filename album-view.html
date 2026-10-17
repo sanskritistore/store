@@ -57,6 +57,7 @@
 <footer id="ft"></footer>
 <script src="assets/js/store.js?v=29"></script>
 <script src="albums/engine.js"></script>
+<script src="albums/layouts.js"></script>
 <script>(async()=>{await loadCfg();shell('');
  const id=qp('pkg')||'t08';
  const A=await fetch('config/albums.json?v='+Date.now()).then(r=>r.json());
@@ -72,11 +73,15 @@
  $('#vpg').textContent=p.pages+' pages';
  $('#vgo').href='album-builder.html?pkg='+p.id;
  // templates + demo photos
- const tpls=await Promise.all(p.tpls.map(u=>fetch(u+'?v='+Date.now()).then(r=>r.json())));
+ let tpls;
+ try{ /* 20-page book: असली cover + 19 themed pages (44-layout library) */
+   const cover=await fetch(p.tpls[0]+'?v='+Date.now()).then(r=>r.json());
+   tpls=[cover,...composePages(p.theme,19)];
+ }catch(_){ tpls=await Promise.all(p.tpls.map(u=>fetch(u+'?v='+Date.now()).then(r=>r.json()))); }
  const DSET=(p.cat==='baby')?['baby1','baby2','baby3']:(p.cat==='birthday')?['bday1','bday2','bday3']:['couple1','couple2','couple3','couple4','couple5','couple6','couple7'];
  const demo=await Engine.loadPhotos(DSET.map(n=>'albums/demo/'+n+'.jpg'));
  const cv=$('#cv'); let cur=0;
- const names=['📕 Cover','📖 पेज Design 1','📖 पेज Design 2','📖 पेज Design 3'];
+ const names=tpls.map((t,i)=>i===0?'📕 Cover':'📖 '+(t.name||'Design '+i));
  $('#dots').innerHTML=tpls.map((_,i)=>`<i data-i="${i}"></i>`).join('');
  $$('#dots i').forEach(d=>d.onclick=()=>go(+d.dataset.i));
  async function go(i){

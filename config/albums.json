@@ -24,7 +24,13 @@
     "albums/t06-p1.json",
     "albums/t06-p2.json",
     "albums/t06-p3.json"
-   ]
+   ],
+   "theme": {
+    "c1": "#5b1a1a",
+    "c2": "#3d0f0f",
+    "acc": "#d4af37",
+    "txt": "#f2e3c6"
+   }
   },
   {
    "id": "t07",
@@ -50,7 +56,13 @@
     "albums/t07-p1.json",
     "albums/t07-p2.json",
     "albums/t07-p3.json"
-   ]
+   ],
+   "theme": {
+    "c1": "#eef2e6",
+    "c2": "#dde7cf",
+    "acc": "#a8894f",
+    "txt": "#3a2a1a"
+   }
   },
   {
    "id": "t08",
@@ -76,7 +88,13 @@
     "albums/t08-p1.json",
     "albums/t08-p2.json",
     "albums/t08-p3.json"
-   ]
+   ],
+   "theme": {
+    "c1": "#0f3d3a",
+    "c2": "#092723",
+    "acc": "#c9a86a",
+    "txt": "#f2e3c6"
+   }
   },
   {
    "id": "t09",
@@ -102,7 +120,13 @@
     "albums/t09-p1.json",
     "albums/t09-p2.json",
     "albums/t09-p3.json"
-   ]
+   ],
+   "theme": {
+    "c1": "#241611",
+    "c2": "#120a07",
+    "acc": "#c9a86a",
+    "txt": "#f2e3c6"
+   }
   },
   {
    "id": "t11",
@@ -128,7 +152,13 @@
     "albums/t11-p1.json",
     "albums/t11-p2.json",
     "albums/t11-p3.json"
-   ]
+   ],
+   "theme": {
+    "c1": "#101d42",
+    "c2": "#081029",
+    "acc": "#c9a86a",
+    "txt": "#f2e3c6"
+   }
   },
   {
    "id": "t02",
@@ -154,7 +184,13 @@
     "albums/t02-p1.json",
     "albums/t02-p2.json",
     "albums/t02-p3.json"
-   ]
+   ],
+   "theme": {
+    "c1": "#16233f",
+    "c2": "#0b1220",
+    "acc": "#c9a86a",
+    "txt": "#f2e3c6"
+   }
   },
   {
    "id": "t12",
@@ -180,7 +216,13 @@
     "albums/t12-p1.json",
     "albums/t12-p2.json",
     "albums/t12-p3.json"
-   ]
+   ],
+   "theme": {
+    "c1": "#fbf6ef",
+    "c2": "#fbf6ef",
+    "acc": "#f0b7c3",
+    "txt": "#3a2a1a"
+   }
   },
   {
    "id": "t03",
@@ -206,7 +248,13 @@
     "albums/t03-p1.json",
     "albums/t03-p2.json",
     "albums/t03-p3.json"
-   ]
+   ],
+   "theme": {
+    "c1": "#e8f5e9",
+    "c2": "#cdebd2",
+    "acc": "#c9a86a",
+    "txt": "#3a2a1a"
+   }
   },
   {
    "id": "t04",
@@ -232,7 +280,13 @@
     "albums/t04-p1.json",
     "albums/t04-p2.json",
     "albums/t04-p3.json"
-   ]
+   ],
+   "theme": {
+    "c1": "#fde8e8",
+    "c2": "#f8d0d0",
+    "acc": "#c9a86a",
+    "txt": "#3a2a1a"
+   }
   },
   {
    "id": "t05",
@@ -258,7 +312,13 @@
     "albums/t05-p1.json",
     "albums/t05-p2.json",
     "albums/t05-p3.json"
-   ]
+   ],
+   "theme": {
+    "c1": "#1c1a16",
+    "c2": "#0f0e0c",
+    "acc": "#c9a86a",
+    "txt": "#f2e3c6"
+   }
   },
   {
    "id": "t10",
@@ -284,7 +344,13 @@
     "albums/t10-p1.json",
     "albums/t10-p2.json",
     "albums/t10-p3.json"
-   ]
+   ],
+   "theme": {
+    "c1": "#faf8f4",
+    "c2": "#faf8f4",
+    "acc": "#c9a86a",
+    "txt": "#3a2a1a"
+   }
   }
  ],
  "samples": [

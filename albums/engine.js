@@ -145,6 +145,7 @@ function drawItem(c,it,sc,forExport){
     const mkPath=(ox,oy)=>{ const path=new Path2D();
       if(it.shape==='circle'){ const r=Math.min(W,H)/2; path.arc(ox+W/2,oy+H/2,r,0,7); }
       else if(it.shape==='oval'){ path.ellipse(ox+W/2,oy+H/2,W/2,H/2,0,0,7); }
+      else if(it.shape==='tri'){ path.moveTo(ox,oy+H); path.lineTo(ox+W,oy+H); path.lineTo(ox+W,oy); path.closePath(); }
       else if(it.shape==='arch'){ const r=W/2, top=oy+r;
         path.moveTo(ox,oy+H); path.lineTo(ox,top); path.arc(ox+r,top,r,Math.PI,0); path.lineTo(ox+W,oy+H); path.closePath(); }
       else if(it.shape==='round'){ const r=Math.min(W,H)*0.09;
@@ -162,7 +163,19 @@ function drawItem(c,it,sc,forExport){
       const sr=it.photo.width/it.photo.height, tr=W/H;
       let dw,dh;
       if(sr>tr){ dh=H; dw=H*sr; } else { dw=W; dh=W/sr; }
+      if(it.bw){ o.filter='grayscale(1)'; }
       o.drawImage(it.photo, (W-dw)/2, (H-dh)/2, dw, dh);
+      if(it.bw){ o.filter='none'; }
+      if(it.fadeR>0){ /* radial fade — किनारे घुलकर गायब (Dev: photo apas me merge) */
+        const f=Math.min(it.fadeR,0.92);
+        o.globalCompositeOperation='destination-in';
+        const g=o.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*0.72);
+        g.addColorStop(0,'rgba(0,0,0,1)');
+        g.addColorStop(Math.max(0.08,1-f*1.15),'rgba(0,0,0,1)');
+        g.addColorStop(1,'rgba(0,0,0,0)');
+        o.fillStyle=g; o.fillRect(0,0,W,H);
+        o.globalCompositeOperation='source-over';
+      }
       if(it.fade>0){
         const f=Math.min(it.fade,0.9);
         o.globalCompositeOperation='destination-in';
