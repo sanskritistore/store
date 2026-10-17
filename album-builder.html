@@ -57,7 +57,7 @@ header span{font-size:12px;color:#999;flex:1;white-space:nowrap;overflow:hidden;
 <input type="file" id="filePhotos" accept="image/*" multiple hidden>
 <input type="file" id="fileTpl" accept=".json" hidden>
 <div id="toast"></div>
-<script src="albums/layouts.js"></script>
+<script src="albums/layouts.js?v=3"></script>
 <script>
 'use strict';
 /* ================= STATE ================= */
@@ -253,13 +253,16 @@ function drawItem(c,it,sc,forExport){
         o.drawImage(it.photo,(W-dw)*px,(H-dh)*py,dw,dh);
         if(it.bw){ o.filter='none'; }
       }
-      if(it.fadeR>0){ /* radial fade — किनारे घुलकर गायब (Dev: photo apas me merge) */
-        const f=Math.min(it.fadeR,0.92);
+      if(it.fadeR>0){ /* 4-तरफ़ feather — हर किनारा पूरी तरह घुलता है, joint का पता नहीं चलता (Dev: 2 photo he ya 4, ek hi lage) */
+        const f=Math.min(it.fadeR,0.5);
         o.globalCompositeOperation='destination-in';
-        const g=o.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*0.72);
-        g.addColorStop(0,'rgba(0,0,0,1)');
-        g.addColorStop(Math.max(0.08,1-f*1.15),'rgba(0,0,0,1)');
-        g.addColorStop(1,'rgba(0,0,0,0)');
+        let g=o.createLinearGradient(0,0,W,0);   /* बाएँ↔दाएँ */
+        g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(f,'rgba(0,0,0,1)');
+        g.addColorStop(1-f,'rgba(0,0,0,1)'); g.addColorStop(1,'rgba(0,0,0,0)');
+        o.fillStyle=g; o.fillRect(0,0,W,H);
+        g=o.createLinearGradient(0,0,0,H);       /* ऊपर↔नीचे */
+        g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(f,'rgba(0,0,0,1)');
+        g.addColorStop(1-f,'rgba(0,0,0,1)'); g.addColorStop(1,'rgba(0,0,0,0)');
         o.fillStyle=g; o.fillRect(0,0,W,H);
         o.globalCompositeOperation='source-over';
       }
