@@ -11,7 +11,21 @@
  <div class="empty" id="cyberbox" style="display:none">
   <div style="font-size:52px">🖨️</div><h3 style="margin:10px 0">Cyber Cafe</h3>
   <p>खुद online बनाएँ — free software, बिना app डाउनलोड किए 👇</p>
-  <div class="grid" style="margin-top:16px;text-align:left">
+  <div id="userchip" style="display:none;margin-top:10px;font-weight:700"></div>
+  <div id="regbox" style="max-width:340px;margin:14px auto 0;display:none">
+   <div style="background:#fff;border:2px solid #8E2A32;border-radius:14px;padding:16px">
+    <b>🎁 Free Registration — 30 सेकंड</b>
+    <p style="font-size:13px;margin:4px 0 10px">Register करो → अपनी User ID पाओ → सारे tools खुलेंगे</p>
+    <input class="search" id="rname" placeholder="👤 आपका नाम" style="margin:4px 0">
+    <input class="search" id="rphone" placeholder="📱 Phone number (10 अंक)" inputmode="numeric" maxlength="10" style="margin:4px 0">
+    <input class="search" id="remail" placeholder="📧 Email" type="email" style="margin:4px 0">
+    <input class="search" id="rotp" placeholder="🔢 Email में आया OTP (6 अंक)" inputmode="numeric" maxlength="6" style="margin:4px 0;display:none">
+    <button class="btn btn-p" id="rbtn" style="width:100%;margin-top:8px">📧 OTP भेजें</button>
+    <div id="rmsg" style="font-size:13px;margin-top:8px;min-height:18px"></div>
+   </div>
+  </div>
+  <div id="lockmsg" style="display:none;margin-top:14px">🔒 tools खोलने के लिए ऊपर free registration करें ☝️</div>
+  <div class="grid" id="toolswrap" style="margin-top:16px;text-align:left">
    <a class="cat card" href="photo-studio.html"><div class="cat-t" style="padding:16px"><h3>📸 Photo Studio</h3><p>Passport/Visa फोटो — crop, सुंदर चेहरा, print sheet</p></div></a>
    <a class="cat card" href="card-studio.html"><div class="cat-t" style="padding:16px"><h3>🪪 Card Studio</h3><p>Aadhaar/PAN/PVC card — सही size में print</p></div></a>
    <a class="cat card" href="doc-studio.html"><div class="cat-t" style="padding:16px"><h3>📄 Doc Studio</h3><p>फ़ोन की फोटो → साफ़ document print</p></div></a>
@@ -21,6 +35,7 @@
 </section>
 <footer id="ft"></footer>
 <script src="assets/js/store.js?v=30"></script>
+<script src="assets/js/cyber-gate.js?v=1"></script>
 <script>(async()=>{await loadCfg();
  const id=qp('c'),cat=CFG.cats.find(x=>x.id===id)||CFG.cats[0];
  if(cat.custom){location.href='frames.html'}
@@ -31,4 +46,29 @@
   ||'<div class="empty">कोई product नहीं मिला 😕</div>'};
  render('');$('#q').oninput=e=>render(e.target.value);
  if(!items.length){$('#cyberbox').style.display='block';$('#list').style.display='none';$('#q').style.display='none';$('#cyberwa').href=wa('नमस्ते! मुझे '+cat.name+' के बारे में जानकारी चाहिए।')}
+ /* --- Cyber Cafe registration gate (17-10) --- */
+ const tw=$('#toolswrap'),rb=$('#regbox'),uc=$('#userchip'),msg=$('#rmsg');
+ const setLock=on=>{tw.style.opacity=on?.45:1;tw.style.pointerEvents=on?'none':'auto';$('#lockmsg').style.display=on?'block':'none'};
+ function showUser(){const u=SC.user();
+  if(u){uc.style.display='block';uc.innerHTML='👤 '+u.name+' · <span style="color:#8E2A32">'+u.id+'</span> &nbsp;<a href="#" id="lg" style="font-size:12px;font-weight:400">(बदलें)</a>';$('#lg').onclick=e=>{e.preventDefault();SC.logout()};rb.style.display='none';setLock(false)}
+  else{uc.style.display='none';rb.style.display='block';setLock(true)}}
+ showUser(); if(qp('need'))toast('पहले free registration करें 😊');
+ let pend=null;
+ $('#rbtn').onclick=async()=>{const name=$('#rname').value.trim(),phone=$('#rphone').value.trim(),email=$('#remail').value.trim(),otp=$('#rotp').value.trim();
+  if(!pend){
+   if(name.length<2)return msg.textContent='❌ नाम लिखो';
+   if(!/^\d{10}$/.test(phone))return msg.textContent='❌ सही 10 अंकों का phone लिखो';
+   if(!/^\S+@\S+\.\S+$/.test(email))return msg.textContent='❌ सही email लिखो';
+   msg.textContent='⏳ OTP भेजा जा रहा है...';$('#rbtn').disabled=true;
+   const r=await SC.sendOtp(name,phone,email);$('#rbtn').disabled=false;
+   if(r.direct){showUser();toast('🎉 Registration हो गया! आपकी ID: '+r.user.id);SC.track('register','direct');return}
+   if(r.ok){pend={name,phone,email};$('#rotp').style.display='block';$('#rbtn').textContent='✓ OTP डालकर शुरू करें';msg.textContent='📧 OTP email पर भेजा गया — 10 मिनट valid (spam folder भी देखें)'}
+   else msg.textContent='❌ '+(r.msg||'फिर कोशिश करें');
+  }else{
+   if(otp.length!==6)return msg.textContent='❌ 6 अंकों का OTP डालो';
+   msg.textContent='⏳ जाँच हो रही है...';
+   const r=await SC.verifyOtp(pend.name,pend.phone,pend.email,otp);
+   if(r.ok){showUser();toast('🎉 Registration हो गया! आपकी ID: '+r.user.id);SC.track('register','otp')}
+   else msg.textContent='❌ '+(r.msg||'गलत OTP');}};
+ $$('#toolswrap a').forEach(a=>a.addEventListener('click',()=>SC.track('tool',a.getAttribute('href'))));
 })();</script></body></html>
