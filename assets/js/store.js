@@ -17,9 +17,11 @@ function toast(t){const d=document.createElement('div');d.textContent=t;
  document.body.appendChild(d);setTimeout(()=>d.remove(),1800)}
 /* ---- shell (header/footer single source) ---- */
 function shell(active){
+ const hid=(CFG.cats||[]).filter(c=>c.hide).map(c=>c.id); /* config में hide:true → nav से गायब (डेटा सुरक्षित) */
  const nav=[['index.html','होम','home'],['category.html?c=oils','कच्ची घानी तेल','oils'],
   ['category.html?c=spices','मसाले','spices'],['frames.html','🖼️ फोटो फ्रेम','frames'],['acrylic.html','💎 Acrylic','acrylic'],['album.html','📚 फोटो एल्बम','album'],
-  ['category.html?c=handicraft','हैंडीक्राफ्ट','handicraft'],['category.html?c=cyber','साइबर सेवाएँ','cyber']];
+  ['category.html?c=handicraft','हैंडीक्राफ्ट','handicraft'],['category.html?c=cyber','🖨️ Cyber Cafe','cyber']]
+  .filter(n=>!hid.includes(n[2]));
  $('#hd').innerHTML=`<div class="wrap"><div class="hd-in">
   <a class="logo" href="index.html">${CFG.site.name}<span>STORES & DIGITAL</span></a>
   <div class="hd-acts"><a class="hd-cart" href="cart.html">🛒<b class="cart-count"></b></a>
@@ -30,8 +32,7 @@ function shell(active){
   <div><h3>${CFG.site.name}</h3><p style="margin-top:6px;font-size:14px">${CFG.site.tagline}</p>
    <p style="margin-top:10px;font-size:13.5px">📍 ${CFG.site.city}</p></div>
   <div><h4 style="color:#fff">खरीदारी</h4><p style="font-size:14px;margin-top:6px">
-   <a href="category.html?c=oils">कच्ची घानी तेल</a><br><a href="category.html?c=spices">मसाले</a><br>
-   <a href="frames.html">फोटो फ्रेम</a><br><a href="category.html?c=handicraft">हैंडीक्राफ्ट</a></p></div>
+   ${(CFG.cats||[]).filter(c=>!c.hide).map(c=>`<a href="${c.custom?'frames.html':'category.html?c='+c.id}">${c.name}</a>`).concat(['<a href="acrylic.html">💎 Acrylic</a>','<a href="album.html">📚 फोटो एल्बम</a>']).join('<br>')}</p></div>
   <div><h4 style="color:#fff">संपर्क</h4><p style="font-size:14px;margin-top:6px">
    <a href="${wa('नमस्ते!')}" target="_blank">WhatsApp करें</a><br>📞 98731 52325</p></div></div>
   <div class="cpr" id="cprT">© ${new Date().getFullYear()} Sanskriti Stores & Digital • ❤️ के साथ बनाया गया</div></div>`;
