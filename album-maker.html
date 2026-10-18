@@ -45,12 +45,13 @@ input[type=range]{width:100%}
 }
 </style>
 <script src="assets/js/admin-gate.js"></script>
+<script src="assets/js/torn.js"></script>
 <script>gateRequire()</script>
 </head>
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v2.7 ✨ (PLP)</span>
+  <span class="badge">FREE v2.8 📄 (फटा किनारा)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
@@ -120,6 +121,14 @@ input[type=range]{width:100%}
     <div class="srow">
       <button class="sbtn" id="btnBdZero" title="Photo की border पूरी हटाओ">🚫 Border हटाओ</button>
       <button class="sbtn" id="btnBdGold" title="सुनहरी border वापस">🖼️ Border दो</button>
+    </div>
+    <div class="srow">
+      <button class="sbtn" id="btnTorn" title="फटे कागज़ वाला किनारा — दबाते जाओ, किनारा बदलता जाएगा">📄 फटा किनारा: बंद</button>
+    </div>
+    <div class="srow">
+      <button class="sbtn" id="btnTornLess" title="फटेपन की गहराई घटाओ">फटा −</button>
+      <button class="sbtn" id="btnTornMore" title="फटेपन की गहराई बढ़ाओ">फटा +</button>
+      <button class="sbtn" id="btnPaper" title="रंगीन कागज़ panel (photo नहीं) — दबाते जाओ, रंग बदलता जाएगा">🎨 कागज़: बंद</button>
     </div>
 
     <h3>✨ सजावट (Decor)</h3>
@@ -401,12 +410,47 @@ $('btnBdGold').onclick=()=>{
   snapshot(); it.bdW=it.bdW||0.04; it.bdC=it.bdC||'#c9a227';
   $('bdW').value=it.bdW; $('bdC').value=it.bdC; draw(); toast('🖼️ Border वापस ✓');
 };
+/* ---- 📄 फटा किनारा (torn paper edge) — Karizma style ---- */
+const TORN_ORDER=['','R','L','T','B'];
+const TORN_LABEL={'':'बंद',R:'दायाँ',L:'बायाँ',T:'ऊपर',B:'नीचे'};
+$('btnTorn').onclick=()=>{ const it=S.items[S.sel];
+  if(!it||it.kind!=='photo') return toast('पहले photo slot चुनो');
+  snapshot();
+  const i=(TORN_ORDER.indexOf(it.tornSide||'')+1)%TORN_ORDER.length;
+  it.tornSide=TORN_ORDER[i]||undefined;
+  if(it.tornSide){ it.tornDepth=it.tornDepth||0.12; if(!it.tornSeed) it.tornSeed=(Math.random()*1e9)|0; }
+  $('btnTorn').textContent='📄 फटा किनारा: '+TORN_LABEL[it.tornSide||''];
+  draw(); toast('📄 फटा किनारा: '+TORN_LABEL[it.tornSide||'']+(it.tornSide?' — फटा +/− से गहराई':''));
+};
+const tornStep=d=>{ const it=S.items[S.sel];
+  if(!it||it.kind!=='photo') return toast('पहले photo slot चुनो');
+  if(!it.tornSide) return toast('पहले 📄 फटा किनारा चालू करो');
+  snapshot(); it.tornDepth=Math.min(0.35,Math.max(0.04,+(((it.tornDepth||0.12)+d).toFixed(2))));
+  draw(); toast('फटा गहराई '+Math.round(it.tornDepth*100)+'%');
+};
+$('btnTornMore').onclick=()=>tornStep(0.03);
+$('btnTornLess').onclick=()=>tornStep(-0.03);
+/* ---- 🎨 कागज़ panel (photo की जगह रंगीन कागज़ — छोटी photos उस पर) ---- */
+const PAPER=['','#d98a9e','#f2e3c6','#7a2434','#1d3a2f','#22303f'];
+const PAPER_L={'':'बंद','#d98a9e':'गुलाबी','#f2e3c6':'क्रीम','#7a2434':'मैरून','#1d3a2f':'गहरा हरा','#22303f':'गहरा नीला'};
+$('btnPaper').onclick=()=>{ const it=S.items[S.sel];
+  if(!it||it.kind!=='photo') return toast('पहले photo slot चुनो');
+  snapshot();
+  const i=(PAPER.indexOf(it.fill||'')+1)%PAPER.length;
+  it.fill=PAPER[i]||undefined;
+  $('btnPaper').textContent='🎨 कागज़: '+(PAPER_L[it.fill||'']);
+  draw(); toast('🎨 कागज़: '+(PAPER_L[it.fill||''])+(it.fill?' — photo भरोगे तो photo ही दिखेगी':''));
+};
 let _lastSelForUI=-99;
 function syncPhotoUI(){
   const it=S.items[S.sel];
   if(it&&it.kind==='photo'){
     $('bdW').value=it.bdW||0; if(it.bdC) $('bdC').value=it.bdC;
     $('phFade').value=it.fade||0;
+    if(typeof TORN_LABEL!=='undefined'){
+      $('btnTorn').textContent='📄 फटा किनारा: '+TORN_LABEL[it.tornSide||''];
+      $('btnPaper').textContent='🎨 कागज़: '+(PAPER_L[it.fill||'']);
+    }
   }
 }
 $('btnRot').onclick=()=>{ const it=S.items[S.sel]; if(it&&it.kind==='decor'&&it.decor==='palm'){ it.rot=((it.rot||0)+15)%360; draw(); } else toast('पहले 🌿 पत्ती चुनो'); };
@@ -722,6 +766,7 @@ function drawItem(c,it,sc,forExport){
   if(it.kind==='photo'){
     const W=it.w*sc, H=it.h*sc;
     const mkPath=(ox,oy)=>{ const path=new Path2D();
+      if(it.tornSide&&(!it.shape||it.shape==='rect'||it.shape==='round')){ tornRect(path,ox,oy,W,H,it.tornSide,it.tornDepth,it.tornSeed,sc); return path; } /* 📄 फटा किनारा */
       if(it.shape==='circle'){ const r=Math.min(W,H)/2; path.arc(ox+W/2,oy+H/2,r,0,7); }
       else if(it.shape==='oval'){ path.ellipse(ox+W/2,oy+H/2,W/2,H/2,0,0,7); }
       else if(it.shape==='arch'){ const r=W/2, top=oy+r;
@@ -768,12 +813,15 @@ function drawItem(c,it,sc,forExport){
       }
       c.drawImage(oc,X,Y,oc.width,oc.height);
     }else{
+      if(it.fill){ c.fillStyle=it.fill; c.fill(path); }  /* 🎨 कागज़ panel — photo नहीं, रंगीन कागज़ */
+      else{
       c.fillStyle='#ffffff14'; c.fill(path);
       c.strokeStyle='#ffffff55'; c.setLineDash([8,6]); c.lineWidth=2; c.stroke(path); c.setLineDash([]);
       if(!forExport){
         c.fillStyle='#ffffff88'; c.font=`${Math.min(W,H)*0.22}px sans-serif`;
         c.textAlign='center'; c.textBaseline='middle';
         c.fillText('📷', X+W/2, Y+H/2);
+      }
       }
     }
     if(it.bdW>0){ c.strokeStyle=it.bdC; c.lineWidth=it.bdW*sc;

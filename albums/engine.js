@@ -143,6 +143,7 @@ function drawItem(c,it,sc,forExport){
   if(it.kind==='photo'){
     const W=it.w*sc, H=it.h*sc;
     const mkPath=(ox,oy)=>{ const path=new Path2D();
+      if(it.tornSide&&(!it.shape||it.shape==='rect'||it.shape==='round')){ tornRect(path,ox,oy,W,H,it.tornSide,it.tornDepth,it.tornSeed,sc); return path; } /* 📄 फटा किनारा */
       if(it.shape==='circle'){ const r=Math.min(W,H)/2; path.arc(ox+W/2,oy+H/2,r,0,7); }
       else if(it.shape==='oval'){ path.ellipse(ox+W/2,oy+H/2,W/2,H/2,0,0,7); }
       else if(it.shape==='tri'){ path.moveTo(ox,oy+H); path.lineTo(ox+W,oy+H); path.lineTo(ox+W,oy); path.closePath(); }
@@ -244,11 +245,11 @@ async function renderPage(cv,tpl,photos,dpi){
   else c.fillStyle=(tpl.bg&&tpl.bg.c1)||'#222';
   c.fillRect(0,0,cv.width,cv.height);
   // photo slots में photos बाँटो (aspect-match + सिर-सुरक्षित fit)
-  const slots=tpl.items.filter(it=>it.kind==='photo');
+  const slots=tpl.items.filter(it=>it.kind==='photo'&&!it.fill); /* 🎨 कागज़ panel photo slot नहीं */
   const items=tpl.items.map(it=>({...it}));
   const used=new Set();
   for(const it of items){
-    if(it.kind==='photo'&&!it.photo&&photos&&photos.length){
+    if(it.kind==='photo'&&!it.photo&&!it.fill&&photos&&photos.length){
       if(used.size>=photos.length) used.clear();
       const srr=it.w/it.h; let bi=0,bs=1e9;
       photos.forEach((im,j)=>{ if(used.has(j))return; const sc=Math.abs(Math.log((im.width/im.height)/srr)); if(sc<bs){bs=sc;bi=j;} });

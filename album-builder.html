@@ -77,6 +77,7 @@ header span{font-size:12px;color:#999;flex:1;white-space:nowrap;overflow:hidden;
 <input type="file" id="fileTpl" accept=".json" hidden>
 <div id="toast"></div>
 <script src="albums/layouts.js?v=5"></script>
+<script src="assets/js/torn.js?v=1"></script>
 <script>
 'use strict';
 /* ================= STATE ================= */
@@ -235,6 +236,7 @@ function drawItem(c,it,sc,forExport){
   if(it.kind==='photo'){
     const W=it.w*sc, H=it.h*sc;
     const mkPath=(ox,oy)=>{ const path=new Path2D();
+      if(it.tornSide&&(!it.shape||it.shape==='rect'||it.shape==='round')){ tornRect(path,ox,oy,W,H,it.tornSide,it.tornDepth,it.tornSeed,sc); return path; } /* 📄 फटा किनारा */
       if(it.shape==='circle'){ const r=Math.min(W,H)/2; path.arc(ox+W/2,oy+H/2,r,0,7); }
       else if(it.shape==='oval'){ path.ellipse(ox+W/2,oy+H/2,W/2,H/2,0,0,7); }
       else if(it.shape==='tri'){ path.moveTo(ox,oy+H); path.lineTo(ox+W,oy+H); path.lineTo(ox+W,oy); path.closePath(); }
@@ -297,12 +299,15 @@ function drawItem(c,it,sc,forExport){
       }
       c.drawImage(oc,X,Y,oc.width,oc.height);
     }else{
+      if(it.fill){ c.fillStyle=it.fill; c.fill(path); }  /* 🎨 कागज़ panel */
+      else{
       c.fillStyle='#ffffff14'; c.fill(path);
       c.strokeStyle='#ffffff55'; c.setLineDash([8,6]); c.lineWidth=2; c.stroke(path); c.setLineDash([]);
       if(!forExport){
         c.fillStyle='#ffffff88'; c.font=`${Math.min(W,H)*0.22}px sans-serif`;
         c.textAlign='center'; c.textBaseline='middle';
         c.fillText('📷', X+W/2, Y+H/2);
+      }
       }
     }
     if(it.bdW>0){ c.strokeStyle=it.bdC; c.lineWidth=it.bdW*sc;
@@ -409,8 +414,8 @@ function renderPages(){
     x.fillRect(0,0,c.width,c.height);
     p.items.forEach(it=>drawItem(x,it,dpi,true));
     t.appendChild(c);
-    const tot=p.items.filter(it=>it.kind==='photo').length;
-    const fil=p.items.filter(it=>it.kind==='photo'&&it.photo).length;
+    const tot=p.items.filter(it=>it.kind==='photo'&&!it.fill).length;
+    const fil=p.items.filter(it=>it.kind==='photo'&&!it.fill&&it.photo).length;
     const b=document.createElement('span'); b.className='pb'; b.textContent=fil+'/'+tot; b.style.color=fil===tot?'#7f7':'#fc6';
     const nm=document.createElement('span'); nm.className='pn'; nm.textContent=NAMES[i]||('पेज '+(i+1));
     t.appendChild(b); t.appendChild(nm);
@@ -492,7 +497,7 @@ $('filePhotos').onchange=async e=>{
   if(weak) msg+=' · '+weak+' हल्की (छोटे box में लगाऊँगा)';
   if(dup) msg+=' · '+dup+' duplicate हटाई';
   /* photos डालते ही पूरी book AUTO-BHARO */
-  const empty=allPageItems().some(it=>it.kind==='photo'&&!it.photo);
+  const empty=allPageItems().some(it=>it.kind==='photo'&&!it.photo&&!it.fill);
   if(photos.length&&empty){ aiFill(msg); }
   else toast(msg);
 };
@@ -537,7 +542,7 @@ function aiFill(repMsg){
   const idxs=S.pages.length? S.pages.map((_,i)=>i): [0];
   for(const i of idxs){
     applyPage(i);
-    const empty=S.items.filter(s=>s.kind==='photo'&&!s.photo).sort((a,b)=>b.w*b.h-a.w*a.h);
+    const empty=S.items.filter(s=>s.kind==='photo'&&!s.photo&&!s.fill).sort((a,b)=>b.w*b.h-a.w*a.h); /* 🎨 कागज़ panel photo slot नहीं */
     const onPage=new Set();
     for(const sl of empty){
       if(!pool.length) pool.push(...photos);                 // photos कम हों तो फिर से इस्तेमाल
