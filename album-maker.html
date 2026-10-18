@@ -39,7 +39,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v1.5 ✨ (अपनी सजावट)</span>
+  <span class="badge">FREE v1.6 ✨ (आईना+हिलाओ)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnLoadJson">📂 JSON खोलें</button>
@@ -128,6 +128,14 @@ input[type=range]{width:100%}
     </div>
 
     <h3>🗑️ चुना हुआ</h3>
+    <div class="srow">
+      <button class="sbtn" id="btnMvL" title="Left">◀</button>
+      <button class="sbtn" id="btnMvU" title="Up">▲</button>
+      <button class="sbtn" id="btnMvD" title="Down">▼</button>
+      <button class="sbtn" id="btnMvR" title="Right">▶</button>
+      <button class="sbtn" id="btnMirH" title="आईना (left-right)">⇄ आईना</button>
+      <button class="sbtn" id="btnMirV" title="उल्टा (up-down)">⇅ उल्टा</button>
+    </div>
     <div class="srow">
       <button class="sbtn" id="btnFront">⬆️ ऊपर लाओ</button>
       <button class="sbtn" id="btnDel" style="color:#f87171">🗑️ हटाओ</button>
@@ -272,6 +280,34 @@ $('txBox').onchange=e=>{ const it=S.items[S.sel]; if(it&&it.kind==='text'){ it.b
 $('btnDecorDel').onclick=()=>{ S.items=S.items.filter(i=>i.kind!=='decor'); S.sel=-1; draw(); };
 $('btnDel').onclick=()=>{ if(S.sel>=0){ S.items.splice(S.sel,1); S.sel=-1; draw(); } };
 $('btnFront').onclick=()=>{ if(S.sel>=0){ const it=S.items.splice(S.sel,1)[0]; S.items.push(it); S.sel=S.items.length-1; draw(); } };
+/* ---- चुने हुए को हिलाओ / आईना ---- */
+function nudge(dx,dy){
+  const it=S.items[S.sel]; if(!it) return toast('पहले canvas पर कुछ चुनो');
+  if(it.cx!=null){ it.cx+=dx; it.cy+=dy; }
+  else{ it.x+=dx; it.y+=dy; }
+  draw();
+}
+$('btnMvL').onclick=()=>nudge(-0.1,0);
+$('btnMvR').onclick=()=>nudge(0.1,0);
+$('btnMvU').onclick=()=>nudge(0,-0.1);
+$('btnMvD').onclick=()=>nudge(0,0.1);
+$('btnMirH').onclick=()=>{
+  const it=S.items[S.sel]; if(!it) return toast('पहले canvas पर कुछ चुनो');
+  if(it.kind==='decor'&&it.decor==='img'){ it.fx=-(it.fx||1); draw(); }
+  else if(it.kind==='decor'&&it.decor==='palm'){ it.flip=-(it.flip||1); draw(); }
+  else toast('आईना सिर्फ सजावट पर चलता है');
+};
+$('btnMirV').onclick=()=>{
+  const it=S.items[S.sel]; if(!it) return toast('पहले canvas पर कुछ चुनो');
+  if(it.kind==='decor'&&it.decor==='img'){ it.fy=-(it.fy||1); draw(); }
+  else toast('उल्टा सिर्फ अपनी सजावट पर चलता है');
+};
+window.addEventListener('keydown',e=>{
+  const tag=e.target.tagName;
+  if(tag==='INPUT'||tag==='SELECT'||tag==='TEXTAREA') return;
+  const m={ArrowLeft:[-0.1,0],ArrowRight:[0.1,0],ArrowUp:[0,-0.1],ArrowDown:[0,0.1]}[e.key];
+  if(m&&S.sel>=0){ e.preventDefault(); nudge(m[0],m[1]); }
+});
 document.querySelectorAll('.shp').forEach(b=>b.onclick=()=>{ const it=S.items[S.sel]; if(it&&it.kind==='photo'){ it.shape=b.dataset.s; draw(); } });
 $('bdC').oninput=e=>{ const it=S.items[S.sel]; if(it&&it.kind==='photo'){ it.bdC=e.target.value; draw(); } };
 $('bdW').oninput=e=>{ const it=S.items[S.sel]; if(it&&it.kind==='photo'){ it.bdW=+e.target.value; draw(); } };
@@ -355,7 +391,14 @@ function drawDecor(c,it,sc){
   c.save();
   c.strokeStyle=it.c; c.fillStyle=it.c;
   if(it.decor==='img'){
-    if(it.img){ c.globalAlpha=it.alpha!=null?it.alpha:1; c.drawImage(it.img,it.x*sc,it.y*sc,it.w*sc,it.h*sc); }
+    if(it.img){
+      c.globalAlpha=it.alpha!=null?it.alpha:1;
+      const X=it.x*sc,Y=it.y*sc,W=it.w*sc,H=it.h*sc;
+      if(it.fx===-1||it.fy===-1){
+        c.translate(X+W/2,Y+H/2); c.scale(it.fx||1,it.fy||1);
+        c.drawImage(it.img,-W/2,-H/2,W,H);
+      } else c.drawImage(it.img,X,Y,W,H);
+    }
     c.restore(); return;
   }
   if(it.decor==='corners'){
