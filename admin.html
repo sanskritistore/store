@@ -90,7 +90,10 @@
   const ph=$('#oph').value.trim();
   if(ph.length<10){ $('#oerr').textContent='❌ 10 अंकों का mobile डालो'; $('#oerr').style.display='block'; return; }
   try{ const r=await fetch(B+'/auth/send-otp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:ph})});
-   if(!r.ok) throw 0; $('#ostep').style.display='block'; $('#oerr').style.display='none'; $('#oov').focus();
+   if(!r.ok) throw 0; const j=await r.json().catch(()=>({}));
+   $('#ostep').style.display='block'; $('#oerr').style.display='none';
+   if(j.dev_otp){ $('#oerr').style.display='block'; $('#oerr').style.color='#1a7a34'; $('#oerr').textContent='🔑 OTP: '+j.dev_otp+' (SMS service अभी बंद है — OTP यहीं दिख रहा)'; }
+   $('#oov').focus();
   }catch(e){ $('#oerr').textContent='❌ OTP नहीं गया — network/backend check'; $('#oerr').style.display='block'; }
  };
  $('#ook').onclick=async()=>{
