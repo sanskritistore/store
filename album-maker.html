@@ -39,7 +39,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v1.8 ✨ (बीच-पकड़)</span>
+  <span class="badge">FREE v1.9 ✨ (Shortcuts)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnLoadJson">📂 JSON खोलें</button>
@@ -188,7 +188,7 @@ const CFG={
 const S={ W:36, H:12,               // page inches
   bg:{c1:'#f7f1e8',c2:'#ecdfc8',grad:true},
   items:[],                          // {kind:'photo'|'text', ...}  z-order = array order
-  sel:-1, scale:30,                  // preview px per inch
+  sel:-1, selArr:[], scale:30,       // selArr = Shift से चुनी कई चीज़ें
 };
 
 const $=id=>document.getElementById(id);
@@ -200,7 +200,7 @@ function toast(m){ const t=$('toast'); t.textContent=m; t.style.display='block';
 CFG.sizes.forEach((s,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=s.n; $('selSize').appendChild(o); });
 $('selSize').onchange=e=>{ const s=CFG.sizes[e.target.value]; setSize(s.w,s.h); };
 $('btnCustomSize').onclick=()=>{ const w=+$('inW').value, h=+$('inH').value; if(w>0&&h>0&&w<=60&&h<=60) setSize(w,h); else toast('⚠️ सही size डालो (max 60)'); };
-function setSize(w,h){ S.W=w; S.H=h; S.sel=-1; fit(); draw(); }
+function setSize(w,h){ S.W=w; S.H=h; S.sel=-1; S.selArr=[]; fit(); draw(); }
 
 function fit(){
   const sc=Math.min(CFG.maxPrev/S.W, CFG.maxPrev/S.H);
@@ -282,7 +282,7 @@ $('bdGlow').onchange=e=>{ const it=S.items[S.sel]; if(it&&it.kind==='photo'){ it
 $('txF').onchange=e=>{ const it=S.items[S.sel]; if(it&&it.kind==='text'){ it.f=e.target.value||undefined; draw(); } };
 $('txBox').onchange=e=>{ const it=S.items[S.sel]; if(it&&it.kind==='text'){ it.box=e.target.checked||undefined; draw(); } };
 $('btnDecorDel').onclick=()=>{ S.items=S.items.filter(i=>i.kind!=='decor'); S.sel=-1; draw(); };
-$('btnDel').onclick=()=>{ if(S.sel>=0){ S.items.splice(S.sel,1); S.sel=-1; draw(); } };
+$('btnDel').onclick=delSel;
 $('btnFront').onclick=()=>{ if(S.sel>=0){ const it=S.items.splice(S.sel,1)[0]; S.items.push(it); S.sel=S.items.length-1; draw(); } };
 /* ---- चुने हुए को हिलाओ / आईना ---- */
 function nudge(dx,dy){
@@ -309,28 +309,44 @@ $('btnMirV').onclick=()=>{
 window.addEventListener('keydown',e=>{
   const tag=e.target.tagName;
   if(tag==='INPUT'||tag==='SELECT'||tag==='TEXTAREA') return;
+  if(e.key==='Delete'||e.key==='Backspace'){ delSel(); e.preventDefault(); return; }
+  if(e.key==='Enter'||e.key==='Escape'){ S.sel=-1; S.selArr=[]; draw(); e.preventDefault(); return; }
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='c'){ copySel(); return; }
   const m={ArrowLeft:[-0.1,0],ArrowRight:[0.1,0],ArrowUp:[0,-0.1],ArrowDown:[0,0.1]}[e.key];
   if(m&&S.sel>=0){ e.preventDefault(); nudge(m[0],m[1]); }
 });
+/* ---- चुनी चीज़ें हटाओ (एक या कई) ---- */
+function delSel(){
+  if(S.selArr.length){ const s=new Set(S.selArr); S.items=S.items.filter((_,i)=>!s.has(i)); S.sel=-1; S.selArr=[]; draw(); toast('🗑️ '+s.size+' चीज़ें हट गईं'); }
+  else if(S.sel>=0){ S.items.splice(S.sel,1); S.sel=-1; draw(); }
+}
 /* ---- चुनी चीज़ की नकल (Copy-Paste) ---- */
 let itemClip=null;
 function copySel(){
-  const it=S.items[S.sel];
-  if(!it) return toast('पहले canvas पर कुछ चुनो');
-  itemClip=JSON.parse(JSON.stringify({...it, img:undefined, photo:undefined}));
-  if(it.decor==='img') itemClip._img=it.img;
-  if(it.kind==='photo') itemClip._photo=it.photo;
-  toast('📋 Copy हो गया — Paste दबाओ');
+  const idxs=S.selArr.length? [...S.selArr] : (S.sel>=0? [S.sel] : []);
+  if(!idxs.length) return toast('पहले canvas पर कुछ चुनो');
+  itemClip=idxs.map(i=>{
+    const it=S.items[i];
+    const c=JSON.parse(JSON.stringify({...it, img:undefined, photo:undefined}));
+    if(it.decor==='img') c._img=it.img;
+    if(it.kind==='photo') c._photo=it.photo;
+    return c;
+  });
+  toast('📋 Copy हो गया'+(idxs.length>1?' ('+idxs.length+' चीज़ें)':'')+' — Paste दबाओ');
 }
 function pasteItem(){
-  if(!itemClip) return toast('पहले कुछ Copy करो');
-  const it={...itemClip, id:uid++};
-  delete it._img; delete it._photo;
-  if(itemClip._img) it.img=itemClip._img;
-  if(itemClip._photo!==undefined) it.photo=itemClip._photo;
-  S.items.push(it); S.sel=S.items.length-1; draw();
-  toast('📄 नकल तैयार — उसी जगह! अब हिलाओ/आईना करो');
+  if(!itemClip||!itemClip.length) return toast('पहले कुछ Copy करो');
+  const newIdx=[];
+  itemClip.forEach(c=>{
+    const it={...c, id:uid++};
+    delete it._img; delete it._photo;
+    if(c._img) it.img=c._img;
+    if(c._photo!==undefined) it.photo=c._photo;
+    S.items.push(it); newIdx.push(S.items.length-1);
+  });
+  S.sel=newIdx[newIdx.length-1]; S.selArr=newIdx.length>1? newIdx : [];
+  draw();
+  toast('📄 नकल तैयार — उसी जगह!'+(newIdx.length>1?' ('+newIdx.length+' चीज़ें)':''));
 }
 $('btnCopy').onclick=copySel;
 $('btnPasteItem').onclick=pasteItem;
@@ -581,6 +597,17 @@ function draw(){
   ctx.fillRect(0,0,cv.width,cv.height);
   S.items.forEach(it=>drawItem(ctx,it,sc,false));
   // selection
+  // Shift से चुनी बाकी चीज़ों के हल्के outline
+  S.selArr.forEach(i=>{
+    if(i===S.sel) return;
+    const m=S.items[i]; if(!m) return;
+    ctx.strokeStyle='#38bdf8'; ctx.lineWidth=1.5; ctx.setLineDash([4,4]);
+    if(m.kind==='decor'&&m.decor==='img'){ ctx.strokeRect(m.x*sc,m.y*sc,m.w*sc,m.h*sc); }
+    else if(m.kind==='decor'&&m.cx!=null){ ctx.beginPath(); ctx.arc(m.cx*sc,m.cy*sc,(m.size||2)*sc/2+6,0,7); ctx.stroke(); }
+    else if(m.kind==='photo'){ ctx.strokeRect(m.x*sc,m.y*sc,m.w*sc,m.h*sc); }
+    else{ const w=ctx.measureText(m.text).width+20, h=m.size*sc+14; ctx.strokeRect(m.x*sc-w/2, m.y*sc-h/2, w, h); }
+    ctx.setLineDash([]);
+  });
   const it=S.items[S.sel];
   if(it){
     ctx.strokeStyle='#ff9933'; ctx.lineWidth=2; ctx.setLineDash([6,4]);
@@ -659,7 +686,9 @@ cv.addEventListener('pointerdown',e=>{
     const HS=14/(sc*(cv.getBoundingClientRect().width/cv.width));
     if(Math.hypot(pp.x-(it.x+it.w/2),pp.y-(it.y+it.h/2))<HS*1.2){   // बीच का पकड़-बिंदु
       try{cv.setPointerCapture(e.pointerId);}catch(_){}
-      drag={mode:'mv',sx:p.x,sy:p.y,f0:{...it}};
+      drag=(S.selArr.length>1)
+        ? {mode:'mv',sx:p.x,sy:p.y,f0:{...it}, multi:S.selArr.map(j=>({j,f:{...S.items[j]}}))}
+        : {mode:'mv',sx:p.x,sy:p.y,f0:{...it}};
       return;
     }
     const cs=[[it.x,it.y],[it.x+it.w,it.y],[it.x,it.y+it.h],[it.x+it.w,it.y+it.h]];
@@ -676,7 +705,9 @@ cv.addEventListener('pointerdown',e=>{
     const HS=14/(sc*(cv.getBoundingClientRect().width/cv.width));
     if(Math.hypot(p.x-(it.x+it.w/2),p.y-(it.y+it.h/2))<HS*1.2){   // बीच का पकड़-बिंदु
       try{cv.setPointerCapture(e.pointerId);}catch(_){}
-      drag={mode:'mv',sx:p.x,sy:p.y,f0:{...it}};
+      drag=(S.selArr.length>1)
+        ? {mode:'mv',sx:p.x,sy:p.y,f0:{...it}, multi:S.selArr.map(j=>({j,f:{...S.items[j]}}))}
+        : {mode:'mv',sx:p.x,sy:p.y,f0:{...it}};
       return;
     }
     const cs=[[it.x,it.y],[it.x+it.w,it.y],[it.x,it.y+it.h],[it.x+it.w,it.y+it.h]];
@@ -701,11 +732,27 @@ cv.addEventListener('pointerdown',e=>{
       ? (Math.hypot(p.x-t.cx,p.y-t.cy) < (t.size||2)/2+0.3)
       : hitText(t,p,sc);
     if(inside){
-      S.sel=i; try{cv.setPointerCapture(e.pointerId);}catch(_){}
+      // Shift = कई चीज़ें चुनो/hटाओ (toggle)
+      if(e.shiftKey){
+        const k=S.selArr.indexOf(i);
+        if(k>=0){ S.selArr.splice(k,1); if(S.sel===i) S.sel=S.selArr.length? S.selArr[S.selArr.length-1] : -1; }
+        else{ if(!S.selArr.length&&S.sel>=0&&S.sel!==i) S.selArr.push(S.sel); S.selArr.push(i); S.sel=i; }
+        draw(); return;
+      }
+      // कई चुनी हैं और उन्हीं में छुआ = सब साथ हिलो
+      if(S.selArr.length>1 && S.selArr.includes(i)){
+        try{cv.setPointerCapture(e.pointerId);}catch(_){}
+        drag={mode:'mv',sx:p.x,sy:p.y,f0:{...S.items[i]},
+          multi:S.selArr.map(j=>({j,f:{...S.items[j]}}))};
+        return;
+      }
+      S.selArr=[]; S.sel=i; try{cv.setPointerCapture(e.pointerId);}catch(_){}
       drag={mode:'mv',sx:p.x,sy:p.y,f0:{...t}};
       draw(); return;
     }
   }
+  if(e.shiftKey) return;   // shift + खाली जगह = चुनाव वैसा ही
+  S.selArr=[];
   S.sel=-1; draw();
 });
 cv.addEventListener('pointermove',e=>{
@@ -713,7 +760,10 @@ cv.addEventListener('pointermove',e=>{
   const p=pos(e), it=S.items[S.sel];
   const dx=p.x-drag.sx, dy=p.y-drag.sy, f=drag.f0;
   if(drag.mode==='mv'){
-    if(it.kind==='decor'&&f.cx!=null){ it.cx=f.cx+dx; it.cy=f.cy+dy; }
+    if(drag.multi){ drag.multi.forEach(m=>{ const mi=S.items[m.j]; if(!mi) return;
+      if(mi.kind==='decor'&&m.f.cx!=null){ mi.cx=m.f.cx+dx; mi.cy=m.f.cy+dy; }
+      else{ mi.x=m.f.x+dx; mi.y=m.f.y+dy; } }); }
+    else if(it.kind==='decor'&&f.cx!=null){ it.cx=f.cx+dx; it.cy=f.cy+dy; }
     else{ it.x=f.x+dx; it.y=f.y+dy; }
   }else{
     // resize: keep opposite corner fixed
@@ -759,7 +809,7 @@ $('fileJson').onchange=e=>{
 function loadTemplate(j){
   try{
     const d=JSON.parse(j);
-    S.W=d.W; S.H=d.H; S.bg=d.bg; S.sel=-1;
+    S.W=d.W; S.H=d.H; S.bg=d.bg; S.sel=-1; S.selArr=[];
     S.items=d.items.map(it=>{
       if(it.kind==='photo'){
         const o={...it}; delete o.photoData;
