@@ -39,11 +39,14 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v2.1 ✨ (Undo)</span>
+  <span class="badge">FREE v2.2 ✨ (Zoom)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
   <button class="tbtn" id="btnRedo" title="Ctrl+Y">↪️ Redo</button>
+  <button class="tbtn" id="btnZOut" title="Zoom out (Ctrl/Alt + wheel)">🔍−</button>
+  <button class="tbtn" id="btnZFit" style="min-width:64px">100%</button>
+  <button class="tbtn" id="btnZIn" title="Zoom in (Ctrl/Alt + wheel)">🔍+</button>
   <button class="tbtn" id="btnLoadJson">📂 JSON खोलें</button>
   <button class="tbtn acc" id="btnExport">🖨️ Print PNG (300 DPI)</button>
 </div>
@@ -210,10 +213,23 @@ $('btnCustomSize').onclick=()=>{ const w=+$('inW').value, h=+$('inH').value; if(
 function setSize(w,h){ S.W=w; S.H=h; S.sel=-1; S.selArr=[]; fit(); draw(); }
 
 function fit(){
-  const sc=Math.min(CFG.maxPrev/S.W, CFG.maxPrev/S.H);
+  const sc=Math.min(CFG.maxPrev/S.W, CFG.maxPrev/S.H)*zoom;
   S.scale=sc;
   cv.width=Math.round(S.W*sc); cv.height=Math.round(S.H*sc);
 }
+/* ---- Zoom (buttons + Ctrl/Alt+wheel + phone pinch) ---- */
+let zoom=1;
+function setZoom(z){
+  zoom=Math.min(5,Math.max(0.4,z));
+  fit(); draw();
+  $('btnZFit').textContent=Math.round(zoom*100)+'%';
+}
+$('btnZIn').onclick=()=>setZoom(zoom*1.25);
+$('btnZOut').onclick=()=>setZoom(zoom/1.25);
+$('btnZFit').onclick=()=>setZoom(1);
+cv.addEventListener('wheel',e=>{
+  if(e.ctrlKey||e.altKey||e.metaKey){ e.preventDefault(); setZoom(zoom*(e.deltaY<0?1.15:1/1.15)); }
+},{passive:false});
 
 /* ================= BACKGROUND ================= */
 CFG.bgPresets.forEach(p=>{
@@ -694,6 +710,7 @@ function draw(){
 
 /* ================= POINTER (mobile-safe: r.width ratio!) ================= */
 let drag=null;
+const ptrs=new Map(); let pinch0=null;
 /* बीच का पकड़-बिंदु (move handle) — गोला + 4 तीर */
 function drawMoveHandle(c,cx,cy){
   const r=13;
@@ -729,6 +746,14 @@ function hitText(it,p,sc){
   return p.x>it.x-w/2-0.2 && p.x<it.x+w/2+0.2 && p.y>it.y-h/2-0.2 && p.y<it.y+h/2+0.2;
 }
 cv.addEventListener('pointerdown',e=>{
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ptrs.size===2){   // दो उंगलियाँ = pinch zoom शुरू
+    drag=null;
+    const a=[...ptrs.values()];
+    pinch0={d:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y), z:zoom};
+    return;
+  }
+  if(ptrs.size>2) return;
   const p=pos(e), sc=S.scale;
   // corner handles of selected photo (rotated हो तो point को उल्टा घुमाओ)
   const it=S.items[S.sel];
@@ -811,6 +836,13 @@ cv.addEventListener('pointerdown',e=>{
   S.sel=-1; draw();
 });
 cv.addEventListener('pointermove',e=>{
+  if(ptrs.has(e.pointerId)) ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ptrs.size===2&&pinch0){   // pinch zoom चल रहा
+    const a=[...ptrs.values()];
+    const d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);
+    if(pinch0.d>0) setZoom(pinch0.z*d/pinch0.d);
+    return;
+  }
   if(!drag) return;
   const p=pos(e), it=S.items[S.sel];
   const dx=p.x-drag.sx, dy=p.y-drag.sy, f=drag.f0;
@@ -828,7 +860,8 @@ cv.addEventListener('pointermove',e=>{
   }
   draw();
 });
-cv.addEventListener('pointerup',()=>{ drag=null; });
+cv.addEventListener('pointerup',e=>{ ptrs.delete(e.pointerId); if(ptrs.size<2) pinch0=null; drag=null; });
+cv.addEventListener('pointercancel',e=>{ ptrs.delete(e.pointerId); if(ptrs.size<2) pinch0=null; drag=null; });
 cv.addEventListener('dblclick',e=>{
   const it=S.items[S.sel];
   if(it&&it.kind==='text'){
