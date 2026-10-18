@@ -39,9 +39,11 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v2.0 ✨ (Layers)</span>
+  <span class="badge">FREE v2.1 ✨ (Undo)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
+  <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
+  <button class="tbtn" id="btnRedo" title="Ctrl+Y">↪️ Redo</button>
   <button class="tbtn" id="btnLoadJson">📂 JSON खोलें</button>
   <button class="tbtn acc" id="btnExport">🖨️ Print PNG (300 DPI)</button>
 </div>
@@ -305,6 +307,7 @@ $('btnLBot').onclick=()=>layerMove('back');
 /* ---- चुने हुए को हिलाओ / आईना ---- */
 function nudge(dx,dy){
   const it=S.items[S.sel]; if(!it) return toast('पहले canvas पर कुछ चुनो');
+  snapshot();
   if(it.cx!=null){ it.cx+=dx; it.cy+=dy; }
   else{ it.x+=dx; it.y+=dy; }
   draw();
@@ -324,9 +327,39 @@ $('btnMirV').onclick=()=>{
   if(it.kind==='decor'&&it.decor==='img'){ it.fy=-(it.fy||1); draw(); }
   else toast('उल्टा सिर्फ अपनी सजावट पर चलता है');
 };
+/* ---- Undo / Redo (Ctrl+Z / Ctrl+Y) ---- */
+let undoStack=[], redoStack=[], lastSnap=0;
+function snapshot(){
+  const now=performance.now();
+  if(now-lastSnap<250) return;      // एक ही action से double snapshot रोको
+  lastSnap=now;
+  undoStack.push({items:S.items.map(it=>({...it})), bg:{...S.bg}, W:S.W, H:S.H});
+  if(undoStack.length>50) undoStack.shift();
+  redoStack=[];
+}
+function undo(){
+  if(!undoStack.length) return toast('वापस जाने को कुछ नहीं');
+  redoStack.push({items:S.items.map(it=>({...it})), bg:{...S.bg}, W:S.W, H:S.H});
+  const s=undoStack.pop();
+  S.items=s.items; S.bg=s.bg; S.W=s.W; S.H=s.H; S.sel=-1; S.selArr=[]; fit(); draw();
+}
+function redo(){
+  if(!redoStack.length) return toast('आगे जाने को कुछ नहीं');
+  undoStack.push({items:S.items.map(it=>({...it})), bg:{...S.bg}, W:S.W, H:S.H});
+  const s=redoStack.pop();
+  S.items=s.items; S.bg=s.bg; S.W=s.W; S.H=s.H; S.sel=-1; S.selArr=[]; fit(); draw();
+}
+$('btnUndo').onclick=undo;
+$('btnRedo').onclick=redo;
+/* हर बदलाव से पहले अपने आप snapshot: canvas drag + सारे buttons */
+document.addEventListener('pointerdown',e=>{ if(e.target===cv) snapshot(); },true);
+document.addEventListener('click',e=>{ if(e.target.closest&&e.target.closest('button')) snapshot(); },true);
+
 window.addEventListener('keydown',e=>{
   const tag=e.target.tagName;
   if(tag==='INPUT'||tag==='SELECT'||tag==='TEXTAREA') return;
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&!e.shiftKey){ undo(); e.preventDefault(); return; }
+  if((e.ctrlKey||e.metaKey)&&(e.key.toLowerCase()==='y'||(e.key.toLowerCase()==='z'&&e.shiftKey))){ redo(); e.preventDefault(); return; }
   if(e.key==='Delete'||e.key==='Backspace'){ delSel(); e.preventDefault(); return; }
   if(e.key==='Enter'||e.key==='Escape'){ S.sel=-1; S.selArr=[]; draw(); e.preventDefault(); return; }
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='c'){ copySel(); return; }
@@ -337,6 +370,7 @@ window.addEventListener('keydown',e=>{
 });
 /* ---- चुनी चीज़ें हटाओ (एक या कई) ---- */
 function delSel(){
+  snapshot();
   if(S.selArr.length){ const s=new Set(S.selArr); S.items=S.items.filter((_,i)=>!s.has(i)); S.sel=-1; S.selArr=[]; draw(); toast('🗑️ '+s.size+' चीज़ें हट गईं'); }
   else if(S.sel>=0){ S.items.splice(S.sel,1); S.sel=-1; draw(); }
 }
@@ -356,6 +390,7 @@ function copySel(){
 }
 function pasteItem(){
   if(!itemClip||!itemClip.length) return toast('पहले कुछ Copy करो');
+  snapshot();
   const newIdx=[];
   itemClip.forEach(c=>{
     const it={...c, id:uid++};
