@@ -40,6 +40,19 @@
   <div id="lerr" style="display:none;color:#B3261E;font-weight:700;font-size:13px;margin:2px 0 8px">❌ गलत username या password</div>
   <button class="btn btn-p btn-b" id="lb" style="width:100%">🔓 खोलें</button>
  </div>
+ <div class="login" id="otpbox" style="display:none">
+  <h2 style="margin:0 0 4px">📱 OTP से खोलें</h2>
+  <p class="sub" style="color:#7a6a5f;font-size:13px">ऑर्डर देखने के लिए एक बार phone OTP चाहिए (token expire होने पर)</p>
+  <label style="font-weight:700;font-size:14px">Mobile</label>
+  <input id="oph" inputmode="numeric" maxlength="10" value="9873152325">
+  <button class="btn btn-o btn-b" id="osend" style="width:100%">📨 OTP भेजो</button>
+  <div id="ostep" style="display:none">
+   <label style="font-weight:700;font-size:14px">OTP</label>
+   <input id="oov" inputmode="numeric" maxlength="6" placeholder="6 अंक">
+   <button class="btn btn-p btn-b" id="ook" style="width:100%">✓ खोलें</button>
+  </div>
+  <div id="oerr" style="display:none;color:#B3261E;font-weight:700;font-size:13px;margin:6px 0 0">❌ OTP नहीं माना — फिर कोशिश करें</div>
+ </div>
  <div id="orders" style="display:none">
   <div class="topbar"><h2 style="margin:0">🧰 Sanskriti Tools</h2>
    <div><a class="btn btn-o" href="index.html" target="_blank">🏬 Store देखें</a>
@@ -68,13 +81,29 @@
  let tok=localStorage.getItem('sk_adm_tok')||'';
  function hdr(){return {'Authorization':'Bearer '+tok}}
  async function api(p,o){o=o||{};o.headers=Object.assign(hdr(),o.headers||{});
-  const r=await fetch(B+p,o);if(r.status===401||r.status===403){logout();throw new Error('login expire')}
+  const r=await fetch(B+p,o);if(r.status===401||r.status===403){showOtp();throw new Error('login expire')}
   if(!r.ok)throw new Error('HTTP '+r.status);return r}
- function logout(){localStorage.removeItem('sk_adm_tok');tok='';$('#orders').style.display='none';$('#login').style.display='block'}
+ function logout(){localStorage.removeItem('sk_adm_tok');tok='';$('#orders').style.display='none';$('#otpbox').style.display='none';$('#login').style.display='block'}
+ /* token खत्म → password नहीं, OTP step दिखाओ (password तो पास हो चुका!) */
+ function showOtp(){localStorage.removeItem('sk_adm_tok');tok='';$('#orders').style.display='none';$('#login').style.display='none';$('#otpbox').style.display='block'}
+ $('#osend').onclick=async()=>{
+  const ph=$('#oph').value.trim();
+  if(ph.length<10){ $('#oerr').textContent='❌ 10 अंकों का mobile डालो'; $('#oerr').style.display='block'; return; }
+  try{ const r=await fetch(B+'/auth/send-otp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:ph})});
+   if(!r.ok) throw 0; $('#ostep').style.display='block'; $('#oerr').style.display='none'; $('#oov').focus();
+  }catch(e){ $('#oerr').textContent='❌ OTP नहीं गया — network/backend check'; $('#oerr').style.display='block'; }
+ };
+ $('#ook').onclick=async()=>{
+  try{ const r=await fetch(B+'/auth/verify-otp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:$('#oph').value.trim(),otp:$('#oov').value.trim()})});
+   if(!r.ok) throw 0; const j=await r.json(); tok=j.access_token||j.token||'';
+   if(!tok) throw 0; localStorage.setItem('sk_adm_tok',tok);
+   $('#otpbox').style.display='none'; $('#orders').style.display='block'; loadOrders();
+  }catch(e){ $('#oerr').textContent='❌ OTP नहीं माना — फिर कोशिश करें'; $('#oerr').style.display='block'; }
+ };
  /* login — username/password gate */
  async function unlock(){
   const ok=await gateTry($('#lu').value,$('#lpw').value);
-  if(ok){$('#login').style.display='none';$('#orders').style.display='block';loadOrders()}
+   if(ok){$('#login').style.display='none'; if(tok){$('#orders').style.display='block';loadOrders()} else showOtp();}
   else{$('#lerr').style.display='block';$('#lpw').value='';$('#lpw').focus();
    $('.login').animate?0:0; $('.login').style.transform='translateX(6px)';setTimeout(()=>$('.login').style.transform='',120)}
  }
