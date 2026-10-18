@@ -39,7 +39,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v1.6 ✨ (आईना+हिलाओ)</span>
+  <span class="badge">FREE v1.7 ✨ (Copy-Paste)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnLoadJson">📂 JSON खोलें</button>
@@ -139,6 +139,10 @@ input[type=range]{width:100%}
     <div class="srow">
       <button class="sbtn" id="btnFront">⬆️ ऊपर लाओ</button>
       <button class="sbtn" id="btnDel" style="color:#f87171">🗑️ हटाओ</button>
+    </div>
+    <div class="srow">
+      <button class="sbtn" id="btnCopy">📋 Copy</button>
+      <button class="sbtn" id="btnPasteItem">📄 Paste (नकल)</button>
     </div>
 
     <h3>📚 मेरी Templates</h3>
@@ -259,7 +263,7 @@ $('btnDecorUp').onclick=()=>$('fileDecor').click();
 $('fileDecor').onchange=e=>{ const f=e.target.files[0]; if(f) addDecorImg(f); e.target.value=''; };
 window.addEventListener('paste',e=>{
   const ii=[...(e.clipboardData?.items||[])].find(i=>i.type&&i.type.startsWith('image/'));
-  if(!ii) return;
+  if(!ii){ pasteItem(); return; }   // clipboard में image नहीं = चुनी चीज़ की नकल
   const f=ii.getAsFile(); if(!f) return;
   e.preventDefault(); addDecorImg(f);
 });
@@ -305,9 +309,34 @@ $('btnMirV').onclick=()=>{
 window.addEventListener('keydown',e=>{
   const tag=e.target.tagName;
   if(tag==='INPUT'||tag==='SELECT'||tag==='TEXTAREA') return;
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='c'){ copySel(); return; }
   const m={ArrowLeft:[-0.1,0],ArrowRight:[0.1,0],ArrowUp:[0,-0.1],ArrowDown:[0,0.1]}[e.key];
   if(m&&S.sel>=0){ e.preventDefault(); nudge(m[0],m[1]); }
 });
+/* ---- चुनी चीज़ की नकल (Copy-Paste) ---- */
+let itemClip=null;
+function copySel(){
+  const it=S.items[S.sel];
+  if(!it) return toast('पहले canvas पर कुछ चुनो');
+  itemClip=JSON.parse(JSON.stringify({...it, img:undefined, photo:undefined}));
+  if(it.decor==='img') itemClip._img=it.img;
+  if(it.kind==='photo') itemClip._photo=it.photo;
+  toast('📋 Copy हो गया — Paste दबाओ');
+}
+function pasteItem(){
+  if(!itemClip) return toast('पहले कुछ Copy करो');
+  const it={...itemClip, id:uid++};
+  delete it._img; delete it._photo;
+  if(itemClip._img) it.img=itemClip._img;
+  if(itemClip._photo!==undefined) it.photo=itemClip._photo;
+  if(it.cx!=null){ it.cx+=0.4; it.cy+=0.4; }
+  else{ it.x+=0.4; it.y+=0.4; }
+  S.items.push(it); S.sel=S.items.length-1; draw();
+  if(itemClip.cx!=null){ itemClip.cx=it.cx; itemClip.cy=it.cy; } else{ itemClip.x=it.x; itemClip.y=it.y; }  // अगली नकल आगे गिरे
+  toast('📄 नकल तैयार — खींचकर जगह बदलो');
+}
+$('btnCopy').onclick=copySel;
+$('btnPasteItem').onclick=pasteItem;
 document.querySelectorAll('.shp').forEach(b=>b.onclick=()=>{ const it=S.items[S.sel]; if(it&&it.kind==='photo'){ it.shape=b.dataset.s; draw(); } });
 $('bdC').oninput=e=>{ const it=S.items[S.sel]; if(it&&it.kind==='photo'){ it.bdC=e.target.value; draw(); } };
 $('bdW').oninput=e=>{ const it=S.items[S.sel]; if(it&&it.kind==='photo'){ it.bdW=+e.target.value; draw(); } };
