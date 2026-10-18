@@ -359,7 +359,29 @@ function watermark(c,W,H){
 /* ================= TEMPLATE LOAD ================= */
 function tplToPage(d){
   return {W:d.W,H:d.H,bg:d.bg,name:d.name||'पेज',items:d.items.map(it=>{
-    if(it.kind==='photo'){ const o={...it}; delete o.photoData; o.photo=null; return o; }
+    if(it.kind==='photo'){
+      const o={...it}; o.photo=null; delete o.photoData;
+      // Template Maker में भरी photo + उसकी adjust position — builder में वैसी ही
+      if(it.photoData){
+        const img=new Image();
+        img.onload=()=>{
+          o.photo=img; o.pr=img.width/img.height;
+          // maker model (pz + inch px/py) → builder model (zoom + 0-1 px/py)
+          const pz=it.pz||1, pxin=it.px||0, pyin=it.py||0;
+          const cl=v=>Math.min(1,Math.max(0,v));
+          const sr=o.pr, tr=o.w/o.h;
+          let dw0,dh0; if(sr>tr){ dh0=o.h; dw0=o.h*sr; } else { dw0=o.w; dh0=o.w/sr; }
+          const dw=dw0*pz, dh=dh0*pz;
+          o.zoom=pz;
+          o.px=Math.abs(o.w-dw)<0.001?0.5:cl(0.5+pxin/(o.w-dw));
+          o.py=Math.abs(o.h-dh)<0.001?0.5:cl(0.5+pyin/(o.h-dh));
+          delete o.pz;
+          draw(); renderPages();
+        };
+        img.src=it.photoData;
+      }
+      return o;
+    }
     return it; })};
 }
 function applyPage(i){
