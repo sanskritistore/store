@@ -1138,6 +1138,7 @@ $('btnPlpGo').onclick=()=>{
     cat:$('plpCat').value,cover,size:$('plpSize').value.trim()||S.W+'×'+S.H+' inch',
     pages:+$('plpPages').value||20,price:+$('plpPrice').value||4999,mrp:+$('plpMrp').value||(+$('plpPrice').value||4999)+1500,
     rating:4.8,custom:true,utpl:true,
+    wedding:($('plpCat').value==='wedding'),
     theme:{c1:S.bg.c1,c2:S.bg.c2,acc:'#d4af37',txt:'#f2e3c6'},
     includes:['📖 Premium Album Book — '+($('plpPages').value||20)+' pages','🧳 Premium Gift packing']};
   // template JSON — photos खाली (ग्राहक भरेंगे), slots/config पूरे
