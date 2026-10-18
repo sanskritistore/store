@@ -329,11 +329,8 @@ function pasteItem(){
   delete it._img; delete it._photo;
   if(itemClip._img) it.img=itemClip._img;
   if(itemClip._photo!==undefined) it.photo=itemClip._photo;
-  if(it.cx!=null){ it.cx+=0.4; it.cy+=0.4; }
-  else{ it.x+=0.4; it.y+=0.4; }
   S.items.push(it); S.sel=S.items.length-1; draw();
-  if(itemClip.cx!=null){ itemClip.cx=it.cx; itemClip.cy=it.cy; } else{ itemClip.x=it.x; itemClip.y=it.y; }  // अगली नकल आगे गिरे
-  toast('📄 नकल तैयार — खींचकर जगह बदलो');
+  toast('📄 नकल तैयार — उसी जगह! अब हिलाओ/आईना करो');
 }
 $('btnCopy').onclick=copySel;
 $('btnPasteItem').onclick=pasteItem;
