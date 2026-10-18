@@ -39,7 +39,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v1.7 ✨ (Copy-Paste)</span>
+  <span class="badge">FREE v1.8 ✨ (बीच-पकड़)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnLoadJson">📂 JSON खोलें</button>
@@ -590,6 +590,7 @@ function draw(){
         ctx.strokeRect(X,Y,W,H); ctx.setLineDash([]);
         ctx.fillStyle='#ff9933';
         [[X,Y],[X+W,Y],[X,Y+H],[X+W,Y+H]].forEach(([hx,hy])=>{ ctx.fillRect(hx-6,hy-6,12,12); });
+        drawMoveHandle(ctx,X+W/2,Y+H/2);
       }
       else if(it.cx!=null){ ctx.beginPath(); ctx.arc(it.cx*sc,it.cy*sc,(it.size||2)*sc/2+6,0,7); ctx.stroke(); }
       ctx.setLineDash([]);
@@ -601,6 +602,7 @@ function draw(){
       ctx.fillStyle='#ff9933';
       [[X,Y],[X+W,Y],[X,Y+H],[X+W,Y+H]].forEach(([hx,hy])=>{ ctx.fillRect(hx-6,hy-6,12,12); });
       ctx.restore();
+      drawMoveHandle(ctx,X+W/2,Y+H/2);
     }else{
       const w=ctx.measureText(it.text).width+20, h=it.size*sc+14;
       ctx.strokeRect(it.x*sc-w/2, it.y*sc-h/2, w, h); ctx.setLineDash([]);
@@ -610,6 +612,31 @@ function draw(){
 
 /* ================= POINTER (mobile-safe: r.width ratio!) ================= */
 let drag=null;
+/* बीच का पकड़-बिंदु (move handle) — गोला + 4 तीर */
+function drawMoveHandle(c,cx,cy){
+  const r=13;
+  c.save();
+  c.beginPath(); c.arc(cx,cy,r,0,7);
+  c.fillStyle='#ff9933'; c.fill();
+  c.lineWidth=2; c.strokeStyle='#fff'; c.stroke();
+  c.strokeStyle='#fff'; c.lineWidth=2.2; c.lineCap='round';
+  const a=6;  // तीर की लंबाई
+  [[0,-1],[0,1],[-1,0],[1,0]].forEach(([dx,dy])=>{
+    c.beginPath();
+    c.moveTo(cx+dx*3, cy+dy*3);
+    c.lineTo(cx+dx*(3+a), cy+dy*(3+a));
+    c.stroke();
+    // तीर की नोक
+    c.beginPath();
+    const tx=cx+dx*(3+a), ty=cy+dy*(3+a);
+    c.moveTo(tx,ty);
+    c.lineTo(tx-dx*3-dy*2.4, ty-dy*3-dx*2.4);
+    c.moveTo(tx,ty);
+    c.lineTo(tx-dx*3+dy*2.4, ty-dy*3+dx*2.4);
+    c.stroke();
+  });
+  c.restore();
+}
 function pos(e){
   const r=cv.getBoundingClientRect();
   const kx=cv.width/r.width, ky=cv.height/r.height;
@@ -630,6 +657,11 @@ cv.addEventListener('pointerdown',e=>{
   if(it&&it.kind==='photo'){
     const pp=unrot(p,it);
     const HS=14/(sc*(cv.getBoundingClientRect().width/cv.width));
+    if(Math.hypot(pp.x-(it.x+it.w/2),pp.y-(it.y+it.h/2))<HS*1.2){   // बीच का पकड़-बिंदु
+      try{cv.setPointerCapture(e.pointerId);}catch(_){}
+      drag={mode:'mv',sx:p.x,sy:p.y,f0:{...it}};
+      return;
+    }
     const cs=[[it.x,it.y],[it.x+it.w,it.y],[it.x,it.y+it.h],[it.x+it.w,it.y+it.h]];
     for(let i=0;i<4;i++){
       if(Math.abs(pp.x-cs[i][0])<HS&&Math.abs(pp.y-cs[i][1])<HS){
@@ -642,6 +674,11 @@ cv.addEventListener('pointerdown',e=>{
   // img decor के corner handles (resize)
   if(it&&it.kind==='decor'&&it.decor==='img'){
     const HS=14/(sc*(cv.getBoundingClientRect().width/cv.width));
+    if(Math.hypot(p.x-(it.x+it.w/2),p.y-(it.y+it.h/2))<HS*1.2){   // बीच का पकड़-बिंदु
+      try{cv.setPointerCapture(e.pointerId);}catch(_){}
+      drag={mode:'mv',sx:p.x,sy:p.y,f0:{...it}};
+      return;
+    }
     const cs=[[it.x,it.y],[it.x+it.w,it.y],[it.x,it.y+it.h],[it.x+it.w,it.y+it.h]];
     for(let i=0;i<4;i++){
       if(Math.abs(p.x-cs[i][0])<HS&&Math.abs(p.y-cs[i][1])<HS){
@@ -676,7 +713,7 @@ cv.addEventListener('pointermove',e=>{
   const p=pos(e), it=S.items[S.sel];
   const dx=p.x-drag.sx, dy=p.y-drag.sy, f=drag.f0;
   if(drag.mode==='mv'){
-    if(it.kind==='decor'){ it.cx=f.cx+dx; it.cy=f.cy+dy; }
+    if(it.kind==='decor'&&f.cx!=null){ it.cx=f.cx+dx; it.cy=f.cy+dy; }
     else{ it.x=f.x+dx; it.y=f.y+dy; }
   }else{
     // resize: keep opposite corner fixed
