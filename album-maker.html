@@ -39,7 +39,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v1.4 ✨ (रंग-छाप)</span>
+  <span class="badge">FREE v1.5 ✨ (अपनी सजावट)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnLoadJson">📂 JSON खोलें</button>
@@ -108,9 +108,12 @@ input[type=range]{width:100%}
       <button class="sbtn" id="btnFlip">⇄ पलटो</button>
       <button class="sbtn" id="btnDecorDel" style="color:#f87171">✖ सजावट हटाओ</button>
     </div>
+    <div class="srow">
+      <button class="sbtn" id="btnDecorUp" style="flex:1;background:#123524;border:1.5px solid #2ea36b;color:#7df0b5;font-weight:800">📤 अपनी सजावट/Border डालो (या Ctrl+V paste)</button>
+    </div>
 
     <h3>✍️ Text</h3>
-    <div class="srow"><button class="sbtn" id="btnAddText">➕ Text जोड़ो</button></div>
+    <div class="srow"><button class="sbtn" id="btnAddText">➕ Text जोड़ो</button><button class="sbtn" id="btnTextEdit">✏️ Text बदलो</button></div>
     <div class="srow">
       <select id="txF" style="flex:1;padding:6px;background:#1e2430;color:#e8e8e8;border:1px solid #3a4356;border-radius:6px">
         <option value="">साधारण अक्षर</option>
@@ -140,6 +143,7 @@ input[type=range]{width:100%}
 <div id="hint">💡 Slot: खींचो = हिलाओ • कोना = size • 📷 photo भरो</div>
 <div id="toast"></div>
 <input type="file" id="filePhoto" accept="image/*" style="display:none">
+<input type="file" id="fileDecor" accept="image/*" style="display:none">
 <input type="file" id="fileJson" accept=".json" style="display:none">
 
 <script>
@@ -212,11 +216,45 @@ function addPhoto(){
   S.sel=S.items.length-1; draw();
 }
 function addText(){
-  S.items.push({id:uid++,kind:'text',x:S.W/2,y:S.H*0.15,text:'अपना text लिखो',size:+$('txS').value,c:$('txC').value});
-  S.sel=S.items.length-1; draw();
+  const it={id:uid++,kind:'text',x:S.W/2,y:S.H*0.15,text:'अपना text लिखो',size:+$('txS').value,c:$('txC').value};
+  S.items.push(it); S.sel=S.items.length-1; draw();
+  const t=prompt('✏️ अपना text लिखो (जैसे: Rahul ❤ Priya):',it.text);
+  if(t!==null && t.trim()){ it.text=t.trim(); draw(); }
 }
 $('btnAddSlot').onclick=addPhoto;
 $('btnAddText').onclick=addText;
+$('btnTextEdit').onclick=()=>{
+  const it=S.items[S.sel];
+  if(it&&it.kind==='text'){
+    const t=prompt('✏️ Text बदलो:',it.text);
+    if(t!==null && t.trim()){ it.text=t.trim(); draw(); }
+  } else toast('पहले canvas पर text चुनो');
+};
+/* ---- अपनी सजावट: upload + Ctrl+V paste ---- */
+function addDecorImg(file){
+  const rd=new FileReader();
+  rd.onload=()=>{
+    const im=new Image();
+    im.onload=()=>{
+      let w=S.W*0.40, h=w*im.height/im.width;
+      if(h>S.H*0.9){ h=S.H*0.9; w=h*im.width/im.height; }   // page से बाहर न जाए
+      S.items.push({id:uid++,kind:'decor',decor:'img',src:rd.result,img:im,
+        x:(S.W-w)/2,y:(S.H-h)/2,w,h});
+      S.sel=S.items.length-1; draw();
+      toast('🖼️ सजावट जुड़ गई — खींचो, कोने से size करो ✓');
+    };
+    im.src=rd.result;
+  };
+  rd.readAsDataURL(file);
+}
+$('btnDecorUp').onclick=()=>$('fileDecor').click();
+$('fileDecor').onchange=e=>{ const f=e.target.files[0]; if(f) addDecorImg(f); e.target.value=''; };
+window.addEventListener('paste',e=>{
+  const ii=[...(e.clipboardData?.items||[])].find(i=>i.type&&i.type.startsWith('image/'));
+  if(!ii) return;
+  const f=ii.getAsFile(); if(!f) return;
+  e.preventDefault(); addDecorImg(f);
+});
 $('btnCorners').onclick=()=>{ S.items.unshift({id:uid++,kind:'decor',decor:'corners',c:$('dcC').value,size:2.6}); draw(); toast('🌸 कुने लग गए ✓'); };
 $('btnMandala').onclick=()=>{ S.items.unshift({id:uid++,kind:'decor',decor:'mandala',c:$('dcC').value,size:2.8}); draw(); toast('🪷 मंडला लग गया ✓'); };
 $('btnFrameLines').onclick=()=>{ S.items.unshift({id:uid++,kind:'decor',decor:'frame',c:$('dcC').value}); draw(); toast('⬜ लकीर लग गई ✓'); };
@@ -316,6 +354,10 @@ function hexA(hex,a){ const n=parseInt(hex.slice(1),16); return `rgba(${n>>16&25
 function drawDecor(c,it,sc){
   c.save();
   c.strokeStyle=it.c; c.fillStyle=it.c;
+  if(it.decor==='img'){
+    if(it.img){ c.globalAlpha=it.alpha!=null?it.alpha:1; c.drawImage(it.img,it.x*sc,it.y*sc,it.w*sc,it.h*sc); }
+    c.restore(); return;
+  }
   if(it.decor==='corners'){
     const s=(it.size||1.6)*sc;
     const P=0.12*sc;  // page से हल्का अंदर (c.canvas = preview/export दोनों)
@@ -474,7 +516,13 @@ function draw(){
   if(it){
     ctx.strokeStyle='#ff9933'; ctx.lineWidth=2; ctx.setLineDash([6,4]);
     if(it.kind==='decor'){
-      if(it.cx!=null){ ctx.beginPath(); ctx.arc(it.cx*sc,it.cy*sc,(it.size||2)*sc/2+6,0,7); ctx.stroke(); }
+      if(it.decor==='img'){
+        const X=it.x*sc,Y=it.y*sc,W=it.w*sc,H=it.h*sc;
+        ctx.strokeRect(X,Y,W,H); ctx.setLineDash([]);
+        ctx.fillStyle='#ff9933';
+        [[X,Y],[X+W,Y],[X,Y+H],[X+W,Y+H]].forEach(([hx,hy])=>{ ctx.fillRect(hx-6,hy-6,12,12); });
+      }
+      else if(it.cx!=null){ ctx.beginPath(); ctx.arc(it.cx*sc,it.cy*sc,(it.size||2)*sc/2+6,0,7); ctx.stroke(); }
       ctx.setLineDash([]);
     }else if(it.kind==='photo'){
       const X=it.x*sc,Y=it.y*sc,W=it.w*sc,H=it.h*sc;
@@ -522,13 +570,27 @@ cv.addEventListener('pointerdown',e=>{
       }
     }
   }
+  // img decor के corner handles (resize)
+  if(it&&it.kind==='decor'&&it.decor==='img'){
+    const HS=14/(sc*(cv.getBoundingClientRect().width/cv.width));
+    const cs=[[it.x,it.y],[it.x+it.w,it.y],[it.x,it.y+it.h],[it.x+it.w,it.y+it.h]];
+    for(let i=0;i<4;i++){
+      if(Math.abs(p.x-cs[i][0])<HS&&Math.abs(p.y-cs[i][1])<HS){
+        try{cv.setPointerCapture(e.pointerId);}catch(_){}
+        drag={mode:'rs',corner:i,sx:p.x,sy:p.y,f0:{...it}};
+        return;
+      }
+    }
+  }
   // item hit (top-most first)
   for(let i=S.items.length-1;i>=0;i--){
     const t=S.items[i];
-    if(t.kind==='decor' && t.cx==null) continue;   // corners/frame select नहीं होते
+    if(t.kind==='decor' && t.cx==null && t.x==null) continue;   // corners/frame select नहीं होते
     const tp=t.kind==='photo'? unrot(p,t) : p;
     const inside = t.kind==='photo'
       ? (tp.x>=t.x&&tp.x<=t.x+t.w&&tp.y>=t.y&&tp.y<=t.y+t.h)
+      : (t.kind==='decor'&&t.decor==='img')
+      ? (p.x>=t.x&&p.x<=t.x+t.w&&p.y>=t.y&&p.y<=t.y+t.h)
       : t.kind==='decor'
       ? (Math.hypot(p.x-t.cx,p.y-t.cy) < (t.size||2)/2+0.3)
       : hitText(t,p,sc);
@@ -569,6 +631,7 @@ function serialize(){
   return JSON.stringify({v:1,name:'template',W:S.W,H:S.H,bg:S.bg,
     items:S.items.map(it=>{
       if(it.kind==='photo'){ const {photo,...rest}=it; return {...rest, photoData:photo?photo.src:null}; }
+      if(it.kind==='decor'&&it.decor==='img'){ const {img,...rest}=it; return rest; }
       return {...it};
     })},null,1);
 }
@@ -595,6 +658,10 @@ function loadTemplate(j){
       if(it.kind==='photo'){
         const o={...it}; delete o.photoData;
         if(it.photoData){ const im=new Image(); im.onload=()=>{o.photo=im;o.pr=im.width/im.height;draw();}; im.src=it.photoData; o.photo=null; }
+        return o;
+      }
+      if(it.kind==='decor'&&it.decor==='img'&&it.src){
+        const o={...it}; const im=new Image(); im.onload=()=>{o.img=im;draw();}; im.src=it.src; o.img=null;
         return o;
       }
       return it;
