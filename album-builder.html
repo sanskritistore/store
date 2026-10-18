@@ -61,6 +61,8 @@ header span{font-size:12px;color:#999;flex:1;white-space:nowrap;overflow:hidden;
   <button data-a="dn" title="नीचे">⬇️</button>
   <span class="sep"></span>
   <button data-a="rs" title="रीसेट">⟳</button>
+  <button data-a="fi" title="Fade बढ़ाओ — बाहर से अंदर">🌫️+</button>
+  <button data-a="fo" title="Fade घटाओ">🌫️−</button>
   <button data-a="more" title="और options">🎛️</button>
 </div>
 <div id="sheet"></div>
@@ -580,6 +582,8 @@ adj.addEventListener('click',e=>{
   else if(a==='dn') it.py=cp((it.py==null?0.5:it.py)+st);
   else if(a==='rs'){ it.zoom=1; it.px=0.5;
     it.py=(it.fit!=='blur'&&(it.photo.width/it.photo.height)<(it.w/it.h))?0.22:0.5; }
+  else if(a==='fi'){ it.fadeR=Math.min(0.5,Math.round(((it.fadeR||0)+0.05)*100)/100); toast('🌫️ Fade '+Math.round(it.fadeR*200)+'%'); }
+  else if(a==='fo'){ it.fadeR=Math.max(0,Math.round(((it.fadeR||0)-0.05)*100)/100)||undefined; toast(it.fadeR?'🌫️ Fade '+Math.round(it.fadeR*200)+'%':'Fade हट गया'); }
   draw(); renderPages();
 });
 
