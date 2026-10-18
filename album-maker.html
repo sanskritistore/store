@@ -39,7 +39,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v2.4 ✨ (4-Fade)</span>
+  <span class="badge">FREE v2.5 ✨ (Border)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
@@ -105,6 +105,10 @@ input[type=range]{width:100%}
       <button class="sbtn" id="btnFadeIn" title="बाहर से अंदर घुलाव बढ़ाओ — जितनी बार दबाओ उतना fade">🌫️ Fade +</button>
       <button class="sbtn" id="btnFadeOut" title="Fade घटाओ">Fade −</button>
       <button class="sbtn" id="btnFadeZero" title="Fade हटाओ">✖ fade</button>
+    </div>
+    <div class="srow">
+      <button class="sbtn" id="btnBdZero" title="Photo की border पूरी हटाओ">🚫 Border हटाओ</button>
+      <button class="sbtn" id="btnBdGold" title="सुनहरी border वापस">🖼️ Border दो</button>
     </div>
 
     <h3>✨ सजावट (Decor)</h3>
@@ -331,6 +335,26 @@ function fadeStep(dv){
 $('btnFadeIn').onclick=()=>fadeStep(0.05);
 $('btnFadeOut').onclick=()=>fadeStep(-0.05);
 $('btnFadeZero').onclick=()=>{ const it=S.items[S.sel]; if(it&&it.kind==='photo'){ snapshot(); it.fadeR=undefined; draw(); toast('Fade हट गया'); } };
+/* ---- Border एक-tap में हटाओ/दो + select पर slider असली value दिखाए ---- */
+$('btnBdZero').onclick=()=>{
+  const it=S.items[S.sel];
+  if(!it||it.kind!=='photo') return toast('पहले photo slot चुनो');
+  snapshot(); it.bdW=0; $('bdW').value=0; draw(); toast('🚫 Border हट गई ✓');
+};
+$('btnBdGold').onclick=()=>{
+  const it=S.items[S.sel];
+  if(!it||it.kind!=='photo') return toast('पहले photo slot चुनो');
+  snapshot(); it.bdW=it.bdW||0.04; it.bdC=it.bdC||'#c9a227';
+  $('bdW').value=it.bdW; $('bdC').value=it.bdC; draw(); toast('🖼️ Border वापस ✓');
+};
+let _lastSelForUI=-99;
+function syncPhotoUI(){
+  const it=S.items[S.sel];
+  if(it&&it.kind==='photo'){
+    $('bdW').value=it.bdW||0; if(it.bdC) $('bdC').value=it.bdC;
+    $('phFade').value=it.fade||0;
+  }
+}
 $('btnRot').onclick=()=>{ const it=S.items[S.sel]; if(it&&it.kind==='decor'&&it.decor==='palm'){ it.rot=((it.rot||0)+15)%360; draw(); } else toast('पहले 🌿 पत्ती चुनो'); };
 $('btnFlip').onclick=()=>{ const it=S.items[S.sel]; if(it&&it.kind==='decor'&&it.decor==='palm'){ it.flip=-(it.flip||1); draw(); } else toast('पहले 🌿 पत्ती चुनो'); };
 $('bdGlow').onchange=e=>{ const it=S.items[S.sel]; if(it&&it.kind==='photo'){ it.glow=e.target.checked||undefined; draw(); } };
@@ -729,6 +753,7 @@ function draw(){
   ctx.fillRect(0,0,cv.width,cv.height);
   S.items.forEach(it=>drawItem(ctx,it,sc,false));
   // selection
+  if(S.sel!==_lastSelForUI){ _lastSelForUI=S.sel; syncPhotoUI(); }   // चुनाव बदला = sliders असली value दिखाएँ
   // Shift से चुनी बाकी चीज़ों के हल्के outline
   S.selArr.forEach(i=>{
     if(i===S.sel) return;
