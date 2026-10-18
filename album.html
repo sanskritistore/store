@@ -44,6 +44,7 @@
 <script src="assets/js/store.js?v=30"></script>
 <script>(async()=>{await loadCfg();shell('album');
  const A=await fetch('config/albums.json?v='+Date.now()).then(r=>r.json()).catch(()=>({packages:[]}));
+ try{ A.packages=A.packages.concat(JSON.parse(localStorage.getItem('sk_custom_pkgs')||'[]')); }catch(_){} /* Template Maker से बने आपके packages */
  function card(a){
   const save=Math.round((1-a.price/a.mrp)*100);
   return `<a class="fcard card" href="album-view.html?pkg=${a.id}">

@@ -50,7 +50,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v2.6 ✨ (Mobile)</span>
+  <span class="badge">FREE v2.7 ✨ (PLP)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
@@ -183,9 +183,44 @@ input[type=range]{width:100%}
 
     <h3>📚 मेरी Templates</h3>
     <div id="lib"></div>
+
+    <h3>🛍️ Album PLP</h3>
+    <div class="srow"><button class="sbtn" id="btnToPlp" style="background:#8E2A32;color:#fff;border-color:#8E2A32">📦 PLP पर डालो</button></div>
+    <small style="color:#8a93a3;font-size:11px">Template → तुरंत Album page पर card (आपके device पर) + bundle download → LIVE के लिए भेजें</small>
   </div>
   <div id="stage">
     <canvas id="pageCv"></canvas>
+  </div>
+</div>
+
+<!-- 📦 PLP modal -->
+<div id="plpModal" style="display:none;position:fixed;inset:0;background:#000b;z-index:60;align-items:center;justify-content:center;padding:14px">
+  <div style="background:#21252d;border-radius:14px;padding:16px;width:min(420px,96vw);max-height:92vh;overflow-y:auto;border:1px solid #ff993355">
+    <h3 style="margin:0 0 8px;color:#ff9933;font-size:16px">📦 Album PLP पर डालो</h3>
+    <img id="plpCover" style="width:100%;border-radius:8px;border:1px solid #444" alt="cover preview">
+    <label style="font-size:12px;color:#aab">Package नाम</label><input type="text" id="plpName" placeholder="जैसे: शाही विवाह Package">
+    <label style="font-size:12px;color:#aab">English tagline</label><input type="text" id="plpEn" placeholder="Royal Maroon-Gold">
+    <div class="srow">
+      <select id="plpCat" style="flex:1">
+        <option value="wedding">शादी 💍</option><option value="engagement">सगाई 💎</option>
+        <option value="prewedding">प्री-वेडिंग ✨</option><option value="baby">बेबी 👶</option>
+        <option value="birthday">बर्थडे 🎂</option>
+      </select>
+      <input type="text" id="plpCode" placeholder="Code" style="flex:0 0 84px">
+    </div>
+    <div class="srow">
+      <input type="text" id="plpSize" placeholder="Size" style="flex:1">
+      <input type="number" id="plpPages" placeholder="Pages" style="flex:0 0 90px" value="20">
+    </div>
+    <div class="srow">
+      <input type="number" id="plpPrice" placeholder="कीमत ₹" style="flex:1">
+      <input type="number" id="plpMrp" placeholder="MRP ₹" style="flex:1">
+    </div>
+    <div class="srow">
+      <button class="sbtn" id="btnPlpGo" style="background:#16a34a;color:#fff;border-color:#16a34a">✅ PLP पर डालो</button>
+      <button class="sbtn" id="btnPlpCancel">✖ रद्द</button>
+    </div>
+    <small style="color:#8a93a3;font-size:11px">Cover = ऊपर का page (sample photos समेत) • Template JSON में slots खाली रहेंगे (ग्राहक photos भरेंगे)</small>
   </div>
 </div>
 <div id="hint">💡 Slot: खींचो = हिलाओ • कोना = size • 📷 photo भरो</div>
@@ -1074,6 +1109,52 @@ $('btnExport').onclick=()=>{
 
 /* ================= INIT ================= */
 fit(); renderLib(); draw(); if(innerWidth<=700) setTimeout(zoomFitStage,50);
+
+/* ================= 📦 PLP पर डालो — Template → Album page card (खुद करो!) ================= */
+function renderCover(maxW){
+  const dpi=maxW/S.W;
+  const oc=document.createElement('canvas'); oc.width=Math.round(S.W*dpi); oc.height=Math.round(S.H*dpi);
+  const o=oc.getContext('2d'); o.scale(dpi,dpi);
+  if(S.bg.grad){ const g=o.createLinearGradient(0,0,S.W,S.H); g.addColorStop(0,S.bg.c1); g.addColorStop(1,S.bg.c2); o.fillStyle=g; }
+  else o.fillStyle=S.bg.c1;
+  o.fillRect(0,0,S.W,S.H);
+  S.items.forEach(it=>{ try{ drawItem(o,it,1,true); }catch(_){}});   // sc=1 (already scaled), export mode
+  return oc;
+}
+$('btnToPlp').onclick=()=>{
+  if(!S.items.length) return toast('पहले template बनाओ — slots/decor डालो!');
+  try{ $('plpCover').src=renderCover(760).toDataURL('image/jpeg',0.85); }catch(e){ toast('cover नहीं बना — photo CORS?'); return; }
+  $('plpCode').value='U'+Date.now().toString(36).toUpperCase().slice(-4);
+  $('plpSize').value=S.W+'×'+S.H+' inch';
+  $('plpModal').style.display='flex';
+};
+$('btnPlpCancel').onclick=()=>$('plpModal').style.display='none';
+$('btnPlpGo').onclick=()=>{
+  const name=$('plpName').value.trim();
+  if(!name) return toast('Package नाम लिखो');
+  const id='u'+Date.now().toString(36);
+  const cover=renderCover(900).toDataURL('image/jpeg',0.82);
+  const pkg={id,code:$('plpCode').value.trim()||id.toUpperCase(),name,en:$('plpEn').value.trim()||'Custom Design',
+    cat:$('plpCat').value,cover,size:$('plpSize').value.trim()||S.W+'×'+S.H+' inch',
+    pages:+$('plpPages').value||20,price:+$('plpPrice').value||4999,mrp:+$('plpMrp').value||(+$('plpPrice').value||4999)+1500,
+    rating:4.8,custom:true,utpl:true,
+    theme:{c1:S.bg.c1,c2:S.bg.c2,acc:'#d4af37',txt:'#f2e3c6'},
+    includes:['📖 Premium Album Book — '+($('plpPages').value||20)+' pages','🧳 Premium Gift packing']};
+  // template JSON — photos खाली (ग्राहक भरेंगे), slots/config पूरे
+  const tpl=JSON.parse(serialize()); tpl.name=name;
+  tpl.items.forEach(it=>{ if(it.kind==='photo'){ it.photoData=null; delete it.pz; delete it.px; delete it.py; } }); /* photo-भराई viewer/builder के default model से */
+  try{
+    localStorage.setItem('sk_utpl_'+id,JSON.stringify(tpl));
+    const arr=JSON.parse(localStorage.getItem('sk_custom_pkgs')||'[]'); arr.push(pkg);
+    localStorage.setItem('sk_custom_pkgs',JSON.stringify(arr));
+  }catch(e){ toast('storage भर गया — पुराने preview हटाओ'); return; }
+  // bundle download — LIVE करवाने के लिए मुझे भेजें
+  const blob=new Blob([JSON.stringify({pkg,tpl},null,1)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='pkg-'+pkg.code+'-'+(name.replace(/\s+/g,'-'))+'.json'; a.click();
+  $('plpModal').style.display='none';
+  toast('✅ PLP पर दिखेगा! Album page खोलकर देखो — LIVE के लिए bundle file भेजें 📤');
+};
 </script>
 </body>
 </html>

@@ -61,6 +61,7 @@
 <script>(async()=>{await loadCfg();shell('');
  const id=qp('pkg')||'t08';
  const A=await fetch('config/albums.json?v='+Date.now()).then(r=>r.json());
+ try{ A.packages=A.packages.concat(JSON.parse(localStorage.getItem('sk_custom_pkgs')||'[]')); }catch(_){}
  const p=A.packages.find(x=>x.id===id)||A.packages[0];
  document.title='संस्कृति — '+p.name;
  $('#vname').textContent='📖 '+p.name;
@@ -71,10 +72,11 @@
  $('#vsave').textContent=Math.round((1-p.price/p.mrp)*100)+'% कम';
  $('#vsz').textContent=p.size+' • '+p.pages+' pages';
  $('#vpg').textContent=p.pages+' pages';
- $('#vgo').href='album-builder.html?pkg='+p.id;
+ $('#vgo').href=p.utpl?('album-builder.html?upkg='+p.id):('album-builder.html?pkg='+p.id);
  // templates + demo photos
  let tpls;
- try{ /* 20-page book: असली cover + 19 themed pages (44-layout library) */
+ if(p.utpl){ try{ tpls=[JSON.parse(localStorage.getItem('sk_utpl_'+p.id))]; }catch(_){ tpls=null; } }
+ if(!tpls) try{ /* 20-page book: असली cover + 19 themed pages (44-layout library) */
    const cover=await fetch(p.tpls[0]+'?v='+Date.now()).then(r=>r.json());
    tpls=[cover,...(p.wedding?composeWedding(p.theme,19):composePages(p.theme,19))];
  }catch(_){ tpls=await Promise.all(p.tpls.map(u=>fetch(u+'?v='+Date.now()).then(r=>r.json()))); }

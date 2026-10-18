@@ -709,7 +709,13 @@ $('btnOrder').onclick=()=>{
   try{ await document.fonts.load('60px SanskritiScript'); }catch(_){}
   const q=new URLSearchParams(location.search);
   const tpl=q.get('tpl'), pkg=q.get('pkg');
-  if(pkg){
+  const upkg=q.get('upkg');
+  if(upkg){ /* Template Maker से बना custom package (इसी device का localStorage) */
+    try{ const t=JSON.parse(localStorage.getItem('sk_utpl_'+upkg));
+      if(t) loadPackage([t],(t.name||'मेरी Template')); else loadTemplate(DEMO);
+    }catch(_){ loadTemplate(DEMO); }
+  }
+  else if(pkg){
     try{
       const A=await fetch('config/albums.json?v='+Date.now()).then(r=>r.json());
       const p=A.packages.find(x=>x.id===pkg);
