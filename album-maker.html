@@ -39,7 +39,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v2.2 ✨ (Zoom)</span>
+  <span class="badge">FREE v2.3 ✨ (Photo Adjust)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
@@ -88,6 +88,12 @@ input[type=range]{width:100%}
     <div class="srow">
       <button class="sbtn" id="btnFill">📷 Photo भरो</button>
       <button class="sbtn" id="btnClearPhoto">✖ Photo हटाओ</button>
+    </div>
+    <div class="srow">
+      <button class="sbtn" id="btnPhotoMode" title="Photo को slot के अंदर खींचो">✋ Photo adjust</button>
+      <button class="sbtn" id="btnPzOut" title="Photo छोटी">🔍−</button>
+      <button class="sbtn" id="btnPzIn" title="Photo बड़ी">🔍+</button>
+      <button class="sbtn" id="btnPzFit" title="Photo फिर से fit">↺ fit</button>
     </div>
     <div class="srow">
       <button class="sbtn" id="btnRotL" title="बाईं ओर घुमाओ">⟲ -5°</button>
@@ -228,6 +234,14 @@ $('btnZIn').onclick=()=>setZoom(zoom*1.25);
 $('btnZOut').onclick=()=>setZoom(zoom/1.25);
 $('btnZFit').onclick=()=>setZoom(1);
 cv.addEventListener('wheel',e=>{
+  if(S.photoMode){   // adjust mode में wheel = photo zoom
+    const it=S.items[S.sel];
+    if(it&&it.kind==='photo'&&it.photo){
+      e.preventDefault();
+      it.pz=Math.min(6,Math.max(0.3,(it.pz||1)*(e.deltaY<0?1.08:1/1.08)));
+      draw(); return;
+    }
+  }
   if(e.ctrlKey||e.altKey||e.metaKey){ e.preventDefault(); setZoom(zoom*(e.deltaY<0?1.15:1/1.15)); }
 },{passive:false});
 
@@ -324,6 +338,7 @@ $('btnLBot').onclick=()=>layerMove('back');
 function nudge(dx,dy){
   const it=S.items[S.sel]; if(!it) return toast('पहले canvas पर कुछ चुनो');
   snapshot();
+  if(S.photoMode&&it.kind==='photo'&&it.photo){ it.px=(it.px||0)+dx*0.5; it.py=(it.py||0)+dy*0.5; draw(); return; }
   if(it.cx!=null){ it.cx+=dx; it.cy+=dy; }
   else{ it.x+=dx; it.y+=dy; }
   draw();
@@ -437,10 +452,24 @@ $('filePhoto').onchange=e=>{
   const f=e.target.files[0]; if(!f) return;
   const it=S.items[S.sel];
   const img=new Image();
-  img.onload=()=>{ it.photo=img; it.pr=img.width/img.height; draw(); toast('📷 Photo लग गई ✓'); };
+  img.onload=()=>{ it.photo=img; it.pr=img.width/img.height; S.photoMode=true; syncPhotoModeUI(); draw(); toast('📷 Photo लग गई ✓ — अब खींचकर adjust करो'); };
   img.src=URL.createObjectURL(f);
   e.target.value='';
 };
+/* ---- Photo adjust mode: slot के अंदर photo हिलाओ/zoom ---- */
+function syncPhotoModeUI(){ const b=$('btnPhotoMode'); b.style.background=S.photoMode?'#7c2d12':''; b.textContent=S.photoMode?'✋ adjust चालू ✓':'✋ Photo adjust'; }
+$('btnPhotoMode').onclick=()=>{
+  S.photoMode=!S.photoMode; syncPhotoModeUI();
+  toast(S.photoMode?'✋ Photo adjust चालू — photo खींचो / wheel से zoom / 🔍 buttons':'Photo adjust बंद');
+};
+function photoZoom(f){
+  const it=S.items[S.sel];
+  if(it&&it.kind==='photo'&&it.photo){ snapshot(); it.pz=Math.min(6,Math.max(0.3,(it.pz||1)*f)); draw(); }
+  else toast('पहले photo वाला slot चुनो');
+}
+$('btnPzIn').onclick=()=>photoZoom(1.12);
+$('btnPzOut').onclick=()=>photoZoom(1/1.12);
+$('btnPzFit').onclick=()=>{ const it=S.items[S.sel]; if(it&&it.kind==='photo'){ snapshot(); it.pz=1; it.px=0; it.py=0; draw(); toast('Photo फिर से fit ✓'); } };
 $('btnClearPhoto').onclick=()=>{ const it=S.items[S.sel]; if(it&&it.kind==='photo'){ it.photo=null; draw(); } };
 
 /* ================= DRAW ================= */
@@ -616,7 +645,8 @@ function drawItem(c,it,sc,forExport){
       const sr=it.photo.width/it.photo.height, tr=W/H;
       let dw,dh;
       if(sr>tr){ dh=H; dw=H*sr; } else { dw=W; dh=W/sr; }
-      o.drawImage(it.photo, (W-dw)/2, (H-dh)/2, dw, dh);
+    dw*=(it.pz||1); dh*=(it.pz||1);
+    o.drawImage(it.photo, (W-dw)/2+(it.px||0)*sc, (H-dh)/2+(it.py||0)*sc, dw, dh);
       if(it.fade>0){
         const f=Math.min(it.fade,0.9);
         o.globalCompositeOperation='destination-in';
@@ -755,12 +785,25 @@ cv.addEventListener('pointerdown',e=>{
   }
   if(ptrs.size>2) return;
   const p=pos(e), sc=S.scale;
-  // corner handles of selected photo (rotated हो तो point को उल्टा घुमाओ)
-  const it=S.items[S.sel];
   const unrot=(pt,t)=>{ if(!t.rot) return pt;
     const rr=-t.rot*Math.PI/180, cx=t.x+t.w/2, cy=t.y+t.h/2;
     const dx=pt.x-cx, dy=pt.y-cy;
     return {x:cx+dx*Math.cos(rr)-dy*Math.sin(rr), y:cy+dx*Math.sin(rr)+dy*Math.cos(rr)}; };
+  // photo adjust mode: चुनी photo के अंदर छुआ = photo खींचो
+  if(S.photoMode){
+    const it=S.items[S.sel];
+    if(it&&it.kind==='photo'&&it.photo){
+      const pp=unrot(p,it);
+      if(pp.x>=it.x&&pp.x<=it.x+it.w&&pp.y>=it.y&&pp.y<=it.y+it.h){
+        try{cv.setPointerCapture(e.pointerId);}catch(_){}
+        drag={mode:'pan',sx:p.x,sy:p.y,f0:{...it}};
+        return;
+      }
+    }
+    S.photoMode=false; syncPhotoModeUI();   // बाहर छुआ = mode बंद
+  }
+  // corner handles of selected photo (rotated हो तो point को उल्टा घुमाओ)
+  const it=S.items[S.sel];
   if(it&&it.kind==='photo'){
     const pp=unrot(p,it);
     const HS=14/(sc*(cv.getBoundingClientRect().width/cv.width));
@@ -846,6 +889,11 @@ cv.addEventListener('pointermove',e=>{
   if(!drag) return;
   const p=pos(e), it=S.items[S.sel];
   const dx=p.x-drag.sx, dy=p.y-drag.sy, f=drag.f0;
+  if(drag.mode==='pan'){   // slot के अंदर photo खींचो
+    it.px=Math.round(((f.px||0)+dx)*100)/100;
+    it.py=Math.round(((f.py||0)+dy)*100)/100;
+    draw(); return;
+  }
   if(drag.mode==='mv'){
     if(drag.multi){ drag.multi.forEach(m=>{ const mi=S.items[m.j]; if(!mi) return;
       if(mi.kind==='decor'&&m.f.cx!=null){ mi.cx=m.f.cx+dx; mi.cy=m.f.cy+dy; }
