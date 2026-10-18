@@ -31,7 +31,18 @@ input[type=range]{width:100%}
 .lib-item{display:flex;justify-content:space-between;align-items:center;background:#2d333d;padding:7px 9px;border-radius:8px;margin:4px 0;font-size:12px}
 .lib-item button{background:none;border:none;color:#ff9933;cursor:pointer;font-size:14px}
 #toast{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#16a34e;color:#fff;padding:10px 22px;border-radius:24px;font-size:14px;display:none;z-index:99}
-@media(max-width:700px){#side{width:170px;padding:8px}.tbtn{padding:6px 8px;font-size:12px}}
+@media(max-width:700px){
+  #topbar{flex-wrap:nowrap;overflow-x:auto;padding:6px 8px;gap:6px}
+  #topbar h1{font-size:13px;white-space:nowrap}
+  #topbar .badge{display:none}
+  .tbtn{padding:6px 9px;font-size:12px;flex:none;white-space:nowrap}
+  #main{flex-direction:column}
+  #stage{order:1;flex:1;min-height:0;padding:10px}
+  #side{order:2;width:100%;max-height:42vh;border-right:none;border-top:2px solid #333;padding:8px 10px}
+  #side h3{margin:10px 0 4px}
+  #pageCv{margin:auto}              /* page बीच में; zoom पर scroll भी चलता रहे */
+  #hint{display:none}               /* phone पर hint tools ढकती है */
+}
 </style>
 <script src="assets/js/admin-gate.js"></script>
 <script>gateRequire()</script>
@@ -39,7 +50,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v2.5 ✨ (Border)</span>
+  <span class="badge">FREE v2.6 ✨ (Mobile)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
@@ -241,7 +252,15 @@ function setZoom(z){
 }
 $('btnZIn').onclick=()=>setZoom(zoom*1.25);
 $('btnZOut').onclick=()=>setZoom(zoom/1.25);
-$('btnZFit').onclick=()=>setZoom(1);
+$('btnZFit').onclick=()=>{ if(innerWidth<=700) zoomFitStage(); else setZoom(1); };
+/* phone पर page पूरी screen में fit */
+function zoomFitStage(){
+  const base=Math.min(CFG.maxPrev/S.W,CFG.maxPrev/S.H);
+  const avail=$('stage').clientWidth-24;
+  setZoom(Math.min(1.5,Math.max(0.4,avail/(S.W*base))));
+}
+let _lastW=innerWidth;
+window.addEventListener('resize',()=>{ if(innerWidth<=700&&innerWidth!==_lastW){ _lastW=innerWidth; zoomFitStage(); } });
 cv.addEventListener('wheel',e=>{
   if(S.photoMode){   // adjust mode में wheel = photo zoom
     const it=S.items[S.sel];
@@ -1054,7 +1073,7 @@ $('btnExport').onclick=()=>{
 };
 
 /* ================= INIT ================= */
-fit(); renderLib(); draw();
+fit(); renderLib(); draw(); if(innerWidth<=700) setTimeout(zoomFitStage,50);
 </script>
 </body>
 </html>
