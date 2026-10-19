@@ -63,7 +63,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v4.0 🪄 (Border खुद बनाओ)</span>
+  <span class="badge">FREE v4.1 💪 (ताक़त slider)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
@@ -288,6 +288,11 @@ input[type=range]{width:100%}
 <div id="wandWrap" style="display:none;position:fixed;inset:0;background:#000d;z-index:100;align-items:center;justify-content:center;flex-direction:column;gap:10px;padding:14px">
   <div id="wandTip" style="color:#fff;font-weight:700;text-align:center;font-size:14px">🪄 जिस हिस्से को transparent करना है, उस पर TAP करो</div>
   <canvas id="wandCv" style="max-width:94vw;max-height:60vh;border:2px solid #ff9933;border-radius:10px;background:repeating-conic-gradient(#94a3b8 0 25%,#cbd5e1 0 50%) 0 0/16px 16px;touch-action:manipulation"></canvas>
+  <label style="color:#fff;font-size:13px;display:flex;align-items:center;gap:8px">💪 ताक़त
+    <input type="range" id="wandTol" min="10" max="150" value="48" style="width:130px">
+    <span id="wandTolV" style="min-width:26px;font-weight:700">48</span>
+    <small style="color:#cbd5e1">कम = सटीक कटाई • ज़्यादा = मोटा कट</small>
+  </label>
   <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
     <button class="sbtn" id="wandAI" style="background:#7c3aed;color:#fff;border-color:#7c3aed">✨ AI से हटाओ</button>
     <button class="sbtn" id="wandUndo">↩️ Undo</button>
@@ -763,7 +768,7 @@ $('fileBorder').onchange=e=>{
   const f=e.target.files[0]; if(!f) return; e.target.value='';
   const rd=new FileReader();
   rd.onload=()=>{ const im=new Image(); im.onload=()=>{
-      const M=800, s=Math.min(1,M/Math.max(im.width,im.height));
+      const M=2400, s=Math.min(1,M/Math.max(im.width,im.height));
       const c=document.createElement('canvas'); c.width=Math.max(1,im.width*s); c.height=Math.max(1,im.height*s);
       c.getContext('2d').drawImage(im,0,0,c.width,c.height);
       borderLib.push({name:(f.name||'border').replace(/\.[^.]+$/,'').slice(0,24), img:c.toDataURL('image/png')});
@@ -776,13 +781,14 @@ $('btnNoBorderImg').onclick=()=>{ const ps=selPhotos(); if(!ps.length) return to
   snapshot(); ps.forEach(it=>{ delete it.bdImg; delete it._bdIm; }); draw(); toast('🚫 Image-border हटा ✓'); };
 /* ---- 🪄 Border खुद बनाओ — tap करके transparent (frame-maker का tool, 13-10) ---- */
 let wandStack=[];
+$('wandTol').oninput=e=>$('wandTolV').textContent=e.target.value;
 $('btnWandOpen').onclick=()=>$('fileWand').click();
 $('fileWand').onchange=async e=>{ const f=e.target.files[0]; if(!f) return; e.target.value=''; await wandOpen(f); };
 async function wandOpen(file){
   const cv=$('wandCv'),g=cv.getContext('2d',{willReadFrequently:true});
   const url=await new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(file)});
   const im=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=url});
-  const M=1600,sc=Math.min(1,M/Math.max(im.naturalWidth,im.naturalHeight));
+  const M=2400,sc=Math.min(1,M/Math.max(im.naturalWidth,im.naturalHeight));
   cv.width=Math.round(im.naturalWidth*sc);cv.height=Math.round(im.naturalHeight*sc);
   g.clearRect(0,0,cv.width,cv.height);g.drawImage(im,0,0,cv.width,cv.height);
   wandStack=[];$('wandWrap').style.display='flex';
@@ -794,7 +800,7 @@ function wandFlood(cx,cy){
   const id=g.getImageData(0,0,w,h),d=id.data;
   const p0=(cy*w+cx)*4;
   if(d[p0+3]===0)return; /* पहले से transparent */
-  const tr=d[p0],tg=d[p0+1],tb=d[p0+2],TOL=48;
+  const tr=d[p0],tg=d[p0+1],tb=d[p0+2],TOL=+$('wandTol').value||48;   /* 💪 ताक़त slider से */
   const close=p=>Math.abs(d[p*4]-tr)<=TOL&&Math.abs(d[p*4+1]-tg)<=TOL&&Math.abs(d[p*4+2]-tb)<=TOL;
   wandStack.push(g.getImageData(0,0,w,h));if(wandStack.length>10)wandStack.shift();
   const seen=new Uint8Array(w*h),st=[cy*w+cx];seen[cy*w+cx]=1;let n=0;
@@ -823,7 +829,7 @@ $('wandUndo').onclick=()=>{ if(!wandStack.length){toast('कुछ बचा न
   $('wandCv').getContext('2d').putImageData(wandStack.pop(),0,0); };
 $('wandCancel').onclick=()=>{ $('wandWrap').style.display='none'; wandStack=[]; };
 $('wandUse').onclick=()=>{
-  const cv=$('wandCv'),M=800,s=Math.min(1,M/Math.max(cv.width,cv.height));
+  const cv=$('wandCv'),M=2400,s=Math.min(1,M/Math.max(cv.width,cv.height));
   const c2=document.createElement('canvas'); c2.width=Math.max(1,Math.round(cv.width*s)); c2.height=Math.max(1,Math.round(cv.height*s));
   c2.getContext('2d').drawImage(cv,0,0,c2.width,c2.height);
   const nm='मेरा border '+(borderLib.length+1);   /* auto-नाम — tap कम, काम ज़्यादा */
