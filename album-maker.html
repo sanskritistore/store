@@ -57,12 +57,13 @@ input[type=range]{width:100%}
 <script src="assets/js/admin-gate.js"></script>
 <script src="assets/js/torn.js"></script>
 <script src="assets/js/fonts.js"></script>
+<script src="assets/js/borders.js"></script>
 <script>gateRequire()</script>
 </head>
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v3.7 📷 (Photo हमेशा सहेजी)</span>
+  <span class="badge">FREE v3.8 🌿 (8 Border Patterns)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
@@ -107,6 +108,18 @@ input[type=range]{width:100%}
       <input type="color" id="bdC" value="#c9a227" title="Border रंग">
       <input type="range" id="bdW" min="0" max="0.15" step="0.01" value="0.04" title="Border मोटाई">
       <label style="font-size:12px;display:flex;align-items:center;gap:3px"><input type="checkbox" id="bdGlow"> ✨ चमक</label>
+    </div>
+    <div class="srow">
+      <select id="bdS" title="Border pattern" style="flex:1;padding:6px;border-radius:8px;background:#1e293b;color:#fff;border:1px solid #334155">
+        <option value="">─ एकल लाइन</option>
+        <option value="double">═ दोहरी लाइन</option>
+        <option value="wavy">〰️ लहरिया</option>
+        <option value="vine">🌿 बेल-पत्ती (पतली)</option>
+        <option value="scallop">◠◠ अर्धचंद्र</option>
+        <option value="beads">●● मोती-माला</option>
+        <option value="corner">⌐ कोना-फ्रेम</option>
+        <option value="zigzag">⚡ ज़िग-ज़ैग</option>
+      </select>
     </div>
     <div class="srow">
       <button class="sbtn" id="btnFill">📷 Photo भरो</button>
@@ -477,7 +490,7 @@ function syncPhotoUI(){
   const it=S.items[S.sel];
   if(it&&it.kind==='text'){ $('txF').value=it.f||''; }   /* चुने text का font dropdown में दिखे */
   if(it&&it.kind==='photo'){
-    $('bdW').value=it.bdW||0; if(it.bdC) $('bdC').value=it.bdC;
+    $('bdW').value=it.bdW||0; if(it.bdC) $('bdC').value=it.bdC; $('bdS').value=it.bdS||'';
     $('phFade').value=it.fade||0;
     if(typeof TORN_LABEL!=='undefined'){
       $('btnTorn').textContent='📄 फटा किनारा: '+TORN_LABEL[it.tornSide||''];
@@ -682,6 +695,7 @@ function selPhotos(){ const ids=S.selArr.length>1? S.selArr : (S.sel>=0?[S.sel]:
 document.querySelectorAll('.shp').forEach(b=>b.onclick=()=>{ const ps=selPhotos(); if(ps.length){ ps.forEach(it=>it.shape=b.dataset.s); draw(); if(ps.length>1) toast('✅ '+ps.length+' photos — shape बदला'); } });
 $('bdC').oninput=e=>{ const ps=selPhotos(); if(ps.length){ ps.forEach(it=>it.bdC=e.target.value); draw(); } };
 $('bdW').oninput=e=>{ const ps=selPhotos(); if(ps.length){ ps.forEach(it=>it.bdW=+e.target.value); draw(); } };
+$('bdS').onchange=e=>{ const ps=selPhotos(); if(ps.length){ snapshot(); ps.forEach(it=>it.bdS=e.target.value); draw(); if(ps.length>1) toast('✅ '+ps.length+' photos — नया border pattern'); } };
 $('txC').oninput=e=>{ const ids=S.selArr.length>1? S.selArr : (S.sel>=0?[S.sel]:[]); const ts=ids.map(i=>S.items[i]).filter(t=>t&&t.kind==='text'); if(ts.length){ ts.forEach(it=>it.c=e.target.value); draw(); } };
 $('txS').oninput=e=>{ const ids=S.selArr.length>1? S.selArr : (S.sel>=0?[S.sel]:[]); const ts=ids.map(i=>S.items[i]).filter(t=>t&&t.kind==='text'); if(ts.length){ ts.forEach(it=>it.size=+e.target.value); draw(); } };
 /* ================= PHOTO FILL ================= */
@@ -929,9 +943,7 @@ function drawItem(c,it,sc,forExport){
       }
       }
     }
-    if(it.bdW>0){ c.strokeStyle=it.bdC; c.lineWidth=it.bdW*sc;
-      if(it.glow){ c.shadowColor=it.bdC; c.shadowBlur=it.bdW*sc*5; }
-      c.stroke(path); }
+    if(it.bdW>0){ (window.SkBorders?SkBorders.draw:(c2,itt,sc2,p)=>{ c2.setLineDash([]); c2.strokeStyle=itt.bdC; c2.lineWidth=itt.bdW*sc2; c2.stroke(p); })(c,it,sc,path); }
     c.restore();
   }else{
     c.fillStyle=it.c;

@@ -79,6 +79,7 @@ header span{font-size:12px;color:#999;flex:1;white-space:nowrap;overflow:hidden;
 <script src="albums/layouts.js?v=5"></script>
 <script src="assets/js/torn.js?v=1"></script>
 <script src="assets/js/fonts.js?v=1"></script>
+<script src="assets/js/borders.js?v=1"></script>
 <script>
 'use strict';
 /* ================= STATE ================= */
@@ -311,9 +312,7 @@ function drawItem(c,it,sc,forExport){
       }
       }
     }
-    if(it.bdW>0){ c.strokeStyle=it.bdC; c.lineWidth=it.bdW*sc;
-      if(it.glow){ c.shadowColor=it.bdC; c.shadowBlur=it.bdW*sc*5; }
-      c.stroke(path); }
+    if(it.bdW>0){ (window.SkBorders?SkBorders.draw:(c2,itt,sc2,p)=>{ c2.setLineDash([]); c2.strokeStyle=itt.bdC; c2.lineWidth=itt.bdW*sc2; c2.stroke(p); })(c,it,sc,path); }
     c.restore();
   }else{
     c.fillStyle=it.c;

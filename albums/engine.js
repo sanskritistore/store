@@ -214,9 +214,7 @@ function drawItem(c,it,sc,forExport){
         c.fillText('📷', X+W/2, Y+H/2);
       }
     }
-    if(it.bdW>0){ c.strokeStyle=it.bdC; c.lineWidth=it.bdW*sc;
-      if(it.glow){ c.shadowColor=it.bdC; c.shadowBlur=it.bdW*sc*5; }
-      c.stroke(path); }
+    if(it.bdW>0){ (window.SkBorders?SkBorders.draw:(c2,itt,sc2,p)=>{ c2.setLineDash([]); c2.strokeStyle=itt.bdC; c2.lineWidth=itt.bdW*sc2; c2.stroke(p); })(c,it,sc,path); }
     c.restore();
   }else{
     c.fillStyle=it.c;
