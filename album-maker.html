@@ -62,7 +62,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v3.4 🖼️ (सब पर एक साथ)</span>
+  <span class="badge">FREE v3.5 🛟 (काम खोए नहीं)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
@@ -199,6 +199,7 @@ input[type=range]{width:100%}
     </div>
 
     <h3>📚 मेरी Templates</h3>
+    <div class="srow" id="autoRow" style="display:none"><button class="sbtn" id="btnAutoRec" style="background:#0e7490;color:#fff;border-color:#0e7490;width:100%">🛟 आख़िरी काम वापस लाओ (auto-backup)</button></div>
     <div id="lib"></div>
 
     <h3>🛍️ Album PLP</h3>
@@ -571,6 +572,7 @@ let _stripT=0;
 function markStrip(){ clearTimeout(_stripT); _stripT=setTimeout(renderStrip,450); }  /* draw के बाद आराम से refresh */
 function renderStrip(){
   const w=$('pgthumbs'); if(!w) return;
+  autoBackup();   /* 🛟 हर बदलाव के बाद चुपचाप बचत */
   w.innerHTML='';
   S.pages.forEach((p,i)=>{
     const t=document.createElement('div'); t.className='pgt'+(i===S.pg?' on':'');
@@ -1254,12 +1256,39 @@ $('btnSaveJson').onclick=()=>{
   const blob=new Blob([j],{type:'application/json'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob); a.download=isBook?'sanskriti-book.json':'sanskriti-template.json'; a.click();
-  // library में भी
-  const lib=JSON.parse(localStorage.getItem('tmplLib')||'[]');
-  lib.push({n:(isBook?('📖 Book ('+S.pages.length+'p) '):'Template ')+(lib.length+1)+' — '+new Date().toLocaleDateString('hi-IN'), j});
-  localStorage.setItem('tmplLib',JSON.stringify(lib));
-  renderLib(); toast(isBook?('💾 Book सहेजी ✓ ('+S.pages.length+' pages)'):'💾 सहेज लिया ✓');
+  // library में भी (जगह भरी तो पुरानी हटाकर फिर कोशिश — काम कभी खोना नहीं)
+  const libOk=libSave(j,(isBook?('📖 Book ('+S.pages.length+'p) '):'Template ')+new Date().toLocaleDateString('hi-IN'));
+  renderLib();
+  toast((isBook?('💾 Book सहेजी ✓ ('+S.pages.length+' pages)'):'💾 सहेज लिया ✓')+(libOk?'':' — ⚠️ library भरी, सिर्फ़ फ़ाइल download हुई'));
 };
+/* 🛟 AUTO-BACKUP — हर बदलाव 1.2s बाद चुपचाप बचत (काम कभी खोए नहीं) */
+let _autoT=0;
+function autoBackup(){ clearTimeout(_autoT); _autoT=setTimeout(()=>{
+  try{
+    const j=S.pages.length>1?serializeBook():serialize();
+    try{ localStorage.setItem('tmplAuto',j); }
+    catch(e){   // जगह कम — photos हटाकर बचाओ (design बचे, photos फिर भरनी पड़ें)
+      const d=JSON.parse(j); (d.pages||[d]).forEach(p=>(p.items||[]).forEach(it=>{ if(it.photoData) it.photoData=null; }));
+      try{ localStorage.setItem('tmplAuto',JSON.stringify(d)); }catch(_){ }
+    }
+    const r=$('autoRow'); if(r) r.style.display='';
+  }catch(_){ }
+},1200); }
+$('btnAutoRec').onclick=()=>{
+  const j=localStorage.getItem('tmplAuto');
+  if(j){ snapshot(); loadTemplate(j); toast('🛟 आख़िरी काम वापस आ गया ✓'); }
+  else toast('कोई backup नहीं मिला');
+};
+if(localStorage.getItem('tmplAuto')){ const r=$('autoRow'); if(r) r.style.display=''; }
+function libSave(j,n){   /* localStorage quota-safe library save */
+  try{
+    const lib=JSON.parse(localStorage.getItem('tmplLib')||'[]');
+    lib.push({n,j});
+    for(;;){ try{ localStorage.setItem('tmplLib',JSON.stringify(lib)); return true; }
+      catch(e){ if(lib.length>1) lib.shift(); else return false; }   // सबसे पुरानी हटाओ → फिर कोशिश
+    }
+  }catch(_){ return false; }
+}
 $('btnLoadJson').onclick=()=>$('fileJson').click();
 $('fileJson').onchange=e=>{
   const f=e.target.files[0]; if(!f) return;
@@ -1267,7 +1296,11 @@ $('fileJson').onchange=e=>{
 };
 function loadTemplate(j){
   try{
-    const d=JSON.parse(j);
+    let t=(j||'').trim();
+    if(t.charCodeAt(0)===0xFEFF) t=t.slice(1);                 // BOM हटाओ (phone files में आता है)
+    const _a=t.indexOf('{'), _b=t.lastIndexOf('}');
+    if(_a>0||_b<t.length-1) t=t.slice(_a,_b+1);                // आगे-पीछे की गंदगी हटाओ (auto-repair)
+    const d=JSON.parse(t);
     S.W=d.W; S.H=d.H; S.sel=-1; S.selArr=[];
     if(d.book){ S.pages=d.pages.map(p=>({bg:p.bg||{c1:'#f7f1e8'},items:itemsFromJSON(p.items||[]),w:p.w||d.W,h:p.h||d.H})); }
     else { S.pages=[{bg:d.bg,items:itemsFromJSON(d.items),w:d.W,h:d.H}]; }   /* पुरानी single template भी book की तरह खुलती है */
@@ -1276,7 +1309,7 @@ function loadTemplate(j){
     fit(); draw(); renderStrip();
     SkFonts.ensureFonts(S.pages.flatMap(p=>p.items)).then(draw);   /* template के fonts load होकर फिर सही render */
     toast(d.book?('📖 Book खुल गई — '+S.pages.length+' pages ✓'):'📂 Template खुल गई ✓');
-  }catch(e){ toast('⚠️ JSON खराब है'); }
+  }catch(e){ console.warn('loadTemplate:',e); toast('⚠️ JSON नहीं खुल पाई — फ़ाइल मुझे (Letta) भेजो, ठीक कर दूँगा'); }
 }
 function renderLib(){
   const lib=JSON.parse(localStorage.getItem('tmplLib')||'[]');
