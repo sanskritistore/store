@@ -63,7 +63,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v3.9 🔗 (Group + अपना Border)</span>
+  <span class="badge">FREE v4.0 🪄 (Border खुद बनाओ)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
@@ -123,9 +123,11 @@ input[type=range]{width:100%}
     </div>
     <div class="srow" style="flex-wrap:wrap;gap:6px;align-items:center">
       <button class="sbtn" id="btnAddBorder" title="Photoshop में बनाई अपनी border PNG जोड़ो (बीच transparent)">➕ अपना Border</button>
+      <button class="sbtn" id="btnWandOpen" title="कोई भी photo से border बनाओ — tap करके हिस्से transparent करो">🪄 बनाओ</button>
       <button class="sbtn" id="btnNoBorderImg" title="चुनी photo से image-border हटाओ">🚫 हटाओ</button>
       <span id="bdChips" style="display:flex;gap:6px;flex-wrap:wrap"></span>
       <input type="file" id="fileBorder" accept="image/png,image/webp,image/jpeg" style="display:none">
+      <input type="file" id="fileWand" accept="image/*" style="display:none">
     </div>
     <div class="srow">
       <button class="sbtn" id="btnFill">📷 Photo भरो</button>
@@ -281,6 +283,18 @@ input[type=range]{width:100%}
 <input type="file" id="filePhoto" accept="image/*" style="display:none">
 <input type="file" id="fileDecor" accept="image/*" style="display:none">
 <input type="file" id="fileJson" accept=".json" style="display:none">
+
+<!-- 🪄 Border बनाओ — tap करके हिस्से transparent (frame-maker tool) -->
+<div id="wandWrap" style="display:none;position:fixed;inset:0;background:#000d;z-index:100;align-items:center;justify-content:center;flex-direction:column;gap:10px;padding:14px">
+  <div id="wandTip" style="color:#fff;font-weight:700;text-align:center;font-size:14px">🪄 जिस हिस्से को transparent करना है, उस पर TAP करो</div>
+  <canvas id="wandCv" style="max-width:94vw;max-height:60vh;border:2px solid #ff9933;border-radius:10px;background:repeating-conic-gradient(#94a3b8 0 25%,#cbd5e1 0 50%) 0 0/16px 16px;touch-action:manipulation"></canvas>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+    <button class="sbtn" id="wandAI" style="background:#7c3aed;color:#fff;border-color:#7c3aed">✨ AI से हटाओ</button>
+    <button class="sbtn" id="wandUndo">↩️ Undo</button>
+    <button class="sbtn" id="wandUse" style="background:#15803d;color:#fff;border-color:#15803d">✅ Border बनाओ</button>
+    <button class="sbtn" id="wandCancel">✖ बंद</button>
+  </div>
+</div>
 
 <script>
 /* ================= CONFIG (कोई hardcode नहीं — सब यहीं बदलो) ================= */
@@ -760,6 +774,79 @@ $('fileBorder').onchange=e=>{
 };
 $('btnNoBorderImg').onclick=()=>{ const ps=selPhotos(); if(!ps.length) return toast('पहले photo चुनो');
   snapshot(); ps.forEach(it=>{ delete it.bdImg; delete it._bdIm; }); draw(); toast('🚫 Image-border हटा ✓'); };
+/* ---- 🪄 Border खुद बनाओ — tap करके transparent (frame-maker का tool, 13-10) ---- */
+let wandStack=[];
+$('btnWandOpen').onclick=()=>$('fileWand').click();
+$('fileWand').onchange=async e=>{ const f=e.target.files[0]; if(!f) return; e.target.value=''; await wandOpen(f); };
+async function wandOpen(file){
+  const cv=$('wandCv'),g=cv.getContext('2d',{willReadFrequently:true});
+  const url=await new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(file)});
+  const im=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=url});
+  const M=1600,sc=Math.min(1,M/Math.max(im.naturalWidth,im.naturalHeight));
+  cv.width=Math.round(im.naturalWidth*sc);cv.height=Math.round(im.naturalHeight*sc);
+  g.clearRect(0,0,cv.width,cv.height);g.drawImage(im,0,0,cv.width,cv.height);
+  wandStack=[];$('wandWrap').style.display='flex';
+  $('wandTip').textContent='🪄 जिस हिस्से को transparent करना है, उस पर TAP करो';
+}
+function wandFlood(cx,cy){
+  const cv=$('wandCv'),g=cv.getContext('2d',{willReadFrequently:true});
+  const w=cv.width,h=cv.height;
+  const id=g.getImageData(0,0,w,h),d=id.data;
+  const p0=(cy*w+cx)*4;
+  if(d[p0+3]===0)return; /* पहले से transparent */
+  const tr=d[p0],tg=d[p0+1],tb=d[p0+2],TOL=48;
+  const close=p=>Math.abs(d[p*4]-tr)<=TOL&&Math.abs(d[p*4+1]-tg)<=TOL&&Math.abs(d[p*4+2]-tb)<=TOL;
+  wandStack.push(g.getImageData(0,0,w,h));if(wandStack.length>10)wandStack.shift();
+  const seen=new Uint8Array(w*h),st=[cy*w+cx];seen[cy*w+cx]=1;let n=0;
+  while(st.length){const p=st.pop(),x=p%w,y=(p/w)|0;
+   d[p*4+3]=0;n++;
+   if(x>0&&!seen[p-1]&&d[(p-1)*4+3]>0&&close(p-1)){seen[p-1]=1;st.push(p-1)}
+   if(x<w-1&&!seen[p+1]&&d[(p+1)*4+3]>0&&close(p+1)){seen[p+1]=1;st.push(p+1)}
+   if(y>0&&!seen[p-w]&&d[(p-w)*4+3]>0&&close(p-w)){seen[p-w]=1;st.push(p-w)}
+   if(y<h-1&&!seen[p+w]&&d[(p+w)*4+3]>0&&close(p+w)){seen[p+w]=1;st.push(p+w)}}
+  if(n<50){wandStack.pop();toast('यहाँ कुछ नहीं मिला — किसी रंग वाले हिस्से पर tap करो');return}
+  /* किनारे की अर्ध-पारदर्शी feather — gray halo न रहे */
+  const d2=id.data;
+  for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const p=(y*w+x)*4;
+   if(d2[p+3]===0)continue;
+   if(d2[p-4+3]===0||d2[p+4+3]===0||d2[p-w*4+3]===0||d2[p+w*4+3]===0){
+    const dd=Math.max(Math.abs(d2[p]-tr),Math.abs(d2[p+1]-tg),Math.abs(d2[p+2]-tb));
+    if(dd<110)d2[p+3]=Math.round(d2[p+3]*dd/110)}}
+  g.putImageData(id,0,0);
+}
+$('wandCv').addEventListener('click',e=>{
+  const cv=e.target,r=cv.getBoundingClientRect();
+  const x=Math.round((e.clientX-r.left)*cv.width/r.width),y=Math.round((e.clientY-r.top)*cv.height/r.height);
+  wandFlood(x,y);
+});
+$('wandUndo').onclick=()=>{ if(!wandStack.length){toast('कुछ बचा नहीं undo के लिए');return}
+  $('wandCv').getContext('2d').putImageData(wandStack.pop(),0,0); };
+$('wandCancel').onclick=()=>{ $('wandWrap').style.display='none'; wandStack=[]; };
+$('wandUse').onclick=()=>{
+  const cv=$('wandCv'),M=800,s=Math.min(1,M/Math.max(cv.width,cv.height));
+  const c2=document.createElement('canvas'); c2.width=Math.max(1,Math.round(cv.width*s)); c2.height=Math.max(1,Math.round(cv.height*s));
+  c2.getContext('2d').drawImage(cv,0,0,c2.width,c2.height);
+  const nm='मेरा border '+(borderLib.length+1);   /* auto-नाम — tap कम, काम ज़्यादा */
+  borderLib.push({name:nm, img:c2.toDataURL('image/png')});
+  saveBorderLib(); renderBorderLib();
+  $('wandWrap').style.display='none'; wandStack=[];
+  toast('🖼️ "'+nm+'" जुड़ गया — photo चुनकर chip पर tap करो');
+};
+$('wandAI').onclick=async()=>{
+  const tip=$('wandTip');
+  try{
+    tip.textContent='⏳ AI model load हो रहा… पहली बार 1-2 मिनट (फिर हमेशा तुरंत)';
+    const mod=await import('https://esm.sh/@imgly/background-removal@1.7.0');
+    const blob=await new Promise(r=>$('wandCv').toBlob(r,'image/png'));
+    const out=await mod.removeBackground(blob,{model:'isnet_quint8',progress:(k,cur,tot)=>{
+      tip.textContent='⏳ background मिट रहा है… '+(tot?Math.round(cur/tot*100)+'%':'…'); }});
+    const im=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=URL.createObjectURL(out)});
+    const cv=$('wandCv'),g=cv.getContext('2d',{willReadFrequently:true});
+    wandStack.push(g.getImageData(0,0,cv.width,cv.height));if(wandStack.length>10)wandStack.shift();
+    g.clearRect(0,0,cv.width,cv.height);g.drawImage(im,0,0,cv.width,cv.height);
+    tip.textContent='✅ AI ने background मिटाया — अंदर का हिस्सा भी खाली करना हो तो TAP करो';
+  }catch(err){ console.error(err); tip.textContent='❌ AI नहीं चला — net check करो, या 🪄 tap से खुद बनाओ'; }
+};
 /* कई चुनीं (घेरकर) तो सब photos पर लगाओ, वरना चुनी एक पर */
 function selPhotos(){ const ids=S.selArr.length>1? S.selArr : (S.sel>=0?[S.sel]:[]); return ids.map(i=>S.items[i]).filter(t=>t&&t.kind==='photo'); }
 document.querySelectorAll('.shp').forEach(b=>b.onclick=()=>{ const ps=selPhotos(); if(ps.length){ ps.forEach(it=>it.shape=b.dataset.s); draw(); if(ps.length>1) toast('✅ '+ps.length+' photos — shape बदला'); } });
