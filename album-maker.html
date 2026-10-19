@@ -62,7 +62,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v3.5 🛟 (काम खोए नहीं)</span>
+  <span class="badge">FREE v3.6 🛟 (Reload = काम वापस)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
@@ -1252,6 +1252,8 @@ function serializeBook(){
 }
 $('btnSaveJson').onclick=()=>{
   const isBook=S.pages.length>1;
+  const _tot=S.pages.reduce((n,p)=>n+p.items.length,0);
+  if(!_tot && !confirm('⚠️ पूरी book खाली है — खाली file सहेजने से काम नहीं बचेगा। फिर भी सहेजूँ?')) return;
   const j=isBook?serializeBook():serialize();
   const blob=new Blob([j],{type:'application/json'});
   const a=document.createElement('a');
@@ -1349,6 +1351,12 @@ $('btnExport').onclick=()=>{
 
 /* ================= INIT ================= */
 fit(); renderLib(); draw(); renderStrip(); if(innerWidth<=700) setTimeout(zoomFitStage,50);
+/* 🛟 RELOAD = काम खोना नहीं — पिछला काम अपने-आप वापस (Undo = नया खाली पाना) */
+try{
+  const _aj=localStorage.getItem('tmplAuto');
+  if(_aj){ const _d=JSON.parse(_aj); const _n=(_d.pages||[_d]).reduce((s,p)=>s+((p.items||[]).length),0);
+    if(_n>0){ loadTemplate(_aj); toast('🛟 पिछला काम अपने-आप वापस ✓ (नया शुरू करना हो तो Undo)'); } }
+}catch(_){ }
 
 /* ================= 📦 PLP पर डालो — Template → Album page card (खुद करो!) ================= */
 function renderCover(maxW){
