@@ -220,13 +220,11 @@ function drawItem(c,it,sc,forExport){
     c.restore();
   }else{
     c.fillStyle=it.c;
-    let fam=`600 ${it.size*sc}px Georgia,'Nirmala UI',serif`;
-    if(it.f==='script') fam=`${it.size*sc}px SanskritiScript,'Nirmala UI',cursive`;
-    else if(it.f==='royal') fam=`400 ${it.size*sc}px Georgia,'Times New Roman',serif`;
-    c.font=fam;
+    c.font=(window.SkFonts?SkFonts.fontFam(it,sc):`600 ${it.size*sc}px Georgia,'Nirmala UI',serif`);
     c.textAlign='center'; c.textBaseline='middle';
     c.shadowColor='#0003'; c.shadowBlur=sc*0.03;
-    if(it.f==='royal' && 'letterSpacing' in c) c.letterSpacing=(it.size*sc*0.20)+'px';
+    const lsPx=(window.SkFonts?SkFonts.fontLS(it,sc):(it.f==='royal'?it.size*sc*0.20:0));
+    if(lsPx && 'letterSpacing' in c) c.letterSpacing=lsPx+'px';
     c.fillText(it.text, X, Y);
     if(it.box){
       const tw=c.measureText(it.text).width, ph=it.size*sc;

@@ -59,6 +59,7 @@
 <script src="albums/engine.js?v=4"></script>
 <script src="albums/layouts.js?v=5"></script>
 <script src="assets/js/torn.js?v=1"></script>
+<script src="assets/js/fonts.js?v=1"></script>
 <script>(async()=>{await loadCfg();shell('');
  const id=qp('pkg')||'t08';
  const A=await fetch('config/albums.json?v='+Date.now()).then(r=>r.json());
@@ -101,6 +102,7 @@
   return wedCache[beat]=ph.length?ph:demo;
  }
  const cv=$('#cv'); let cur=0;
+  try{ await SkFonts.ensureFonts(tpls.flatMap(t=>t.items||[])); }catch(_){ }   /* template के सारे fonts पहले load */
  const names=tpls.map((t,i)=>i===0?'📕 Cover':'📖 '+(t.name||'Design '+i));
  $('#dots').innerHTML=tpls.map((_,i)=>`<i data-i="${i}"></i>`).join('');
  $$('#dots i').forEach(d=>d.onclick=()=>go(+d.dataset.i));
