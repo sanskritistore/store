@@ -62,7 +62,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v3.3 📏 (हर page अपना size)</span>
+  <span class="badge">FREE v3.4 🖼️ (सब पर एक साथ)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
@@ -675,12 +675,13 @@ function pasteItem(){
 }
 $('btnCopy').onclick=copySel;
 $('btnPasteItem').onclick=pasteItem;
-document.querySelectorAll('.shp').forEach(b=>b.onclick=()=>{ const it=S.items[S.sel]; if(it&&it.kind==='photo'){ it.shape=b.dataset.s; draw(); } });
-$('bdC').oninput=e=>{ const it=S.items[S.sel]; if(it&&it.kind==='photo'){ it.bdC=e.target.value; draw(); } };
-$('bdW').oninput=e=>{ const it=S.items[S.sel]; if(it&&it.kind==='photo'){ it.bdW=+e.target.value; draw(); } };
-$('txC').oninput=e=>{ const it=S.items[S.sel]; if(it&&it.kind==='text'){ it.c=e.target.value; draw(); } };
-$('txS').oninput=e=>{ const it=S.items[S.sel]; if(it&&it.kind==='text'){ it.size=+e.target.value; draw(); } };
-
+/* कई चुनीं (घेरकर) तो सब photos पर लगाओ, वरना चुनी एक पर */
+function selPhotos(){ const ids=S.selArr.length>1? S.selArr : (S.sel>=0?[S.sel]:[]); return ids.map(i=>S.items[i]).filter(t=>t&&t.kind==='photo'); }
+document.querySelectorAll('.shp').forEach(b=>b.onclick=()=>{ const ps=selPhotos(); if(ps.length){ ps.forEach(it=>it.shape=b.dataset.s); draw(); if(ps.length>1) toast('✅ '+ps.length+' photos — shape बदला'); } });
+$('bdC').oninput=e=>{ const ps=selPhotos(); if(ps.length){ ps.forEach(it=>it.bdC=e.target.value); draw(); } };
+$('bdW').oninput=e=>{ const ps=selPhotos(); if(ps.length){ ps.forEach(it=>it.bdW=+e.target.value); draw(); } };
+$('txC').oninput=e=>{ const ids=S.selArr.length>1? S.selArr : (S.sel>=0?[S.sel]:[]); const ts=ids.map(i=>S.items[i]).filter(t=>t&&t.kind==='text'); if(ts.length){ ts.forEach(it=>it.c=e.target.value); draw(); } };
+$('txS').oninput=e=>{ const ids=S.selArr.length>1? S.selArr : (S.sel>=0?[S.sel]:[]); const ts=ids.map(i=>S.items[i]).filter(t=>t&&t.kind==='text'); if(ts.length){ ts.forEach(it=>it.size=+e.target.value); draw(); } };
 /* ================= PHOTO FILL ================= */
 $('btnFill').onclick=()=>{
   const it=S.items[S.sel];
