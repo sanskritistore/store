@@ -78,7 +78,11 @@
  let tpls;
  if(p.utpl){ try{ /* custom cover + theme से 19 inner pages अपने-आप (B001 जैसे) */
    const t=JSON.parse(localStorage.getItem('sk_utpl_'+p.id));
-   tpls=[t,...(p.wedding?composeWedding(p.theme,19):composePages(p.theme,19))];
+   if(t&&t.book){ tpls=t.pages.map(pg=>({W:t.W,H:t.H,bg:pg.bg,name:pg.name,items:pg.items})); } /* 📖 पूरी book as-is */
+   else if(t){ tpls=[t]; }
+   if(tpls&&p.autofill!==false&&tpls.length<20){ /* ✨ hybrid: बाकी pages theme से (पुराने pkgs में हमेशा) */
+     tpls=tpls.concat(p.wedding?composeWedding(p.theme,20-tpls.length):composePages(p.theme,20-tpls.length));
+   }
   }catch(_){ tpls=null; } }
  if(!tpls) try{ /* 20-page book: असली cover + 19 themed pages (44-layout library) */
    const cover=await fetch(p.tpls[0]+'?v='+Date.now()).then(r=>r.json());

@@ -719,9 +719,13 @@ $('btnOrder').onclick=()=>{
     try{
       const t=JSON.parse(localStorage.getItem('sk_utpl_'+upkg));
       const pk=JSON.parse(localStorage.getItem('sk_custom_pkgs')||'[]').find(x=>x.id===upkg);
-      if(t){ /* custom cover + theme से 19 inner pages अपने-आप */
+      if(t){ /* custom template/book; autofill हो तो बाकी pages theme से */
         const th=(pk&&pk.theme)||{c1:'#241611',c2:'#120a07',acc:'#d4af37',txt:'#f2e3c6'};
-        loadPackage([t,...((pk&&pk.wedding)?composeWedding(th,19):composePages(th,19))],(t.name||(pk&&pk.name)||'मेरी Template'));
+        let arr;
+        if(t.book){ arr=t.pages.map(pg=>({W:t.W,H:t.H,bg:pg.bg,name:pg.name,items:pg.items})); } /* 📖 पूरी book as-is */
+        else arr=[t];
+        if(!pk||pk.autofill!==false){ const n=Math.max(0,20-arr.length); if(n) arr=arr.concat((pk&&pk.wedding)?composeWedding(th,n):composePages(th,n)); } /* ✨ hybrid */
+        loadPackage(arr,(t.name||(pk&&pk.name)||'मेरी Template'));
       } else loadTemplate(DEMO);
     }catch(_){ loadTemplate(DEMO); }
   }

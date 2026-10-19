@@ -25,7 +25,16 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#1a1d23;color:#eee;o
 select,input[type=text],input[type=number]{width:100%;background:#2d333d;border:1px solid #4a5260;color:#eee;padding:7px;border-radius:8px;font-size:13px;margin:3px 0}
 input[type=color]{width:44px;height:30px;border:none;background:none;cursor:pointer;padding:0}
 input[type=range]{width:100%}
-#stage{flex:1;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:20px;background:#14161a}
+#stage{flex:1;overflow:hidden;display:flex;flex-direction:column;padding:0;background:#14161a;position:relative}
+#stageScroll{flex:1;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:20px}
+#pgbar{flex:0 0 auto;background:#101218f2;padding:6px 8px 7px;z-index:6;border-top:1px solid #333}
+#pgthumbs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.pgt{position:relative;flex:0 0 auto;border:2px solid #444;border-radius:6px;overflow:hidden;cursor:pointer;background:#000}
+.pgt.on{border-color:#ff9933;box-shadow:0 0 8px #ff993366}
+.pgt canvas{display:block;height:44px;width:auto}
+.pgt span{position:absolute;left:3px;bottom:1px;font-size:10px;font-weight:700;color:#fff;text-shadow:0 1px 3px #000}
+#pgops{display:flex;gap:6px;margin-top:5px}
+#pgops .sbtn{flex:1;padding:5px 4px;font-size:12px}
 #pageCv{box-shadow:0 8px 40px #000c;cursor:default;touch-action:none}
 #hint{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);background:#23272fdd;padding:8px 16px;border-radius:20px;font-size:12px;color:#ffb86b;pointer-events:none;white-space:nowrap}
 .lib-item{display:flex;justify-content:space-between;align-items:center;background:#2d333d;padding:7px 9px;border-radius:8px;margin:4px 0;font-size:12px}
@@ -37,7 +46,8 @@ input[type=range]{width:100%}
   #topbar .badge{display:none}
   .tbtn{padding:6px 9px;font-size:12px;flex:none;white-space:nowrap}
   #main{flex-direction:column}
-  #stage{order:1;flex:1;min-height:0;padding:10px}
+  #stage{order:1;flex:1;min-height:0;padding:0}
+  #stageScroll{padding:10px}
   #side{order:2;width:100%;max-height:42vh;border-right:none;border-top:2px solid #333;padding:8px 10px}
   #side h3{margin:10px 0 4px}
   #pageCv{margin:auto}              /* page बीच में; zoom पर scroll भी चलता रहे */
@@ -51,7 +61,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v2.8 📄 (फटा किनारा)</span>
+  <span class="badge">FREE v3.0 📖 (Book Mode)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
@@ -198,7 +208,17 @@ input[type=range]{width:100%}
     <small style="color:#8a93a3;font-size:11px">Template → तुरंत Album page पर card (आपके device पर) + bundle download → LIVE के लिए भेजें</small>
   </div>
   <div id="stage">
-    <canvas id="pageCv"></canvas>
+    <div id="stageScroll"><canvas id="pageCv"></canvas></div>
+    <div id="pgbar">
+      <div id="pgthumbs"></div>
+      <div id="pgops">
+        <button class="sbtn" id="btnPgAdd" title="नया खाली page जोड़ो">➕ नया page</button>
+        <button class="sbtn" id="btnPgDup" title="इसी page की नकल">⧉ नकल</button>
+        <button class="sbtn" id="btnPgL" title="page पीछे लाओ">◀</button>
+        <button class="sbtn" id="btnPgR" title="page आगे भेजो">▶</button>
+        <button class="sbtn" id="btnPgDel" title="यह page हटाओ">🗑</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -225,6 +245,9 @@ input[type=range]{width:100%}
       <input type="number" id="plpPrice" placeholder="कीमत ₹" style="flex:1">
       <input type="number" id="plpMrp" placeholder="MRP ₹" style="flex:1">
     </div>
+    <label style="font-size:12px;color:#cfd6e0;display:flex;align-items:center;gap:7px;margin:5px 0;cursor:pointer">
+      <input type="checkbox" id="plpAuto" checked style="width:auto;margin:0"> ✨ बाकी pages theme से अपने-आप भरें (कुल 20 तक)
+    </label>
     <div class="srow">
       <button class="sbtn" id="btnPlpGo" style="background:#16a34a;color:#fff;border-color:#16a34a">✅ PLP पर डालो</button>
       <button class="sbtn" id="btnPlpCancel">✖ रद्द</button>
@@ -270,6 +293,12 @@ const S={ W:36, H:12,               // page inches
   items:[],                          // {kind:'photo'|'text', ...}  z-order = array order
   sel:-1, selArr:[], scale:30,       // selArr = Shift से चुनी कई चीज़ें
 };
+/* 📖 Multi-page Book Mode: S.bg/S.items अब current page (S.pages[S.pg]) की ओर ले जाते हैं —
+   पुराना सारा code (draw/hit/serialize/buttons) बिना बदले current page पर चलता रहता है (Settings Isolation) */
+S.pages=[{bg:S.bg,items:S.items}]; S.pg=0;
+delete S.bg; delete S.items;
+Object.defineProperty(S,'bg',{get:()=>S.pages[S.pg].bg,set:v=>{S.pages[S.pg].bg=v}});
+Object.defineProperty(S,'items',{get:()=>S.pages[S.pg].items,set:v=>{S.pages[S.pg].items=v}});
 
 const $=id=>document.getElementById(id);
 const cv=$('pageCv'), ctx=cv.getContext('2d');
@@ -500,28 +529,91 @@ $('btnMirV').onclick=()=>{
 };
 /* ---- Undo / Redo (Ctrl+Z / Ctrl+Y) ---- */
 let undoStack=[], redoStack=[], lastSnap=0;
+function curSnap(){ return {pages:S.pages.map(p=>({bg:{...p.bg},items:p.items.map(it=>({...it}))})),pg:S.pg,W:S.W,H:S.H}; }
+function restoreSnap(s){ S.pages=s.pages; S.pg=Math.min(s.pg,s.pages.length-1); S.W=s.W; S.H=s.H; S.sel=-1; S.selArr=[]; fit(); draw(); renderStrip(); }
 function snapshot(){
   const now=performance.now();
   if(now-lastSnap<250) return;      // एक ही action से double snapshot रोको
   lastSnap=now;
-  undoStack.push({items:S.items.map(it=>({...it})), bg:{...S.bg}, W:S.W, H:S.H});
+  undoStack.push(curSnap());       // 📖 पूरी book की हल्की copy (items के refs) — page ops भी undo होते हैं
   if(undoStack.length>50) undoStack.shift();
   redoStack=[];
 }
 function undo(){
   if(!undoStack.length) return toast('वापस जाने को कुछ नहीं');
-  redoStack.push({items:S.items.map(it=>({...it})), bg:{...S.bg}, W:S.W, H:S.H});
-  const s=undoStack.pop();
-  S.items=s.items; S.bg=s.bg; S.W=s.W; S.H=s.H; S.sel=-1; S.selArr=[]; fit(); draw();
+  redoStack.push(curSnap());
+  restoreSnap(undoStack.pop());
 }
 function redo(){
   if(!redoStack.length) return toast('आगे जाने को कुछ नहीं');
-  undoStack.push({items:S.items.map(it=>({...it})), bg:{...S.bg}, W:S.W, H:S.H});
-  const s=redoStack.pop();
-  S.items=s.items; S.bg=s.bg; S.W=s.W; S.H=s.H; S.sel=-1; S.selArr=[]; fit(); draw();
+  undoStack.push(curSnap());
+  restoreSnap(redoStack.pop());
 }
 $('btnUndo').onclick=undo;
 $('btnRedo').onclick=redo;
+/* ================= 📖 Multi-page Book Mode — pages की पट्टी ================= */
+function renderPageTo(oc,page,maxW){          /* किसी page को canvas पर रंगो (thumb/cover) */
+  const dpi=maxW/S.W;
+  oc.width=Math.round(S.W*dpi); oc.height=Math.round(S.H*dpi);
+  const o=oc.getContext('2d'); o.scale(dpi,dpi);
+  const bg=page.bg||{c1:'#222222'};
+  if(bg.grad){ const g=o.createLinearGradient(0,0,S.W,S.H); g.addColorStop(0,bg.c1); g.addColorStop(1,bg.c2); o.fillStyle=g; }
+  else o.fillStyle=bg.c1;
+  o.fillRect(0,0,S.W,S.H);
+  (page.items||[]).forEach(it=>{ try{ drawItem(o,it,1,true); }catch(_){}});   // sc=1 (पहले से scaled), export mode
+}
+let _stripT=0;
+function markStrip(){ clearTimeout(_stripT); _stripT=setTimeout(renderStrip,450); }  /* draw के बाद आराम से refresh */
+function renderStrip(){
+  const w=$('pgthumbs'); if(!w) return;
+  w.innerHTML='';
+  S.pages.forEach((p,i)=>{
+    const t=document.createElement('div'); t.className='pgt'+(i===S.pg?' on':'');
+    const c=document.createElement('canvas'); renderPageTo(c,p,150); t.appendChild(c);
+    const s=document.createElement('span'); s.textContent=(i+1); t.appendChild(s);
+    t.title='Page '+(i+1)+(i===0?' (cover)':'');
+    t.onclick=()=>setPage(i);
+    w.appendChild(t);
+  });
+  $('btnPgDel').style.opacity=S.pages.length>1?1:0.35;
+  $('btnPgL').style.opacity=S.pg>0?1:0.35;
+  $('btnPgR').style.opacity=S.pg<S.pages.length-1?1:0.35;
+}
+function setPage(i){
+  if(i<0||i>=S.pages.length||i===S.pg) return;
+  S.pg=i; S.sel=-1; S.selArr=[]; fit(); draw(); renderStrip();
+}
+function addPage(){
+  snapshot();
+  S.pages.splice(S.pg+1,0,{bg:{...S.bg},items:[]});   /* नए page को इसी page के रंगों से शुरू करो */
+  S.pg++; S.sel=-1; S.selArr=[]; fit(); draw(); renderStrip();
+  toast('➕ Page '+S.pages.length+' जुड़ा ✓ (कुल '+S.pages.length+')');
+}
+function dupPage(){
+  snapshot();
+  S.pages.splice(S.pg+1,0,{bg:{...S.bg},items:S.items.map(it=>({...it}))});
+  S.pg++; S.sel=-1; S.selArr=[]; fit(); draw(); renderStrip();
+  toast('⧉ Page '+(S.pg+1)+' — नकल तैयार ✓');
+}
+function delPage(){
+  if(S.pages.length<2) return toast('कम से कम 1 page रहेगा');
+  snapshot();
+  const n=S.pg+1;
+  S.pages.splice(S.pg,1); S.pg=Math.max(0,S.pg-1); S.sel=-1; S.selArr=[];
+  fit(); draw(); renderStrip(); toast('🗑 Page '+n+' हटा दिया (Undo से वापस आएगा)');
+}
+function movePage(d){
+  const j=S.pg+d;
+  if(j<0||j>=S.pages.length) return;
+  snapshot();
+  const t=S.pages[S.pg]; S.pages[S.pg]=S.pages[j]; S.pages[j]=t; S.pg=j;
+  draw(); renderStrip(); toast('Page '+(S.pg+1)+' पर ले गए ✓');
+}
+$('btnPgAdd').onclick=addPage;
+$('btnPgDup').onclick=dupPage;
+$('btnPgDel').onclick=delPage;
+$('btnPgL').onclick=()=>movePage(-1);
+$('btnPgR').onclick=()=>movePage(1);
 /* हर बदलाव से पहले अपने आप snapshot: canvas drag + सारे buttons */
 document.addEventListener('pointerdown',e=>{ if(e.target===cv) snapshot(); },true);
 document.addEventListener('click',e=>{ if(e.target.closest&&e.target.closest('button')) snapshot(); },true);
@@ -894,6 +986,7 @@ function draw(){
       ctx.strokeRect(it.x*sc-w/2, it.y*sc-h/2, w, h); ctx.setLineDash([]);
     }
   }
+  markStrip();   /* 📖 page thumb भी ताज़ा रहे (debounced) */
 }
 
 /* ================= POINTER (mobile-safe: r.width ratio!) ================= */
@@ -1078,22 +1171,45 @@ cv.addEventListener('dblclick',e=>{
 
 /* ================= SAVE / LOAD ================= */
 function serialize(){
-  return JSON.stringify({v:1,name:'template',W:S.W,H:S.H,bg:S.bg,
-    items:S.items.map(it=>{
-      if(it.kind==='photo'){ const {photo,...rest}=it; return {...rest, photoData:photo?photo.src:null}; }
-      if(it.kind==='decor'&&it.decor==='img'){ const {img,...rest}=it; return rest; }
-      return {...it};
-    })},null,1);
+  return JSON.stringify({v:1,name:'template',W:S.W,H:S.H,bg:S.bg,items:itemsToJSON(S.items)},null,1);
+}
+function itemsToJSON(items){
+  return items.map(it=>{
+    if(it.kind==='photo'){ const {photo,...rest}=it; return {...rest, photoData:photo?photo.src:null}; }
+    if(it.kind==='decor'&&it.decor==='img'){ const {img,...rest}=it; return rest; }
+    return {...it};
+  });
+}
+function itemsFromJSON(arr){
+  return arr.map(it=>{
+    if(it.kind==='photo'){
+      const o={...it}; delete o.photoData;
+      if(it.photoData){ const im=new Image(); im.onload=()=>{o.photo=im;o.pr=im.width/im.height;draw();}; im.src=it.photoData; o.photo=null; }
+      return o;
+    }
+    if(it.kind==='decor'&&it.decor==='img'&&it.src){
+      const o={...it}; const im=new Image(); im.onload=()=>{o.img=im;draw();}; im.src=it.src; o.img=null;
+      return o;
+    }
+    return it;
+  });
+}
+/* 📖 पूरी book — सारे pages एक JSON में */
+function serializeBook(){
+  return JSON.stringify({v:2,book:true,name:'book',W:S.W,H:S.H,
+    pages:S.pages.map(p=>({bg:{...p.bg},items:itemsToJSON(p.items)}))},null,1);
 }
 $('btnSaveJson').onclick=()=>{
-  const blob=new Blob([serialize()],{type:'application/json'});
+  const isBook=S.pages.length>1;
+  const j=isBook?serializeBook():serialize();
+  const blob=new Blob([j],{type:'application/json'});
   const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob); a.download='sanskriti-template.json'; a.click();
+  a.href=URL.createObjectURL(blob); a.download=isBook?'sanskriti-book.json':'sanskriti-template.json'; a.click();
   // library में भी
   const lib=JSON.parse(localStorage.getItem('tmplLib')||'[]');
-  lib.push({n:'Template '+(lib.length+1)+' — '+new Date().toLocaleDateString('hi-IN'), j:serialize()});
+  lib.push({n:(isBook?('📖 Book ('+S.pages.length+'p) '):'Template ')+(lib.length+1)+' — '+new Date().toLocaleDateString('hi-IN'), j});
   localStorage.setItem('tmplLib',JSON.stringify(lib));
-  renderLib(); toast('💾 सहेज लिया ✓');
+  renderLib(); toast(isBook?('💾 Book सहेजी ✓ ('+S.pages.length+' pages)'):'💾 सहेज लिया ✓');
 };
 $('btnLoadJson').onclick=()=>$('fileJson').click();
 $('fileJson').onchange=e=>{
@@ -1103,20 +1219,12 @@ $('fileJson').onchange=e=>{
 function loadTemplate(j){
   try{
     const d=JSON.parse(j);
-    S.W=d.W; S.H=d.H; S.bg=d.bg; S.sel=-1; S.selArr=[];
-    S.items=d.items.map(it=>{
-      if(it.kind==='photo'){
-        const o={...it}; delete o.photoData;
-        if(it.photoData){ const im=new Image(); im.onload=()=>{o.photo=im;o.pr=im.width/im.height;draw();}; im.src=it.photoData; o.photo=null; }
-        return o;
-      }
-      if(it.kind==='decor'&&it.decor==='img'&&it.src){
-        const o={...it}; const im=new Image(); im.onload=()=>{o.img=im;draw();}; im.src=it.src; o.img=null;
-        return o;
-      }
-      return it;
-    });
-    fit(); draw(); toast('📂 Template खुल गई ✓');
+    S.W=d.W; S.H=d.H; S.sel=-1; S.selArr=[];
+    if(d.book){ S.pages=d.pages.map(p=>({bg:p.bg||{c1:'#f7f1e8'},items:itemsFromJSON(p.items||[])})); }
+    else { S.pages=[{bg:d.bg,items:itemsFromJSON(d.items)}]; }   /* पुरानी single template भी book की तरह खुलती है */
+    S.pg=0;
+    fit(); draw(); renderStrip();
+    toast(d.book?('📖 Book खुल गई — '+S.pages.length+' pages ✓'):'📂 Template खुल गई ✓');
   }catch(e){ toast('⚠️ JSON खराब है'); }
 }
 function renderLib(){
@@ -1156,24 +1264,20 @@ $('btnExport').onclick=()=>{
 };
 
 /* ================= INIT ================= */
-fit(); renderLib(); draw(); if(innerWidth<=700) setTimeout(zoomFitStage,50);
+fit(); renderLib(); draw(); renderStrip(); if(innerWidth<=700) setTimeout(zoomFitStage,50);
 
 /* ================= 📦 PLP पर डालो — Template → Album page card (खुद करो!) ================= */
 function renderCover(maxW){
-  const dpi=maxW/S.W;
-  const oc=document.createElement('canvas'); oc.width=Math.round(S.W*dpi); oc.height=Math.round(S.H*dpi);
-  const o=oc.getContext('2d'); o.scale(dpi,dpi);
-  if(S.bg.grad){ const g=o.createLinearGradient(0,0,S.W,S.H); g.addColorStop(0,S.bg.c1); g.addColorStop(1,S.bg.c2); o.fillStyle=g; }
-  else o.fillStyle=S.bg.c1;
-  o.fillRect(0,0,S.W,S.H);
-  S.items.forEach(it=>{ try{ drawItem(o,it,1,true); }catch(_){}});   // sc=1 (already scaled), export mode
+  const oc=document.createElement('canvas');
+  renderPageTo(oc,S.pages[0],maxW);   /* 📖 Cover = हमेशा Page 1 */
   return oc;
 }
 $('btnToPlp').onclick=()=>{
-  if(!S.items.length) return toast('पहले template बनाओ — slots/decor डालो!');
+  if(!S.pages.some(p=>p.items.length)) return toast('पहले template बनाओ — slots/decor डालो!');
   try{ $('plpCover').src=renderCover(760).toDataURL('image/jpeg',0.85); }catch(e){ toast('cover नहीं बना — photo CORS?'); return; }
   $('plpCode').value='U'+Date.now().toString(36).toUpperCase().slice(-4);
   $('plpSize').value=S.W+'×'+S.H+' inch';
+  $('plpPages').value=S.pages.length>1?S.pages.length:20;   /* 📖 book हो तो असली pages */
   $('plpModal').style.display='flex';
 };
 $('btnPlpCancel').onclick=()=>$('plpModal').style.display='none';
@@ -1181,17 +1285,23 @@ $('btnPlpGo').onclick=()=>{
   const name=$('plpName').value.trim();
   if(!name) return toast('Package नाम लिखो');
   const id='u'+Date.now().toString(36);
+  const isBook=S.pages.length>1;
   const cover=renderCover(900).toDataURL('image/jpeg',0.82);
+  const bg0=S.pages[0].bg;
   const pkg={id,code:$('plpCode').value.trim()||id.toUpperCase(),name,en:$('plpEn').value.trim()||'Custom Design',
     cat:$('plpCat').value,cover,size:$('plpSize').value.trim()||S.W+'×'+S.H+' inch',
-    pages:+$('plpPages').value||20,price:+$('plpPrice').value||4999,mrp:+$('plpMrp').value||(+$('plpPrice').value||4999)+1500,
+    pages:isBook?S.pages.length:(+$('plpPages').value||20),
+    price:+$('plpPrice').value||4999,mrp:+$('plpMrp').value||(+$('plpPrice').value||4999)+1500,
     rating:4.8,custom:true,utpl:true,
+    book:isBook||undefined,                        /* 📖 पूरी book भेजी गई */
+    autofill:$('plpAuto').checked,                 /* ✨ बाकी pages theme से भरें? */
     wedding:($('plpCat').value==='wedding'),
-    theme:{c1:S.bg.c1,c2:S.bg.c2,acc:'#d4af37',txt:'#f2e3c6'},
-    includes:['📖 Premium Album Book — '+($('plpPages').value||20)+' pages','🧳 Premium Gift packing']};
-  // template JSON — photos खाली (ग्राहक भरेंगे), slots/config पूरे
-  const tpl=JSON.parse(serialize()); tpl.name=name;
-  tpl.items.forEach(it=>{ if(it.kind==='photo'){ it.photoData=null; delete it.pz; delete it.px; delete it.py; } }); /* photo-भराई viewer/builder के default model से */
+    theme:{c1:bg0.c1,c2:bg0.c2,acc:'#d4af37',txt:'#f2e3c6'},
+    includes:['📖 Premium Album Book — '+(isBook?S.pages.length:($('plpPages').value||20))+' pages','🧳 Premium Gift packing']};
+  // template JSON — photos खाली (ग्राहक भरेंगे), slots/config पूरे; 📖 book हो तो सारे pages
+  const tpl=isBook?JSON.parse(serializeBook()):JSON.parse(serialize()); tpl.name=name;
+  const stripPg=pg=>pg.items.forEach(it=>{ if(it.kind==='photo'){ it.photoData=null; delete it.pz; delete it.px; delete it.py; } }); /* photo-भराई viewer/builder के default model से */
+  if(tpl.book) tpl.pages.forEach(stripPg); else stripPg(tpl);
   try{
     localStorage.setItem('sk_utpl_'+id,JSON.stringify(tpl));
     const arr=JSON.parse(localStorage.getItem('sk_custom_pkgs')||'[]'); arr.push(pkg);
@@ -1202,7 +1312,7 @@ $('btnPlpGo').onclick=()=>{
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
   a.download='pkg-'+pkg.code+'-'+(name.replace(/\s+/g,'-'))+'.json'; a.click();
   $('plpModal').style.display='none';
-  toast('✅ PLP पर दिखेगा! Album page खोलकर देखो — LIVE के लिए bundle file भेजें 📤');
+  toast(isBook?('✅ पूरी Book ('+S.pages.length+' pages) PLP पर! Album page खोलकर देखो 📖'):'✅ PLP पर दिखेगा! Album page खोलकर देखो — LIVE के लिए bundle file भेजें 📤');
 };
 </script>
 </body>
