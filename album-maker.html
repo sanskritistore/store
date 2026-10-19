@@ -62,7 +62,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v3.2 🖱️ (घेरकर चुनो)</span>
+  <span class="badge">FREE v3.3 📏 (हर page अपना size)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
@@ -75,7 +75,7 @@ input[type=range]{width:100%}
 </div>
 <div id="main">
   <div id="side">
-    <h3>📏 Page Size</h3>
+    <h3>📏 Page Size <span style="font-size:11px;color:#888">(सिर्फ़ इस page का)</span></h3>
     <select id="selSize"></select>
     <div class="srow">
       <input type="number" id="inW" placeholder="चौड़ाई" style="flex:1" step="0.5">
@@ -294,7 +294,7 @@ const S={ W:36, H:12,               // page inches
 };
 /* 📖 Multi-page Book Mode: S.bg/S.items अब current page (S.pages[S.pg]) की ओर ले जाते हैं —
    पुराना सारा code (draw/hit/serialize/buttons) बिना बदले current page पर चलता रहता है (Settings Isolation) */
-S.pages=[{bg:S.bg,items:S.items}]; S.pg=0;
+S.pages=[{bg:S.bg,items:S.items,w:S.W,h:S.H}]; S.pg=0;
 delete S.bg; delete S.items;
 Object.defineProperty(S,'bg',{get:()=>S.pages[S.pg].bg,set:v=>{S.pages[S.pg].bg=v}});
 Object.defineProperty(S,'items',{get:()=>S.pages[S.pg].items,set:v=>{S.pages[S.pg].items=v}});
@@ -308,7 +308,9 @@ function toast(m){ const t=$('toast'); t.textContent=m; t.style.display='block';
 CFG.sizes.forEach((s,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=s.n; $('selSize').appendChild(o); });
 $('selSize').onchange=e=>{ const s=CFG.sizes[e.target.value]; setSize(s.w,s.h); };
 $('btnCustomSize').onclick=()=>{ const w=+$('inW').value, h=+$('inH').value; if(w>0&&h>0&&w<=60&&h<=60) setSize(w,h); else toast('⚠️ सही size डालो (max 60)'); };
-function setSize(w,h){ S.W=w; S.H=h; S.sel=-1; S.selArr=[]; fit(); draw(); }
+function setSize(w,h){ snapshot(); S.W=w; S.H=h; const pg=S.pages[S.pg]; if(pg){ pg.w=w; pg.h=h; }   /* 📏 सिर्फ़ इसी page का size */
+  S.sel=-1; S.selArr=[]; fit(); draw(); renderStrip(); }
+function syncSizeUI(){ const k=CFG.sizes.findIndex(s=>s.w===S.W&&s.h===S.H); if(k>=0) $('selSize').value=String(k); $('inW').value=S.W; $('inH').value=S.H; }
 
 function fit(){
   const sc=Math.min(CFG.maxPrev/S.W, CFG.maxPrev/S.H)*zoom;
@@ -531,8 +533,8 @@ $('btnMirV').onclick=()=>{
 };
 /* ---- Undo / Redo (Ctrl+Z / Ctrl+Y) ---- */
 let undoStack=[], redoStack=[], lastSnap=0;
-function curSnap(){ return {pages:S.pages.map(p=>({bg:{...p.bg},items:p.items.map(it=>({...it}))})),pg:S.pg,W:S.W,H:S.H}; }
-function restoreSnap(s){ S.pages=s.pages; S.pg=Math.min(s.pg,s.pages.length-1); S.W=s.W; S.H=s.H; S.sel=-1; S.selArr=[]; fit(); draw(); renderStrip(); }
+function curSnap(){ return {pages:S.pages.map(p=>({bg:{...p.bg},items:p.items.map(it=>({...it})),w:p.w,h:p.h})),pg:S.pg,W:S.W,H:S.H}; }
+function restoreSnap(s){ S.pages=s.pages; S.pg=Math.min(s.pg,s.pages.length-1); const pg=S.pages[S.pg]; S.W=(pg&&pg.w)||s.W; S.H=(pg&&pg.h)||s.H; S.sel=-1; S.selArr=[]; syncSizeUI(); fit(); draw(); renderStrip(); }
 function snapshot(){
   const now=performance.now();
   if(now-lastSnap<250) return;      // एक ही action से double snapshot रोको
@@ -555,13 +557,14 @@ $('btnUndo').onclick=undo;
 $('btnRedo').onclick=redo;
 /* ================= 📖 Multi-page Book Mode — pages की पट्टी ================= */
 function renderPageTo(oc,page,maxW){          /* किसी page को canvas पर रंगो (thumb/cover) */
-  const dpi=maxW/S.W;
-  oc.width=Math.round(S.W*dpi); oc.height=Math.round(S.H*dpi);
+  const pw=page.w||S.W, ph=page.h||S.H;       /* 📏 हर page का अपना size */
+  const dpi=maxW/pw;
+  oc.width=Math.round(pw*dpi); oc.height=Math.round(ph*dpi);
   const o=oc.getContext('2d'); o.scale(dpi,dpi);
   const bg=page.bg||{c1:'#222222'};
-  if(bg.grad){ const g=o.createLinearGradient(0,0,S.W,S.H); g.addColorStop(0,bg.c1); g.addColorStop(1,bg.c2); o.fillStyle=g; }
+  if(bg.grad){ const g=o.createLinearGradient(0,0,pw,ph); g.addColorStop(0,bg.c1); g.addColorStop(1,bg.c2); o.fillStyle=g; }
   else o.fillStyle=bg.c1;
-  o.fillRect(0,0,S.W,S.H);
+  o.fillRect(0,0,pw,ph);
   (page.items||[]).forEach(it=>{ try{ drawItem(o,it,1,true); }catch(_){}});   // sc=1 (पहले से scaled), export mode
 }
 let _stripT=0;
@@ -573,7 +576,7 @@ function renderStrip(){
     const t=document.createElement('div'); t.className='pgt'+(i===S.pg?' on':'');
     const c=document.createElement('canvas'); renderPageTo(c,p,150); t.appendChild(c);
     const s=document.createElement('span'); s.textContent=(i+1); t.appendChild(s);
-    t.title='Page '+(i+1)+(i===0?' (cover)':'');
+    t.title='Page '+(i+1)+' — '+(p.w||S.W)+'×'+(p.h||S.H)+' inch'+(i===0?' (cover)':'');   /* 📏 हर page अपना size */
     t.onclick=()=>setPage(i);
     w.appendChild(t);
   });
@@ -583,17 +586,19 @@ function renderStrip(){
 }
 function setPage(i){
   if(i<0||i>=S.pages.length||i===S.pg) return;
-  S.pg=i; S.sel=-1; S.selArr=[]; fit(); draw(); renderStrip();
+  S.pg=i; const pg=S.pages[i];
+  if(pg.w&&pg.h){ S.W=pg.w; S.H=pg.h; } else { pg.w=S.W; pg.h=S.H; }   /* 📏 page अपना size लेकर आता है */
+  S.sel=-1; S.selArr=[]; syncSizeUI(); fit(); draw(); renderStrip();
 }
 function addPage(){
   snapshot();
-  S.pages.splice(S.pg+1,0,{bg:{...S.bg},items:[]});   /* नए page को इसी page के रंगों से शुरू करो */
+  S.pages.splice(S.pg+1,0,{bg:{...S.bg},items:[],w:S.W,h:S.H});   /* नए page को इसी page के रंगों+size से शुरू करो */
   S.pg++; S.sel=-1; S.selArr=[]; fit(); draw(); renderStrip();
   toast('➕ Page '+S.pages.length+' जुड़ा ✓ (कुल '+S.pages.length+')');
 }
 function dupPage(){
   snapshot();
-  S.pages.splice(S.pg+1,0,{bg:{...S.bg},items:S.items.map(it=>({...it}))});
+  S.pages.splice(S.pg+1,0,{bg:{...S.bg},items:S.items.map(it=>({...it})),w:S.W,h:S.H});
   S.pg++; S.sel=-1; S.selArr=[]; fit(); draw(); renderStrip();
   toast('⧉ Page '+(S.pg+1)+' — नकल तैयार ✓');
 }
@@ -1240,7 +1245,7 @@ function itemsFromJSON(arr){
 /* 📖 पूरी book — सारे pages एक JSON में */
 function serializeBook(){
   return JSON.stringify({v:2,book:true,name:'book',W:S.W,H:S.H,
-    pages:S.pages.map(p=>({bg:{...p.bg},items:itemsToJSON(p.items)}))},null,1);
+    pages:S.pages.map(p=>({bg:{...p.bg},items:itemsToJSON(p.items),w:p.w||S.W,h:p.h||S.H}))},null,1);
 }
 $('btnSaveJson').onclick=()=>{
   const isBook=S.pages.length>1;
@@ -1263,8 +1268,9 @@ function loadTemplate(j){
   try{
     const d=JSON.parse(j);
     S.W=d.W; S.H=d.H; S.sel=-1; S.selArr=[];
-    if(d.book){ S.pages=d.pages.map(p=>({bg:p.bg||{c1:'#f7f1e8'},items:itemsFromJSON(p.items||[])})); }
-    else { S.pages=[{bg:d.bg,items:itemsFromJSON(d.items)}]; }   /* पुरानी single template भी book की तरह खुलती है */
+    if(d.book){ S.pages=d.pages.map(p=>({bg:p.bg||{c1:'#f7f1e8'},items:itemsFromJSON(p.items||[]),w:p.w||d.W,h:p.h||d.H})); }
+    else { S.pages=[{bg:d.bg,items:itemsFromJSON(d.items),w:d.W,h:d.H}]; }   /* पुरानी single template भी book की तरह खुलती है */
+    S.W=S.pages[0].w; S.H=S.pages[0].h;
     S.pg=0;
     fit(); draw(); renderStrip();
     SkFonts.ensureFonts(S.pages.flatMap(p=>p.items)).then(draw);   /* template के fonts load होकर फिर सही render */
@@ -1333,7 +1339,7 @@ $('btnPlpGo').onclick=()=>{
   const cover=renderCover(900).toDataURL('image/jpeg',0.82);
   const bg0=S.pages[0].bg;
   const pkg={id,code:$('plpCode').value.trim()||id.toUpperCase(),name,en:$('plpEn').value.trim()||'Custom Design',
-    cat:$('plpCat').value,cover,size:$('plpSize').value.trim()||S.W+'×'+S.H+' inch',
+    cat:$('plpCat').value,cover,size:$('plpSize').value.trim()||(S.pages[0].w||S.W)+'×'+(S.pages[0].h||S.H)+' inch (cover)',
     pages:isBook?S.pages.length:(+$('plpPages').value||20),
     price:+$('plpPrice').value||4999,mrp:+$('plpMrp').value||(+$('plpPrice').value||4999)+1500,
     rating:4.8,custom:true,utpl:true,

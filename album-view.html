@@ -79,7 +79,7 @@
  let tpls;
  if(p.utpl){ try{ /* custom cover + theme से 19 inner pages अपने-आप (B001 जैसे) */
    const t=JSON.parse(localStorage.getItem('sk_utpl_'+p.id));
-   if(t&&t.book){ tpls=t.pages.map(pg=>({W:t.W,H:t.H,bg:pg.bg,name:pg.name,items:pg.items})); } /* 📖 पूरी book as-is */
+   if(t&&t.book){ tpls=t.pages.map(pg=>({W:pg.w||t.W,H:pg.h||t.H,bg:pg.bg,name:pg.name,items:pg.items})); } /* 📖 पूरी book as-is — हर page अपना size */
    else if(t){ tpls=[t]; }
    if(tpls&&p.autofill!==false&&tpls.length<20){ /* ✨ hybrid: बाकी pages theme से (पुराने pkgs में हमेशा) */
      tpls=tpls.concat(p.wedding?composeWedding(p.theme,20-tpls.length):composePages(p.theme,20-tpls.length));
