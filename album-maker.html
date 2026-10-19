@@ -63,7 +63,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v3.8 🌿 (8 Border Patterns)</span>
+  <span class="badge">FREE v3.9 🔗 (Group + अपना Border)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
@@ -120,6 +120,12 @@ input[type=range]{width:100%}
         <option value="corner">⌐ कोना-फ्रेम</option>
         <option value="zigzag">⚡ ज़िग-ज़ैग</option>
       </select>
+    </div>
+    <div class="srow" style="flex-wrap:wrap;gap:6px;align-items:center">
+      <button class="sbtn" id="btnAddBorder" title="Photoshop में बनाई अपनी border PNG जोड़ो (बीच transparent)">➕ अपना Border</button>
+      <button class="sbtn" id="btnNoBorderImg" title="चुनी photo से image-border हटाओ">🚫 हटाओ</button>
+      <span id="bdChips" style="display:flex;gap:6px;flex-wrap:wrap"></span>
+      <input type="file" id="fileBorder" accept="image/png,image/webp,image/jpeg" style="display:none">
     </div>
     <div class="srow">
       <button class="sbtn" id="btnFill">📷 Photo भरो</button>
@@ -209,6 +215,8 @@ input[type=range]{width:100%}
     <div class="srow">
       <button class="sbtn" id="btnCopy">📋 Copy</button>
       <button class="sbtn" id="btnPasteItem">📄 Paste (नकल)</button>
+      <button class="sbtn" id="btnGroup" title="चुनी चीज़ें एक जोड़ी में (Ctrl+G)">🔗 Group</button>
+      <button class="sbtn" id="btnUngroup" title="Group खोलो (Ctrl+Shift+G)">✂️ Ungroup</button>
     </div>
 
     <h3>📚 मेरी Templates</h3>
@@ -648,6 +656,7 @@ window.addEventListener('keydown',e=>{
   if(e.key==='Delete'||e.key==='Backspace'){ delSel(); e.preventDefault(); return; }
   if(e.key==='Enter'||e.key==='Escape'){ S.sel=-1; S.selArr=[]; draw(); e.preventDefault(); return; }
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='c'){ copySel(); return; }
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='g'){ e.preventDefault(); if(e.shiftKey) ungroupSel(); else groupSel(); return; }
   if((e.ctrlKey||e.metaKey)&&e.key===']'){ layerMove('up'); e.preventDefault(); return; }
   if((e.ctrlKey||e.metaKey)&&e.key==='['){ layerMove('down'); e.preventDefault(); return; }
   const m={ArrowLeft:[-0.1,0],ArrowRight:[0.1,0],ArrowUp:[0,-0.1],ArrowDown:[0,0.1]}[e.key];
@@ -677,8 +686,10 @@ function pasteItem(){
   if(!itemClip||!itemClip.length) return toast('पहले कुछ Copy करो');
   snapshot();
   const newIdx=[];
+  const gmap={};   // नकल का group अलग — नया group id
   itemClip.forEach(c=>{
     const it={...c, id:uid++};
+    if(it.grp){ it.grp=gmap[it.grp]||(gmap[it.grp]='g'+Date.now()+'_'+Math.random().toString(36).slice(2,6)); }
     delete it._img; delete it._photo;
     if(c._img) it.img=c._img;
     if(c._photo!==undefined) it.photo=c._photo;
@@ -690,6 +701,65 @@ function pasteItem(){
 }
 $('btnCopy').onclick=copySel;
 $('btnPasteItem').onclick=pasteItem;
+/* ---- 🔗 GROUP: कई चीज़ें एक जोड़ी — एक हिले, सब हिलें ---- */
+function groupSel(){
+  const idxs=S.selArr.length>1? [...S.selArr] : (S.sel>=0?[S.sel]:[]);
+  if(idxs.length<2){ toast('पहले 2+ चीज़ें चुनो — घेरकर या Shift+tap से'); return; }
+  snapshot();
+  const g='g'+Date.now();
+  idxs.forEach(i=>{ if(S.items[i]) S.items[i].grp=g; });
+  draw(); toast('🔗 '+idxs.length+' चीज़ें जुड़ गईं — अब साथ हिलेंगी/हटेंगी');
+}
+function ungroupSel(){
+  const idxs=S.selArr.length? [...S.selArr] : (S.sel>=0?[S.sel]:[]);
+  const gids=new Set(idxs.filter(i=>S.items[i]&&S.items[i].grp).map(i=>S.items[i].grp));
+  if(!gids.size){ toast('चुनी चीज़ों में कोई group नहीं'); return; }
+  snapshot();
+  let n=0; S.items.forEach(it=>{ if(it.grp&&gids.has(it.grp)){ delete it.grp; n++; } });
+  draw(); toast('✂️ '+n+' चीज़ें अलग हो गईं');
+}
+$('btnGroup').onclick=groupSel;
+$('btnUngroup').onclick=ungroupSel;
+/* ---- 🖼️ अपना Border — Photoshop में बनाए samples, device पर हमेशा सहेजे ---- */
+let borderLib=[];
+try{ borderLib=JSON.parse(localStorage.getItem('tmplBorderLib')||'[]'); }catch(_){ borderLib=[]; }
+function saveBorderLib(){ try{ localStorage.setItem('tmplBorderLib',JSON.stringify(borderLib)); }
+  catch(_){ toast('⚠️ Border library भर गई — कुछ पुराने sample हटाओ'); } }
+function renderBorderLib(){
+  const box=$('bdChips'); if(!box) return; box.innerHTML='';
+  borderLib.forEach((b,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='position:relative;width:44px;height:44px;border:2px solid #475569;border-radius:8px;overflow:hidden;cursor:pointer;background:repeating-conic-gradient(#33415533 0 25%,#ffffff11 0 50%) 0 0/12px 12px';
+    d.title=b.name+' — tap = चुनी photos पर लगाओ';
+    const ig=document.createElement('img'); ig.src=b.img; ig.style.cssText='width:100%;height:100%;object-fit:contain';
+    d.appendChild(ig);
+    d.onclick=()=>{ const ps=selPhotos(); if(!ps.length) return toast('पहले photo चुनो');
+      snapshot(); ps.forEach(it=>{ it.bdImg=b.img; delete it._bdIm; }); draw();
+      toast('🖼️ "'+b.name+'" लगा ✓'+(ps.length>1?' ('+ps.length+' photos)':'')); };
+    const x=document.createElement('span');
+    x.textContent='✕'; x.title='sample हटाओ';
+    x.style.cssText='position:absolute;top:0;right:2px;color:#f87171;font-size:11px;font-weight:700;text-shadow:0 0 3px #000';
+    x.onclick=e=>{ e.stopPropagation(); if(!confirm('"'+b.name+'" sample हटाओ?')) return;
+      borderLib.splice(i,1); saveBorderLib(); renderBorderLib(); };
+    d.appendChild(x); box.appendChild(d);
+  });
+}
+$('btnAddBorder').onclick=()=>$('fileBorder').click();
+$('fileBorder').onchange=e=>{
+  const f=e.target.files[0]; if(!f) return; e.target.value='';
+  const rd=new FileReader();
+  rd.onload=()=>{ const im=new Image(); im.onload=()=>{
+      const M=800, s=Math.min(1,M/Math.max(im.width,im.height));
+      const c=document.createElement('canvas'); c.width=Math.max(1,im.width*s); c.height=Math.max(1,im.height*s);
+      c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+      borderLib.push({name:(f.name||'border').replace(/\.[^.]+$/,'').slice(0,24), img:c.toDataURL('image/png')});
+      saveBorderLib(); renderBorderLib();
+      toast('🖼️ sample जुड़ा — photo चुनकर chip पर tap करो');
+    }; im.src=rd.result; };
+  rd.readAsDataURL(f);
+};
+$('btnNoBorderImg').onclick=()=>{ const ps=selPhotos(); if(!ps.length) return toast('पहले photo चुनो');
+  snapshot(); ps.forEach(it=>{ delete it.bdImg; delete it._bdIm; }); draw(); toast('🚫 Image-border हटा ✓'); };
 /* कई चुनीं (घेरकर) तो सब photos पर लगाओ, वरना चुनी एक पर */
 function selPhotos(){ const ids=S.selArr.length>1? S.selArr : (S.sel>=0?[S.sel]:[]); return ids.map(i=>S.items[i]).filter(t=>t&&t.kind==='photo'); }
 document.querySelectorAll('.shp').forEach(b=>b.onclick=()=>{ const ps=selPhotos(); if(ps.length){ ps.forEach(it=>it.shape=b.dataset.s); draw(); if(ps.length>1) toast('✅ '+ps.length+' photos — shape बदला'); } });
@@ -944,6 +1014,9 @@ function drawItem(c,it,sc,forExport){
       }
     }
     if(it.bdW>0){ (window.SkBorders?SkBorders.draw:(c2,itt,sc2,p)=>{ c2.setLineDash([]); c2.strokeStyle=itt.bdC; c2.lineWidth=itt.bdW*sc2; c2.stroke(p); })(c,it,sc,path); }
+    if(it.bdImg){ let im=it._bdIm;   /* 🖼️ अपना Border — photo के ऊपर frame */
+      if(!im){ im=new Image(); im.onload=()=>draw(); im.src=it.bdImg; it._bdIm=im; }
+      if(im.complete&&im.naturalWidth) c.drawImage(im,X,Y,W,H); }
     c.restore();
   }else{
     c.fillStyle=it.c;
@@ -1152,8 +1225,13 @@ cv.addEventListener('pointerdown',e=>{
           multi:S.selArr.map(j=>({j,f:{...S.items[j]}}))};
         return;
       }
-      S.selArr=[]; S.sel=i; try{cv.setPointerCapture(e.pointerId);}catch(_){}
-      drag={mode:'mv',sx:p.x,sy:p.y,f0:{...t}};
+      /* 🔗 group member छुआ = पूरा group चुनो + साथ हिलो */
+      S.selArr=[]; S.sel=i;
+      if(t.grp) S.selArr=S.items.map((x,j)=>x.grp===t.grp?j:-1).filter(j=>j>=0);
+      try{cv.setPointerCapture(e.pointerId);}catch(_){}
+      drag=S.selArr.length>1
+        ? {mode:'mv',sx:p.x,sy:p.y,f0:{...t},multi:S.selArr.map(j=>({j,f:{...S.items[j]}}))}
+        : {mode:'mv',sx:p.x,sy:p.y,f0:{...t}};
       draw(); return;
     }
   }
@@ -1253,7 +1331,7 @@ async function fixBlobPhotos(){
 }
 function itemsToJSON(items){
   return items.map(it=>{
-    if(it.kind==='photo'){ const {photo,...rest}=it; return {...rest, photoData:photo?photo.src:null}; }
+    if(it.kind==='photo'){ const {photo,_bdIm,...rest}=it; return {...rest, photoData:photo?photo.src:null}; }
     if(it.kind==='decor'&&it.decor==='img'){ const {img,...rest}=it; return rest; }
     return {...it};
   });
@@ -1359,7 +1437,11 @@ function renderLib(){
 /* ================= EXPORT 300 DPI ================= */
 $('btnExport').onclick=()=>{
   toast('⏳ Print file बन रही...');
-  SkFonts.ensureFonts(S.pages.flatMap(p=>p.items)).then(()=>setTimeout(()=>{   /* पहले सारे fonts load — print में सही अक्षर */
+  Promise.all([   /* fonts + अपने borders — दोनों पहले load, फिर print */
+    SkFonts.ensureFonts(S.pages.flatMap(p=>p.items)),
+    ...S.pages.flatMap(p=>p.items).filter(it=>it.bdImg&&!(it._bdIm&&it._bdIm.complete)).map(it=>new Promise(r=>{
+      const im=new Image(); im.onload=()=>{ it._bdIm=im; r(); }; im.onerror=r; im.src=it.bdImg; }))
+  ]).then(()=>setTimeout(()=>{
     const dpi=CFG.exportDpi;
     const ec=document.createElement('canvas');
     ec.width=Math.round(S.W*dpi); ec.height=Math.round(S.H*dpi);
@@ -1378,7 +1460,7 @@ $('btnExport').onclick=()=>{
 };
 
 /* ================= INIT ================= */
-fit(); renderLib(); draw(); renderStrip(); if(innerWidth<=700) setTimeout(zoomFitStage,50);
+fit(); renderLib(); renderBorderLib(); draw(); renderStrip(); if(innerWidth<=700) setTimeout(zoomFitStage,50);
 /* 🛟 RELOAD = काम खोना नहीं — पिछला काम अपने-आप वापस (Undo = नया खाली पाना) */
 try{
   const _aj=localStorage.getItem('tmplAuto');

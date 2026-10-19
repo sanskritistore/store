@@ -313,6 +313,9 @@ function drawItem(c,it,sc,forExport){
       }
     }
     if(it.bdW>0){ (window.SkBorders?SkBorders.draw:(c2,itt,sc2,p)=>{ c2.setLineDash([]); c2.strokeStyle=itt.bdC; c2.lineWidth=itt.bdW*sc2; c2.stroke(p); })(c,it,sc,path); }
+    if(it.bdImg){ let im=it._bdIm;   /* 🖼️ अपना Border frame */
+      if(!im){ im=new Image(); im.src=it.bdImg; it._bdIm=im; }
+      if(im.complete&&im.naturalWidth) c.drawImage(im,X,Y,W,H); }
     c.restore();
   }else{
     c.fillStyle=it.c;
