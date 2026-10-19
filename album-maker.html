@@ -62,7 +62,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v3.1 🔤 (14 शादी Fonts)</span>
+  <span class="badge">FREE v3.2 🖱️ (घेरकर चुनो)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
@@ -207,6 +207,7 @@ input[type=range]{width:100%}
   </div>
   <div id="stage">
     <div id="stageScroll"><canvas id="pageCv"></canvas></div>
+    <button id="btnDelSel" style="position:fixed;right:14px;bottom:86px;z-index:60;display:none;background:#c0392b;color:#fff;border:none;border-radius:10px;padding:11px 16px;font-weight:800;font-size:15px;box-shadow:0 3px 12px #0008;cursor:pointer">🗑️ हटाओ</button>
     <div id="pgbar">
       <div id="pgthumbs"></div>
       <div id="pgops">
@@ -985,6 +986,15 @@ function draw(){
       ctx.strokeRect(it.x*sc-w/2, it.y*sc-h/2, w, h); ctx.setLineDash([]);
     }
   }
+  // 🖱️ घेरकर चुनने का डिब्बा (marquee)
+  if(drag&&drag.mode==='marquee'){
+    const x=Math.min(drag.sx,drag.x)*sc, y=Math.min(drag.sy,drag.y)*sc;
+    const w=Math.abs(drag.x-drag.sx)*sc, h=Math.abs(drag.y-drag.sy)*sc;
+    ctx.save(); ctx.fillStyle='#ff993322'; ctx.strokeStyle='#ff9933'; ctx.lineWidth=1.5; ctx.setLineDash([6,4]);
+    ctx.fillRect(x,y,w,h); ctx.strokeRect(x,y,w,h); ctx.restore();
+  }
+  // 🗑️ चुनी चीज़ हटाने का button (phone पर keyboard नहीं होता)
+  const _bd=$('btnDelSel'); if(_bd) _bd.style.display=(S.sel>=0||S.selArr.length)?'':'none';
   markStrip();   /* 📖 page thumb भी ताज़ा रहे (debounced) */
 }
 
@@ -1124,10 +1134,22 @@ cv.addEventListener('pointerdown',e=>{
       draw(); return;
     }
   }
-  if(e.shiftKey) return;   // shift + खाली जगह = चुनाव वैसा ही
-  S.selArr=[];
-  S.sel=-1; draw();
+  // 🖱️ खाली जगह से खींचो = घेरकर चुनो (marquee); Shift = पुराने में जोड़ते जाओ
+  try{cv.setPointerCapture(e.pointerId);}catch(_){}
+  drag={mode:'marquee',sx:p.x,sy:p.y,x:p.x,y:p.y,add:e.shiftKey?1:0};
+  if(!e.shiftKey){ S.selArr=[]; S.sel=-1; }
+  draw();
 });
+/* क्या item चुनाव-डिब्बे के अंदर/छूता है? (marquee resolve) */
+function itemInRect(t,r){
+  if(t.kind==='decor'&&t.cx==null&&t.x==null) return false;   // corners/frame select नहीं होते
+  if(t.kind==='photo'||(t.kind==='decor'&&t.decor==='img'))
+    return t.x<r.x2&&t.x+t.w>r.x1&&t.y<r.y2&&t.y+t.h>r.y1;
+  if(t.kind==='decor')
+    return t.cx>r.x1&&t.cx<r.x2&&t.cy>r.y1&&t.cy<r.y2;
+  const w=t.text.length*t.size*0.55+0.4, h=t.size*0.8+0.4;   // text ≈ hitText जैसा
+  return t.x-w/2<r.x2&&t.x+w/2>r.x1&&t.y-h/2<r.y2&&t.y+h/2>r.y1;
+}
 cv.addEventListener('pointermove',e=>{
   if(ptrs.has(e.pointerId)) ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(ptrs.size===2&&pinch0){   // pinch zoom चल रहा
@@ -1138,6 +1160,7 @@ cv.addEventListener('pointermove',e=>{
   }
   if(!drag) return;
   const p=pos(e), it=S.items[S.sel];
+  if(drag.mode==='marquee'){ drag.x=p.x; drag.y=p.y; draw(); return; }   // 🖱️ घेरने का डिब्बा बढ़ाओ
   const dx=p.x-drag.sx, dy=p.y-drag.sy, f=drag.f0;
   if(drag.mode==='pan'){   // slot के अंदर photo खींचो
     it.px=Math.round(((f.px||0)+dx)*100)/100;
@@ -1158,7 +1181,28 @@ cv.addEventListener('pointermove',e=>{
   }
   draw();
 });
-cv.addEventListener('pointerup',e=>{ ptrs.delete(e.pointerId); if(ptrs.size<2) pinch0=null; drag=null; });
+cv.addEventListener('pointerup',e=>{
+  ptrs.delete(e.pointerId); if(ptrs.size<2) pinch0=null;
+  if(drag&&drag.mode==='marquee'){   // 🖱️ घेरा पूरा = अंदर की सब चीज़ें चुनो
+    const r={x1:Math.min(drag.sx,drag.x),y1:Math.min(drag.sy,drag.y),x2:Math.max(drag.sx,drag.x),y2:Math.max(drag.sy,drag.y)};
+    if((r.x2-r.x1)>=0.15||(r.y2-r.y1)>=0.15){
+      const picks=[];
+      S.items.forEach((t,i)=>{ if(itemInRect(t,r)) picks.push(i); });
+      if(picks.length){
+        S.selArr=drag.add? [...new Set([...S.selArr,...picks])] : picks;
+        S.sel=S.selArr[S.selArr.length-1];
+        if(S.selArr.length>1) toast('✅ '+S.selArr.length+' चीज़ें चुनीं — किसी भी एक को खींचो, सब साथ चलेंगी');
+      }
+      else if(!drag.add){ S.sel=-1; S.selArr=[]; }
+    }
+    draw();
+  }
+  drag=null;
+});
+$('btnDelSel').onclick=()=>{   // 🗑️ चुनी एक/कई चीज़ें एक साथ हटाओ (phone-friendly)
+  if(S.selArr.length){ const s=new Set(S.selArr); S.items=S.items.filter((_,i)=>!s.has(i)); S.sel=-1; S.selArr=[]; draw(); toast('🗑️ '+s.size+' चीज़ें हट गईं'); }
+  else if(S.sel>=0){ S.items.splice(S.sel,1); S.sel=-1; draw(); toast('🗑️ हट गया'); }
+};
 cv.addEventListener('pointercancel',e=>{ ptrs.delete(e.pointerId); if(ptrs.size<2) pinch0=null; drag=null; });
 cv.addEventListener('dblclick',e=>{
   const it=S.items[S.sel];
