@@ -47,7 +47,7 @@ body{font-family:'Nirmala UI',system-ui,sans-serif;background:#17191d;color:#e8e
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Biodata Maker</h1>
-  <span class="badge" id="bdg">FREE v1.1 💍 (Latest)</span>
+  <span class="badge" id="bdg">FREE v1.2 🌐 (11 भाषाएँ)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJ">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnLoadJ">📂 JSON खोलें</button>
@@ -56,17 +56,22 @@ body{font-family:'Nirmala UI',system-ui,sans-serif;background:#17191d;color:#e8e
 </div>
 <div id="main">
   <div id="side">
+    <div class="sec" id="langSec">
+      <h3>🌐 भाषा / Language</h3>
+      <div class="frow"><select id="selLang" style="width:100%"></select></div>
+      <div class="frow" id="transRow"><label style="display:flex;gap:7px;align-items:center;font-size:12px;color:#cbd5e1;cursor:pointer"><input type="checkbox" id="chkTrans" checked style="width:auto;margin:0"> <span id="transLbl"></span></label></div>
+    </div>
     <div class="sec">
-      <h3>🎨 Template चुनो</h3>
+      <h3 id="h3Tmpl">🎨 Template चुनो</h3>
       <div class="tchips" id="tchips"></div>
     </div>
     <div class="sec">
-      <h3>📷 फोटो</h3>
+      <h3 id="h3Photo">📷 फोटो</h3>
       <div class="frow"><button class="sbtn" id="btnPhoto" style="width:100%">📷 फोटो अपलोड करो</button></div>
-      <div class="frow"><label>फोटो zoom</label><input type="range" id="pz" min="1" max="3" step="0.05" value="1"></div>
+      <div class="frow"><label id="lblZoom">फोटो zoom</label><input type="range" id="pz" min="1" max="3" step="0.05" value="1"></div>
     </div>
     <div class="sec">
-      <h3>📐 अक्षर साइज़</h3>
+      <h3 id="h3Fsz">📐 अक्षर साइज़</h3>
       <div class="frow"><input type="range" id="fsz" min="0.75" max="1.15" step="0.05" value="1"></div>
     </div>
     <div id="formSecs"></div>
@@ -89,35 +94,17 @@ const $=id=>document.getElementById(id);
 
 /* ---- 📋 FORM SCHEMA (config — नया field/section यहाँ जोड़ो) ---- */
 const SECTIONS=[
- {t:'व्यक्तिगत विवरण', f:[
-  {k:'name', l:'नाम'},
-  {k:'dob',  l:'जन्म तारीख़'},
-  {k:'tob',  l:'जन्म समय'},
-  {k:'pob',  l:'जन्म स्थान'},
-  {k:'ht',   l:'ऊँचाई'},
-  {k:'wt',   l:'वज़न'},
-  {k:'skin', l:'रंग', sel:['गोरा','गेहुँआ','साँवला']},
-  {k:'rashi',l:'राशि', sel:['मेष','वृषभ','मिथुन','कर्क','सिंह','कन्या','तुला','वृश्चिक','धनु','मकर','कुंभ','मीन']},
-  {k:'gotra',l:'गोत्र'},
-  {k:'manglik',l:'मांगलिक', sel:['नहीं','हाँ','आंशिक']},
- ]},
- {t:'पारिवारिक विवरण', f:[
-  {k:'father', l:'पिता का नाम'},
-  {k:'focc',   l:'पिता का व्यवसाय'},
-  {k:'mother', l:'माता का नाम'},
-  {k:'sib',    l:'भाई-बहन'},
-  {k:'native', l:'मूल निवास'},
- ]},
- {t:'शिक्षा व व्यवसाय', f:[
-  {k:'edu',    l:'शिक्षा'},
-  {k:'work',   l:'व्यवसाय / नौकरी'},
-  {k:'income', l:'वार्षिक आय'},
- ]},
- {t:'संपर्क', f:[
-  {k:'addr',  l:'पता', area:1},
-  {k:'phone', l:'मोबाइल'},
- ]},
+ {f:[{k:'name'},{k:'dob'},{k:'tob'},{k:'pob'},{k:'ht'},{k:'wt'},
+     {k:'skin',sel:'skin'},{k:'rashi',sel:'rashi'},{k:'gotra'},{k:'manglik',sel:'mang'}]},
+ {f:[{k:'father'},{k:'focc'},{k:'mother'},{k:'sib'},{k:'native'}]},
+ {f:[{k:'edu'},{k:'work'},{k:'income'}]},
+ {f:[{k:'addr',area:1},{k:'phone'}]},
 ];
+/* select options के KEYS (data में key store → हर भाषा में सही दिखे) */
+const RASHI_K=['mesha','vrishabha','mithuna','karka','simha','kanya','tula','vrischika','dhanu','makara','kumbha','meena'];
+const SKIN_K=['gora','gehua','savla'];
+const MANG_K=['nahi','haan','anshik'];
+const OPTKEYS={skin:SKIN_K,rashi:RASHI_K,mang:MANG_K};
 
 /* ---- 🎨 TEMPLATES (config — नया design यहाँ जोड़ो) ---- */
 const TMPL=[
@@ -146,32 +133,202 @@ const TMPL=[
 ];
 
 /* ---- State ---- */
-const S={ tmpl:0, d:{}, photo:null, pz:1, fsz:1 };
+const S={ tmpl:0, d:{}, photo:null, pz:1, fsz:1, lang:'hi', trans:true };
+
+/* ---- 🌐 11 भाषाएँ (config — नई भाषा = यहाँ 1 object; संस्कृति: "जहाँ जाए, वहीँ की भाषा") ---- */
+const LANGS={
+hi:{n:'हिंदी',nf:'yatra',header:'॥ श्री गणेशाय नमः ॥',title:'विवाह हेतु परिचय पत्र',footer:'— संस्कृति से बनाया गया —',subline:'॥ शुभ विवाह ॥',
+ sec:['व्यक्तिगत विवरण','पारिवारिक विवरण','शिक्षा व व्यवसाय','संपर्क'],
+ lab:{name:'नाम',dob:'जन्म तारीख़',tob:'जन्म समय',pob:'जन्म स्थान',ht:'ऊँचाई',wt:'वज़न',skin:'रंग',rashi:'राशि',gotra:'गोत्र',manglik:'मांगलिक',father:'पिता का नाम',focc:'पिता का व्यवसाय',mother:'माता का नाम',sib:'भाई-बहन',native:'मूल निवास',edu:'शिक्षा',work:'व्यवसाय / नौकरी',income:'वार्षिक आय',addr:'पता',phone:'मोबाइल',header:'शीर्ष पंक्ति (Header)',title:'दस्तावेज़ शीर्षक'},
+ rashi:['मेष','वृषभ','मिथुन','कर्क','सिंह','कन्या','तुला','वृश्चिक','धनु','मकर','कुंभ','मीन'],
+ skin:['गोरा','गेहुँआ','साँवला'],mang:['नहीं','हाँ','आंशिक'],
+ ui:{tmpl:'🎨 Template चुनो',photo:'📷 फोटो',upload:'📷 फोटो अपलोड करो',zoom:'फोटो zoom',fsz:'📐 अक्षर साइज़',clear:'🔄 सब साफ़ करो',save:'💾 JSON सहेजें',load:'📂 JSON खोलें',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'English keyboard से हिंदी में लिखो',doc:'📄 दस्तावेज़',choose:'— चुनो —'}},
+en:{n:'English',nf:'gvibes',header:'|| Shri Ganeshaya Namah ||',title:'Marriage Biodata',footer:'— Made with Sanskriti —',subline:'Shubh Vivah',
+ sec:['Personal Details','Family Details','Education & Career','Contact'],
+ lab:{name:'Name',dob:'Date of Birth',tob:'Time of Birth',pob:'Place of Birth',ht:'Height',wt:'Weight',skin:'Complexion',rashi:'Zodiac',gotra:'Gotra',manglik:'Manglik',father:"Father's Name",focc:"Father's Occupation",mother:"Mother's Name",sib:'Siblings',native:'Native Place',edu:'Education',work:'Occupation',income:'Annual Income',addr:'Address',phone:'Mobile',header:'Header Line',title:'Document Title'},
+ rashi:['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'],
+ skin:['Fair','Wheatish','Dark'],mang:['No','Yes','Partial'],
+ ui:{tmpl:'🎨 Choose Template',photo:'📷 Photo',upload:'📷 Upload Photo',zoom:'Photo zoom',fsz:'📐 Font Size',clear:'🔄 Clear All',save:'💾 Save JSON',load:'📂 Open JSON',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'Type with English keyboard',doc:'📄 Document',choose:'— choose —'}},
+mr:{n:'मराठी',nf:'yatra',header:'॥ श्री गणेशाय नमः ॥',title:'विवाहासाठी परिचय पत्र',footer:'— संस्कृतीने बनवले —',subline:'॥ शुभ विवाह ॥',
+ sec:['वैयक्तिक माहिती','कौटुंबिक माहिती','शिक्षण व व्यवसाय','संपर्क'],
+ lab:{name:'नाव',dob:'जन्म तारीख',tob:'जन्म वेळ',pob:'जन्म ठिकाण',ht:'उंची',wt:'वजन',skin:'रंग',rashi:'रास',gotra:'गोत्र',manglik:'मांगलिक',father:'वडिलांचे नाव',focc:'वडिलांचा व्यवसाय',mother:'आईचे नाव',sib:'भावंडे',native:'मूळ गाव',edu:'शिक्षण',work:'व्यवसाय/नोकरी',income:'वार्षिक उत्पन्न',addr:'पत्ता',phone:'मोबाईल',header:'शीर्षक ओळ',title:'दस्तऐवज शीर्षक'},
+ rashi:['मेष','वृषभ','मिथुन','कर्क','सिंह','कन्या','तूळ','वृश्चिक','धनु','मकर','कुंभ','मीन'],
+ skin:['गोरा','गव्हाळ','सावळा'],mang:['नाही','होय','आंशिक'],
+ ui:{tmpl:'🎨 नमुना निवडा',photo:'📷 छायाचित्र',upload:'📷 फोटो अपलोड करा',zoom:'फोटो zoom',fsz:'📐 अक्षर आकार',clear:'🔄 सर्व साफ करा',save:'💾 JSON जतन करा',load:'📂 JSON उघडा',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'English keyboard मधून मराठीत लिहा',doc:'📄 दस्तऐवज',choose:'— निवडा —'}},
+gu:{n:'ગુજરાતી',header:'॥ શ્રી ગણેશાય નમઃ ॥',title:'લગ્ન માટે પરિચય પત્ર',footer:'— સંસ્કૃતિથી બનાવેલ —',subline:'॥ શુભ વિવાહ ॥',
+ sec:['વ્યક્તિગત વિગત','પારિવારિક વિગત','શિક્ષણ અને વ્યવસાય','સંપર્ક'],
+ lab:{name:'નામ',dob:'જન્મ તારીખ',tob:'જન્મ સમય',pob:'જન્મ સ્થળ',ht:'ઊંચાઈ',wt:'વજન',skin:'રંગ',rashi:'રાશિ',gotra:'ગોત્ર',manglik:'માંગલિક',father:'પિતાનું નામ',focc:'પિતાનો વ્યવસાય',mother:'માતાનું નામ',sib:'ભાઈ-બહેન',native:'મૂળ વતન',edu:'શિક્ષણ',work:'વ્યવસાય/નોકરી',income:'વાર્ષિક આવક',addr:'સરનામું',phone:'મોબાઈલ',header:'શીર્ષક વાક્ય',title:'દસ્તાવેજ શીર્ષક'},
+ rashi:['મેષ','વૃષભ','મિથુન','કર્ક','સિંહ','કન્યા','તુલા','વૃશ્ચિક','ધન','મકર','કુંભ','મીન'],
+ skin:['ગોરો','ઘઉંવર્ણ','સાંવળો'],mang:['ના','હા','આંશિક'],
+ ui:{tmpl:'🎨 ટેમ્પ્લેટ પસંદ કરો',photo:'📷 ફોટો',upload:'📷 ફોટો અપલોડ કરો',zoom:'ફોટો zoom',fsz:'📐 અક્ષર સાઇઝ',clear:'🔄 બધું સાફ કરો',save:'💾 JSON સાચવો',load:'📂 JSON ખોલો',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'English keyboard થી ગુજરાતીમાં લખો',doc:'📄 દસ્તાવેજ',choose:'— પસંદ કરો —'}},
+pa:{n:'ਪੰਜਾਬੀ',header:'॥ ਸ੍ਰੀ ਗਣੇਸ਼ਾਯ ਨਮਃ ॥',title:'ਵਿਆਹ ਲਈ ਜਾਣ-ਪਛਾਣ ਪੱਤਰ',footer:'— ਸੰਸਕ੍ਰਿਤੀ ਨਾਲ ਬਣਾਇਆ —',subline:'॥ ਸ਼ੁਭ ਵਿਵਾਹ ॥',
+ sec:['ਨਿੱਜੀ ਵੇਰਵਾ','ਪਰਿਵਾਰਕ ਵੇਰਵਾ','ਸਿੱਖਿਆ ਅਤੇ ਕਾਰੋਬਾਰ','ਸੰਪਰਕ'],
+ lab:{name:'ਨਾਮ',dob:'ਜਨਮ ਮਿਤੀ',tob:'ਜਨਮ ਸਮਾਂ',pob:'ਜਨਮ ਸਥਾਨ',ht:'ਕੱਦ',wt:'ਭਾਰ',skin:'ਰੰਗ',rashi:'ਰਾਸ਼ੀ',gotra:'ਗੋਤ੍ਰ',manglik:'ਮਾਂਗਲਿਕ',father:'ਪਿਤਾ ਦਾ ਨਾਮ',focc:'ਪਿਤਾ ਦਾ ਕਾਰੋਬਾਰ',mother:'ਮਾਤਾ ਦਾ ਨਾਮ',sib:'ਭੈਣ-ਭਰਾ',native:'ਮੂਲ ਘਰ',edu:'ਸਿੱਖਿਆ',work:'ਕਾਰੋਬਾਰ/ਨੌਕਰੀ',income:'ਸਾਲਾਨਾ ਆਮਦਨ',addr:'ਪਤਾ',phone:'ਮੋਬਾਈਲ',header:'ਸਿਰਲੇਖ ਲਾਈਨ',title:'ਦਸਤਾਵੇਜ਼ ਸਿਰਲੇਖ'},
+ rashi:['ਮੇਸ਼','ਵ੍ਰਿਸ਼ਭ','ਮਿਥੁਨ','ਕਰਕ','ਸਿੰਘ','ਕਨਿਆ','ਤੁਲਾ','ਵ੍ਰਿਸ਼ਚਕ','ਧਨੁ','ਮਕਰ','ਕੁੰਭ','ਮੀਨ'],
+ skin:['ਗੋਰਾ','ਕਣਕਵਰਣ','ਸਾਂਵਲਾ'],mang:['ਨਹੀਂ','ਹਾਂ','ਅੰਸ਼ਿਕ'],
+ ui:{tmpl:'🎨 ਟੈਂਪਲੇਟ ਚੁਣੋ',photo:'📷 ਫੋਟੋ',upload:'📷 ਫੋਟੋ ਅਪਲੋਡ ਕਰੋ',zoom:'ਫੋਟੋ zoom',fsz:'📐 ਅੱਖਰ ਆਕਾਰ',clear:'🔄 ਸਭ ਸਾਫ਼ ਕਰੋ',save:'💾 JSON ਸੰਭਾਲੋ',load:'📂 JSON ਖੋਲ੍ਹੋ',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'English keyboard ਨਾਲ ਪੰਜਾਬੀ ਵਿੱਚ ਲਿਖੋ',doc:'📄 ਦਸਤਾਵੇਜ਼',choose:'— ਚੁਣੋ —'}},
+bn:{n:'বাংলা',header:'॥ শ্রী গণেশায় নমঃ ॥',title:'বিবাহের জন্য পরিচয় পত্র',footer:'— সংস্কৃতি দিয়ে তৈরি —',subline:'॥ শুভ বিবাহ ॥',
+ sec:['ব্যক্তিগত বিবরণ','পারিবারিক বিবরণ','শিক্ষা ও পেশা','যোগাযোগ'],
+ lab:{name:'নাম',dob:'জন্ম তারিখ',tob:'জন্ম সময়',pob:'জন্মস্থান',ht:'উচ্চতা',wt:'ওজন',skin:'গাত্রবর্ণ',rashi:'রাশি',gotra:'গোত্র',manglik:'মাঙ্গলিক',father:'পিতার নাম',focc:'পিতার পেশা',mother:'মাতার নাম',sib:'ভাইবোন',native:'পৈতৃক নিবাস',edu:'শিক্ষা',work:'পেশা/চাকরি',income:'বার্ষিক আয়',addr:'ঠিকানা',phone:'মোবাইল',header:'শিরোনাম লাইন',title:'নথির শিরোনাম'},
+ rashi:['মেষ','বৃষভ','মিথুন','কর্কট','সিংহ','কন্যা','তুলা','বৃশ্চিক','ধনু','মকর','কুম্ভ','মীন'],
+ skin:['ফর্সা','শ্যামবর্ণা','কালো'],mang:['না','হ্যাঁ','আংশিক'],
+ ui:{tmpl:'🎨 টেমপ্লেট বাছুন',photo:'📷 ছবি',upload:'📷 ছবি আপলোড করুন',zoom:'ছবি zoom',fsz:'📐 অক্ষরের আকার',clear:'🔄 সব মুছুন',save:'💾 JSON সংরক্ষণ',load:'📂 JSON খুলুন',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'English keyboard-এ বাংলায় লিখুন',doc:'📄 নথি',choose:'— বাছুন —'}},
+ta:{n:'தமிழ்',header:'॥ ஸ்ரீ கணேசாய நமஃ ॥',title:'திருமண விவரப் பத்திரம்',footer:'— சம்ஸ்கிருதியால் உருவாக்கப்பட்டது —',subline:'॥ சுப திருமணம் ॥',
+ sec:['தனிப்பட்ட விவரம்','குடும்ப விவரம்','கல்வி மற்றும் தொழில்','தொடர்பு'],
+ lab:{name:'பெயர்',dob:'பிறந்த தேதி',tob:'பிறந்த நேரம்',pob:'பிறந்த இடம்',ht:'உயரம்',wt:'எடை',skin:'நிறம்',rashi:'ராசி',gotra:'கோத்திரம்',manglik:'செவ்வாய் தோஷம்',father:'தந்தை பெயர்',focc:'தந்தை தொழில்',mother:'தாய் பெயர்',sib:'சகோதரர்கள்',native:'சொந்த ஊர்',edu:'கல்வி',work:'தொழில்/வேலை',income:'ஆண்டு வருமானம்',addr:'முகவரி',phone:'மொபைல்',header:'தலைப்பு வரி',title:'ஆவணத் தலைப்பு'},
+ rashi:['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்'],
+ skin:['வெள்ளை','கோதுமை','கருப்பு'],mang:['இல்லை','ஆம்','பகுதி'],
+ ui:{tmpl:'🎨 டெம்ப்ளேட் தேர்வு',photo:'📷 புகைப்படம்',upload:'📷 புகைப்படம் பதிவேற்று',zoom:'புகைப்படம் zoom',fsz:'📐 எழுத்து அளவு',clear:'🔄 அனைத்தும் அழி',save:'💾 JSON சேமி',load:'📂 JSON திற',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'English keyboard-இல் தமிழில் எழுதுங்கள்',doc:'📄 ஆவணம்',choose:'— தேர்வு —'}},
+te:{n:'తెలుగు',header:'॥ శ్రీ గణేశాయ నమః ॥',title:'వివాహ పరిచయ పత్రం',footer:'— సంస్కృతితో తయారైంది —',subline:'॥ శుభ వివాహం ॥',
+ sec:['వ్యక్తిగత వివరాలు','కుటుంబ వివరాలు','విద్య మరియు వృత్తి','సంప్రదింపు'],
+ lab:{name:'పేరు',dob:'పుట్టిన తేదీ',tob:'పుట్టిన సమయం',pob:'పుట్టిన ప్రదేశం',ht:'ఎత్తు',wt:'బరువు',skin:'రంగు',rashi:'రాశి',gotra:'గోత్రం',manglik:'కుజదోషం',father:'తండ్రి పేరు',focc:'తండ్రి వృత్తి',mother:'తల్లి పేరు',sib:'తోబుట్టువులు',native:'స్వస్థలం',edu:'విద్య',work:'వృత్తి/ఉద్యోగం',income:'వార్షిక ఆదాయం',addr:'చిరునామా',phone:'మొబైల్',header:'శీర్షిక వరుస',title:'పత్రం శీర్షిక'},
+ rashi:['మేషం','వృషభం','మిథునం','కర్కాటకం','సింహం','కన్య','తుల','వృశ్చికం','ధనుస్సు','మకరం','కుంభం','మీనం'],
+ skin:['తెలుపు','గోధుమ','నలుపు'],mang:['కాదు','అవును','పాక్షిక'],
+ ui:{tmpl:'🎨 టెంప్లేట్ ఎంచుకోండి',photo:'📷 ఫోటో',upload:'📷 ఫోటో అప్‌లోడ్ చేయండి',zoom:'ఫోటో zoom',fsz:'📐 అక్షర పరిమాణం',clear:'🔄 అన్నీ తుడిచేయి',save:'💾 JSON సేవ్',load:'📂 JSON ఓపెన్',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'English keyboard తో తెలుగులో రాయండి',doc:'📄 పత్రం',choose:'— ఎంచుకోండి —'}},
+kn:{n:'ಕನ್ನಡ',header:'॥ ಶ್ರೀ ಗಣೇಶಾಯ ನಮಃ ॥',title:'ವಿವಾಹ ಪರಿಚಯ ಪತ್ರ',footer:'— ಸಂಸ್ಕೃತಿಯಿಂದ ಮಾಡಿದ್ದು —',subline:'॥ ಶುಭ ವಿವಾಹ ॥',
+ sec:['ವೈಯಕ್ತಿಕ ವಿವರ','ಕೌಟುಂಬಿಕ ವಿವರ','ಶಿಕ್ಷಣ ಮತ್ತು ವ್ಯವಸಾಯ','ಸಂಪರ್ಕ'],
+ lab:{name:'ಹೆಸರು',dob:'ಹುಟ್ಟಿದ ದಿನಾಂಕ',tob:'ಹುಟ್ಟಿದ ಸಮಯ',pob:'ಹುಟ್ಟಿದ ಸ್ಥಳ',ht:'ಎತ್ತರ',wt:'ತೂಕ',skin:'ಬಣ್ಣ',rashi:'ರಾಶಿ',gotra:'ಗೋತ್ರ',manglik:'ಕುಜದೋಷ',father:'ತಂದೆಯ ಹೆಸರು',focc:'ತಂದೆಯ ವ್ಯವಸಾಯ',mother:'ತಾಯಿಯ ಹೆಸರು',sib:'ಒಡಹುಟ್ಟಿದವರು',native:'ಮೂಲ ಊರು',edu:'ಶಿಕ್ಷಣ',work:'ವ್ಯವಸಾಯ/ಉದ್ಯೋಗ',income:'ವಾರ್ಷಿಕ ಆದಾಯ',addr:'ವಿಳಾಸ',phone:'ಮೊಬೈಲ್',header:'ಶೀರ್ಷಿಕೆ ಸಾಲು',title:'ದಾಖಲೆ ಶೀರ್ಷಿಕೆ'},
+ rashi:['ಮೇಷ','ವೃಷಭ','ಮಿಥುನ','ಕರ್ಕಾಟಕ','ಸಿಂಹ','ಕನ್ಯಾ','ತುಲಾ','ವೃಶ್ಚಿಕ','ಧನು','ಮಕರ','ಕುಂಭ','ಮೀನ'],
+ skin:['ಬಿಳಿ','ಗೋಧಿ','ಕಪ್ಪು'],mang:['ಇಲ್ಲ','ಹೌದು','ಭಾಗಶಃ'],
+ ui:{tmpl:'🎨 ಟೆಂಪ್ಲೇಟ್ ಆಯ್ಕೆ',photo:'📷 ಫೋಟೋ',upload:'📷 ಫೋಟೋ ಅಪ್‌ಲೋಡ್',zoom:'ಫೋಟೋ zoom',fsz:'📐 ಅಕ್ಷರ ಗಾತ್ರ',clear:'🔄 ಎಲ್ಲಾ ಅಳಿಸಿ',save:'💾 JSON ಉಳಿಸಿ',load:'📂 JSON ತೆರೆಯಿರಿ',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'English keyboard ನಿಂದ ಕನ್ನಡದಲ್ಲಿ ಬರೆಯಿರಿ',doc:'📄 ದಾಖಲೆ',choose:'— ಆಯ್ಕೆ —'}},
+ml:{n:'മലയാളം',header:'॥ ശ്രീ ഗണേശായ നമഃ ॥',title:'വിവാഹ പരിചയ പത്രിക',footer:'— സംസ്കൃതിയില് നിര്മ്മിച്ചത് —',subline:'॥ ശുഭ വിവാഹം ॥',
+ sec:['വ്യക്തിഗത വിവരം','കുടുംബ വിവരം','വിദ്യാഭ്യാസവും തൊഴിലും','ബന്ധപ്പെടുക'],
+ lab:{name:'പേര്',dob:'ജനന തീയതി',tob:'ജനന സമയം',pob:'ജനന സ്ഥലം',ht:'ഉയരം',wt:'ഭാരം',skin:'നിറം',rashi:'രാശി',gotra:'ഗോത്രം',manglik:'ചൊവ്വാ ദോഷം',father:'അച്ഛന്റെ പേര്',focc:'അച്ഛന്റെ തൊഴില്',mother:'അമ്മയുടെ പേര്',sib:'സഹോദരങ്ങള്',native:'സ്വദേശം',edu:'വിദ്യാഭ്യാസം',work:'തൊഴില്',income:'വാര്ഷിക വരുമാനം',addr:'വിലാസം',phone:'മൊബൈല്',header:'തലക്കെട്ട് വരി',title:'രേഖയുടെ തലക്കെട്ട്'},
+ rashi:['മേഡം','ഇടവം','മിഥുനം','കര്ക്കടകം','ചിങ്ങം','കന്നി','തുലാം','വൃശ്ചികം','ധനു','മകരം','കുംഭം','മീനം'],
+ skin:['വെളുത്ത','ഗോധുമ','കറുത്ത'],mang:['ഇല്ല','അതെ','ഭാഗികം'],
+ ui:{tmpl:'🎨 ടെംപ്ലേറ്റ് തിരഞ്ഞെടുക്കുക',photo:'📷 ഫോട്ടോ',upload:'📷 ഫോട്ടോ അപ്‌ലോഡ്',zoom:'ഫോട്ടോ zoom',fsz:'📐 അക്ഷര വലുപ്പം',clear:'🔄 എല്ലാം മായ്ക്കുക',save:'💾 JSON സേവ്',load:'📂 JSON തുറക്കുക',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'English keyboard ഉപയോഗിച്ച് മലയാളത്തില് എഴുതുക',doc:'📄 രേഖ',choose:'— തിരഞ്ഞെടുക്കുക —'}},
+ur:{n:'اردو',rtl:1,header:'بسم اللہ الرحمن الرحیم',title:'شادی کا تعارفی خط',footer:'— سنسکرتی سے تیار کردہ —',subline:'شادی مبارک',
+ sec:['ذاتی تفصیل','خاندانی تفصیل','تعلیم و پیشہ','رابطہ'],
+ lab:{name:'نام',dob:'تاریخ پیدائش',tob:'وقت پیدائش',pob:'جائے پیدائش',ht:'قد',wt:'وزن',skin:'رنگ',rashi:'برج',gotra:'گوتر',manglik:'مانگلک',father:'والد کا نام',focc:'والد کا پیشہ',mother:'والدہ کا نام',sib:'بھائی بہن',native:'اصل گاؤں',edu:'تعلیم',work:'پیشہ/نوکری',income:'سالانہ آمدنی',addr:'پتہ',phone:'موبائل',header:'سرخی کی سطر',title:'دستاویز کا عنوان'},
+ rashi:['حمل','ثور','جوزا','سرطان','اسد','سنبلہ','میزان','عقرب','قوس','جدی','دلو','حوت'],
+ skin:['گورا','گندمی','سانولا'],mang:['نہیں','ہاں','جزوی'],
+ ui:{tmpl:'🎨 ٹیمپلیٹ منتخب کریں',photo:'📷 تصویر',upload:'📷 تصویر اپ لوڈ کریں',zoom:'تصویر zoom',fsz:'📐 حرف کا سائز',clear:'🔄 سب صاف کریں',save:'💾 JSON محفوظ کریں',load:'📂 JSON کھولیں',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'English keyboard سے اردو میں لکھیں',doc:'📄 دستاویز',choose:'— منتخب کریں —'}},
+};
+const LANG_ORDER=['hi','en','mr','gu','pa','bn','ta','te','kn','ml','ur'];
+/* भाषा → body font (Tiro Indic family = हर script में एक जैसा शाही serif look) */
+const LANG_FONT={hi:'Tiro Devanagari Hindi',mr:'Tiro Devanagari Hindi',en:'Tiro Devanagari Hindi',
+ gu:'Tiro Gujarati',pa:'Tiro Gurmukhi',bn:'Tiro Bangla',ta:'Tiro Tamil',te:'Tiro Telugu',kn:'Tiro Kannada',
+ ml:'Noto Sans Malayalam',ur:'Noto Nastaliq Urdu'};
+const LANG_FONT_URL={gu:'family=Tiro+Gujarati:ital@0;1',pa:'family=Tiro+Gurmukhi:ital@0;1',bn:'family=Tiro+Bangla:ital@0;1',
+ ta:'family=Tiro+Tamil:ital@0;1',te:'family=Tiro+Telugu:ital@0;1',kn:'family=Tiro+Kannada:ital@0;1',
+ ml:'family=Noto+Sans+Malayalam:wght@400;600',ur:'family=Noto+Nastaliq+Urdu:wght@400;700'};
+/* Google Input Tools codes (transliteration) */
+const ITC={hi:'hi-t-i0-und',mr:'mr-t-i0-und',gu:'gu-t-i0-und',pa:'pa-t-i0-und',bn:'bn-t-i0-und',
+ ta:'ta-t-i0-und',te:'te-t-i0-und',kn:'kn-t-i0-und',ml:'ml-t-i0-und',ur:'ur-t-i0-und'};
+function ensureLangFont(code){ const u=LANG_FONT_URL[code]; if(!u) return Promise.resolve();
+  const id='lf-'+code;
+  if(!document.getElementById(id)){ const l=document.createElement('link'); l.id=id; l.rel='stylesheet';
+    l.href='https://fonts.googleapis.com/css2?'+u+'&display=swap'; document.head.appendChild(l); }
+  const fam=LANG_FONT[code];
+  if(document.fonts&&document.fonts.load){ return Promise.all([document.fonts.load('20px "'+fam+'"'),document.fonts.load('italic 20px "'+fam+'"')]).catch(()=>{}); }
+  return Promise.resolve(); }
+/* canvas font helpers — भाषा के हिसाब से */
+function LF(sc,size,it){ return (it?'italic ':'')+(size*sc)+'px "'+(LANG_FONT[S.lang]||'Tiro Devanagari Hindi')+'"'; }
+function deva(){ return S.lang==='hi'||S.lang==='mr'; }
+function NF(sc,size){ const nf=LANGS[S.lang].nf; if(nf==='yatra') return SkFonts.fontFam({f:'yatra',size},sc); if(nf==='gvibes') return SkFonts.fontFam({f:'gvibes',size},sc); return LF(sc,size); }
+function HF(sc,size){ return (deva()||S.lang==='en')? SkFonts.fontFam({f:'yatra',size},sc) : LF(sc,size); }
+function TF(sc,size){ return (deva()||S.lang==='en')? SkFonts.fontFam({f:'rozha',size},sc) : LF(sc,size); }
+function SF(sc,size){ return (deva()||S.lang==='en')? SkFonts.fontFam({f:'rozha',size},sc) : LF(sc,size); }
+function FF(sc,size){ return (deva()||S.lang==='en')? SkFonts.fontFam({f:'kalam',size},sc) : LF(sc,size); }
+/* दस्तावेज़ की texts (user edit कर सकता है) */
+function docTxt(k){ const v=S.d[k]; return (v!==undefined)? v : LANGS[S.lang][k]; }
+/* ---- ✍️ Transliteration: English keyboard → चुनी भाषा (Google Input Tools) ---- */
+const TR={cache:{}};
+function trWord(w){ const itc=ITC[S.lang]; if(!itc||!/[A-Za-z]/.test(w)) return Promise.resolve(null);
+  const key=S.lang+':'+w.toLowerCase();
+  if(TR.cache[key]) return Promise.resolve(TR.cache[key]);
+  const ctrl=new AbortController(); const to=setTimeout(()=>ctrl.abort(),3000);
+  return fetch('https://inputtools.google.com/request?text='+encodeURIComponent(w)+'&itc='+itc+'&num=1&cp=0&cs=1&ie=utf-8&oe=utf-8&app=sanskriti',{signal:ctrl.signal})
+    .then(r=>r.json())
+    .then(d=>{ clearTimeout(to);
+      try{ if(d&&d[0]==='SUCCESS'&&d[1]&&d[1][0]&&d[1][0][1]&&d[1][0][1][0]){ const t=d[1][0][1][0]; TR.cache[key]=t; return t; } }catch(_){}
+      return null; })
+    .catch(()=>{ clearTimeout(to); return null; }); }  /* offline → जो type किया वही रहे */
+async function trKeyup(e){
+  if(!S.trans||!ITC[S.lang]) return;
+  if(e.key!==' '&&e.key!=='.'&&e.key!==',') return;
+  const el=e.target, pos=el.selectionStart??el.value.length;
+  const upto=el.value.slice(0,pos), sep=upto.slice(-1), body=upto.slice(0,-1);
+  const m=body.match(/([A-Za-z][A-Za-z'’]*)$/);
+  if(!m) return;
+  const w=m[1];
+  const t=await trWord(w.replace(/['’]/g,''));
+  if(!t||t===w) return;
+  const start=body.length-w.length;
+  el.value=el.value.slice(0,start)+t+sep+el.value.slice(pos);
+  const np=start+t.length+sep.length;
+  try{ el.selectionStart=el.selectionEnd=np; }catch(_){}
+  S.d[el.id.slice(2)]=el.value; draw(); saveLocal(); }
 const PW=8.27, PH=11.69;   // A4 inches
 const cv=$('cv'), ctx=cv.getContext('2d');
 
 function toast(m){ const t=$('toast'); t.textContent=m; t.style.opacity=1; clearTimeout(t._h); t._h=setTimeout(()=>t.style.opacity=0,2200); }
 
 /* ---- Form build (schema से auto) ---- */
+let formBound=false;
 function buildForm(){
+  const pack=LANGS[S.lang], u=pack.ui, fam=LANG_FONT[S.lang];
   const host=$('formSecs'); host.innerHTML='';
-  SECTIONS.forEach(sec=>{
+  /* 📄 दस्तावेज़ (header/title editable — हर religion/भाषा अपनी line लिख सके) */
+  const doc=document.createElement('div'); doc.className='sec';
+  doc.innerHTML='<h3>'+u.doc+'</h3>'
+    +'<div class="frow"><label>'+pack.lab.header+'</label><input id="f_header" type="text"></div>'
+    +'<div class="frow"><label>'+pack.lab.title+'</label><input id="f_title" type="text"></div>';
+  host.appendChild(doc);
+  SECTIONS.forEach((sec,si)=>{
     const box=document.createElement('div'); box.className='sec';
-    box.innerHTML='<h3>📋 '+sec.t+'</h3>';
+    box.innerHTML='<h3>📋 '+pack.sec[si]+'</h3>';
     sec.f.forEach(f=>{
       const row=document.createElement('div'); row.className='frow';
+      const lab=pack.lab[f.k]||f.k;
       let inp;
-      if(f.sel){ inp='<select id="f_'+f.k+'"><option value="">— चुनो —</option>'+f.sel.map(o=>'<option>'+o+'</option>').join('')+'</select>'; }
-      else if(f.area){ inp='<textarea id="f_'+f.k+'" placeholder="'+f.l+' लिखो..."></textarea>'; }
-      else{ inp='<input id="f_'+f.k+'" type="text" placeholder="'+f.l+' लिखो...">'; }
-      row.innerHTML='<label>'+f.l+'</label>'+inp;
+      if(f.sel){ const KEYS=OPTKEYS[f.sel], TXT=pack[f.sel];
+        inp='<select id="f_'+f.k+'"><option value="">'+u.choose+'</option>'
+           +KEYS.map((k2,i)=>'<option value="'+k2+'">'+TXT[i]+'</option>').join('')+'</select>'; }
+      else if(f.area){ inp='<textarea id="f_'+f.k+'" placeholder="'+lab+'…"></textarea>'; }
+      else{ inp='<input id="f_'+f.k+'" type="text" placeholder="'+lab+'…">'; }
+      row.innerHTML='<label>'+lab+'</label>'+inp;
       box.appendChild(row);
     });
     host.appendChild(box);
   });
-  host.addEventListener('input',e=>{ const k=e.target.id&&e.target.id.slice(0,2)==='f_'? e.target.id.slice(2):null;
-    if(k){ S.d[k]=e.target.value; draw(); saveLocal(); } });
+  /* input font + rtl + transliteration */
+  host.querySelectorAll('input,textarea').forEach(el=>{
+    el.style.fontFamily='"'+fam+'"';
+    if(pack.rtl) el.dir='rtl'; else el.removeAttribute('dir');
+    el.addEventListener('keyup',trKeyup);
+  });
+  if(!formBound){ formBound=true;
+    host.addEventListener('input',e=>{ const k=e.target.id&&e.target.id.slice(0,2)==='f_'? e.target.id.slice(2):null;
+      if(k){ S.d[k]=e.target.value; draw(); saveLocal(); } });
+  }
 }
+function setFormVals(){ Object.keys(S.d).forEach(k=>{ const el=$('f_'+k); if(el) el.value=S.d[k]; }); }
+function ensureDocDefaults(){ const p=LANGS[S.lang];
+  if(S.d.header===undefined) S.d.header=p.header;
+  if(S.d.title===undefined) S.d.title=p.title; }
+/* ---- 🌐 भाषा selector + switch ---- */
+function buildLangSel(){ const sl=$('selLang');
+  sl.innerHTML=LANG_ORDER.map(c=>'<option value="'+c+'"'+(c===S.lang?' selected':'')+'>'+LANGS[c].n+'</option>').join(''); }
+function applyUI(){ const u=LANGS[S.lang].ui;
+  $('h3Tmpl').textContent=u.tmpl; $('h3Photo').textContent=u.photo;
+  $('btnPhoto').textContent=u.upload; $('lblZoom').textContent=u.zoom;
+  $('h3Fsz').textContent=u.fsz; $('btnClear').textContent=u.clear;
+  $('btnSaveJ').textContent=u.save; $('btnLoadJ').textContent=u.load;
+  $('btnPNG').textContent=u.png; $('btnPDF').textContent=u.pdf;
+  $('transLbl').textContent='✍️ '+u.trans;
+  $('transRow').style.display=ITC[S.lang]?'':'none'; }
+function setLang(code){ if(!LANGS[code]) return;
+  S.lang=code;
+  const p=LANGS[code];
+  S.trans = !!ITC[code];
+  $('chkTrans').checked=S.trans;
+  /* header/title: अगर user ने खुद नहीं बदली → नई भाषा की default */
+  ['header','title'].forEach(k=>{ const cur=S.d[k];
+    if(cur===undefined || LANG_ORDER.some(c=>LANGS[c][k]===cur)) S.d[k]=p[k]; });
+  buildLangSel(); applyUI(); buildForm(); setFormVals();
+  ensureLangFont(code).then(()=>draw());
+  draw(); saveLocal(); }
 
 /* ---- Template chips ---- */
 function buildTmpls(){
@@ -186,6 +343,7 @@ function buildTmpls(){
 /* ---- 🖌️ RENDER (sc = px/inch) ---- */
 function drawDoc(c,sc,forExport){
   const T=TMPL[S.tmpl];
+  c.direction=LANGS[S.lang].rtl?'rtl':'ltr';
   if(T.layout==='panel') return drawPanelLayout(c,sc);
   if(T.layout==='band')  return drawBandLayout(c,sc);
   const W=PW*sc, H=PH*sc;
@@ -201,11 +359,11 @@ function drawDoc(c,sc,forExport){
   let y=m+0.50*sc;
   /* header */
   c.textAlign='center'; c.fillStyle=T.headC;
-  c.font=SkFonts.fontFam({f:'yatra',size:0.28*fsz},sc);
-  c.fillText(T.header, W/2, y); y+=0.30*sc;
+  c.font=HF(sc,0.28*fsz);
+  if(docTxt('header')) c.fillText(docTxt('header'), W/2, y); y+=0.30*sc;
   /* title */
-  c.font=SkFonts.fontFam({f:'rozha',size:0.46*fsz},sc);
-  c.fillText(T.title, W/2, y); y+=0.10*sc;
+  c.font=TF(sc,0.46*fsz);
+  if(docTxt('title')) c.fillText(docTxt('title'), W/2, y); y+=0.10*sc;
   /* gold divider */
   c.strokeStyle=T.gold; c.lineWidth=0.02*sc;
   c.beginPath(); c.moveTo(W/2-1.5*sc,y+0.10*sc); c.lineTo(W/2+1.5*sc,y+0.10*sc); c.stroke();
@@ -217,7 +375,7 @@ function drawDoc(c,sc,forExport){
   /* नाम (script, बाएँ) */
   c.textAlign='left';
   if(S.d.name){
-    c.fillStyle=T.frame; c.font=SkFonts.fontFam({f:'gvibes',size:0.52*fsz},sc);
+    c.fillStyle=T.frame; c.font=NF(sc,0.52*fsz);
     c.fillText(S.d.name, X+0.1*sc, y+0.8*sc, W-2*X-phW-0.5*sc);
   }
   /* photo */
@@ -246,29 +404,38 @@ function drawDoc(c,sc,forExport){
 }
 /* ---- 📋 sections flow (सब layouts share) — labW = label column inches ---- */
 function drawSections(c,sc,X,y,W,T,fsz,labW){
-  SECTIONS.forEach(sec=>{
+  const pack=LANGS[S.lang];
+  /* dynamic label width — लंबे labels (जैसे English "Father's Occupation") टकराएँ नहीं */
+  { const labS=0.22*fsz; let mx=0;
+    c.font=LF(sc,labS);
+    SECTIONS.forEach(sec=>sec.f.forEach(f=>{ const t=pack.lab[f.k]||f.k;
+      const w=c.measureText(t).width; if(w>mx) mx=w; }));
+    labW=Math.max(labW, Math.min(2.9, mx/sc+0.42)); }
+  SECTIONS.forEach((sec,si)=>{
     /* section title */
+    const secT=pack.sec[si];
     c.textAlign='left'; c.fillStyle=T.secC;
-    c.font=SkFonts.fontFam({f:'rozha',size:0.30*fsz},sc);
-    c.fillText('◆ '+sec.t, X, y);
+    c.font=SF(sc,0.30*fsz);
+    c.fillText('◆ '+secT, X, y);
     c.strokeStyle=T.gold; c.lineWidth=0.014*sc;
-    const tw=c.measureText('◆ '+sec.t).width;
+    const tw=c.measureText('◆ '+secT).width;
     c.beginPath(); c.moveTo(X,y+0.08*sc); c.lineTo(X+tw,y+0.08*sc); c.stroke();
     y+=0.28*sc;
     /* rows */
     sec.f.forEach(f=>{
-      const v=(S.d[f.k]||'').trim();
-      const lab=f.l, labS=0.22*fsz, valS=0.24*fsz;
-      c.font=SkFonts.fontFam({f:'tiro',size:valS},sc);
+      let v=(S.d[f.k]||'').trim();
+      if(f.sel && v){ const ix=OPTKEYS[f.sel].indexOf(v); if(ix>=0) v=pack[f.sel][ix]; }
+      const lab=pack.lab[f.k]||f.k, labS=0.22*fsz, valS=0.24*fsz;
+      c.font=LF(sc,valS);
       const vx=X+labW*sc, vwR=W-vx-(0.28*sc);   /* value कॉलम: दायाँ किनारा तक */
       const words=(v||'—').split(/\s+/); const lines=[]; let cur='';
       words.forEach(wd=>{ const t=cur?cur+' '+wd:wd;
         if(c.measureText(t).width>vwR&&cur){ lines.push(cur); cur=wd; } else cur=t; });
       if(cur) lines.push(cur);
       lines.forEach((ln,li)=>{
-        if(li===0){ c.fillStyle=T.labC; c.font=SkFonts.fontFam({f:'tiro',size:labS},sc); c.textAlign='left'; c.fillText(lab,X,y);
+        if(li===0){ c.fillStyle=T.labC; c.font=LF(sc,labS); c.textAlign='left'; c.fillText(lab,X,y);
           c.fillStyle=T.gold; c.textAlign='center'; c.fillText(':',X+(labW-0.22)*sc,y); }
-        c.fillStyle=T.valC; c.font=SkFonts.fontFam({f:'tiro',size:valS},sc); c.textAlign='left';
+        c.fillStyle=T.valC; c.font=LF(sc,valS); c.textAlign='left';
         c.fillText(ln,vx,y);
         y+=0.30*sc*fsz;
       });
@@ -280,8 +447,8 @@ function drawSections(c,sc,X,y,W,T,fsz,labW){
 }
 function footer(c,sc,W,H,m,T){
   c.textAlign='center'; c.fillStyle=T.labC;
-  c.font=SkFonts.fontFam({f:'kalam',size:0.15},sc);
-  c.fillText('— संस्कृति से बनाया गया —', W/2, H-m-0.14*sc);
+  c.font=FF(sc,0.15);
+  c.fillText(LANGS[S.lang].footer, W/2, H-m-0.14*sc);
 }
 /* ---- 💎 LAYOUT: मॉडर्न साइड-पैनल (2026 latest) ---- */
 function drawPanelLayout(c,sc){
@@ -313,19 +480,22 @@ function drawPanelLayout(c,sc){
   /* नाम script (panel में, gold) */
   let py=phY+phH+0.5*sc;
   c.textAlign='center'; c.fillStyle=T.gold;
-  if(S.d.name){ c.font=SkFonts.fontFam({f:'gvibes',size:0.5*fsz},sc);
+  if(S.d.name){ c.font=NF(sc,0.5*fsz);
     c.fillText(S.d.name, m+pw/2, py, pw-0.3*sc); py+=0.42*sc; }
-  /* header + divider + title (panel में) */
-  c.fillStyle=T.headC; c.font=SkFonts.fontFam({f:'yatra',size:0.22*fsz},sc);
-  c.fillText(T.header, m+pw/2, py+0.15*sc, pw-0.2*sc); py+=0.5*sc;
+  /* header + divider + title (panel में — हर भाषा, wrap करके) */
+  c.fillStyle=T.headC; c.font=HF(sc,0.22*fsz);
+  if(docTxt('header')) c.fillText(docTxt('header'), m+pw/2, py+0.15*sc, pw-0.2*sc); py+=0.5*sc;
   c.strokeStyle=T.gold; c.lineWidth=0.02*sc;
   c.beginPath(); c.moveTo(m+0.4*sc,py); c.lineTo(m+pw-0.4*sc,py); c.stroke(); py+=0.35*sc;
-  c.fillStyle=T.headC; c.font=SkFonts.fontFam({f:'rozha',size:0.3*fsz},sc);
-  c.fillText('विवाह हेतु', m+pw/2, py); py+=0.4*sc;
-  c.fillText('परिचय पत्र', m+pw/2, py);
-  /* panel के नीचे शुभ विवाह */
-  c.fillStyle=T.gold; c.font=SkFonts.fontFam({f:'yatra',size:0.24*fsz},sc);
-  c.fillText('॥ शुभ विवाह ॥', m+pw/2, H-m-0.55*sc);
+  c.fillStyle=T.headC; c.font=SF(sc,0.3*fsz);
+  { const words=docTxt('title').split(/\s+/); let l1='',l2='';
+    words.forEach(w=>{ if(!l2 && c.measureText((l1?l1+' ':'')+w).width<=pw-0.35*sc) l1=(l1?l1+' ':'')+w; else l2=(l2?l2+' ':'')+w; });
+    if(l1){ c.fillText(l1, m+pw/2, py); py+=0.4*sc; }
+    if(l2){ c.fillText(l2, m+pw/2, py); }
+  }
+  /* panel के नीचे subline */
+  c.fillStyle=T.gold; c.font=HF(sc,0.24*fsz);
+  c.fillText(LANGS[S.lang].subline, m+pw/2, H-m-0.55*sc);
   c.strokeStyle=T.gold; c.lineWidth=0.02*sc;
   c.beginPath(); c.moveTo(m+0.5*sc,H-m-0.75*sc); c.lineTo(m+pw-0.5*sc,H-m-0.75*sc); c.stroke();
   /* दाईं ओर sections */
@@ -348,9 +518,9 @@ function drawBandLayout(c,sc){
   c.beginPath(); c.moveTo(m+0.1*sc,m+bh); c.lineTo(W-m-0.1*sc,m+bh); c.stroke();
   /* header + नाम band में */
   c.textAlign='center'; c.fillStyle=T.headC;
-  c.font=SkFonts.fontFam({f:'yatra',size:0.26*fsz},sc);
-  c.fillText(T.header, W/2, m+0.55*sc);
-  if(S.d.name){ c.fillStyle=T.gold; c.font=SkFonts.fontFam({f:'gvibes',size:0.62*fsz},sc);
+  c.font=HF(sc,0.26*fsz);
+  if(docTxt('header')) c.fillText(docTxt('header'), W/2, m+0.55*sc);
+  if(S.d.name){ c.fillStyle=T.gold; c.font=NF(sc,0.62*fsz);
     c.fillText(S.d.name, W/2, m+1.35*sc, W-2*m-2.6*sc); }
   /* circle photo — band के नीचे आधा overlap */
   const d=1.8*sc, pcx=W/2, pcy=m+bh;   // केंद्र band की किनारी पर
@@ -371,8 +541,8 @@ function drawBandLayout(c,sc){
   /* title + sections नीचे */
   let y=pcy+d/2+0.30*sc;
   c.textAlign='center'; c.fillStyle=T.secC;
-  c.font=SkFonts.fontFam({f:'rozha',size:0.4*fsz},sc);
-  c.fillText(T.title, W/2, y); y+=0.15*sc;
+  c.font=TF(sc,0.4*fsz);
+  if(docTxt('title')) c.fillText(docTxt('title'), W/2, y); y+=0.15*sc;
   c.strokeStyle=T.gold; c.lineWidth=0.02*sc;
   c.beginPath(); c.moveTo(W/2-1.4*sc,y+0.08*sc); c.lineTo(W/2+1.4*sc,y+0.08*sc); c.stroke();
   y+=0.24*sc;
@@ -401,11 +571,19 @@ $('pz').oninput=e=>{ S.pz=+e.target.value; draw(); saveLocal(); };
 $('fsz').oninput=e=>{ S.fsz=+e.target.value; draw(); saveLocal(); };
 
 /* ---- Save / Load ---- */
-function pack(){ return {v:1, tmpl:S.tmpl, d:S.d, pz:S.pz, fsz:S.fsz, photo:S.photo?S.photo.src:null}; }
+function pack(){ return {v:2, tmpl:S.tmpl, d:S.d, pz:S.pz, fsz:S.fsz, lang:S.lang, trans:S.trans, photo:S.photo?S.photo.src:null}; }
+function migrateSel(){ /* पुराने Hindi select values → keys */
+  SECTIONS.forEach(sec=>sec.f.forEach(f=>{ if(!f.sel) return;
+    const v=S.d[f.k]; if(!v || OPTKEYS[f.sel].includes(v)) return;
+    for(const code of LANG_ORDER){ const ix=LANGS[code][f.sel].indexOf(v);
+      if(ix>=0){ S.d[f.k]=OPTKEYS[f.sel][ix]; return; } } })); }
 function unpack(o){ if(!o) return;
   S.tmpl=o.tmpl||0; S.d=o.d||{}; S.pz=o.pz||1; S.fsz=o.fsz||1;
-  $('pz').value=S.pz; $('fsz').value=S.fsz;
-  Object.keys(S.d).forEach(k=>{ const el=$('f_'+k); if(el) el.value=S.d[k]; });
+  S.lang=o.lang||'hi'; S.trans=(o.trans!==undefined)? o.trans : !!ITC[S.lang];
+  migrateSel(); ensureDocDefaults();
+  $('pz').value=S.pz; $('fsz').value=S.fsz; $('chkTrans').checked=S.trans;
+  buildLangSel(); applyUI(); buildForm(); setFormVals();
+  ensureLangFont(S.lang);
   if(o.photo){ const im=new Image(); im.onload=()=>{ S.photo=im; buildTmpls(); draw(); }; im.src=o.photo; }
   else{ S.photo=null; buildTmpls(); draw(); } }
 let saveT=null;
@@ -419,7 +597,8 @@ $('fileJSON').onchange=e=>{ const f=e.target.files[0]; if(!f) return;
   const rd=new FileReader(); rd.onload=()=>{ try{ unpack(JSON.parse(rd.result)); toast('📂 खुल गया ✓'); }catch(_){ toast('❌ file ठीक नहीं'); } };
   rd.readAsText(f); e.target.value=''; };
 $('btnClear').onclick=()=>{ if(!confirm('सब fields साफ़ करें?')) return;
-  S.d={}; S.photo=null; S.pz=1; $('pz').value=1;
+  S.d={}; ensureDocDefaults(); S.photo=null; S.pz=1; $('pz').value=1;
+  setFormVals();
   document.querySelectorAll('#formSecs input,#formSecs textarea').forEach(el=>el.value='');
   document.querySelectorAll('#formSecs select').forEach(el=>el.value='');
   localStorage.removeItem('biodataMakerV1'); draw(); toast('🔄 साफ़ हो गया'); };
@@ -427,6 +606,7 @@ $('btnClear').onclick=()=>{ if(!confirm('सब fields साफ़ करें
 /* ---- Export ---- */
 $('btnPNG').onclick=async()=>{
   await SkFonts.ensureFonts([{kind:'text',f:'rozha'},{kind:'text',f:'yatra'},{kind:'text',f:'gvibes'},{kind:'text',f:'tiro'},{kind:'text',f:'kalam'}]);
+  await ensureLangFont(S.lang);
   const sc=300; const oc=document.createElement('canvas');
   oc.width=Math.round(PW*sc); oc.height=Math.round(PH*sc);
   drawDoc(oc.getContext('2d'),sc,true);
@@ -436,6 +616,7 @@ $('btnPNG').onclick=async()=>{
   toast('🖨️ 300 DPI PNG तैयार ✓'); };
 $('btnPDF').onclick=async()=>{
   await SkFonts.ensureFonts([{kind:'text',f:'rozha'},{kind:'text',f:'yatra'},{kind:'text',f:'gvibes'},{kind:'text',f:'tiro'},{kind:'text',f:'kalam'}]);
+  await ensureLangFont(S.lang);
   const sc=300; const oc=document.createElement('canvas');
   oc.width=Math.round(PW*sc); oc.height=Math.round(PH*sc);
   drawDoc(oc.getContext('2d'),sc,true);
@@ -447,10 +628,13 @@ $('btnPDF').onclick=async()=>{
 
 /* ---- Init ---- */
 SkFonts.injectFontLinks('');
-buildForm(); buildTmpls();
+$('selLang').onchange=e=>setLang(e.target.value);
+$('chkTrans').onchange=e=>{ S.trans=e.target.checked; saveLocal(); };
+buildLangSel(); applyUI(); ensureDocDefaults(); buildForm(); buildTmpls();
 try{ const sv=localStorage.getItem('biodataMakerV1'); if(sv) unpack(JSON.parse(sv)); }catch(_){}
-draw();
-SkFonts.ensureFonts([{kind:'text',f:'rozha'},{kind:'text',f:'yatra'},{kind:'text',f:'gvibes'},{kind:'text',f:'tiro'},{kind:'text',f:'kalam'}]).then(()=>draw());
+setFormVals(); draw();
+SkFonts.ensureFonts([{kind:'text',f:'rozha'},{kind:'text',f:'yatra'},{kind:'text',f:'gvibes'},{kind:'text',f:'tiro'},{kind:'text',f:'kalam'}])
+  .then(()=>ensureLangFont(S.lang)).then(()=>draw());
 addEventListener('resize',draw);
 </script>
 </body>
