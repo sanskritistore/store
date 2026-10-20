@@ -64,7 +64,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v4.3.2 🎯 (बिना lines!)</span>
+  <span class="badge">FREE v4.4 ⇄ (आईना हर चीज़ पर)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
@@ -586,16 +586,19 @@ $('btnMvL').onclick=()=>nudge(-0.1,0);
 $('btnMvR').onclick=()=>nudge(0.1,0);
 $('btnMvU').onclick=()=>nudge(0,-0.1);
 $('btnMvD').onclick=()=>nudge(0,0.1);
+/* ⇄⇅ आईना/उल्टा — अब हर चीज़ पर: photo, text, सजावट (multi-select पर भी) */
+const _mirTargets=()=> (S.selArr.length? S.selArr : [S.sel]).map(i=>S.items[i]).filter(Boolean);
 $('btnMirH').onclick=()=>{
-  const it=S.items[S.sel]; if(!it) return toast('पहले canvas पर कुछ चुनो');
-  if(it.kind==='decor'&&it.decor==='img'){ it.fx=-(it.fx||1); draw(); }
-  else if(it.kind==='decor'&&it.decor==='palm'){ it.flip=-(it.flip||1); draw(); }
-  else toast('आईना सिर्फ सजावट पर चलता है');
+  const ts=_mirTargets(); if(!ts.length) return toast('पहले canvas पर कुछ चुनो');
+  snapshot();
+  ts.forEach(it=>{ if(it.kind==='decor'&&it.decor==='palm') it.flip=-(it.flip||1); else it.fx=-(it.fx||1); });
+  draw(); toast('⇄ आईना ✓'+(ts.length>1?' ('+ts.length+' चीज़ें)':''));
 };
 $('btnMirV').onclick=()=>{
-  const it=S.items[S.sel]; if(!it) return toast('पहले canvas पर कुछ चुनो');
-  if(it.kind==='decor'&&it.decor==='img'){ it.fy=-(it.fy||1); draw(); }
-  else toast('उल्टा सिर्फ अपनी सजावट पर चलता है');
+  const ts=_mirTargets(); if(!ts.length) return toast('पहले canvas पर कुछ चुनो');
+  snapshot();
+  ts.forEach(it=>{ if(it.kind==='decor'&&it.decor==='palm') it.fy=-(it.fy||1); else it.fy=-(it.fy||1); });
+  draw(); toast('⇅ उल्टा ✓'+(ts.length>1?' ('+ts.length+' चीज़ें)':''));
 };
 /* ---- Undo / Redo (Ctrl+Z / Ctrl+Y) ---- */
 let undoStack=[], redoStack=[], lastSnap=0;
@@ -1040,7 +1043,7 @@ function drawDecor(c,it,sc){
     c.globalAlpha=1;
   }else if(it.decor==='palm'){
     const s=(it.size||3)*sc, cx=(it.cx||0)*sc, cy=(it.cy||0)*sc;
-    c.save(); c.translate(cx,cy); c.rotate((it.rot||0)*Math.PI/180); c.scale(it.flip||1,1);
+    c.save(); c.translate(cx,cy); c.rotate((it.rot||0)*Math.PI/180); c.scale(it.flip||1,it.fy||1);   /* ⇅ palm उल्टा भी */
     c.globalAlpha=it.alpha!=null? it.alpha : 0.9;
     c.lineCap='round';
     c.lineWidth=Math.max(1,0.011*s);
@@ -1111,6 +1114,7 @@ function drawItem(c,it,sc,forExport){
       const oc=document.createElement('canvas'); oc.width=Math.max(2,Math.round(W)); oc.height=Math.max(2,Math.round(H));
       const o=oc.getContext('2d');
       const op=mkPath(0,0); o.clip(op);
+      if((it.fx||1)!==1||(it.fy||1)!==1){ o.translate(W/2,H/2); o.scale(it.fx||1,it.fy||1); o.translate(-W/2,-H/2); }   /* ⇄⇅ आईना/उल्टा */
       const sr=it.photo.width/it.photo.height, tr=W/H;
       let dw,dh;
       if(sr>tr){ dh=H; dw=H*sr; } else { dw=W; dh=W/sr; }
@@ -1184,6 +1188,8 @@ function drawItem(c,it,sc,forExport){
     c.shadowColor='#0003'; c.shadowBlur=sc*0.03;
     const lsPx=SkFonts.fontLS(it,sc);
     if(lsPx && 'letterSpacing' in c) c.letterSpacing=lsPx+'px';
+    c.save();   /* ⇄⇅ आईना/उल्टा — text भी */
+    if((it.fx||1)!==1||(it.fy||1)!==1){ c.translate(X,Y); c.scale(it.fx||1,it.fy||1); c.translate(-X,-Y); }
     c.fillText(it.text, X, Y);
     if(it.box){
       const tw=c.measureText(it.text).width, ph=it.size*sc;
@@ -1191,6 +1197,7 @@ function drawItem(c,it,sc,forExport){
       c.strokeRect(X-tw/2-ph*0.35, Y-ph*0.62, tw+ph*0.70, ph*1.24);
     }
     if('letterSpacing' in c) c.letterSpacing='0px';
+    c.restore();   /* ⇄⇅ flip wrap समाप्त */
   }
   c.restore();
 }

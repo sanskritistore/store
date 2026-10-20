@@ -161,6 +161,7 @@ function drawItem(c,it,sc,forExport){
       const oc=document.createElement('canvas'); oc.width=Math.max(2,Math.round(W)); oc.height=Math.max(2,Math.round(H));
       const o=oc.getContext('2d');
       const op=mkPath(0,0); o.clip(op);
+      if((it.fx||1)!==1||(it.fy||1)!==1){ o.translate(W/2,H/2); o.scale(it.fx||1,it.fy||1); o.translate(-W/2,-H/2); }   /* ⇄⇅ आईना/उल्टा */
       const sr=it.photo.width/it.photo.height, tr=W/H;
       const zoom=it.zoom||1, px=(it.px==null?0.5:it.px), py=(it.py==null?0.5:it.py);
       if(it.fit==='blur'){
@@ -233,6 +234,8 @@ function drawItem(c,it,sc,forExport){
     c.shadowColor='#0003'; c.shadowBlur=sc*0.03;
     const lsPx=(window.SkFonts?SkFonts.fontLS(it,sc):(it.f==='royal'?it.size*sc*0.20:0));
     if(lsPx && 'letterSpacing' in c) c.letterSpacing=lsPx+'px';
+    c.save();   /* ⇄⇅ आईना/उल्टा — text भी */
+    if((it.fx||1)!==1||(it.fy||1)!==1){ c.translate(X,Y); c.scale(it.fx||1,it.fy||1); c.translate(-X,-Y); }
     c.fillText(it.text, X, Y);
     if(it.box){
       const tw=c.measureText(it.text).width, ph=it.size*sc;
@@ -240,6 +243,7 @@ function drawItem(c,it,sc,forExport){
       c.strokeRect(X-tw/2-ph*0.35, Y-ph*0.62, tw+ph*0.70, ph*1.24);
     }
     if('letterSpacing' in c) c.letterSpacing='0px';
+    c.restore();   /* ⇄⇅ flip wrap समाप्त */
   }
   c.restore();
 }
