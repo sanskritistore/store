@@ -65,7 +65,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v4.6.1 📺 (असली Curve)</span>
+  <span class="badge">FREE v4.7 🟧 (Group Resize)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
@@ -1335,6 +1335,16 @@ function draw(){
     else{ const w=ctx.measureText(m.text).width+20, h=m.size*sc+14; ctx.strokeRect(m.x*sc-w/2, m.y*sc-h/2, w, h); }
     ctx.setLineDash([]);
   });
+  /* 🟧 group डिब्बा + सफ़ेद कोने — 2+ चुनीं तो एक साथ resize (Corel जैसा) */
+  const gbb=groupBB();
+  if(gbb){
+    const X=gbb.x*sc,Y=gbb.y*sc,W=gbb.w*sc,H=gbb.h*sc;
+    ctx.strokeStyle='#ff9933'; ctx.lineWidth=2.5; ctx.setLineDash([10,6]);
+    ctx.strokeRect(X,Y,W,H); ctx.setLineDash([]);
+    [[X,Y],[X+W,Y],[X+W,Y+H],[X,Y+H]].forEach(([hx,hy])=>{
+      ctx.fillStyle='#fff'; ctx.fillRect(hx-8,hy-8,16,16);
+      ctx.strokeStyle='#ff9933'; ctx.lineWidth=3; ctx.strokeRect(hx-8,hy-8,16,16); });
+  }
   const it=S.items[S.sel];
   if(it){
     ctx.strokeStyle='#ff9933'; ctx.lineWidth=2; ctx.setLineDash([6,4]);
@@ -1399,6 +1409,15 @@ function draw(){
 let drag=null;
 const ptrs=new Map(); let pinch0=null;
 /* बीच का पकड़-बिंदु (move handle) — गोला + 4 तीर */
+function groupBB(){   /* 🟧 multi-select का बाहरी डिब्बा (सब rect चीज़ों से) */
+  if(S.selArr.length<2) return null;
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9,n=0;
+  S.selArr.forEach(j=>{ const m=S.items[j]; if(!m) return;
+    if(m.kind==='photo'||(m.kind==='decor'&&m.decor==='img')){ x0=Math.min(x0,m.x);y0=Math.min(y0,m.y);x1=Math.max(x1,m.x+m.w);y1=Math.max(y1,m.y+m.h);n++; }
+    else if(m.kind==='text'){ const w=(m.text||'').length*m.size*0.55,h=m.size; x0=Math.min(x0,m.x-w/2);y0=Math.min(y0,m.y-h/2);x1=Math.max(x1,m.x+w/2);y1=Math.max(y1,m.y+h/2);n++; }
+    else if(m.cx!=null){ x0=Math.min(x0,m.cx);y0=Math.min(y0,m.cy);x1=Math.max(x1,m.cx);y1=Math.max(y1,m.cy);n++; } });
+  return n? {x:x0,y:y0,w:Math.max(0.2,x1-x0),h:Math.max(0.2,y1-y0)} : null;
+}
 function drawMoveHandle(c,cx,cy){
   const r=13;
   c.save();
@@ -1487,6 +1506,22 @@ cv.addEventListener('pointerdown',e=>{
       if(g){ snapshot(); try{cv.setPointerCapture(e.pointerId);}catch(_){}
         drag={mode:'guide', g, fresh:false};
         return; }
+    }
+  }
+  /* 🟧 group handles — 2+ चीज़ें चुनीं तो कोना पकड़ो, सब एक साथ बदलेंगी */
+  if(S.selArr.length>1){
+    const bb=groupBB();
+    if(bb){
+      const HS3=16/(sc*(cv.getBoundingClientRect().width/cv.width));
+      const cs=[[bb.x,bb.y],[bb.x+bb.w,bb.y],[bb.x+bb.w,bb.y+bb.h],[bb.x,bb.y+bb.h]];
+      for(let i=0;i<4;i++){
+        if(Math.abs(p.x-cs[i][0])<HS3&&Math.abs(p.y-cs[i][1])<HS3){
+          snapshot();
+          try{cv.setPointerCapture(e.pointerId);}catch(_){}
+          drag={mode:'grs',corner:i,bb,multi:S.selArr.map(j=>({j,f:{...S.items[j]}}))};
+          return;
+        }
+      }
     }
   }
   // corner handles of selected photo (rotated हो तो point को उल्टा घुमाओ)
@@ -1609,6 +1644,20 @@ cv.addEventListener('pointermove',e=>{
     const b=cs[drag.corner];
     it.persp[drag.corner*2]=Math.round((pp.x-b[0])*100)/100;
     it.persp[drag.corner*2+1]=Math.round((pp.y-b[1])*100)/100;
+    draw(); return;
+  }
+  if(drag.mode==='grs'){   /* 🟧 group resize — सब अनुपात से बदलो (उलटा कोना ठहरा) */
+    const bb=drag.bb;
+    let nx=bb.x,ny=bb.y,nw=bb.w,nh=bb.h;
+    if(drag.corner===0){ nx=Math.min(p.x,bb.x+bb.w-0.3); ny=Math.min(p.y,bb.y+bb.h-0.3); nw=bb.x+bb.w-nx; nh=bb.y+bb.h-ny; }
+    else if(drag.corner===1){ ny=Math.min(p.y,bb.y+bb.h-0.3); nw=Math.max(0.3,p.x-bb.x); nh=bb.y+bb.h-ny; }
+    else if(drag.corner===2){ nw=Math.max(0.3,p.x-bb.x); nh=Math.max(0.3,p.y-bb.y); }
+    else{ nx=Math.min(p.x,bb.x+bb.w-0.3); nw=bb.x+bb.w-nx; nh=Math.max(0.3,p.y-bb.y); }
+    const sx=nw/bb.w, sy=nh/bb.h;
+    drag.multi.forEach(m=>{ const mi=S.items[m.j]; if(!mi) return; const f=m.f;
+      if(mi.kind==='decor'&&f.cx!=null){ mi.cx=nx+(f.cx-bb.x)*sx; mi.cy=ny+(f.cy-bb.y)*sy; if(f.size!=null) mi.size=Math.max(0.2,f.size*sy); }
+      else if(mi.kind==='text'){ mi.x=nx+(f.x-bb.x)*sx; mi.y=ny+(f.y-bb.y)*sy; mi.size=Math.max(0.1,f.size*sy); }
+      else{ mi.x=nx+(f.x-bb.x)*sx; mi.y=ny+(f.y-bb.y)*sy; mi.w=Math.max(0.2,f.w*sx); mi.h=Math.max(0.2,f.h*sy); } });
     draw(); return;
   }
   if(drag.mode==='mv'){
