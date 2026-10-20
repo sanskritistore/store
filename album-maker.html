@@ -64,7 +64,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v4.5.1 📏 (Guides आसान)</span>
+  <span class="badge">FREE v4.5.2 📏 (Fit ठीक)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
@@ -461,8 +461,9 @@ $('btnZFit').onclick=()=>{ if(innerWidth<=700) zoomFitStage(); else setZoom(1); 
 /* phone पर page पूरी screen में fit */
 function zoomFitStage(){
   const base=Math.min(CFG.maxPrev/S.W,CFG.maxPrev/S.H);
-  const avail=$('stage').clientWidth-24;
-  setZoom(Math.min(1.5,Math.max(0.4,avail/(S.W*base))));
+  const avail=$('stage').clientWidth-24-(showGuides?28:0);   /* rulers की जगह भी छोड़ो */
+  if(avail<50) return;
+  setZoom(Math.min(1.5,Math.max(0.12,avail/(S.W*base))));   /* चौड़े pages (36") भी screen में FIT — 0.4 की दीवार हटाई */
 }
 let _lastW=innerWidth;
 window.addEventListener('resize',()=>{ if(innerWidth<=700&&innerWidth!==_lastW){ _lastW=innerWidth; zoomFitStage(); } });
@@ -1773,7 +1774,7 @@ function loadTemplate(j){
     else { S.pages=[{bg:d.bg,items:itemsFromJSON(d.items),w:d.W,h:d.H,guides:d.guides||[]}]; }   /* पुरानी single template भी book की तरह खुलती है */
     S.W=S.pages[0].w; S.H=S.pages[0].h;
     S.pg=0;
-    fit(); draw(); renderStrip();
+    fit(); draw(); renderStrip(); setTimeout(zoomFitStage,30);
     SkFonts.ensureFonts(S.pages.flatMap(p=>p.items)).then(draw);   /* template के fonts load होकर फिर सही render */
     toast(d.book?('📖 Book खुल गई — '+S.pages.length+' pages ✓'):'📂 Template खुल गई ✓');
   }catch(e){ console.warn('loadTemplate:',e); toast('⚠️ JSON नहीं खुल पाई — फ़ाइल मुझे (Letta) भेजो, ठीक कर दूँगा'); }
@@ -1819,7 +1820,7 @@ $('btnExport').onclick=()=>{
 };
 
 /* ================= INIT ================= */
-applyGuidesVis(); fit(); renderLib(); loadBorderLib().then(renderBorderLib); draw(); renderStrip(); if(innerWidth<=700) setTimeout(zoomFitStage,50);
+applyGuidesVis(); fit(); renderLib(); loadBorderLib().then(renderBorderLib); draw(); renderStrip(); setTimeout(zoomFitStage,60);   /* refresh = हमेशा पूरा page fit (phone+PC दोनों) */
 /* 🛟 RELOAD = काम खोना नहीं — पिछला काम अपने-आप वापस (Undo = नया खाली पाना) */
 try{
   const _aj=localStorage.getItem('tmplAuto');
