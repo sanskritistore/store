@@ -47,7 +47,7 @@ body{font-family:'Nirmala UI',system-ui,sans-serif;background:#17191d;color:#e8e
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Biodata Maker</h1>
-  <span class="badge" id="bdg">FREE v1 💍</span>
+  <span class="badge" id="bdg">FREE v1.1 💍 (Latest)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJ">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnLoadJ">📂 JSON खोलें</button>
@@ -133,6 +133,16 @@ const TMPL=[
   bg1:'#fbf7ec', bg2:'#f5eedb', frame:'#6b5837', gold:'#a8853a',
   secC:'#6b5837', labC:'#8a7d63', valC:'#2e2718', headC:'#6b5837',
   pShape:'rect', header:'॥ श्री गणेशाय नमः ॥', title:'विवाह हेतु परिचय पत्र'},
+ {id:'panel', name:'💎 मॉडर्न पैनल (Latest)', layout:'panel',
+  bg1:'#fdfaf3', bg2:'#f7efdd', frame:'#7a1830', gold:'#d4af37',
+  secC:'#7a1830', labC:'#8a7d68', valC:'#241c12', headC:'#f5e6c8',
+  panel1:'#8a1f2d', panel2:'#5c1120', pShape:'oval',
+  header:'॥ श्री गणेशाय नमः ॥', title:'विवाह हेतु परिचय पत्र'},
+ {id:'band', name:'👑 रॉयल बैंड (Latest)', layout:'band',
+  bg1:'#fffdf7', bg2:'#f8f1e0', frame:'#1e3a5f', gold:'#d4af37',
+  secC:'#1e3a5f', labC:'#7d7462', valC:'#1f1a10', headC:'#ffffff',
+  band1:'#274b73', band2:'#16263d', pShape:'circle',
+  header:'॥ श्री गणेशाय नमः ॥', title:'विवाह हेतु परिचय पत्र'},
 ];
 
 /* ---- State ---- */
@@ -175,7 +185,10 @@ function buildTmpls(){
 
 /* ---- 🖌️ RENDER (sc = px/inch) ---- */
 function drawDoc(c,sc,forExport){
-  const T=TMPL[S.tmpl], W=PW*sc, H=PH*sc;
+  const T=TMPL[S.tmpl];
+  if(T.layout==='panel') return drawPanelLayout(c,sc);
+  if(T.layout==='band')  return drawBandLayout(c,sc);
+  const W=PW*sc, H=PH*sc;
   /* bg */
   const g=c.createLinearGradient(0,0,W,H); g.addColorStop(0,T.bg1); g.addColorStop(1,T.bg2);
   c.fillStyle=g; c.fillRect(0,0,W,H);
@@ -228,7 +241,11 @@ function drawDoc(c,sc,forExport){
   else{ c.strokeRect(phX,phY,phW,phH); }
   y=Math.max(y+1.0*sc, phY+phH+0.16*sc);
 
-  /* sections */
+  y=drawSections(c,sc,X,y,W,T,fsz,2.0);
+  footer(c,sc,W,H,m,T);
+}
+/* ---- 📋 sections flow (सब layouts share) — labW = label column inches ---- */
+function drawSections(c,sc,X,y,W,T,fsz,labW){
   SECTIONS.forEach(sec=>{
     /* section title */
     c.textAlign='left'; c.fillStyle=T.secC;
@@ -242,16 +259,15 @@ function drawDoc(c,sc,forExport){
     sec.f.forEach(f=>{
       const v=(S.d[f.k]||'').trim();
       const lab=f.l, labS=0.22*fsz, valS=0.24*fsz;
-      /* value wrap */
       c.font=SkFonts.fontFam({f:'tiro',size:valS},sc);
-      const vx=X+2.0*sc, vw=W-X-vx;
+      const vx=X+labW*sc, vwR=W-vx-(0.28*sc);   /* value कॉलम: दायाँ किनारा तक */
       const words=(v||'—').split(/\s+/); const lines=[]; let cur='';
       words.forEach(wd=>{ const t=cur?cur+' '+wd:wd;
-        if(c.measureText(t).width>vw&&cur){ lines.push(cur); cur=wd; } else cur=t; });
+        if(c.measureText(t).width>vwR&&cur){ lines.push(cur); cur=wd; } else cur=t; });
       if(cur) lines.push(cur);
       lines.forEach((ln,li)=>{
         if(li===0){ c.fillStyle=T.labC; c.font=SkFonts.fontFam({f:'tiro',size:labS},sc); c.textAlign='left'; c.fillText(lab,X,y);
-          c.fillStyle=T.gold; c.textAlign='center'; c.fillText(':',X+1.78*sc,y); }
+          c.fillStyle=T.gold; c.textAlign='center'; c.fillText(':',X+(labW-0.22)*sc,y); }
         c.fillStyle=T.valC; c.font=SkFonts.fontFam({f:'tiro',size:valS},sc); c.textAlign='left';
         c.fillText(ln,vx,y);
         y+=0.30*sc*fsz;
@@ -260,10 +276,112 @@ function drawDoc(c,sc,forExport){
     });
     y+=0.06*sc;
   });
-  /* footer */
+  return y;
+}
+function footer(c,sc,W,H,m,T){
   c.textAlign='center'; c.fillStyle=T.labC;
   c.font=SkFonts.fontFam({f:'kalam',size:0.15},sc);
   c.fillText('— संस्कृति से बनाया गया —', W/2, H-m-0.14*sc);
+}
+/* ---- 💎 LAYOUT: मॉडर्न साइड-पैनल (2026 latest) ---- */
+function drawPanelLayout(c,sc){
+  const T=TMPL[S.tmpl], W=PW*sc, H=PH*sc, fsz=S.fsz||1;
+  /* bg */
+  const g=c.createLinearGradient(0,0,W,H); g.addColorStop(0,T.bg1); g.addColorStop(1,T.bg2);
+  c.fillStyle=g; c.fillRect(0,0,W,H);
+  const m=0.3*sc;
+  /* left panel */
+  const pw=2.85*sc;
+  const pg=c.createLinearGradient(0,m,0,H-m); pg.addColorStop(0,T.panel1); pg.addColorStop(1,T.panel2);
+  c.fillStyle=pg; c.fillRect(m,m,pw,H-2*m);
+  c.strokeStyle=T.gold; c.lineWidth=0.03*sc;
+  c.beginPath(); c.moveTo(m+pw+0.06*sc,m+0.12*sc); c.lineTo(m+pw+0.06*sc,H-m-0.12*sc); c.stroke();
+  /* photo (panel में ऊपर, gold ring) */
+  const phW=1.7*sc, phH=2.05*sc, phX=m+(pw-phW)/2, phY=m+0.85*sc;
+  c.save();
+  c.beginPath(); c.ellipse(phX+phW/2,phY+phH/2,phW/2,phH/2,0,0,7); c.clip();
+  if(S.photo){ const im=S.photo, pz=S.pz||1;
+    const base=Math.max(phW/im.width,phH/im.height)*pz;
+    const dw=im.width*base, dh=im.height*base;
+    c.drawImage(im, phX+(phW-dw)/2, phY+(phH-dh)/2, dw, dh);
+  }else{ c.fillStyle='rgba(255,255,255,0.12)'; c.fillRect(phX,phY,phW,phH);
+    c.fillStyle='#f5e6c8'; c.font=SkFonts.fontFam({f:'',size:0.2},sc); c.textAlign='center';
+    c.fillText('📷', phX+phW/2, phY+phH/2); }
+  c.restore();
+  c.strokeStyle=T.gold; c.lineWidth=0.04*sc;
+  c.beginPath(); c.ellipse(phX+phW/2,phY+phH/2,phW/2,phH/2,0,0,7); c.stroke();
+  /* नाम script (panel में, gold) */
+  let py=phY+phH+0.5*sc;
+  c.textAlign='center'; c.fillStyle=T.gold;
+  if(S.d.name){ c.font=SkFonts.fontFam({f:'gvibes',size:0.5*fsz},sc);
+    c.fillText(S.d.name, m+pw/2, py, pw-0.3*sc); py+=0.42*sc; }
+  /* header + divider + title (panel में) */
+  c.fillStyle=T.headC; c.font=SkFonts.fontFam({f:'yatra',size:0.22*fsz},sc);
+  c.fillText(T.header, m+pw/2, py+0.15*sc, pw-0.2*sc); py+=0.5*sc;
+  c.strokeStyle=T.gold; c.lineWidth=0.02*sc;
+  c.beginPath(); c.moveTo(m+0.4*sc,py); c.lineTo(m+pw-0.4*sc,py); c.stroke(); py+=0.35*sc;
+  c.fillStyle=T.headC; c.font=SkFonts.fontFam({f:'rozha',size:0.3*fsz},sc);
+  c.fillText('विवाह हेतु', m+pw/2, py); py+=0.4*sc;
+  c.fillText('परिचय पत्र', m+pw/2, py);
+  /* panel के नीचे शुभ विवाह */
+  c.fillStyle=T.gold; c.font=SkFonts.fontFam({f:'yatra',size:0.24*fsz},sc);
+  c.fillText('॥ शुभ विवाह ॥', m+pw/2, H-m-0.55*sc);
+  c.strokeStyle=T.gold; c.lineWidth=0.02*sc;
+  c.beginPath(); c.moveTo(m+0.5*sc,H-m-0.75*sc); c.lineTo(m+pw-0.5*sc,H-m-0.75*sc); c.stroke();
+  /* दाईं ओर sections */
+  const X2=m+pw+0.4*sc;
+  const y2=m+0.6*sc;
+  drawSections(c,sc,X2,y2,W-m*0.9,T,fsz,1.75);
+  footer(c,sc,W,H,m,T);
+}
+/* ---- 👑 LAYOUT: रॉयल टॉप-बैंड (2026 latest) ---- */
+function drawBandLayout(c,sc){
+  const T=TMPL[S.tmpl], W=PW*sc, H=PH*sc, fsz=S.fsz||1;
+  const g=c.createLinearGradient(0,0,W,H); g.addColorStop(0,T.bg1); g.addColorStop(1,T.bg2);
+  c.fillStyle=g; c.fillRect(0,0,W,H);
+  const m=0.3*sc;
+  /* top band */
+  const bh=2.15*sc;
+  const bg2=c.createLinearGradient(0,m,W,m+bh); bg2.addColorStop(0,T.band1); bg2.addColorStop(1,T.band2);
+  c.fillStyle=bg2; c.fillRect(m,m,W-2*m,bh);
+  c.strokeStyle=T.gold; c.lineWidth=0.035*sc;
+  c.beginPath(); c.moveTo(m+0.1*sc,m+bh); c.lineTo(W-m-0.1*sc,m+bh); c.stroke();
+  /* header + नाम band में */
+  c.textAlign='center'; c.fillStyle=T.headC;
+  c.font=SkFonts.fontFam({f:'yatra',size:0.26*fsz},sc);
+  c.fillText(T.header, W/2, m+0.55*sc);
+  if(S.d.name){ c.fillStyle=T.gold; c.font=SkFonts.fontFam({f:'gvibes',size:0.62*fsz},sc);
+    c.fillText(S.d.name, W/2, m+1.35*sc, W-2*m-2.6*sc); }
+  /* circle photo — band के नीचे आधा overlap */
+  const d=1.8*sc, pcx=W/2, pcy=m+bh;   // केंद्र band की किनारी पर
+  c.save();
+  c.beginPath(); c.arc(pcx,pcy,d/2,0,7); c.clip();
+  if(S.photo){ const im=S.photo, pz=S.pz||1;
+    const base=Math.max(d/im.width,d/im.height)*pz;
+    const dw=im.width*base, dh=im.height*base;
+    c.drawImage(im, pcx-dw/2, pcy-dh/2, dw, dh);
+  }else{ c.fillStyle='rgba(0,0,0,0.08)'; c.fillRect(pcx-d/2,pcy-d/2,d,d);
+    c.fillStyle=T.labC; c.font=SkFonts.fontFam({f:'',size:0.2},sc); c.textAlign='center';
+    c.fillText('📷', pcx, pcy); }
+  c.restore();
+  c.strokeStyle=T.gold; c.lineWidth=0.05*sc;
+  c.beginPath(); c.arc(pcx,pcy,d/2,0,7); c.stroke();
+  c.strokeStyle=T.frame; c.lineWidth=0.015*sc;
+  c.beginPath(); c.arc(pcx,pcy,d/2+0.06*sc,0,7); c.stroke();
+  /* title + sections नीचे */
+  let y=pcy+d/2+0.30*sc;
+  c.textAlign='center'; c.fillStyle=T.secC;
+  c.font=SkFonts.fontFam({f:'rozha',size:0.4*fsz},sc);
+  c.fillText(T.title, W/2, y); y+=0.15*sc;
+  c.strokeStyle=T.gold; c.lineWidth=0.02*sc;
+  c.beginPath(); c.moveTo(W/2-1.4*sc,y+0.08*sc); c.lineTo(W/2+1.4*sc,y+0.08*sc); c.stroke();
+  y+=0.24*sc;
+  const X=m+0.28*sc;
+  drawSections(c,sc,X,y,W-m*0.9,T,fsz*0.90,2.0);
+  /* बाहरी gold frame */
+  c.strokeStyle=T.gold; c.lineWidth=0.02*sc;
+  c.strokeRect(m+0.05*sc,m+0.05*sc,W-2*(m+0.05*sc),H-2*(m+0.05*sc));
+  footer(c,sc,W,H,m,T);
 }
 function draw(){
   const stage=$('stage');
