@@ -149,7 +149,7 @@ function drawItem(c,it,sc,forExport){
       else if(it.shape==='tri'){ path.moveTo(ox,oy+H); path.lineTo(ox+W,oy+H); path.lineTo(ox+W,oy); path.closePath(); }
       else if(it.shape==='arch'){ const r=W/2, top=oy+r;
         path.moveTo(ox,oy+H); path.lineTo(ox,top); path.arc(ox+r,top,r,Math.PI,0); path.lineTo(ox+W,oy+H); path.closePath(); }
-      else if(it.shape==='curve'&&window.SkCurve){ return SkCurve.path(ox,oy,W,H,(it.curve||0.3)*sc); }   /* 📺 curved TV */
+      else if(it.shape==='curve'&&window.SkCurve){ return SkCurve.path(ox,oy,W,H,(it.curve||0.3)*(it.curveDir||1)*sc); }   /* 📺 curved TV */
       else if(it.shape==='round'){ const r=Math.min(W,H)*0.09;
         if(path.roundRect) path.roundRect(ox,oy,W,H,r); else path.rect(ox,oy,W,H); }
       else path.rect(ox,oy,W,H);
@@ -214,7 +214,7 @@ function drawItem(c,it,sc,forExport){
           if(im.complete&&im.naturalWidth) o.drawImage(im,0,0,W,H); }
         SkPersp.draw(c,oc,X,Y,W,H,it.persp,sc);
       }
-      else if(it.shape==='curve'&&window.SkCurve) SkCurve.draw(c,oc,X,Y,W,H,(it.curve||0.3)*sc);   /* 📺 curved screen warp */
+      else if(it.shape==='curve'&&window.SkCurve) SkCurve.draw(c,oc,X,Y,W,H,(it.curve||0.3)*(it.curveDir||1)*sc);   /* 📺 curved screen warp */
       else c.drawImage(oc,X,Y,oc.width,oc.height);
     }else{
       c.fillStyle='#ffffff14'; c.fill(path);

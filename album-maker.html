@@ -65,7 +65,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v4.7 🟧 (Group Resize)</span>
+  <span class="badge">FREE v4.7.1 📺 (Curve दिशा)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
@@ -111,6 +111,7 @@ input[type=range]{width:100%}
     <div class="srow" title="📺 Curve की घुमाव — ज़्यादा = ज़्यादा उभरी screen">
       <span style="font-size:12px;color:#8fa3c8">📺 घुमाव</span>
       <input type="range" id="shCurve" min="0.08" max="0.7" step="0.02" value="0.3" style="flex:1">
+      <button class="sbtn" id="btnCurveDir" title="Curve की दिशा पलटो — अंदर (किनारे ऊँचे) ⇄ बाहर (बीच उभरा)">⇄ दिशा</button>
     </div>
     <div class="srow">
       <button class="sbtn" id="btnPersp" style="flex:1.4" title="चुनी photo के 4 कोने पकड़कर खींचो — photo झुकेगी/तिरछी दिखेगी (Photoshop Distort)">🎯 Perspective</button>
@@ -1000,6 +1001,12 @@ document.querySelectorAll('.shp').forEach(b=>b.onclick=()=>{ const ps=selPhotos(
 /* 📺 Curve की घुमाव slider — चुनी curve photos पर live */
 $('shCurve').oninput=e=>{ const ps=selPhotos().filter(it=>it.shape==='curve');
   if(ps.length){ ps.forEach(it=>it.curve=+e.target.value); draw(); } };
+/* ⇄ Curve दिशा — अंदर (किनारे ऊँचे ⌣) ⇄ बाहर (बीच उभरा ⌒) */
+$('btnCurveDir').onclick=()=>{ const ps=selPhotos().filter(it=>it.shape==='curve');
+  if(!ps.length) return toast('पहले 📺 Curve photo चुनो');
+  ps.forEach(it=>{ it.curveDir=(it.curveDir||1)*-1; });
+  draw();
+  toast((ps[0].curveDir===1?'⌣ अंदर की ओर (किनारे ऊँचे)':'⌒ बाहर की ओर (बीच उभरा)')+(ps.length>1?' — '+ps.length+' photos':'')); };
 $('bdC').oninput=e=>{ const ps=selPhotos(); if(ps.length){ ps.forEach(it=>it.bdC=e.target.value); draw(); } };
 $('bdW').oninput=e=>{ const ps=selPhotos(); if(ps.length){ ps.forEach(it=>it.bdW=+e.target.value); draw(); } };
 $('bdS').onchange=e=>{ const ps=selPhotos(); if(ps.length){ snapshot(); ps.forEach(it=>it.bdS=e.target.value); draw(); if(ps.length>1) toast('✅ '+ps.length+' photos — नया border pattern'); } };
@@ -1197,7 +1204,7 @@ function drawItem(c,it,sc,forExport){
       else if(it.shape==='oval'){ path.ellipse(ox+W/2,oy+H/2,W/2,H/2,0,0,7); }
       else if(it.shape==='arch'){ const r=W/2, top=oy+r;
         path.moveTo(ox,oy+H); path.lineTo(ox,top); path.arc(ox+r,top,r,Math.PI,0); path.lineTo(ox+W,oy+H); path.closePath(); }
-      else if(it.shape==='curve'&&window.SkCurve){ return SkCurve.path(ox,oy,W,H,(it.curve||0.3)*sc); }   /* 📺 curved TV */
+      else if(it.shape==='curve'&&window.SkCurve){ return SkCurve.path(ox,oy,W,H,(it.curve||0.3)*(it.curveDir||1)*sc); }   /* 📺 curved TV */
       else if(it.shape==='round'){ const r=Math.min(W,H)*0.09;
         if(path.roundRect) path.roundRect(ox,oy,W,H,r); else path.rect(ox,oy,W,H); }
       else path.rect(ox,oy,W,H);
@@ -1247,7 +1254,7 @@ function drawItem(c,it,sc,forExport){
           if(im.complete&&im.naturalWidth) o.drawImage(im,0,0,W,H); }
         SkPersp.draw(c,oc,X,Y,W,H,it.persp,sc);
       }
-      else if(it.shape==='curve'&&window.SkCurve) SkCurve.draw(c,oc,X,Y,W,H,(it.curve||0.3)*sc);   /* 📺 curved screen warp */
+      else if(it.shape==='curve'&&window.SkCurve) SkCurve.draw(c,oc,X,Y,W,H,(it.curve||0.3)*(it.curveDir||1)*sc);   /* 📺 curved screen warp */
       else c.drawImage(oc,X,Y,oc.width,oc.height);
     }else if(window.SkPersp&&SkPersp.has(it)){   /* 🎯 खाली slot भी warp दिखे — feedback तुरंत */
       const oc=document.createElement('canvas'); oc.width=Math.max(2,Math.round(W)); oc.height=Math.max(2,Math.round(H));
