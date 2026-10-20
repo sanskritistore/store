@@ -58,12 +58,13 @@ input[type=range]{width:100%}
 <script src="assets/js/torn.js"></script>
 <script src="assets/js/fonts.js"></script>
 <script src="assets/js/borders.js"></script>
+<script src="assets/js/persp.js"></script>
 <script>gateRequire()</script>
 </head>
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v4.2 💾 (Library अनलिमिटेड)</span>
+  <span class="badge">FREE v4.3 🎯 (Perspective tool)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
@@ -103,6 +104,10 @@ input[type=range]{width:100%}
       <button class="sbtn shp" data-s="oval">⬭ Oval</button>
       <button class="sbtn shp" data-s="arch">🕌 मेहराब</button>
       <button class="sbtn shp" data-s="round">▢ गोल-कोना</button>
+    </div>
+    <div class="srow">
+      <button class="sbtn" id="btnPersp" style="flex:1.4" title="चुनी photo के 4 कोने पकड़कर खींचो — photo झुकेगी/तिरछी दिखेगी (Photoshop Distort)">🎯 Perspective</button>
+      <button class="sbtn" id="btnPerspReset" style="flex:1" title="कोने वापस सीधे">↺ सीधा</button>
     </div>
     <div class="srow">
       <input type="color" id="bdC" value="#c9a227" title="Border रंग">
@@ -414,6 +419,24 @@ function addText(){
   if(t!==null && t.trim()){ it.text=t.trim(); draw(); }
 }
 $('btnAddSlot').onclick=addPhoto;
+/* ---- 🎯 Perspective tool — 4 कोने पकड़कर खींचो (Photoshop Distort) ---- */
+let perspMode=false;
+$('btnPersp').onclick=()=>{
+  perspMode=!perspMode;
+  if(perspMode){
+    const it=S.items[S.sel];
+    if(!it||it.kind!=='photo'){ perspMode=false; return toast('पहले 1 photo चुनो, फिर 🎯 दबाओ'); }
+    S.photoMode=false; if(typeof syncPhotoModeUI==='function') syncPhotoModeUI();
+    if(!it.persp) it.persp=[0,0,0,0,0,0,0,0];
+    toast('🎯 4 नारंगी बिंदु खींचो — photo तिरछी/3D दिखेगी');
+  }
+  $('btnPersp').style.background=perspMode?'#c2410c':'';
+  $('btnPersp').style.color=perspMode?'#fff':'';
+  draw();
+};
+$('btnPerspReset').onclick=()=>{ const it=S.items[S.sel];
+  if(!it||!it.persp) return toast('पहले photo चुनो');
+  snapshot(); it.persp=[0,0,0,0,0,0,0,0]; draw(); toast('↺ photo सीधी हो गई'); };
 $('btnAddText').onclick=addText;
 $('btnTextEdit').onclick=()=>{
   const it=S.items[S.sel];
@@ -1114,7 +1137,14 @@ function drawItem(c,it,sc,forExport){
         o.fillStyle=g; o.fillRect(0,0,W,H);
         o.globalCompositeOperation='source-over';
       }
-      c.drawImage(oc,X,Y,oc.width,oc.height);
+      if(window.SkPersp&&SkPersp.has(it)){   /* 🎯 perspective — border+frame भी tile के साथ मुड़े */
+        if(it.bdW>0){ (window.SkBorders?SkBorders.draw:(c2,itt,sc2,p)=>{ c2.setLineDash([]); c2.strokeStyle=itt.bdC; c2.lineWidth=itt.bdW*sc2; c2.stroke(p); })(o,it,sc,mkPath(0,0)); }
+        if(it.bdImg){ let im=it._bdIm;
+          if(!im){ im=new Image(); im.onload=()=>{ if(typeof draw==='function')draw(); }; im.src=it.bdImg; it._bdIm=im; }
+          if(im.complete&&im.naturalWidth) o.drawImage(im,0,0,W,H); }
+        SkPersp.draw(c,oc,X,Y,W,H,it.persp,sc);
+      }
+      else c.drawImage(oc,X,Y,oc.width,oc.height);
     }else{
       if(it.fill){ c.fillStyle=it.fill; c.fill(path); }  /* 🎨 कागज़ panel — photo नहीं, रंगीन कागज़ */
       else{
@@ -1127,8 +1157,8 @@ function drawItem(c,it,sc,forExport){
       }
       }
     }
-    if(it.bdW>0){ (window.SkBorders?SkBorders.draw:(c2,itt,sc2,p)=>{ c2.setLineDash([]); c2.strokeStyle=itt.bdC; c2.lineWidth=itt.bdW*sc2; c2.stroke(p); })(c,it,sc,path); }
-    if(it.bdImg){ let im=it._bdIm;   /* 🖼️ अपना Border — photo के ऊपर frame */
+    if(it.bdW>0&&!(window.SkPersp&&SkPersp.has(it))){ (window.SkBorders?SkBorders.draw:(c2,itt,sc2,p)=>{ c2.setLineDash([]); c2.strokeStyle=itt.bdC; c2.lineWidth=itt.bdW*sc2; c2.stroke(p); })(c,it,sc,path); }   /* persp में border tile के अंदर मुड़ा */
+    if(it.bdImg&&!(window.SkPersp&&SkPersp.has(it))){ let im=it._bdIm;   /* 🖼️ अपना Border — photo के ऊपर frame */
       if(!im){ im=new Image(); im.onload=()=>draw(); im.src=it.bdImg; it._bdIm=im; }
       if(im.complete&&im.naturalWidth) c.drawImage(im,X,Y,W,H); }
     c.restore();
@@ -1194,6 +1224,27 @@ function draw(){
     }else{
       const w=ctx.measureText(it.text).width+20, h=it.size*sc+14;
       ctx.strokeRect(it.x*sc-w/2, it.y*sc-h/2, w, h); ctx.setLineDash([]);
+    }
+  }
+  // 🎯 perspective handles — 4 नारंगी बिंदु warped कोनों पर
+  if(perspMode){
+    const it=S.items[S.sel];
+    if(it&&it.kind==='photo'){
+      const X=it.x*sc,Y=it.y*sc,W=it.w*sc,H=it.h*sc;
+      const pz=it.persp||[0,0,0,0,0,0,0,0];
+      let pts=[[X+pz[0]*sc,Y+pz[1]*sc],[X+W+pz[2]*sc,Y+pz[3]*sc],[X+W+pz[4]*sc,Y+H+pz[5]*sc],[X+pz[6]*sc,Y+H+pz[7]*sc]];
+      if(it.rot){ const cx=X+W/2,cy=Y+H/2,a=it.rot*Math.PI/180,csn=Math.cos(a),ssn=Math.sin(a);
+        pts=pts.map(([px,py])=>{ const dx=px-cx,dy=py-cy; return [cx+dx*csn-dy*ssn, cy+dx*ssn+dy*csn]; }); }
+      ctx.save();
+      ctx.strokeStyle='#ff9933'; ctx.setLineDash([6,5]); ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(pts[0][0],pts[0][1]);
+      for(let i=1;i<4;i++) ctx.lineTo(pts[i][0],pts[i][1]);
+      ctx.closePath(); ctx.stroke(); ctx.setLineDash([]);
+      pts.forEach(([px,py],i)=>{ ctx.beginPath(); ctx.arc(px,py,10,0,7);
+        ctx.fillStyle='#ff9933'; ctx.fill(); ctx.lineWidth=2.5; ctx.strokeStyle='#fff'; ctx.stroke();
+        ctx.fillStyle='#7c2d12'; ctx.font='bold 11px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(i+1,px,py); });
+      ctx.restore();
     }
   }
   // 🖱️ घेरकर चुनने का डिब्बा (marquee)
@@ -1271,6 +1322,24 @@ cv.addEventListener('pointerdown',e=>{
       }
     }
     S.photoMode=false; syncPhotoModeUI();   // बाहर छुआ = mode बंद
+  }
+  // 🎯 perspective mode: 4 नारंगी कोने पकड़ो (TL,TR,BR,BL)
+  if(perspMode){
+    const it=S.items[S.sel];
+    if(it&&it.kind==='photo'){
+      const pp=unrot(p,it);
+      const HS2=18/(sc*(cv.getBoundingClientRect().width/cv.width));
+      const cs=[[it.x,it.y],[it.x+it.w,it.y],[it.x+it.w,it.y+it.h],[it.x,it.y+it.h]];
+      for(let i=0;i<4;i++){
+        const hx=cs[i][0]+(it.persp?it.persp[i*2]:0), hy=cs[i][1]+(it.persp?it.persp[i*2+1]:0);
+        if(Math.hypot(pp.x-hx,pp.y-hy)<HS2){
+          try{cv.setPointerCapture(e.pointerId);}catch(_){}
+          if(!it.persp) it.persp=[0,0,0,0,0,0,0,0];
+          drag={mode:'persp',corner:i,sx:p.x,sy:p.y,f0:{...it}};
+          return;
+        }
+      }
+    }
   }
   // corner handles of selected photo (rotated हो तो point को उल्टा घुमाओ)
   const it=S.items[S.sel];
@@ -1380,6 +1449,17 @@ cv.addEventListener('pointermove',e=>{
   if(drag.mode==='pan'){   // slot के अंदर photo खींचो
     it.px=Math.round(((f.px||0)+dx)*100)/100;
     it.py=Math.round(((f.py||0)+dy)*100)/100;
+    draw(); return;
+  }
+  if(drag.mode==='persp'){   // 🎯 कोना खींचो = perspective warp
+    let pp=p;
+    if(it.rot){ const rr=-it.rot*Math.PI/180, cx=it.x+it.w/2, cy=it.y+it.h/2;
+      const ddx=p.x-cx, ddy=p.y-cy;
+      pp={x:cx+ddx*Math.cos(rr)-ddy*Math.sin(rr), y:cy+ddx*Math.sin(rr)+ddy*Math.cos(rr)}; }
+    const cs=[[it.x,it.y],[it.x+it.w,it.y],[it.x+it.w,it.y+it.h],[it.x,it.y+it.h]];
+    const b=cs[drag.corner];
+    it.persp[drag.corner*2]=Math.round((pp.x-b[0])*100)/100;
+    it.persp[drag.corner*2+1]=Math.round((pp.y-b[1])*100)/100;
     draw(); return;
   }
   if(drag.mode==='mv'){

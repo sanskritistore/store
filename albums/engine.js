@@ -204,7 +204,14 @@ function drawItem(c,it,sc,forExport){
         o.fillStyle=g; o.fillRect(0,0,W,H);
         o.globalCompositeOperation='source-over';
       }
-      c.drawImage(oc,X,Y,oc.width,oc.height);
+      if(window.SkPersp&&SkPersp.has(it)){   /* 🎯 perspective — border+frame भी tile के साथ मुड़े */
+        if(it.bdW>0){ (window.SkBorders?SkBorders.draw:(c2,itt,sc2,p)=>{ c2.setLineDash([]); c2.strokeStyle=itt.bdC; c2.lineWidth=itt.bdW*sc2; c2.stroke(p); })(o,it,sc,mkPath(0,0)); }
+        if(it.bdImg){ let im=it._bdIm;
+          if(!im){ im=new Image(); im.onload=()=>{ if(typeof draw==='function')draw(); }; im.src=it.bdImg; it._bdIm=im; }
+          if(im.complete&&im.naturalWidth) o.drawImage(im,0,0,W,H); }
+        SkPersp.draw(c,oc,X,Y,W,H,it.persp,sc);
+      }
+      else c.drawImage(oc,X,Y,oc.width,oc.height);
     }else{
       c.fillStyle='#ffffff14'; c.fill(path);
       c.strokeStyle='#ffffff55'; c.setLineDash([8,6]); c.lineWidth=2; c.stroke(path); c.setLineDash([]);
@@ -214,8 +221,8 @@ function drawItem(c,it,sc,forExport){
         c.fillText('📷', X+W/2, Y+H/2);
       }
     }
-    if(it.bdW>0){ (window.SkBorders?SkBorders.draw:(c2,itt,sc2,p)=>{ c2.setLineDash([]); c2.strokeStyle=itt.bdC; c2.lineWidth=itt.bdW*sc2; c2.stroke(p); })(c,it,sc,path); }
-    if(it.bdImg){ let im=it._bdIm;   /* 🖼️ अपना Border frame */
+    if(it.bdW>0&&!(window.SkPersp&&SkPersp.has(it))){ (window.SkBorders?SkBorders.draw:(c2,itt,sc2,p)=>{ c2.setLineDash([]); c2.strokeStyle=itt.bdC; c2.lineWidth=itt.bdW*sc2; c2.stroke(p); })(c,it,sc,path); }   /* persp में border tile के अंदर मुड़ा */
+    if(it.bdImg&&!(window.SkPersp&&SkPersp.has(it))){ let im=it._bdIm;   /* 🖼️ अपना Border frame */
       if(!im){ im=new Image(); im.src=it.bdImg; it._bdIm=im; }
       if(im.complete&&im.naturalWidth) c.drawImage(im,X,Y,W,H); }
     c.restore();
