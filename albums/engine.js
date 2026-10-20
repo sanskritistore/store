@@ -149,6 +149,7 @@ function drawItem(c,it,sc,forExport){
       else if(it.shape==='tri'){ path.moveTo(ox,oy+H); path.lineTo(ox+W,oy+H); path.lineTo(ox+W,oy); path.closePath(); }
       else if(it.shape==='arch'){ const r=W/2, top=oy+r;
         path.moveTo(ox,oy+H); path.lineTo(ox,top); path.arc(ox+r,top,r,Math.PI,0); path.lineTo(ox+W,oy+H); path.closePath(); }
+      else if(it.shape==='curve'&&window.SkCurve){ return SkCurve.path(ox,oy,W,H,(it.curve||0.3)*sc); }   /* 📺 curved TV */
       else if(it.shape==='round'){ const r=Math.min(W,H)*0.09;
         if(path.roundRect) path.roundRect(ox,oy,W,H,r); else path.rect(ox,oy,W,H); }
       else path.rect(ox,oy,W,H);
@@ -160,7 +161,8 @@ function drawItem(c,it,sc,forExport){
       // offscreen tile — fade सिर्फ photo पर लगे, नीचे की चीज़ें सुरक्षित
       const oc=document.createElement('canvas'); oc.width=Math.max(2,Math.round(W)); oc.height=Math.max(2,Math.round(H));
       const o=oc.getContext('2d');
-      const op=mkPath(0,0); o.clip(op);
+      let op=mkPath(0,0); if(it.shape==='curve'){ op=new Path2D(); op.rect(0,0,W,H); }   /* 📺 curve: tile rect — घुमाव warp में */
+      o.clip(op);
       if((it.fx||1)!==1||(it.fy||1)!==1){ o.translate(W/2,H/2); o.scale(it.fx||1,it.fy||1); o.translate(-W/2,-H/2); }   /* ⇄⇅ आईना/उल्टा */
       const sr=it.photo.width/it.photo.height, tr=W/H;
       const zoom=it.zoom||1, px=(it.px==null?0.5:it.px), py=(it.py==null?0.5:it.py);
@@ -212,6 +214,7 @@ function drawItem(c,it,sc,forExport){
           if(im.complete&&im.naturalWidth) o.drawImage(im,0,0,W,H); }
         SkPersp.draw(c,oc,X,Y,W,H,it.persp,sc);
       }
+      else if(it.shape==='curve'&&window.SkCurve) SkCurve.draw(c,oc,X,Y,W,H,(it.curve||0.3)*sc);   /* 📺 curved screen warp */
       else c.drawImage(oc,X,Y,oc.width,oc.height);
     }else{
       c.fillStyle='#ffffff14'; c.fill(path);
@@ -223,7 +226,7 @@ function drawItem(c,it,sc,forExport){
       }
     }
     if(it.bdW>0&&!(window.SkPersp&&SkPersp.has(it))){ (window.SkBorders?SkBorders.draw:(c2,itt,sc2,p)=>{ c2.setLineDash([]); c2.strokeStyle=itt.bdC; c2.lineWidth=itt.bdW*sc2; c2.stroke(p); })(c,it,sc,path); }   /* persp में border tile के अंदर मुड़ा */
-    if(it.bdImg&&!(window.SkPersp&&SkPersp.has(it))){ let im=it._bdIm;   /* 🖼️ अपना Border frame */
+    if(it.bdImg&&it.shape!=='curve'&&!(window.SkPersp&&SkPersp.has(it))){ let im=it._bdIm;   /* 🖼️ अपना Border frame */
       if(!im){ im=new Image(); im.src=it.bdImg; it._bdIm=im; }
       if(im.complete&&im.naturalWidth) c.drawImage(im,X,Y,W,H); }
     c.restore();
