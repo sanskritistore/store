@@ -64,7 +64,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v4.5 📏 (Ruler Guides)</span>
+  <span class="badge">FREE v4.5.1 📏 (Guides आसान)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
@@ -1464,6 +1464,18 @@ cv.addEventListener('pointerdown',e=>{
       }
     }
   }
+  /* 📏 guide पकड़ो — photo के ऊपर से भी! (line के 9px अंदर; ruler तक ले जाओ = हटेगी) */
+  if(showGuides){
+    const gsz=(S.pages[S.pg].guides)||[];
+    if(gsz.length){
+      const r0=cv.getBoundingClientRect();
+      const tol=9*(cv.width/r0.width)/sc;
+      const g=gsz.find(g=> (g.a==='v'? Math.abs(p.x-g.p)<tol : Math.abs(p.y-g.p)<tol));
+      if(g){ snapshot(); try{cv.setPointerCapture(e.pointerId);}catch(_){}
+        drag={mode:'guide', g, fresh:false};
+        return; }
+    }
+  }
   // corner handles of selected photo (rotated हो तो point को उल्टा घुमाओ)
   const it=S.items[S.sel];
   if(it&&it.kind==='photo'){
@@ -1542,16 +1554,6 @@ cv.addEventListener('pointerdown',e=>{
     }
   }
   // 🖱️ खाली जगह से खींचो = घेरकर चुनो (marquee); Shift = पुराने में जोड़ते जाओ
-  /* 📏 guide पकड़ो — line के 9px अंदर tap = खींचो (ruler तक ले जाओ = हटेगी) */
-  if(showGuides){
-    const gsz=(S.pages[S.pg].guides)||[];
-    const r0=cv.getBoundingClientRect();
-    const tol=9*(cv.width/r0.width)/sc;
-    const g=gsz.find(g=> (g.a==='v'? Math.abs(p.x-g.p)<tol : Math.abs(p.y-g.p)<tol));
-    if(g){ snapshot(); try{cv.setPointerCapture(e.pointerId);}catch(_){}
-      drag={mode:'guide', g, fresh:false};
-      return; }
-  }
   try{cv.setPointerCapture(e.pointerId);}catch(_){}
   drag={mode:'marquee',sx:p.x,sy:p.y,x:p.x,y:p.y,add:e.shiftKey?1:0};
   if(!e.shiftKey){ S.selArr=[]; S.sel=-1; }
@@ -1654,6 +1656,15 @@ $('btnDelSel').onclick=()=>{   // 🗑️ चुनी एक/कई चीज�
 };
 cv.addEventListener('pointercancel',e=>{ ptrs.delete(e.pointerId); if(ptrs.size<2) pinch0=null; drag=null; });
 cv.addEventListener('dblclick',e=>{
+  /* 📏 guide पर double-tap = हटाओ (ruler तक खींचने का आसान विकल्प) */
+  if(showGuides){
+    const p=pos(e), sc=S.scale;
+    const pg=S.pages[S.pg], gsz=pg.guides||[];
+    const r0=cv.getBoundingClientRect();
+    const tol=9*(cv.width/r0.width)/sc;
+    const g=gsz.find(g=> (g.a==='v'? Math.abs(p.x-g.p)<tol : Math.abs(p.y-g.p)<tol));
+    if(g){ snapshot(); pg.guides=gsz.filter(x=>x!==g); draw(); toast('📏 guide हट गई ✓'); return; }
+  }
   const it=S.items[S.sel];
   if(it&&it.kind==='text'){
     const t=prompt('Text बदलो:',it.text);
