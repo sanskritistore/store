@@ -64,7 +64,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v4.3 🎯 (Perspective tool)</span>
+  <span class="badge">FREE v4.3.1 🎯 (आसान Perspective)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
@@ -425,10 +425,12 @@ $('btnPersp').onclick=()=>{
   perspMode=!perspMode;
   if(perspMode){
     const it=S.items[S.sel];
-    if(!it||it.kind!=='photo'){ perspMode=false; return toast('पहले 1 photo चुनो, फिर 🎯 दबाओ'); }
     S.photoMode=false; if(typeof syncPhotoModeUI==='function') syncPhotoModeUI();
-    if(!it.persp) it.persp=[0,0,0,0,0,0,0,0];
-    toast('🎯 4 नारंगी बिंदु खींचो — photo तिरछी/3D दिखेगी');
+    if(it&&it.kind==='photo'){
+      if(!it.persp) it.persp=[0,0,0,0,0,0,0,0];
+      toast('🎯 4 नारंगी बिंदु खींचो — photo तिरछी/3D दिखेगी');
+    }
+    else toast('🎯 चालू! अब किसी photo पर tap करो — नारंगी बिंदु आ जाएँगे');
   }
   $('btnPersp').style.background=perspMode?'#c2410c':'';
   $('btnPersp').style.color=perspMode?'#fff':'';
@@ -1145,6 +1147,19 @@ function drawItem(c,it,sc,forExport){
         SkPersp.draw(c,oc,X,Y,W,H,it.persp,sc);
       }
       else c.drawImage(oc,X,Y,oc.width,oc.height);
+    }else if(window.SkPersp&&SkPersp.has(it)){   /* 🎯 खाली slot भी warp दिखे — feedback तुरंत */
+      const oc=document.createElement('canvas'); oc.width=Math.max(2,Math.round(W)); oc.height=Math.max(2,Math.round(H));
+      const o=oc.getContext('2d');
+      const p0=mkPath(0,0);
+      if(it.fill){ o.fillStyle=it.fill; o.fill(p0); }
+      else{
+        o.fillStyle='#ffffff14'; o.fill(p0);
+        o.strokeStyle='#ffffff55'; o.setLineDash([8,6]); o.lineWidth=2; o.stroke(p0); o.setLineDash([]);
+        if(!forExport){ o.fillStyle='#ffffff88'; o.font=`${Math.min(W,H)*0.22}px sans-serif`;
+          o.textAlign='center'; o.textBaseline='middle'; o.fillText('📷', W/2, H/2); }
+      }
+      if(it.bdW>0){ (window.SkBorders?SkBorders.draw:(c2,itt,sc2,p)=>{ c2.setLineDash([]); c2.strokeStyle=itt.bdC; c2.lineWidth=itt.bdW*sc2; c2.stroke(p); })(o,it,sc,mkPath(0,0)); }
+      SkPersp.draw(c,oc,X,Y,W,H,it.persp,sc);
     }else{
       if(it.fill){ c.fillStyle=it.fill; c.fill(path); }  /* 🎨 कागज़ panel — photo नहीं, रंगीन कागज़ */
       else{
@@ -1328,7 +1343,7 @@ cv.addEventListener('pointerdown',e=>{
     const it=S.items[S.sel];
     if(it&&it.kind==='photo'){
       const pp=unrot(p,it);
-      const HS2=18/(sc*(cv.getBoundingClientRect().width/cv.width));
+      const HS2=24/(sc*(cv.getBoundingClientRect().width/cv.width));
       const cs=[[it.x,it.y],[it.x+it.w,it.y],[it.x+it.w,it.y+it.h],[it.x,it.y+it.h]];
       for(let i=0;i<4;i++){
         const hx=cs[i][0]+(it.persp?it.persp[i*2]:0), hy=cs[i][1]+(it.persp?it.persp[i*2+1]:0);
