@@ -64,7 +64,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v4.4 ⇄ (आईना हर चीज़ पर)</span>
+  <span class="badge">FREE v4.5 📏 (Ruler Guides)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
@@ -72,6 +72,7 @@ input[type=range]{width:100%}
   <button class="tbtn" id="btnZOut" title="Zoom out (Ctrl/Alt + wheel)">🔍−</button>
   <button class="tbtn" id="btnZFit" style="min-width:64px">100%</button>
   <button class="tbtn" id="btnZIn" title="Zoom in (Ctrl/Alt + wheel)">🔍+</button>
+  <button class="tbtn" id="btnGuides" title="📏 Ruler + Guides दिखाओ/छिपाओ (Corel जैसी)">📏</button>
   <button class="tbtn" id="btnLoadJson">📂 JSON खोलें</button>
   <button class="tbtn acc" id="btnExport">🖨️ Print PNG (300 DPI)</button>
 </div>
@@ -235,7 +236,12 @@ input[type=range]{width:100%}
     <small style="color:#8a93a3;font-size:11px">Template → तुरंत Album page पर card (आपके device पर) + bundle download → LIVE के लिए भेजें</small>
   </div>
   <div id="stage">
-    <div id="stageScroll"><canvas id="pageCv"></canvas></div>
+    <div id="stageScroll"><div id="rvWrap" style="position:relative;line-height:0">
+      <div id="rulerC" style="position:absolute;top:0;left:0;width:26px;height:24px;background:#1e2430;color:#8fa3c8;font-size:9px;display:flex;align-items:center;justify-content:center;z-index:3;line-height:1">in</div>
+      <canvas id="rulerT" height="24" style="position:absolute;top:0;left:26px;background:#1e2430;cursor:row-resize;z-index:3"></canvas>
+      <canvas id="rulerL" width="26" style="position:absolute;top:24px;left:0;background:#1e2430;cursor:col-resize;z-index:3"></canvas>
+      <canvas id="pageCv" style="margin:24px 0 0 26px"></canvas>
+    </div></div>
     <button id="btnDelSel" style="position:fixed;right:14px;bottom:86px;z-index:60;display:none;background:#c0392b;color:#fff;border:none;border-radius:10px;padding:11px 16px;font-weight:800;font-size:15px;box-shadow:0 3px 12px #0008;cursor:pointer">🗑️ हटाओ</button>
     <div id="pgbar">
       <div id="pgthumbs"></div>
@@ -347,6 +353,85 @@ Object.defineProperty(S,'items',{get:()=>S.pages[S.pg].items,set:v=>{S.pages[S.p
 
 const $=id=>document.getElementById(id);
 const cv=$('pageCv'), ctx=cv.getContext('2d');
+/* ================= 📏 RULERS + GUIDES (Corel जैसी) ================= */
+let showGuides=(localStorage.getItem('tmplGuides')||'1')==='1';
+function applyGuidesVis(){
+  const d=showGuides?'':'none';
+  $('rulerT').style.display=d; $('rulerL').style.display=d; $('rulerC').style.display=showGuides?'flex':'none';
+  cv.style.margin=showGuides?'24px 0 0 26px':'0';
+  $('btnGuides').style.background=showGuides?'#c2410c':'';
+  $('btnGuides').style.color=showGuides?'#fff':'';
+}
+$('btnGuides').onclick=()=>{ showGuides=!showGuides; localStorage.setItem('tmplGuides',showGuides?'1':'0');
+  applyGuidesVis(); draw(); toast(showGuides?'📏 Ruler चालू — ऊपर/बाएँ ruler से खींचकर guide लगाओ':'📏 Ruler बंद'); };
+function drawRulers(){
+  if(!showGuides) return;
+  const r=cv.getBoundingClientRect(); if(r.width<10) return;
+  const k=r.width/S.W;   /* css px प्रति inch */
+  const rt=$('rulerT'), rl=$('rulerL');
+  const rw=Math.round(r.width), rh=Math.round(r.height);
+  if(rt.width!==rw){ rt.width=rw; rt.style.width=r.width+'px'; }
+  if(rl.height!==rh){ rl.height=rh; rl.style.height=r.height+'px'; }
+  const gs=(S.pages[S.pg]&&S.pages[S.pg].guides)||[];
+  /* ऊपर वाला */
+  const tc=rt.getContext('2d');
+  tc.fillStyle='#1e2430'; tc.fillRect(0,0,rt.width,24);
+  tc.strokeStyle='#8fa3c8'; tc.fillStyle='#8fa3c8'; tc.font='9px sans-serif'; tc.textAlign='left'; tc.textBaseline='alphabetic';
+  tc.beginPath();
+  for(let i=0;i<=Math.ceil(S.W*2);i++){ const x=i*k/2, big=i%2===0;
+    tc.moveTo(x,24); tc.lineTo(x,big?8:15); }
+  tc.stroke();
+  if(k>14) for(let i=0;i<=Math.ceil(S.W);i++) tc.fillText(i, i*k+2, 10);
+  tc.fillStyle='#22d3ee';
+  gs.forEach(g=>{ if(g.a==='v') tc.fillRect(g.p*k-1.5,12,3,12); });
+  /* बायाँ वाला */
+  const lc=rl.getContext('2d');
+  lc.fillStyle='#1e2430'; lc.fillRect(0,0,26,rl.height);
+  lc.strokeStyle='#8fa3c8'; lc.fillStyle='#8fa3c8'; lc.font='9px sans-serif';
+  lc.beginPath();
+  for(let i=0;i<=Math.ceil(S.H*2);i++){ const y=i*k/2, big=i%2===0;
+    lc.moveTo(26,y); lc.lineTo(big?12:18,y); }
+  lc.stroke();
+  if(k>14) for(let i=0;i<=Math.ceil(S.H);i++) lc.fillText(i, 2, i*k+10);
+  lc.fillStyle='#22d3ee';
+  gs.forEach(g=>{ if(g.a==='h') lc.fillRect(14,g.p*k-1.5,12,3); });
+}
+/* ruler से खींचकर guide बनाओ (Corel तरीका) */
+function rulerDown(axis){ return e=>{
+  if(!showGuides) return;
+  e.preventDefault();
+  const pg=S.pages[S.pg]; if(!pg.guides) pg.guides=[];
+  snapshot();   /* undo में guide हट जाए */
+  const g={a:axis, p:0}; pg.guides.push(g);
+  drag={mode:'guide', g, fresh:true};
+  try{e.target.setPointerCapture(e.pointerId);}catch(_){}
+  guideMoveTo(e);
+}; }
+function guideMoveTo(e){
+  if(!drag||drag.mode!=='guide') return;
+  const g=drag.g, r=cv.getBoundingClientRect();
+  const kx=cv.width/r.width, ky=cv.height/r.height;
+  if(g.a==='h') g.p=(e.clientY-r.top)*ky/S.scale;
+  else g.p=(e.clientX-r.left)*kx/S.scale;
+  draw();
+}
+function guideDrop(e){
+  if(!drag||drag.mode!=='guide') return;
+  const g=drag.g, r=cv.getBoundingClientRect(), pg=S.pages[S.pg];
+  const lim=g.a==='h'?S.H:S.W;
+  const off=(g.a==='h'? e.clientY<r.top-6 : e.clientX<r.left-6) || g.p<-0.05 || g.p>lim+0.05;
+  if(off){ pg.guides=pg.guides.filter(x=>x!==g); toast('📏 guide हट गई'); }
+  else { g.p=Math.max(0,Math.min(lim,Math.round(g.p*20)/20));
+    toast('📏 '+(g.a==='h'?'—':'|')+' '+(Math.round(g.p*100)/100)+'" पर guide — चीज़ें इससे चिपकेंगी'); }
+  drag=null; draw();
+}
+$('rulerT').addEventListener('pointerdown',rulerDown('h'));
+$('rulerL').addEventListener('pointerdown',rulerDown('v'));
+[$('rulerT'),$('rulerL')].forEach(rr=>{
+  rr.addEventListener('pointermove',guideMoveTo);
+  rr.addEventListener('pointerup',guideDrop);
+  rr.addEventListener('pointercancel',guideDrop);
+});
 
 function toast(m){ const t=$('toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._t); t._t=setTimeout(()=>t.style.display='none',2200); }
 
@@ -602,7 +687,7 @@ $('btnMirV').onclick=()=>{
 };
 /* ---- Undo / Redo (Ctrl+Z / Ctrl+Y) ---- */
 let undoStack=[], redoStack=[], lastSnap=0;
-function curSnap(){ return {pages:S.pages.map(p=>({bg:{...p.bg},items:p.items.map(it=>({...it})),w:p.w,h:p.h})),pg:S.pg,W:S.W,H:S.H}; }
+function curSnap(){ return {pages:S.pages.map(p=>({bg:{...p.bg},items:p.items.map(it=>({...it})),w:p.w,h:p.h,guides:(p.guides||[]).map(g=>({...g}))})),pg:S.pg,W:S.W,H:S.H}; }
 function restoreSnap(s){ S.pages=s.pages; S.pg=Math.min(s.pg,s.pages.length-1); const pg=S.pages[S.pg]; S.W=(pg&&pg.w)||s.W; S.H=(pg&&pg.h)||s.H; S.sel=-1; S.selArr=[]; syncSizeUI(); fit(); draw(); renderStrip(); }
 function snapshot(){
   const now=performance.now();
@@ -1208,6 +1293,22 @@ function draw(){
   else ctx.fillStyle=S.bg.c1;
   ctx.fillRect(0,0,cv.width,cv.height);
   S.items.forEach(it=>drawItem(ctx,it,sc,false));
+  /* 📏 guides — कागज़ पर नीली dashed lines (print में कभी नहीं आतीं) */
+  if(showGuides){
+    const gsz=(S.pages[S.pg]&&S.pages[S.pg].guides)||[];
+    if(gsz.length){
+      ctx.save(); ctx.strokeStyle='#06b6d4'; ctx.globalAlpha=0.85;
+      ctx.lineWidth=Math.max(1.2,sc*0.012); ctx.setLineDash([sc*0.12,sc*0.08]);
+      gsz.forEach(g=>{
+        ctx.beginPath();
+        if(g.a==='v'){ ctx.moveTo(g.p*sc,0); ctx.lineTo(g.p*sc,cv.height); }
+        else { ctx.moveTo(0,g.p*sc); ctx.lineTo(cv.width,g.p*sc); }
+        ctx.stroke();
+      });
+      ctx.setLineDash([]); ctx.restore();
+    }
+    drawRulers();
+  }
   // selection
   if(S.sel!==_lastSelForUI){ _lastSelForUI=S.sel; syncPhotoUI(); }   // चुनाव बदला = sliders असली value दिखाएँ
   // Shift से चुनी बाकी चीज़ों के हल्के outline
@@ -1441,6 +1542,16 @@ cv.addEventListener('pointerdown',e=>{
     }
   }
   // 🖱️ खाली जगह से खींचो = घेरकर चुनो (marquee); Shift = पुराने में जोड़ते जाओ
+  /* 📏 guide पकड़ो — line के 9px अंदर tap = खींचो (ruler तक ले जाओ = हटेगी) */
+  if(showGuides){
+    const gsz=(S.pages[S.pg].guides)||[];
+    const r0=cv.getBoundingClientRect();
+    const tol=9*(cv.width/r0.width)/sc;
+    const g=gsz.find(g=> (g.a==='v'? Math.abs(p.x-g.p)<tol : Math.abs(p.y-g.p)<tol));
+    if(g){ snapshot(); try{cv.setPointerCapture(e.pointerId);}catch(_){}
+      drag={mode:'guide', g, fresh:false};
+      return; }
+  }
   try{cv.setPointerCapture(e.pointerId);}catch(_){}
   drag={mode:'marquee',sx:p.x,sy:p.y,x:p.x,y:p.y,add:e.shiftKey?1:0};
   if(!e.shiftKey){ S.selArr=[]; S.sel=-1; }
@@ -1458,6 +1569,7 @@ function itemInRect(t,r){
 }
 cv.addEventListener('pointermove',e=>{
   if(ptrs.has(e.pointerId)) ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(drag&&drag.mode==='guide'){ guideMoveTo(e); return; }   /* 📏 guide खिंच रही */
   if(ptrs.size===2&&pinch0){   // pinch zoom चल रहा
     const a=[...ptrs.values()];
     const d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);
@@ -1490,6 +1602,25 @@ cv.addEventListener('pointermove',e=>{
       else{ mi.x=m.f.x+dx; mi.y=m.f.y+dy; } }); }
     else if(it.kind==='decor'&&f.cx!=null){ it.cx=f.cx+dx; it.cy=f.cy+dy; }
     else{ it.x=f.x+dx; it.y=f.y+dy; }
+    /* 📏 SNAP — single item guides से चिपको (Corel जैसा) */
+    if(showGuides && !drag.multi){
+      const gs=(S.pages[S.pg].guides)||[]; if(gs.length){
+        const r0=cv.getBoundingClientRect();
+        const tol=8*(cv.width/r0.width)/S.scale;
+        const cxB=(it.cx!=null? it.cx : it.x), useCx=(it.cx!=null);
+        /* vertical guides ↔ x-किनारे/centre */
+        outer: for(const g of gs){ if(g.a!=='v') continue;
+          const edges=useCx? [cxB] : [cxB, cxB+(it.w||0)/2, cxB+(it.w||0)];
+          for(const ed of edges){ if(Math.abs(ed-g.p)<tol){ if(useCx) it.cx+=g.p-ed; else it.x+=g.p-ed; break outer; } }
+        }
+        /* horizontal guides ↔ y-किनारे/centre */
+        outer2: for(const g of gs){ if(g.a!=='h') continue;
+          const cyB=(it.cy!=null? it.cy : it.y), useCy=(it.cy!=null);
+          const edges=useCy? [cyB] : [cyB, cyB+(it.h||0)/2, cyB+(it.h||0)];
+          for(const ed of edges){ if(Math.abs(ed-g.p)<tol){ if(useCy) it.cy+=g.p-ed; else it.y+=g.p-ed; break outer2; } }
+        }
+      }
+    }
   }else{
     // resize: keep opposite corner fixed
     const ox=drag.corner%2? f.x : f.x+f.w, oy=drag.corner<2? f.y+f.h : f.y;
@@ -1500,6 +1631,7 @@ cv.addEventListener('pointermove',e=>{
 });
 cv.addEventListener('pointerup',e=>{
   ptrs.delete(e.pointerId); if(ptrs.size<2) pinch0=null;
+  if(drag&&drag.mode==='guide'){ guideDrop(e); return; }   /* 📏 guide छुटी */
   if(drag&&drag.mode==='marquee'){   // 🖱️ घेरा पूरा = अंदर की सब चीज़ें चुनो
     const r={x1:Math.min(drag.sx,drag.x),y1:Math.min(drag.sy,drag.y),x2:Math.max(drag.sx,drag.x),y2:Math.max(drag.sy,drag.y)};
     if((r.x2-r.x1)>=0.15||(r.y2-r.y1)>=0.15){
@@ -1531,7 +1663,7 @@ cv.addEventListener('dblclick',e=>{
 
 /* ================= SAVE / LOAD ================= */
 function serialize(){
-  return JSON.stringify({v:1,name:'template',W:S.W,H:S.H,bg:S.bg,items:itemsToJSON(S.items)},null,1);
+  return JSON.stringify({v:1,name:'template',W:S.W,H:S.H,bg:S.bg,items:itemsToJSON(S.items),guides:(S.pages[S.pg].guides||[])},null,1);
 }
 /* blob: photo (पुराने session) → base64, save से पहले */
 async function fixBlobPhotos(){
@@ -1569,7 +1701,7 @@ function itemsFromJSON(arr){
 /* 📖 पूरी book — सारे pages एक JSON में */
 function serializeBook(){
   return JSON.stringify({v:2,book:true,name:'book',W:S.W,H:S.H,
-    pages:S.pages.map(p=>({bg:{...p.bg},items:itemsToJSON(p.items),w:p.w||S.W,h:p.h||S.H}))},null,1);
+    pages:S.pages.map(p=>({bg:{...p.bg},items:itemsToJSON(p.items),w:p.w||S.W,h:p.h||S.H,guides:(p.guides||[])}))},null,1);
 }
 $('btnSaveJson').onclick=async()=>{
   const isBook=S.pages.length>1;
@@ -1626,8 +1758,8 @@ function loadTemplate(j){
     if(_a>0||_b<t.length-1) t=t.slice(_a,_b+1);                // आगे-पीछे की गंदगी हटाओ (auto-repair)
     const d=JSON.parse(t);
     S.W=d.W; S.H=d.H; S.sel=-1; S.selArr=[];
-    if(d.book){ S.pages=d.pages.map(p=>({bg:p.bg||{c1:'#f7f1e8'},items:itemsFromJSON(p.items||[]),w:p.w||d.W,h:p.h||d.H})); }
-    else { S.pages=[{bg:d.bg,items:itemsFromJSON(d.items),w:d.W,h:d.H}]; }   /* पुरानी single template भी book की तरह खुलती है */
+    if(d.book){ S.pages=d.pages.map(p=>({bg:p.bg||{c1:'#f7f1e8'},items:itemsFromJSON(p.items||[]),w:p.w||d.W,h:p.h||d.H,guides:p.guides||[]})); }
+    else { S.pages=[{bg:d.bg,items:itemsFromJSON(d.items),w:d.W,h:d.H,guides:d.guides||[]}]; }   /* पुरानी single template भी book की तरह खुलती है */
     S.W=S.pages[0].w; S.H=S.pages[0].h;
     S.pg=0;
     fit(); draw(); renderStrip();
@@ -1676,7 +1808,7 @@ $('btnExport').onclick=()=>{
 };
 
 /* ================= INIT ================= */
-fit(); renderLib(); loadBorderLib().then(renderBorderLib); draw(); renderStrip(); if(innerWidth<=700) setTimeout(zoomFitStage,50);
+applyGuidesVis(); fit(); renderLib(); loadBorderLib().then(renderBorderLib); draw(); renderStrip(); if(innerWidth<=700) setTimeout(zoomFitStage,50);
 /* 🛟 RELOAD = काम खोना नहीं — पिछला काम अपने-आप वापस (Undo = नया खाली पाना) */
 try{
   const _aj=localStorage.getItem('tmplAuto');
