@@ -42,12 +42,24 @@ body{font-family:'Nirmala UI',system-ui,sans-serif;background:#17191d;color:#e8e
  #stage{overflow:visible}
  #cv{max-width:100%;height:auto}
 }
+.frow label{display:flex;align-items:center;justify-content:space-between;gap:4px}
+.fops{display:flex;gap:1px;flex:none}
+.fops button{background:none;border:none;color:#5b6b8c;font-size:11px;cursor:pointer;padding:1px 3px;border-radius:4px;line-height:1.4}
+.fops button:hover{color:#fbbf24;background:#1e293b}
+.addf{width:100%;margin-top:6px;background:none;border:1px dashed #334155;color:#7c8db0;font-size:11.5px;padding:5px;border-radius:8px;cursor:pointer}
+.addf:hover{border-color:#f59e0b;color:#fbbf24}
+#gthumbs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.gth{position:relative;width:48px;height:58px;border-radius:6px;overflow:hidden;border:1px solid #334155;flex:none}
+.gth img{width:100%;height:100%;object-fit:cover;display:block}
+.gth .ops{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;background:rgba(0,0,0,.6)}
+.gth .ops button{background:none;border:none;color:#e2e8f0;font-size:10px;cursor:pointer;padding:1px 3px}
+.gth .ops button:hover{color:#fbbf24}
 </style>
 </head>
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Biodata Maker</h1>
-  <span class="badge" id="bdg">FREE v1.2 🌐 (11 भाषाएँ)</span>
+  <span class="badge" id="bdg">FREE v1.3 ✏️🖼️</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJ">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnLoadJ">📂 JSON खोलें</button>
@@ -75,6 +87,11 @@ body{font-family:'Nirmala UI',system-ui,sans-serif;background:#17191d;color:#e8e
       <div class="frow"><input type="range" id="fsz" min="0.75" max="1.15" step="0.05" value="1"></div>
     </div>
     <div id="formSecs"></div>
+    <div class="sec" id="galSec">
+      <h3 id="h3Gal">🖼️ फोटो गैलरी</h3>
+      <div id="gthumbs"></div>
+      <div class="frow"><button class="sbtn" id="btnGalAdd" style="width:100%">📷 फोटो जोड़ो</button></div>
+    </div>
     <div class="sec">
       <button class="sbtn" id="btnClear" style="width:100%;border-color:#7f1d1d;color:#fca5a5">🔄 सब साफ़ करो</button>
     </div>
@@ -82,6 +99,7 @@ body{font-family:'Nirmala UI',system-ui,sans-serif;background:#17191d;color:#e8e
   <div id="stage"><canvas id="cv"></canvas></div>
 </div>
 <input type="file" id="filePhoto" accept="image/*" hidden>
+<input type="file" id="fileGal" accept="image/*" multiple hidden>
 <input type="file" id="fileJSON" accept=".json,application/json" hidden>
 <div id="toast"></div>
 <script src="assets/js/fonts.js"></script>
@@ -133,7 +151,11 @@ const TMPL=[
 ];
 
 /* ---- State ---- */
-const S={ tmpl:0, d:{}, photo:null, pz:1, fsz:1, lang:'hi', trans:true };
+const S={ tmpl:0, d:{}, photo:null, pz:1, fsz:1, lang:'hi', trans:true,
+  schema:null, xlab:{}, photos2:[] };
+/* field key → def (default fields) */
+const FLD={}; SECTIONS.forEach(sec=>sec.f.forEach(f=>FLD[f.k]=f));
+function ensureSchema(){ if(!S.schema) S.schema=SECTIONS.map(sec=>sec.f.map(f=>f.k)); }
 
 /* ---- 🌐 11 भाषाएँ (config — नई भाषा = यहाँ 1 object; संस्कृति: "जहाँ जाए, वहीँ की भाषा") ---- */
 const LANGS={
@@ -142,67 +164,67 @@ hi:{n:'हिंदी',nf:'yatra',header:'॥ श्री गणेशाय �
  lab:{name:'नाम',dob:'जन्म तारीख़',tob:'जन्म समय',pob:'जन्म स्थान',ht:'ऊँचाई',wt:'वज़न',skin:'रंग',rashi:'राशि',gotra:'गोत्र',manglik:'मांगलिक',father:'पिता का नाम',focc:'पिता का व्यवसाय',mother:'माता का नाम',sib:'भाई-बहन',native:'मूल निवास',edu:'शिक्षा',work:'व्यवसाय / नौकरी',income:'वार्षिक आय',addr:'पता',phone:'मोबाइल',header:'शीर्ष पंक्ति (Header)',title:'दस्तावेज़ शीर्षक'},
  rashi:['मेष','वृषभ','मिथुन','कर्क','सिंह','कन्या','तुला','वृश्चिक','धनु','मकर','कुंभ','मीन'],
  skin:['गोरा','गेहुँआ','साँवला'],mang:['नहीं','हाँ','आंशिक'],
- ui:{tmpl:'🎨 Template चुनो',photo:'📷 फोटो',upload:'📷 फोटो अपलोड करो',zoom:'फोटो zoom',fsz:'📐 अक्षर साइज़',clear:'🔄 सब साफ़ करो',save:'💾 JSON सहेजें',load:'📂 JSON खोलें',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'English keyboard से हिंदी में लिखो',doc:'📄 दस्तावेज़',choose:'— चुनो —'}},
+ ui:{tmpl:'🎨 Template चुनो',photo:'📷 फोटो',upload:'📷 फोटो अपलोड करो',zoom:'फोटो zoom',fsz:'📐 अक्षर साइज़',clear:'🔄 सब साफ़ करो',save:'💾 JSON सहेजें',load:'📂 JSON खोलें',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'English keyboard से हिंदी में लिखो',doc:'📄 दस्तावेज़',choose:'— चुनो —',gallery:'फोटो गैलरी',addField:'➕ नया field जोड़ो',newField:'नया field',addPhotos:'📷 फोटो जोड़ो'}},
 en:{n:'English',nf:'gvibes',header:'|| Shri Ganeshaya Namah ||',title:'Marriage Biodata',footer:'— Made with Sanskriti —',subline:'Shubh Vivah',
  sec:['Personal Details','Family Details','Education & Career','Contact'],
  lab:{name:'Name',dob:'Date of Birth',tob:'Time of Birth',pob:'Place of Birth',ht:'Height',wt:'Weight',skin:'Complexion',rashi:'Zodiac',gotra:'Gotra',manglik:'Manglik',father:"Father's Name",focc:"Father's Occupation",mother:"Mother's Name",sib:'Siblings',native:'Native Place',edu:'Education',work:'Occupation',income:'Annual Income',addr:'Address',phone:'Mobile',header:'Header Line',title:'Document Title'},
  rashi:['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'],
  skin:['Fair','Wheatish','Dark'],mang:['No','Yes','Partial'],
- ui:{tmpl:'🎨 Choose Template',photo:'📷 Photo',upload:'📷 Upload Photo',zoom:'Photo zoom',fsz:'📐 Font Size',clear:'🔄 Clear All',save:'💾 Save JSON',load:'📂 Open JSON',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'Type with English keyboard',doc:'📄 Document',choose:'— choose —'}},
+ ui:{tmpl:'🎨 Choose Template',photo:'📷 Photo',upload:'📷 Upload Photo',zoom:'Photo zoom',fsz:'📐 Font Size',clear:'🔄 Clear All',save:'💾 Save JSON',load:'📂 Open JSON',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'Type with English keyboard',doc:'📄 Document',choose:'— choose —',gallery:'Photo Gallery',addField:'➕ Add Field',newField:'New Field',addPhotos:'📷 Add Photos'}},
 mr:{n:'मराठी',nf:'yatra',header:'॥ श्री गणेशाय नमः ॥',title:'विवाहासाठी परिचय पत्र',footer:'— संस्कृतीने बनवले —',subline:'॥ शुभ विवाह ॥',
  sec:['वैयक्तिक माहिती','कौटुंबिक माहिती','शिक्षण व व्यवसाय','संपर्क'],
  lab:{name:'नाव',dob:'जन्म तारीख',tob:'जन्म वेळ',pob:'जन्म ठिकाण',ht:'उंची',wt:'वजन',skin:'रंग',rashi:'रास',gotra:'गोत्र',manglik:'मांगलिक',father:'वडिलांचे नाव',focc:'वडिलांचा व्यवसाय',mother:'आईचे नाव',sib:'भावंडे',native:'मूळ गाव',edu:'शिक्षण',work:'व्यवसाय/नोकरी',income:'वार्षिक उत्पन्न',addr:'पत्ता',phone:'मोबाईल',header:'शीर्षक ओळ',title:'दस्तऐवज शीर्षक'},
  rashi:['मेष','वृषभ','मिथुन','कर्क','सिंह','कन्या','तूळ','वृश्चिक','धनु','मकर','कुंभ','मीन'],
  skin:['गोरा','गव्हाळ','सावळा'],mang:['नाही','होय','आंशिक'],
- ui:{tmpl:'🎨 नमुना निवडा',photo:'📷 छायाचित्र',upload:'📷 फोटो अपलोड करा',zoom:'फोटो zoom',fsz:'📐 अक्षर आकार',clear:'🔄 सर्व साफ करा',save:'💾 JSON जतन करा',load:'📂 JSON उघडा',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'English keyboard मधून मराठीत लिहा',doc:'📄 दस्तऐवज',choose:'— निवडा —'}},
+ ui:{tmpl:'🎨 नमुना निवडा',photo:'📷 छायाचित्र',upload:'📷 फोटो अपलोड करा',zoom:'फोटो zoom',fsz:'📐 अक्षर आकार',clear:'🔄 सर्व साफ करा',save:'💾 JSON जतन करा',load:'📂 JSON उघडा',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'English keyboard मधून मराठीत लिहा',doc:'📄 दस्तऐवज',choose:'— निवडा —',gallery:'फोटो गॅलरी',addField:'➕ नवीन फील्ड',newField:'नवीन फील्ड',addPhotos:'📷 फोटो जोडा'}},
 gu:{n:'ગુજરાતી',header:'॥ શ્રી ગણેશાય નમઃ ॥',title:'લગ્ન માટે પરિચય પત્ર',footer:'— સંસ્કૃતિથી બનાવેલ —',subline:'॥ શુભ વિવાહ ॥',
  sec:['વ્યક્તિગત વિગત','પારિવારિક વિગત','શિક્ષણ અને વ્યવસાય','સંપર્ક'],
  lab:{name:'નામ',dob:'જન્મ તારીખ',tob:'જન્મ સમય',pob:'જન્મ સ્થળ',ht:'ઊંચાઈ',wt:'વજન',skin:'રંગ',rashi:'રાશિ',gotra:'ગોત્ર',manglik:'માંગલિક',father:'પિતાનું નામ',focc:'પિતાનો વ્યવસાય',mother:'માતાનું નામ',sib:'ભાઈ-બહેન',native:'મૂળ વતન',edu:'શિક્ષણ',work:'વ્યવસાય/નોકરી',income:'વાર્ષિક આવક',addr:'સરનામું',phone:'મોબાઈલ',header:'શીર્ષક વાક્ય',title:'દસ્તાવેજ શીર્ષક'},
  rashi:['મેષ','વૃષભ','મિથુન','કર્ક','સિંહ','કન્યા','તુલા','વૃશ્ચિક','ધન','મકર','કુંભ','મીન'],
  skin:['ગોરો','ઘઉંવર્ણ','સાંવળો'],mang:['ના','હા','આંશિક'],
- ui:{tmpl:'🎨 ટેમ્પ્લેટ પસંદ કરો',photo:'📷 ફોટો',upload:'📷 ફોટો અપલોડ કરો',zoom:'ફોટો zoom',fsz:'📐 અક્ષર સાઇઝ',clear:'🔄 બધું સાફ કરો',save:'💾 JSON સાચવો',load:'📂 JSON ખોલો',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'English keyboard થી ગુજરાતીમાં લખો',doc:'📄 દસ્તાવેજ',choose:'— પસંદ કરો —'}},
+ ui:{tmpl:'🎨 ટેમ્પ્લેટ પસંદ કરો',photo:'📷 ફોટો',upload:'📷 ફોટો અપલોડ કરો',zoom:'ફોટો zoom',fsz:'📐 અક્ષર સાઇઝ',clear:'🔄 બધું સાફ કરો',save:'💾 JSON સાચવો',load:'📂 JSON ખોલો',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'English keyboard થી ગુજરાતીમાં લખો',doc:'📄 દસ્તાવેજ',choose:'— પસંદ કરો —',gallery:'ફોટો ગેલેરી',addField:'➕ નવું ફીલ્ડ',newField:'નવું ફીલ્ડ',addPhotos:'📷 ફોટો ઉમેરો'}},
 pa:{n:'ਪੰਜਾਬੀ',header:'॥ ਸ੍ਰੀ ਗਣੇਸ਼ਾਯ ਨਮਃ ॥',title:'ਵਿਆਹ ਲਈ ਜਾਣ-ਪਛਾਣ ਪੱਤਰ',footer:'— ਸੰਸਕ੍ਰਿਤੀ ਨਾਲ ਬਣਾਇਆ —',subline:'॥ ਸ਼ੁਭ ਵਿਵਾਹ ॥',
  sec:['ਨਿੱਜੀ ਵੇਰਵਾ','ਪਰਿਵਾਰਕ ਵੇਰਵਾ','ਸਿੱਖਿਆ ਅਤੇ ਕਾਰੋਬਾਰ','ਸੰਪਰਕ'],
  lab:{name:'ਨਾਮ',dob:'ਜਨਮ ਮਿਤੀ',tob:'ਜਨਮ ਸਮਾਂ',pob:'ਜਨਮ ਸਥਾਨ',ht:'ਕੱਦ',wt:'ਭਾਰ',skin:'ਰੰਗ',rashi:'ਰਾਸ਼ੀ',gotra:'ਗੋਤ੍ਰ',manglik:'ਮਾਂਗਲਿਕ',father:'ਪਿਤਾ ਦਾ ਨਾਮ',focc:'ਪਿਤਾ ਦਾ ਕਾਰੋਬਾਰ',mother:'ਮਾਤਾ ਦਾ ਨਾਮ',sib:'ਭੈਣ-ਭਰਾ',native:'ਮੂਲ ਘਰ',edu:'ਸਿੱਖਿਆ',work:'ਕਾਰੋਬਾਰ/ਨੌਕਰੀ',income:'ਸਾਲਾਨਾ ਆਮਦਨ',addr:'ਪਤਾ',phone:'ਮੋਬਾਈਲ',header:'ਸਿਰਲੇਖ ਲਾਈਨ',title:'ਦਸਤਾਵੇਜ਼ ਸਿਰਲੇਖ'},
  rashi:['ਮੇਸ਼','ਵ੍ਰਿਸ਼ਭ','ਮਿਥੁਨ','ਕਰਕ','ਸਿੰਘ','ਕਨਿਆ','ਤੁਲਾ','ਵ੍ਰਿਸ਼ਚਕ','ਧਨੁ','ਮਕਰ','ਕੁੰਭ','ਮੀਨ'],
  skin:['ਗੋਰਾ','ਕਣਕਵਰਣ','ਸਾਂਵਲਾ'],mang:['ਨਹੀਂ','ਹਾਂ','ਅੰਸ਼ਿਕ'],
- ui:{tmpl:'🎨 ਟੈਂਪਲੇਟ ਚੁਣੋ',photo:'📷 ਫੋਟੋ',upload:'📷 ਫੋਟੋ ਅਪਲੋਡ ਕਰੋ',zoom:'ਫੋਟੋ zoom',fsz:'📐 ਅੱਖਰ ਆਕਾਰ',clear:'🔄 ਸਭ ਸਾਫ਼ ਕਰੋ',save:'💾 JSON ਸੰਭਾਲੋ',load:'📂 JSON ਖੋਲ੍ਹੋ',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'English keyboard ਨਾਲ ਪੰਜਾਬੀ ਵਿੱਚ ਲਿਖੋ',doc:'📄 ਦਸਤਾਵੇਜ਼',choose:'— ਚੁਣੋ —'}},
+ ui:{tmpl:'🎨 ਟੈਂਪਲੇਟ ਚੁਣੋ',photo:'📷 ਫੋਟੋ',upload:'📷 ਫੋਟੋ ਅਪਲੋਡ ਕਰੋ',zoom:'ਫੋਟੋ zoom',fsz:'📐 ਅੱਖਰ ਆਕਾਰ',clear:'🔄 ਸਭ ਸਾਫ਼ ਕਰੋ',save:'💾 JSON ਸੰਭਾਲੋ',load:'📂 JSON ਖੋਲ੍ਹੋ',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'English keyboard ਨਾਲ ਪੰਜਾਬੀ ਵਿੱਚ ਲਿਖੋ',doc:'📄 ਦਸਤਾਵੇਜ਼',choose:'— ਚੁਣੋ —',gallery:'ਫੋਟੋ ਗੈਲਰੀ',addField:'➕ ਨਵਾਂ ਖੇਤਰ',newField:'ਨਵਾਂ ਖੇਤਰ',addPhotos:'📷 ਫੋਟੋ ਜੋੜੋ'}},
 bn:{n:'বাংলা',header:'॥ শ্রী গণেশায় নমঃ ॥',title:'বিবাহের জন্য পরিচয় পত্র',footer:'— সংস্কৃতি দিয়ে তৈরি —',subline:'॥ শুভ বিবাহ ॥',
  sec:['ব্যক্তিগত বিবরণ','পারিবারিক বিবরণ','শিক্ষা ও পেশা','যোগাযোগ'],
  lab:{name:'নাম',dob:'জন্ম তারিখ',tob:'জন্ম সময়',pob:'জন্মস্থান',ht:'উচ্চতা',wt:'ওজন',skin:'গাত্রবর্ণ',rashi:'রাশি',gotra:'গোত্র',manglik:'মাঙ্গলিক',father:'পিতার নাম',focc:'পিতার পেশা',mother:'মাতার নাম',sib:'ভাইবোন',native:'পৈতৃক নিবাস',edu:'শিক্ষা',work:'পেশা/চাকরি',income:'বার্ষিক আয়',addr:'ঠিকানা',phone:'মোবাইল',header:'শিরোনাম লাইন',title:'নথির শিরোনাম'},
  rashi:['মেষ','বৃষভ','মিথুন','কর্কট','সিংহ','কন্যা','তুলা','বৃশ্চিক','ধনু','মকর','কুম্ভ','মীন'],
  skin:['ফর্সা','শ্যামবর্ণা','কালো'],mang:['না','হ্যাঁ','আংশিক'],
- ui:{tmpl:'🎨 টেমপ্লেট বাছুন',photo:'📷 ছবি',upload:'📷 ছবি আপলোড করুন',zoom:'ছবি zoom',fsz:'📐 অক্ষরের আকার',clear:'🔄 সব মুছুন',save:'💾 JSON সংরক্ষণ',load:'📂 JSON খুলুন',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'English keyboard-এ বাংলায় লিখুন',doc:'📄 নথি',choose:'— বাছুন —'}},
+ ui:{tmpl:'🎨 টেমপ্লেট বাছুন',photo:'📷 ছবি',upload:'📷 ছবি আপলোড করুন',zoom:'ছবি zoom',fsz:'📐 অক্ষরের আকার',clear:'🔄 সব মুছুন',save:'💾 JSON সংরক্ষণ',load:'📂 JSON খুলুন',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'English keyboard-এ বাংলায় লিখুন',doc:'📄 নথি',choose:'— বাছুন —',gallery:'ফটো গ্যালারি',addField:'➕ নতুন ঘর',newField:'নতুন ঘর',addPhotos:'📷 ফটো যোগ করুন'}},
 ta:{n:'தமிழ்',header:'॥ ஸ்ரீ கணேசாய நமஃ ॥',title:'திருமண விவரப் பத்திரம்',footer:'— சம்ஸ்கிருதியால் உருவாக்கப்பட்டது —',subline:'॥ சுப திருமணம் ॥',
  sec:['தனிப்பட்ட விவரம்','குடும்ப விவரம்','கல்வி மற்றும் தொழில்','தொடர்பு'],
  lab:{name:'பெயர்',dob:'பிறந்த தேதி',tob:'பிறந்த நேரம்',pob:'பிறந்த இடம்',ht:'உயரம்',wt:'எடை',skin:'நிறம்',rashi:'ராசி',gotra:'கோத்திரம்',manglik:'செவ்வாய் தோஷம்',father:'தந்தை பெயர்',focc:'தந்தை தொழில்',mother:'தாய் பெயர்',sib:'சகோதரர்கள்',native:'சொந்த ஊர்',edu:'கல்வி',work:'தொழில்/வேலை',income:'ஆண்டு வருமானம்',addr:'முகவரி',phone:'மொபைல்',header:'தலைப்பு வரி',title:'ஆவணத் தலைப்பு'},
  rashi:['மேஷம்','ரிஷபம்','மிதுனம்','கடகம்','சிம்மம்','கன்னி','துலாம்','விருச்சிகம்','தனுசு','மகரம்','கும்பம்','மீனம்'],
  skin:['வெள்ளை','கோதுமை','கருப்பு'],mang:['இல்லை','ஆம்','பகுதி'],
- ui:{tmpl:'🎨 டெம்ப்ளேட் தேர்வு',photo:'📷 புகைப்படம்',upload:'📷 புகைப்படம் பதிவேற்று',zoom:'புகைப்படம் zoom',fsz:'📐 எழுத்து அளவு',clear:'🔄 அனைத்தும் அழி',save:'💾 JSON சேமி',load:'📂 JSON திற',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'English keyboard-இல் தமிழில் எழுதுங்கள்',doc:'📄 ஆவணம்',choose:'— தேர்வு —'}},
+ ui:{tmpl:'🎨 டெம்ப்ளேட் தேர்வு',photo:'📷 புகைப்படம்',upload:'📷 புகைப்படம் பதிவேற்று',zoom:'புகைப்படம் zoom',fsz:'📐 எழுத்து அளவு',clear:'🔄 அனைத்தும் அழி',save:'💾 JSON சேமி',load:'📂 JSON திற',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'English keyboard-இல் தமிழில் எழுதுங்கள்',doc:'📄 ஆவணம்',choose:'— தேர்வு —',gallery:'புகைப்பட தொகுப்பு',addField:'➕ புதிய விவரம்',newField:'புதிய விவரம்',addPhotos:'📷 புகைப்படம் சேர்'}},
 te:{n:'తెలుగు',header:'॥ శ్రీ గణేశాయ నమః ॥',title:'వివాహ పరిచయ పత్రం',footer:'— సంస్కృతితో తయారైంది —',subline:'॥ శుభ వివాహం ॥',
  sec:['వ్యక్తిగత వివరాలు','కుటుంబ వివరాలు','విద్య మరియు వృత్తి','సంప్రదింపు'],
  lab:{name:'పేరు',dob:'పుట్టిన తేదీ',tob:'పుట్టిన సమయం',pob:'పుట్టిన ప్రదేశం',ht:'ఎత్తు',wt:'బరువు',skin:'రంగు',rashi:'రాశి',gotra:'గోత్రం',manglik:'కుజదోషం',father:'తండ్రి పేరు',focc:'తండ్రి వృత్తి',mother:'తల్లి పేరు',sib:'తోబుట్టువులు',native:'స్వస్థలం',edu:'విద్య',work:'వృత్తి/ఉద్యోగం',income:'వార్షిక ఆదాయం',addr:'చిరునామా',phone:'మొబైల్',header:'శీర్షిక వరుస',title:'పత్రం శీర్షిక'},
  rashi:['మేషం','వృషభం','మిథునం','కర్కాటకం','సింహం','కన్య','తుల','వృశ్చికం','ధనుస్సు','మకరం','కుంభం','మీనం'],
  skin:['తెలుపు','గోధుమ','నలుపు'],mang:['కాదు','అవును','పాక్షిక'],
- ui:{tmpl:'🎨 టెంప్లేట్ ఎంచుకోండి',photo:'📷 ఫోటో',upload:'📷 ఫోటో అప్‌లోడ్ చేయండి',zoom:'ఫోటో zoom',fsz:'📐 అక్షర పరిమాణం',clear:'🔄 అన్నీ తుడిచేయి',save:'💾 JSON సేవ్',load:'📂 JSON ఓపెన్',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'English keyboard తో తెలుగులో రాయండి',doc:'📄 పత్రం',choose:'— ఎంచుకోండి —'}},
+ ui:{tmpl:'🎨 టెంప్లేట్ ఎంచుకోండి',photo:'📷 ఫోటో',upload:'📷 ఫోటో అప్‌లోడ్ చేయండి',zoom:'ఫోటో zoom',fsz:'📐 అక్షర పరిమాణం',clear:'🔄 అన్నీ తుడిచేయి',save:'💾 JSON సేవ్',load:'📂 JSON ఓపెన్',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'English keyboard తో తెలుగులో రాయండి',doc:'📄 పత్రం',choose:'— ఎంచుకోండి —',gallery:'ఫోటో గ్యాలరీ',addField:'➕ కొత్త వివరం',newField:'కొత్త వివరం',addPhotos:'📷 ఫోటో చేర్చండి'}},
 kn:{n:'ಕನ್ನಡ',header:'॥ ಶ್ರೀ ಗಣೇಶಾಯ ನಮಃ ॥',title:'ವಿವಾಹ ಪರಿಚಯ ಪತ್ರ',footer:'— ಸಂಸ್ಕೃತಿಯಿಂದ ಮಾಡಿದ್ದು —',subline:'॥ ಶುಭ ವಿವಾಹ ॥',
  sec:['ವೈಯಕ್ತಿಕ ವಿವರ','ಕೌಟುಂಬಿಕ ವಿವರ','ಶಿಕ್ಷಣ ಮತ್ತು ವ್ಯವಸಾಯ','ಸಂಪರ್ಕ'],
  lab:{name:'ಹೆಸರು',dob:'ಹುಟ್ಟಿದ ದಿನಾಂಕ',tob:'ಹುಟ್ಟಿದ ಸಮಯ',pob:'ಹುಟ್ಟಿದ ಸ್ಥಳ',ht:'ಎತ್ತರ',wt:'ತೂಕ',skin:'ಬಣ್ಣ',rashi:'ರಾಶಿ',gotra:'ಗೋತ್ರ',manglik:'ಕುಜದೋಷ',father:'ತಂದೆಯ ಹೆಸರು',focc:'ತಂದೆಯ ವ್ಯವಸಾಯ',mother:'ತಾಯಿಯ ಹೆಸರು',sib:'ಒಡಹುಟ್ಟಿದವರು',native:'ಮೂಲ ಊರು',edu:'ಶಿಕ್ಷಣ',work:'ವ್ಯವಸಾಯ/ಉದ್ಯೋಗ',income:'ವಾರ್ಷಿಕ ಆದಾಯ',addr:'ವಿಳಾಸ',phone:'ಮೊಬೈಲ್',header:'ಶೀರ್ಷಿಕೆ ಸಾಲು',title:'ದಾಖಲೆ ಶೀರ್ಷಿಕೆ'},
  rashi:['ಮೇಷ','ವೃಷಭ','ಮಿಥುನ','ಕರ್ಕಾಟಕ','ಸಿಂಹ','ಕನ್ಯಾ','ತುಲಾ','ವೃಶ್ಚಿಕ','ಧನು','ಮಕರ','ಕುಂಭ','ಮೀನ'],
  skin:['ಬಿಳಿ','ಗೋಧಿ','ಕಪ್ಪು'],mang:['ಇಲ್ಲ','ಹೌದು','ಭಾಗಶಃ'],
- ui:{tmpl:'🎨 ಟೆಂಪ್ಲೇಟ್ ಆಯ್ಕೆ',photo:'📷 ಫೋಟೋ',upload:'📷 ಫೋಟೋ ಅಪ್‌ಲೋಡ್',zoom:'ಫೋಟೋ zoom',fsz:'📐 ಅಕ್ಷರ ಗಾತ್ರ',clear:'🔄 ಎಲ್ಲಾ ಅಳಿಸಿ',save:'💾 JSON ಉಳಿಸಿ',load:'📂 JSON ತೆರೆಯಿರಿ',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'English keyboard ನಿಂದ ಕನ್ನಡದಲ್ಲಿ ಬರೆಯಿರಿ',doc:'📄 ದಾಖಲೆ',choose:'— ಆಯ್ಕೆ —'}},
+ ui:{tmpl:'🎨 ಟೆಂಪ್ಲೇಟ್ ಆಯ್ಕೆ',photo:'📷 ಫೋಟೋ',upload:'📷 ಫೋಟೋ ಅಪ್‌ಲೋಡ್',zoom:'ಫೋಟೋ zoom',fsz:'📐 ಅಕ್ಷರ ಗಾತ್ರ',clear:'🔄 ಎಲ್ಲಾ ಅಳಿಸಿ',save:'💾 JSON ಉಳಿಸಿ',load:'📂 JSON ತೆರೆಯಿರಿ',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'English keyboard ನಿಂದ ಕನ್ನಡದಲ್ಲಿ ಬರೆಯಿರಿ',doc:'📄 ದಾಖಲೆ',choose:'— ಆಯ್ಕೆ —',gallery:'ಫೋಟೋ ಗ್ಯಾಲರಿ',addField:'➕ ಹೊಸ ವಿವರ',newField:'ಹೊಸ ವಿವರ',addPhotos:'📷 ಫೋಟೋ ಸೇರಿಸಿ'}},
 ml:{n:'മലയാളം',header:'॥ ശ്രീ ഗണേശായ നമഃ ॥',title:'വിവാഹ പരിചയ പത്രിക',footer:'— സംസ്കൃതിയില് നിര്മ്മിച്ചത് —',subline:'॥ ശുഭ വിവാഹം ॥',
  sec:['വ്യക്തിഗത വിവരം','കുടുംബ വിവരം','വിദ്യാഭ്യാസവും തൊഴിലും','ബന്ധപ്പെടുക'],
  lab:{name:'പേര്',dob:'ജനന തീയതി',tob:'ജനന സമയം',pob:'ജനന സ്ഥലം',ht:'ഉയരം',wt:'ഭാരം',skin:'നിറം',rashi:'രാശി',gotra:'ഗോത്രം',manglik:'ചൊവ്വാ ദോഷം',father:'അച്ഛന്റെ പേര്',focc:'അച്ഛന്റെ തൊഴില്',mother:'അമ്മയുടെ പേര്',sib:'സഹോദരങ്ങള്',native:'സ്വദേശം',edu:'വിദ്യാഭ്യാസം',work:'തൊഴില്',income:'വാര്ഷിക വരുമാനം',addr:'വിലാസം',phone:'മൊബൈല്',header:'തലക്കെട്ട് വരി',title:'രേഖയുടെ തലക്കെട്ട്'},
  rashi:['മേഡം','ഇടവം','മിഥുനം','കര്ക്കടകം','ചിങ്ങം','കന്നി','തുലാം','വൃശ്ചികം','ധനു','മകരം','കുംഭം','മീനം'],
  skin:['വെളുത്ത','ഗോധുമ','കറുത്ത'],mang:['ഇല്ല','അതെ','ഭാഗികം'],
- ui:{tmpl:'🎨 ടെംപ്ലേറ്റ് തിരഞ്ഞെടുക്കുക',photo:'📷 ഫോട്ടോ',upload:'📷 ഫോട്ടോ അപ്‌ലോഡ്',zoom:'ഫോട്ടോ zoom',fsz:'📐 അക്ഷര വലുപ്പം',clear:'🔄 എല്ലാം മായ്ക്കുക',save:'💾 JSON സേവ്',load:'📂 JSON തുറക്കുക',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'English keyboard ഉപയോഗിച്ച് മലയാളത്തില് എഴുതുക',doc:'📄 രേഖ',choose:'— തിരഞ്ഞെടുക്കുക —'}},
+ ui:{tmpl:'🎨 ടെംപ്ലേറ്റ് തിരഞ്ഞെടുക്കുക',photo:'📷 ഫോട്ടോ',upload:'📷 ഫോട്ടോ അപ്‌ലോഡ്',zoom:'ഫോട്ടോ zoom',fsz:'📐 അക്ഷര വലുപ്പം',clear:'🔄 എല്ലാം മായ്ക്കുക',save:'💾 JSON സേവ്',load:'📂 JSON തുറക്കുക',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'English keyboard ഉപയോഗിച്ച് മലയാളത്തില് എഴുതുക',doc:'📄 രേഖ',choose:'— തിരഞ്ഞെടുക്കുക —',gallery:'ഫോട്ടോ ഗാലറി',addField:'➕ പുതിയ വിവരം',newField:'പുതിയ വിവരം',addPhotos:'📷 ഫോട്ടോ ചേര്ക്കുക'}},
 ur:{n:'اردو',rtl:1,header:'بسم اللہ الرحمن الرحیم',title:'شادی کا تعارفی خط',footer:'— سنسکرتی سے تیار کردہ —',subline:'شادی مبارک',
  sec:['ذاتی تفصیل','خاندانی تفصیل','تعلیم و پیشہ','رابطہ'],
  lab:{name:'نام',dob:'تاریخ پیدائش',tob:'وقت پیدائش',pob:'جائے پیدائش',ht:'قد',wt:'وزن',skin:'رنگ',rashi:'برج',gotra:'گوتر',manglik:'مانگلک',father:'والد کا نام',focc:'والد کا پیشہ',mother:'والدہ کا نام',sib:'بھائی بہن',native:'اصل گاؤں',edu:'تعلیم',work:'پیشہ/نوکری',income:'سالانہ آمدنی',addr:'پتہ',phone:'موبائل',header:'سرخی کی سطر',title:'دستاویز کا عنوان'},
  rashi:['حمل','ثور','جوزا','سرطان','اسد','سنبلہ','میزان','عقرب','قوس','جدی','دلو','حوت'],
  skin:['گورا','گندمی','سانولا'],mang:['نہیں','ہاں','جزوی'],
- ui:{tmpl:'🎨 ٹیمپلیٹ منتخب کریں',photo:'📷 تصویر',upload:'📷 تصویر اپ لوڈ کریں',zoom:'تصویر zoom',fsz:'📐 حرف کا سائز',clear:'🔄 سب صاف کریں',save:'💾 JSON محفوظ کریں',load:'📂 JSON کھولیں',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'English keyboard سے اردو میں لکھیں',doc:'📄 دستاویز',choose:'— منتخب کریں —'}},
+ ui:{tmpl:'🎨 ٹیمپلیٹ منتخب کریں',photo:'📷 تصویر',upload:'📷 تصویر اپ لوڈ کریں',zoom:'تصویر zoom',fsz:'📐 حرف کا سائز',clear:'🔄 سب صاف کریں',save:'💾 JSON محفوظ کریں',load:'📂 JSON کھولیں',png:'🖨️ PNG (300 DPI)',pdf:'📄 PDF',trans:'English keyboard سے اردو میں لکھیں',doc:'📄 دستاویز',choose:'— منتخب کریں —',gallery:'فوٹو گیلری',addField:'➕ نیا خانہ',newField:'نیا خانہ',addPhotos:'📷 تصویریں شامل کریں'}},
 };
 const LANG_ORDER=['hi','en','mr','gu','pa','bn','ta','te','kn','ml','ur'];
 /* भाषा → body font (Tiro Indic family = हर script में एक जैसा शाही serif look) */
@@ -266,7 +288,10 @@ function toast(m){ const t=$('toast'); t.textContent=m; t.style.opacity=1; clear
 
 /* ---- Form build (schema से auto) ---- */
 let formBound=false;
+function labOf(k){ return (S.xlab&&S.xlab[k]) || LANGS[S.lang].lab[k] || k; }
+function fldDef(k){ return FLD[k] || {k:k}; }
 function buildForm(){
+  ensureSchema();
   const pack=LANGS[S.lang], u=pack.ui, fam=LANG_FONT[S.lang];
   const host=$('formSecs'); host.innerHTML='';
   /* 📄 दस्तावेज़ (header/title editable — हर religion/भाषा अपनी line लिख सके) */
@@ -275,21 +300,31 @@ function buildForm(){
     +'<div class="frow"><label>'+pack.lab.header+'</label><input id="f_header" type="text"></div>'
     +'<div class="frow"><label>'+pack.lab.title+'</label><input id="f_title" type="text"></div>';
   host.appendChild(doc);
-  SECTIONS.forEach((sec,si)=>{
+  S.schema.forEach((keys,si)=>{
     const box=document.createElement('div'); box.className='sec';
     box.innerHTML='<h3>📋 '+pack.sec[si]+'</h3>';
-    sec.f.forEach(f=>{
+    keys.forEach((k,ki)=>{
+      const f=fldDef(k);
+      const lab=labOf(k);
       const row=document.createElement('div'); row.className='frow';
-      const lab=pack.lab[f.k]||f.k;
       let inp;
       if(f.sel){ const KEYS=OPTKEYS[f.sel], TXT=pack[f.sel];
-        inp='<select id="f_'+f.k+'"><option value="">'+u.choose+'</option>'
+        inp='<select id="f_'+k+'"><option value="">'+u.choose+'</option>'
            +KEYS.map((k2,i)=>'<option value="'+k2+'">'+TXT[i]+'</option>').join('')+'</select>'; }
-      else if(f.area){ inp='<textarea id="f_'+f.k+'" placeholder="'+lab+'…"></textarea>'; }
-      else{ inp='<input id="f_'+f.k+'" type="text" placeholder="'+lab+'…">'; }
-      row.innerHTML='<label>'+lab+'</label>'+inp;
+      else if(f.area){ inp='<textarea id="f_'+k+'" placeholder="'+lab+'…"></textarea>'; }
+      else{ inp='<input id="f_'+k+'" type="text" placeholder="'+lab+'…">'; }
+      row.innerHTML='<label><span class="flab" id="flab_'+k+'">'+lab+'</span>'
+        +'<span class="fops">'
+        +'<button type="button" data-op="up" data-k="'+k+'" data-s="'+si+'" data-i="'+ki+'" title="ऊपर">↑</button>'
+        +'<button type="button" data-op="dn" data-k="'+k+'" data-s="'+si+'" data-i="'+ki+'" title="नीचे">↓</button>'
+        +'<button type="button" data-op="rn" data-k="'+k+'" data-s="'+si+'" data-i="'+ki+'" title="नाम बदलो">✏️</button>'
+        +'<button type="button" data-op="del" data-k="'+k+'" data-s="'+si+'" data-i="'+ki+'" title="हटाओ">🗑️</button>'
+        +'</span></label>'+inp;
       box.appendChild(row);
     });
+    const add=document.createElement('button'); add.type='button'; add.className='addf';
+    add.textContent=u.addField; add.dataset.s=si;
+    box.appendChild(add);
     host.appendChild(box);
   });
   /* input font + rtl + transliteration */
@@ -301,7 +336,44 @@ function buildForm(){
   if(!formBound){ formBound=true;
     host.addEventListener('input',e=>{ const k=e.target.id&&e.target.id.slice(0,2)==='f_'? e.target.id.slice(2):null;
       if(k){ S.d[k]=e.target.value; draw(); saveLocal(); } });
+    host.addEventListener('click',onFormOps);
   }
+}
+/* ---- ✏️ Field editor: rename / move / delete / add ---- */
+function onFormOps(e){
+  const b=e.target.closest('button'); if(!b) return;
+  if(b.classList.contains('addf')){ addCustomField(+b.dataset.s); return; }
+  const op=b.dataset.op; if(!op) return;
+  const k=b.dataset.k, si=+b.dataset.s, ki=+b.dataset.i;
+  const arr=S.schema[si]; if(!arr) return;
+  if(op==='up'&&ki>0){ const t=arr[ki-1]; arr[ki-1]=arr[ki]; arr[ki]=t; }
+  else if(op==='dn'&&ki<arr.length-1){ const t=arr[ki+1]; arr[ki+1]=arr[ki]; arr[ki]=t; }
+  else if(op==='del'){ if(!confirm('"'+labOf(k)+'" — हटाएँ?')) return; arr.splice(ki,1); }
+  else if(op==='rn'){ startRename(k); return; }
+  else return;
+  buildForm(); setFormVals(); draw(); saveLocal();
+}
+function startRename(k){
+  const sp=$('flab_'+k); if(!sp) return;
+  const cur=labOf(k);
+  const inp=document.createElement('input'); inp.type='text'; inp.value=cur;
+  inp.style.cssText='width:125px;font-size:12px;padding:2px 5px';
+  sp.replaceWith(inp); inp.focus(); inp.select();
+  let fin=false;
+  const done=()=>{ if(fin) return; fin=true;
+    const v=inp.value.trim();
+    if(v&&v!==cur) S.xlab[k]=v;
+    buildForm(); setFormVals(); draw(); saveLocal(); };
+  inp.addEventListener('blur',done);
+  inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); inp.blur(); } });
+}
+let xN=0;
+function addCustomField(si){
+  const pack=LANGS[S.lang];
+  let k; do{ k='x'+(++xN)+Date.now().toString(36).slice(-3); }while(FLD[k]||S.schema.some(a=>a.includes(k)));
+  S.schema[si].push(k); S.xlab[k]=pack.ui.newField;
+  buildForm(); setFormVals(); draw(); saveLocal();
+  startRename(k);
 }
 function setFormVals(){ Object.keys(S.d).forEach(k=>{ const el=$('f_'+k); if(el) el.value=S.d[k]; }); }
 function ensureDocDefaults(){ const p=LANGS[S.lang];
@@ -317,7 +389,8 @@ function applyUI(){ const u=LANGS[S.lang].ui;
   $('btnSaveJ').textContent=u.save; $('btnLoadJ').textContent=u.load;
   $('btnPNG').textContent=u.png; $('btnPDF').textContent=u.pdf;
   $('transLbl').textContent='✍️ '+u.trans;
-  $('transRow').style.display=ITC[S.lang]?'':'none'; }
+  $('transRow').style.display=ITC[S.lang]?'':'none';
+  $('h3Gal').textContent='🖼️ '+u.gallery; $('btnGalAdd').textContent=u.addPhotos; }
 function setLang(code){ if(!LANGS[code]) return;
   S.lang=code;
   const p=LANGS[code];
@@ -400,6 +473,7 @@ function drawDoc(c,sc,forExport){
   y=Math.max(y+1.0*sc, phY+phH+0.16*sc);
 
   y=drawSections(c,sc,X,y,W,T,fsz,2.0);
+  y=drawGallery(c,sc,X,y,W,T,fsz);
   footer(c,sc,W,H,m,T);
 }
 /* ---- 📋 sections flow (सब layouts share) — labW = label column inches ---- */
@@ -408,10 +482,11 @@ function drawSections(c,sc,X,y,W,T,fsz,labW){
   /* dynamic label width — लंबे labels (जैसे English "Father's Occupation") टकराएँ नहीं */
   { const labS=0.22*fsz; let mx=0;
     c.font=LF(sc,labS);
-    SECTIONS.forEach(sec=>sec.f.forEach(f=>{ const t=pack.lab[f.k]||f.k;
+    S.schema.forEach(keys=>keys.forEach(k=>{ const t=labOf(k);
       const w=c.measureText(t).width; if(w>mx) mx=w; }));
     labW=Math.max(labW, Math.min(2.9, mx/sc+0.42)); }
-  SECTIONS.forEach((sec,si)=>{
+  S.schema.forEach((keys,si)=>{
+    if(!keys.length) return;
     /* section title */
     const secT=pack.sec[si];
     c.textAlign='left'; c.fillStyle=T.secC;
@@ -422,10 +497,11 @@ function drawSections(c,sc,X,y,W,T,fsz,labW){
     c.beginPath(); c.moveTo(X,y+0.08*sc); c.lineTo(X+tw,y+0.08*sc); c.stroke();
     y+=0.28*sc;
     /* rows */
-    sec.f.forEach(f=>{
-      let v=(S.d[f.k]||'').trim();
+    keys.forEach(k=>{
+      const f=fldDef(k);
+      let v=(S.d[k]||'').trim();
       if(f.sel && v){ const ix=OPTKEYS[f.sel].indexOf(v); if(ix>=0) v=pack[f.sel][ix]; }
-      const lab=pack.lab[f.k]||f.k, labS=0.22*fsz, valS=0.24*fsz;
+      const lab=labOf(k), labS=0.22*fsz, valS=0.24*fsz;
       c.font=LF(sc,valS);
       const vx=X+labW*sc, vwR=W-vx-(0.28*sc);   /* value कॉलम: दायाँ किनारा तक */
       const words=(v||'—').split(/\s+/); const lines=[]; let cur='';
@@ -444,6 +520,98 @@ function drawSections(c,sc,X,y,W,T,fsz,labW){
     y+=0.06*sc;
   });
   return y;
+}
+/* ---- 🖼️ PHOTO GALLERY (biodata के अंत में — extra photos) ---- */
+function drawGallery(c,sc,X,y,W,T,fsz){
+  const ph=S.photos2||[]; if(!ph.length){ S._galDrawn=0; return y; }
+  S._galDrawn=0;
+  const pack=LANGS[S.lang];
+  const lim=PH*sc-0.62*sc;           /* footer से ऊपर तक */
+  let pw=1.45*sc, ph2=1.75*sc; const gap=0.18*sc, perRow=3;
+  /* जगह कम → photos छोटी (min 55%) */
+  { const avail=lim-y-0.36*sc;
+    if(avail < ph2+0.14*sc){ const f=Math.max(0.55, avail/(1.89*sc)); pw*=f; ph2*=f; } }
+  const rowH=ph2+0.14*sc;
+  if(lim-y-0.36*sc < rowH) return y;   /* एक row भी न आए → title भी नहीं */
+  c.textAlign='left'; c.fillStyle=T.secC; c.font=SF(sc,0.30*fsz);
+  const t='◆ '+pack.ui.gallery;
+  c.fillText(t,X,y);
+  c.strokeStyle=T.gold; c.lineWidth=0.014*sc;
+  const tw=c.measureText(t).width;
+  c.beginPath(); c.moveTo(X,y+0.08*sc); c.lineTo(X+tw,y+0.08*sc); c.stroke();
+  y+=0.36*sc;
+  let i=0;
+  while(i<ph.length){
+    if(y+ph2>lim) break;
+    const rowN=Math.min(perRow, ph.length-i);
+    const rowW=rowN*pw+(rowN-1)*gap;
+    let px=X+((W-X)-rowW)/2;
+    for(let r=0;r<rowN;r++,i++){
+      const im=GIMG[ph[i]];
+      c.fillStyle='#ffffff'; c.fillRect(px-0.03*sc,y-0.03*sc,pw+0.06*sc,ph2+0.06*sc);
+      c.strokeStyle=T.gold; c.lineWidth=0.02*sc; c.strokeRect(px-0.03*sc,y-0.03*sc,pw+0.06*sc,ph2+0.06*sc);
+      if(im){
+        const ir=im.width/im.height, br=pw/ph2;
+        let dw,dh; if(ir>br){ dh=ph2; dw=dh*ir; } else { dw=pw; dh=dw/ir; }
+        c.save(); c.beginPath(); c.rect(px,y,pw,ph2); c.clip();
+        c.drawImage(im, px+(pw-dw)/2, y+(ph2-dh)/2, dw, dh); c.restore();
+      } else {
+        c.fillStyle='#e5e0d5'; c.fillRect(px,y,pw,ph2);
+      }
+      px+=pw+gap;
+    }
+    y+=rowH;
+  }
+  S._galDrawn=i;                      /* export: बची photos → page 2 */
+  return y;
+}
+const GIMG={};
+function ensureGImgs(cb){ const list=S.photos2||[]; let pend=0;
+  list.forEach(src=>{ if(GIMG[src]) return; pend++;
+    const im=new Image();
+    im.onload=()=>{ GIMG[src]=im; if(--pend===0&&cb)cb(); };
+    im.onerror=()=>{ if(--pend===0&&cb)cb(); };
+    im.src=src; });
+  if(!pend&&cb) cb(); }
+/* ---- 🖼️ PAGE 2: पूरी gallery अलग page पर (जब page 1 पर न आए) ---- */
+function drawGalleryPage(c,sc){
+  const T=TMPL[S.tmpl], W=PW*sc, H=PH*sc;
+  const g=c.createLinearGradient(0,0,W,H); g.addColorStop(0,T.bg1); g.addColorStop(1,T.bg2);
+  c.fillStyle=g; c.fillRect(0,0,W,H);
+  c.direction=LANGS[S.lang].rtl?'rtl':'ltr';
+  const m=0.32*sc;
+  c.strokeStyle=T.frame; c.lineWidth=0.055*sc; c.strokeRect(m,m,W-2*m,H-2*m);
+  c.strokeStyle=T.gold;  c.lineWidth=0.018*sc; c.strokeRect(m+0.07*sc,m+0.07*sc,W-2*(m+0.07*sc),H-2*(m+0.07*sc));
+  const X=m+0.26*sc, pack=LANGS[S.lang];
+  let y=m+0.6*sc;
+  c.textAlign='left'; c.fillStyle=T.secC; c.font=SF(sc,0.36);
+  const t='◆ '+pack.ui.gallery;
+  c.fillText(t,X,y);
+  c.strokeStyle=T.gold; c.lineWidth=0.016*sc;
+  const tw=c.measureText(t).width;
+  c.beginPath(); c.moveTo(X,y+0.09*sc); c.lineTo(X+tw,y+0.09*sc); c.stroke();
+  y+=0.55*sc;
+  const ph=S.photos2||[], pw=2.1*sc, ph2=2.55*sc, gap=0.2*sc, perRow=3, lim=H-m-0.5*sc;
+  let i=0;
+  while(i<ph.length && y+ph2<=lim){
+    const rowN=Math.min(perRow, ph.length-i);
+    const rowW=rowN*pw+(rowN-1)*gap;
+    let px=X+((W-X)-rowW)/2;
+    for(let r=0;r<rowN;r++,i++){
+      const im=GIMG[ph[i]];
+      c.fillStyle='#ffffff'; c.fillRect(px-0.035*sc,y-0.035*sc,pw+0.07*sc,ph2+0.07*sc);
+      c.strokeStyle=T.gold; c.lineWidth=0.025*sc; c.strokeRect(px-0.035*sc,y-0.035*sc,pw+0.07*sc,ph2+0.07*sc);
+      if(im){
+        const ir=im.width/im.height, br=pw/ph2;
+        let dw,dh; if(ir>br){ dh=ph2; dw=dh*ir; } else { dw=pw; dh=dw/ir; }
+        c.save(); c.beginPath(); c.rect(px,y,pw,ph2); c.clip();
+        c.drawImage(im, px+(pw-dw)/2, y+(ph2-dh)/2, dw, dh); c.restore();
+      }
+      px+=pw+gap;
+    }
+    y+=ph2+0.2*sc;
+  }
+  footer(c,sc,W,H,m,T);
 }
 function footer(c,sc,W,H,m,T){
   c.textAlign='center'; c.fillStyle=T.labC;
@@ -501,7 +669,8 @@ function drawPanelLayout(c,sc){
   /* दाईं ओर sections */
   const X2=m+pw+0.4*sc;
   const y2=m+0.6*sc;
-  drawSections(c,sc,X2,y2,W-m*0.9,T,fsz,1.75);
+  const y3=drawSections(c,sc,X2,y2,W-m*0.9,T,fsz,1.75);
+  drawGallery(c,sc,X2,y3,W-m*0.9,T,fsz);
   footer(c,sc,W,H,m,T);
 }
 /* ---- 👑 LAYOUT: रॉयल टॉप-बैंड (2026 latest) ---- */
@@ -547,7 +716,8 @@ function drawBandLayout(c,sc){
   c.beginPath(); c.moveTo(W/2-1.4*sc,y+0.08*sc); c.lineTo(W/2+1.4*sc,y+0.08*sc); c.stroke();
   y+=0.24*sc;
   const X=m+0.28*sc;
-  drawSections(c,sc,X,y,W-m*0.9,T,fsz*0.90,2.0);
+  y=drawSections(c,sc,X,y,W-m*0.9,T,fsz*0.90,2.0);
+  y=drawGallery(c,sc,X,y,W-m*0.9,T,fsz*0.90);
   /* बाहरी gold frame */
   c.strokeStyle=T.gold; c.lineWidth=0.02*sc;
   c.strokeRect(m+0.05*sc,m+0.05*sc,W-2*(m+0.05*sc),H-2*(m+0.05*sc));
@@ -561,6 +731,48 @@ function draw(){
   drawDoc(ctx,sc,false);
 }
 
+/* ---- 🖼️ Gallery (extra photos) ---- */
+function buildGal(){
+  const th=$('gthumbs'); th.innerHTML='';
+  (S.photos2||[]).forEach((src,i)=>{
+    const d=document.createElement('div'); d.className='gth';
+    d.innerHTML='<img src="'+src+'"><span class="ops">'
+      +'<button type="button" data-g="up" data-i="'+i+'" title="ऊपर">↑</button>'
+      +'<button type="button" data-g="dn" data-i="'+i+'" title="नीचे">↓</button>'
+      +'<button type="button" data-g="del" data-i="'+i+'" title="हटाओ">🗑️</button></span>';
+    th.appendChild(d);
+  });
+}
+$('gthumbs').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  const i=+b.dataset.i, ph=S.photos2;
+  if(b.dataset.g==='up'&&i>0){ const t=ph[i-1]; ph[i-1]=ph[i]; ph[i]=t; }
+  else if(b.dataset.g==='dn'&&i<ph.length-1){ const t=ph[i+1]; ph[i+1]=ph[i]; ph[i]=t; }
+  else if(b.dataset.g==='del'){ ph.splice(i,1); }
+  else return;
+  buildGal(); draw(); saveLocal();
+});
+$('btnGalAdd').onclick=()=>$('fileGal').click();
+$('fileGal').onchange=e=>{
+  const files=[...e.target.files]; if(!files.length) return;
+  let pend=files.length;
+  files.forEach(f=>{
+    const rd=new FileReader();
+    rd.onload=()=>{ const im=new Image();
+      im.onload=()=>{
+        const mx=700; let w=im.width, h=im.height;
+        if(Math.max(w,h)>mx){ const r=mx/Math.max(w,h); w=Math.round(w*r); h=Math.round(h*r); }
+        const c2=document.createElement('canvas'); c2.width=w; c2.height=h;
+        c2.getContext('2d').drawImage(im,0,0,w,h);
+        S.photos2.push(c2.toDataURL('image/jpeg',0.85));
+        if(--pend===0){ buildGal(); ensureGImgs(()=>draw()); draw(); saveLocal(); toast('🖼️ '+files.length+' फोटो जुड़ी ✓'); }
+      };
+      im.src=rd.result; };
+    rd.readAsDataURL(f);
+  });
+  e.target.value='';
+};
+
 /* ---- Photo ---- */
 $('btnPhoto').onclick=()=>$('filePhoto').click();
 $('filePhoto').onchange=e=>{ const f=e.target.files[0]; if(!f) return;
@@ -571,7 +783,7 @@ $('pz').oninput=e=>{ S.pz=+e.target.value; draw(); saveLocal(); };
 $('fsz').oninput=e=>{ S.fsz=+e.target.value; draw(); saveLocal(); };
 
 /* ---- Save / Load ---- */
-function pack(){ return {v:2, tmpl:S.tmpl, d:S.d, pz:S.pz, fsz:S.fsz, lang:S.lang, trans:S.trans, photo:S.photo?S.photo.src:null}; }
+function pack(){ return {v:3, tmpl:S.tmpl, d:S.d, pz:S.pz, fsz:S.fsz, lang:S.lang, trans:S.trans, schema:S.schema, xlab:S.xlab, photos2:S.photos2, photo:S.photo?S.photo.src:null}; }
 function migrateSel(){ /* पुराने Hindi select values → keys */
   SECTIONS.forEach(sec=>sec.f.forEach(f=>{ if(!f.sel) return;
     const v=S.d[f.k]; if(!v || OPTKEYS[f.sel].includes(v)) return;
@@ -580,7 +792,9 @@ function migrateSel(){ /* पुराने Hindi select values → keys */
 function unpack(o){ if(!o) return;
   S.tmpl=o.tmpl||0; S.d=o.d||{}; S.pz=o.pz||1; S.fsz=o.fsz||1;
   S.lang=o.lang||'hi'; S.trans=(o.trans!==undefined)? o.trans : !!ITC[S.lang];
-  migrateSel(); ensureDocDefaults();
+  S.schema=o.schema||null; ensureSchema();
+  S.xlab=o.xlab||{}; S.photos2=o.photos2||[];
+  migrateSel(); ensureDocDefaults(); buildGal(); ensureGImgs(()=>draw());
   $('pz').value=S.pz; $('fsz').value=S.fsz; $('chkTrans').checked=S.trans;
   buildLangSel(); applyUI(); buildForm(); setFormVals();
   ensureLangFont(S.lang);
@@ -598,6 +812,8 @@ $('fileJSON').onchange=e=>{ const f=e.target.files[0]; if(!f) return;
   rd.readAsText(f); e.target.value=''; };
 $('btnClear').onclick=()=>{ if(!confirm('सब fields साफ़ करें?')) return;
   S.d={}; ensureDocDefaults(); S.photo=null; S.pz=1; $('pz').value=1;
+  S.schema=null; ensureSchema(); S.xlab={}; S.photos2=[];
+  buildGal(); buildForm();
   setFormVals();
   document.querySelectorAll('#formSecs input,#formSecs textarea').forEach(el=>el.value='');
   document.querySelectorAll('#formSecs select').forEach(el=>el.value='');
@@ -620,9 +836,17 @@ $('btnPDF').onclick=async()=>{
   const sc=300; const oc=document.createElement('canvas');
   oc.width=Math.round(PW*sc); oc.height=Math.round(PH*sc);
   drawDoc(oc.getContext('2d'),sc,true);
+  await new Promise(r=>ensureGImgs(r));
   const w=window.open('','_blank');
   if(!w) return toast('❌ popup रुका — allow करो');
-  w.document.write('<html><head><title>Biodata PDF</title><style>body{margin:0}img{width:100%}</style></head><body><img src="'+oc.toDataURL('image/png')+'" onload="setTimeout(()=>window.print(),300)"></body></html>');
+  let imgs='<img src="'+oc.toDataURL('image/png')+'">';
+  if((S.photos2||[]).length && (S._galDrawn||0) < S.photos2.length){
+    const oc2=document.createElement('canvas');
+    oc2.width=oc.width; oc2.height=oc.height;
+    drawGalleryPage(oc2.getContext('2d'),sc);
+    imgs+='<img src="'+oc2.toDataURL('image/png')+'" style="page-break-before:always">';
+  }
+  w.document.write('<html><head><title>Biodata PDF</title><style>body{margin:0}img{width:100%}</style></head><body>'+imgs+'<scr'+'ipt>setTimeout(()=>window.print(),500)</scr'+'ipt></body></html>');
   w.document.close();
   toast('📄 Print window खुली — "Save as PDF" चुनो'); };
 
@@ -630,7 +854,7 @@ $('btnPDF').onclick=async()=>{
 SkFonts.injectFontLinks('');
 $('selLang').onchange=e=>setLang(e.target.value);
 $('chkTrans').onchange=e=>{ S.trans=e.target.checked; saveLocal(); };
-buildLangSel(); applyUI(); ensureDocDefaults(); buildForm(); buildTmpls();
+ensureSchema(); buildLangSel(); applyUI(); ensureDocDefaults(); buildForm(); buildTmpls(); buildGal();
 try{ const sv=localStorage.getItem('biodataMakerV1'); if(sv) unpack(JSON.parse(sv)); }catch(_){}
 setFormVals(); draw();
 SkFonts.ensureFonts([{kind:'text',f:'rozha'},{kind:'text',f:'yatra'},{kind:'text',f:'gvibes'},{kind:'text',f:'tiro'},{kind:'text',f:'kalam'}])
