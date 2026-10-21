@@ -65,7 +65,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v5.0 🎭 (Exact Mask Fit)</span>
+  <span class="badge">FREE v5.0.1 🎭 (Exact Mask Fit)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
@@ -1017,8 +1017,10 @@ function targetPhotos(){
 document.querySelectorAll('.shp').forEach(b=>b.onclick=()=>{
   const ps=targetPhotos();
   if(!ps.length) return toast('❌ पहले PHOTO चुनो (frame नहीं) — photo frame के नीचे है तो 🧲 Frame Fit दबाओ');
-  ps.forEach(it=>it.shape=b.dataset.s); draw();
-  toast((ps.length>1?'✅ '+ps.length+' photos':'✅ shape')+' — '+b.textContent.trim()); });
+  let hadMask=false;
+  ps.forEach(it=>{ if(it.maskData) hadMask=true; it.shape=b.dataset.s; delete it.maskData; delete it.maskImg; });
+  draw();
+  toast((ps.length>1?'✅ '+ps.length+' photos':'✅ shape')+' — '+b.textContent.trim()+(hadMask?' (🎭 exact mask हटा — फिर चाहिए तो 🧲 दबाओ)':'')); });
 
 /* 🧲 Frame Fit — चुनी photo slot को frame (decor) के transparent opening में fit करो,
    shape अपने आप पहचानो (दिल ❤️ / गोल ⬭ / आयत ▭) */
@@ -1095,7 +1097,7 @@ $('btnFrameFit').onclick=()=>{
   /* window (map px) → inches; 1.5% फैलाव ताकि किनारा frame के नीचे छिपे */
   const kx=fr.w/r.w, ky=fr.h/r.h;
   const bw=(r.x1-r.x0+1)*kx, bh=(r.y1-r.y0+1)*ky;
-  const ex=bw*0.015, ey=bh*0.015;
+  const ex=bw*0.025, ey=bh*0.025;   /* 2.5% फैलाव — किनारा carving की गहराई में छिपे (Dev: 'carving me fix honi chahiye') */
   it.x=fr.x+r.x0*kx-ex; it.y=fr.y+r.y0*ky-ey;
   it.w=bw+2*ex; it.h=bh+2*ey;
   it.shape='mask'; it.maskImg=r.mask; it.maskData=r.mask.toDataURL();
