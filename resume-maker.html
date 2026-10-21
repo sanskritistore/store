@@ -45,8 +45,9 @@ input[type=color]{padding:2px;height:30px}
 <body>
 <header>
   <h1>🌸 संस्कृति Resume Maker</h1>
-  <span class="badge">FREE v1.0 📄 (Resume Builder)</span>
+  <span class="badge">FREE v1.1 🌐 (हिंदी + English)</span>
   <span style="flex:1"></span>
+  <button class="hbtn" id="btnLang">🌐 English</button>
   <button class="hbtn" id="btnSave">💾 सहेजें</button>
   <button class="hbtn" id="btnLoad">📂 खोलें</button>
   <button class="hbtn" id="btnExportJR">🌐 JSON Resume</button>
@@ -54,7 +55,7 @@ input[type=color]{padding:2px;height:30px}
 </header>
 <main>
   <div id="side">
-    <h3>🎨 Template चुनो</h3>
+    <h3 id="h3Tpl">🎨 Template चुनो</h3>
     <div class="tplchip" id="tplChips"></div>
     <div id="formBox"></div>
   </div>
@@ -81,55 +82,75 @@ function blankResume(){ return {
 };}
 const S={ data:blankResume(), tpl:'simple' };
 
+/* ================= 🌐 UI LANGUAGE (हिंदी/English — resume content दोनों में लिखा जा सकता है) ================= */
+const STR={
+ hi:{ save:'💾 सहेजें', load:'📂 खोलें', print:'🖨️ Print PDF (300 DPI)', sample:'✨ नमूना भरो',
+   tpl:'🎨 Template चुनो', photo:'📷 Photo लगाओ (optional)', photoCh:'📷 Photo बदलो ✓', photoRm:'🚫 Photo हटाओ',
+   del:'🗑️ हटाओ', langBtn:'🌐 English',
+   tPhoto:'📷 Photo लग गई ✓', tSave:'💾 सहेज लिया — यही file फिर खोलने से काम वापस ✓',
+   tLoad:'📂 Resume खुल गया ✓', tBad:'❌ यह Resume Maker की file नहीं है',
+   tSample:'✨ नमूना भर गया — अब अपनी जानकारी बदलो', tPrint:'🖨️ 300 DPI बन रहा है...',
+   tJR:'🌐 JSON Resume standard में export ✓ — दुनिया के हर tool में चलेगा' },
+ en:{ save:'💾 Save', load:'📂 Open', print:'🖨️ Print PDF (300 DPI)', sample:'✨ Fill Sample',
+   tpl:'🎨 Choose Template', photo:'📷 Add Photo (optional)', photoCh:'📷 Change Photo ✓', photoRm:'🚫 Remove Photo',
+   del:'🗑️ Remove', langBtn:'🌐 हिंदी',
+   tPhoto:'📷 Photo added ✓', tSave:'💾 Saved — open this file anytime to continue ✓',
+   tLoad:'📂 Resume opened ✓', tBad:'❌ This is not a Resume Maker file',
+   tSample:'✨ Sample filled — now replace with your details', tPrint:'🖨️ Building 300 DPI...',
+   tJR:'🌐 Exported in JSON Resume standard ✓ — works worldwide' }
+};
+S.ui='hi';
+function T(k){ return STR[S.ui][k]; }
+
 /* ================= 📋 FORM SCHEMA (config — नया field/section यहाँ जोड़ो, render अपने आप) ================= */
 const SCHEMA=[
- {sec:'basics', title:'👤 बुनियादी जानकारी', fields:[
-   {k:'name',  lab:'पूरा नाम', ph:'जैसे: राहुल शर्मा'},
-   {k:'title', lab:'पद / एक line', ph:'जैसे: Graphic Designer'},
-   {k:'phone', lab:'फ़ोन', ph:'98765 43210'},
+ {sec:'basics', title:'👤 बुनियादी जानकारी', titleEn:'👤 Basic Details', fields:[
+   {k:'name',  lab:'पूरा नाम', labEn:'Full Name', ph:'जैसे: राहुल शर्मा', phEn:'e.g. Rahul Sharma'},
+   {k:'title', lab:'पद / एक line', labEn:'Designation / one line', ph:'जैसे: Graphic Designer', phEn:'e.g. Graphic Designer'},
+   {k:'phone', lab:'फ़ोन', labEn:'Phone', ph:'98765 43210'},
    {k:'email', lab:'Email', ph:'rahul@gmail.com'},
-   {k:'address', lab:'पता (शहर)', ph:'नई दिल्ली'},
-   {k:'website', lab:'Website (optional)', ph:''},
-   {k:'summary', lab:'अपने बारे में (2-3 lines)', ta:1, ph:'मैं एक मेहनती ...'}]},
- {sec:'work', title:'💼 काम का अनुभव', add:'+ नौकरी जोड़ो', fields:[
-   {k:'role', lab:'पद', ph:'Sales Executive'},
-   {k:'company', lab:'कंपनी', ph:'ABC Traders, दिल्ली'},
-   {k:'start', lab:'शुरू (साल)', ph:'2022', sm:1},
-   {k:'end', lab:'अंत', ph:'2024 / अभी तक', sm:1},
-   {k:'desc', lab:'क्या काम किया (एक line में एक point)', ta:1, ph:'ग्राहकों से संपर्क\nबिक्री लक्ष्य पूरा किया'}]},
- {sec:'education', title:'🎓 पढ़ाई', add:'+ पढ़ाई जोड़ो', fields:[
-   {k:'degree', lab:'डिग्री', ph:'B.Com / 12वीं'},
-   {k:'school', lab:'स्कूल / कॉलेज', ph:'दिल्ली विश्वविद्यालय'},
-   {k:'start', lab:'शुरू', ph:'2019', sm:1},
-   {k:'end', lab:'अंत', ph:'2022', sm:1},
-   {k:'score', lab:'अंक / %', ph:'78%'}]},
- {sec:'skills', title:'⚡ हुनर (Skills)', add:'+ हुनर जोड़ो', fields:[
-   {k:'name', lab:'हुनर', ph:'Photoshop / Tally / English बोलना'},
-   {k:'level', lab:'स्तर 0-5', num:1, ph:'4', sm:1}]},
- {sec:'projects', title:'🛠️ Projects / काम के नमूने', add:'+ project जोड़ो', fields:[
-   {k:'name', lab:'नाम', ph:'दुकान की website'},
-   {k:'link', lab:'Link (optional)', ph:''},
-   {k:'desc', lab:'विवरण', ta:1, ph:''}]},
- {sec:'languages', title:'🗣️ भाषाएँ', add:'+ भाषा जोड़ो', fields:[
-   {k:'name', lab:'भाषा', ph:'हिंदी'},
-   {k:'level', lab:'स्तर (जैसे: मातृभाषा / अच्छी)', ph:'मातृभाषा'}]},
- {sec:'custom', title:'✨ अपना section', add:'+ section जोड़ो', fields:[
-   {k:'heading', lab:'शीर्षक', ph:'प्रमाणपत्र / शौक / संदर्भ'},
-   {k:'desc', lab:'विवरण (एक line में एक point)', ta:1, ph:''}]}
+   {k:'address', lab:'पता (शहर)', labEn:'Address (city)', ph:'नई दिल्ली', phEn:'New Delhi'},
+   {k:'website', lab:'Website (optional)', labEn:'Website (optional)', ph:''},
+   {k:'summary', lab:'अपने बारे में (2-3 lines)', labEn:'About you (2-3 lines)', ta:1, ph:'मैं एक मेहनती ...', phEn:'I am a hard-working ...'}]},
+ {sec:'work', title:'💼 काम का अनुभव', titleEn:'💼 Work Experience', add:'+ नौकरी जोड़ो', addEn:'+ Add job', fields:[
+   {k:'role', lab:'पद', labEn:'Designation', ph:'Sales Executive'},
+   {k:'company', lab:'कंपनी', labEn:'Company', ph:'ABC Traders, दिल्ली', phEn:'ABC Traders, Delhi'},
+   {k:'start', lab:'शुरू (साल)', labEn:'Start (year)', ph:'2022', sm:1},
+   {k:'end', lab:'अंत', labEn:'End', ph:'2024 / अभी तक', phEn:'2024 / Present', sm:1},
+   {k:'desc', lab:'क्या काम किया (एक line में एक point)', labEn:'What you did (one point per line)', ta:1, ph:'ग्राहकों से संपर्क\nबिक्री लक्ष्य पूरा किया', phEn:'Handled customer relations\nAchieved monthly sales target'}]},
+ {sec:'education', title:'🎓 पढ़ाई', titleEn:'🎓 Education', add:'+ पढ़ाई जोड़ो', addEn:'+ Add education', fields:[
+   {k:'degree', lab:'डिग्री', labEn:'Degree', ph:'B.Com / 12वीं', phEn:'B.Com / 12th'},
+   {k:'school', lab:'स्कूल / कॉलेज', labEn:'School / College', ph:'दिल्ली विश्वविद्यालय', phEn:'Delhi University'},
+   {k:'start', lab:'शुरू', labEn:'Start', ph:'2019', sm:1},
+   {k:'end', lab:'अंत', labEn:'End', ph:'2022', sm:1},
+   {k:'score', lab:'अंक / %', labEn:'Marks / %', ph:'78%'}]},
+ {sec:'skills', title:'⚡ हुनर (Skills)', titleEn:'⚡ Skills', add:'+ हुनर जोड़ो', addEn:'+ Add skill', fields:[
+   {k:'name', lab:'हुनर', labEn:'Skill', ph:'Photoshop / Tally / English बोलना', phEn:'Photoshop / Tally / English speaking'},
+   {k:'level', lab:'स्तर 0-5', labEn:'Level 0-5', num:1, ph:'4', sm:1}]},
+ {sec:'projects', title:'🛠️ Projects / काम के नमूने', titleEn:'🛠️ Projects / Work Samples', add:'+ project जोड़ो', addEn:'+ Add project', fields:[
+   {k:'name', lab:'नाम', labEn:'Name', ph:'दुकान की website', phEn:'Shop website'},
+   {k:'link', lab:'Link (optional)', labEn:'Link (optional)', ph:''},
+   {k:'desc', lab:'विवरण', labEn:'Description', ta:1, ph:''}]},
+ {sec:'languages', title:'🗣️ भाषाएँ', titleEn:'🗣️ Languages', add:'+ भाषा जोड़ो', addEn:'+ Add language', fields:[
+   {k:'name', lab:'भाषा', labEn:'Language', ph:'हिंदी', phEn:'Hindi'},
+   {k:'level', lab:'स्तर (जैसे: मातृभाषा / अच्छी)', labEn:'Level (e.g. Native / Fluent)', ph:'मातृभाषा', phEn:'Native'}]},
+ {sec:'custom', title:'✨ अपना section', titleEn:'✨ Your Own Section', add:'+ section जोड़ो', addEn:'+ Add section', fields:[
+   {k:'heading', lab:'शीर्षक', labEn:'Heading', ph:'प्रमाणपत्र / शौक / संदर्भ', phEn:'Certificates / Hobbies / References'},
+   {k:'desc', lab:'विवरण (एक line में एक point)', labEn:'Details (one point per line)', ta:1, ph:''}]}
 ];
 
 /* ================= 📝 FORM BUILDER (schema से अपने आप — config-driven) ================= */
 function buildForm(){
   const box=$('formBox'); box.innerHTML='';
   SCHEMA.forEach(sc=>{
-    const h=document.createElement('h3'); h.textContent=sc.title; box.appendChild(h);
+    const h=document.createElement('h3'); h.textContent=(S.ui==='en'&&sc.titleEn)?sc.titleEn:sc.title; box.appendChild(h);
     if(sc.sec==='basics'){
       /* 📷 photo button */
       const pb=document.createElement('button'); pb.className='sbtn'; pb.id='btnPhoto';
-      pb.textContent=S.data.basics.photo?'📷 Photo बदलो ✓':'📷 Photo लगाओ (optional)';
+      pb.textContent=S.data.basics.photo?T('photoCh'):T('photo');
       pb.onclick=()=>$('filePhoto').click(); box.appendChild(pb);
       if(S.data.basics.photo){ const rb=document.createElement('button'); rb.className='sbtn';
-        rb.textContent='🚫 Photo हटाओ'; rb.onclick=()=>{ S.data.basics.photo=null; buildForm(); draw(); }; box.appendChild(rb); }
+        rb.textContent=T('photoRm'); rb.onclick=()=>{ S.data.basics.photo=null; buildForm(); draw(); }; box.appendChild(rb); }
       sc.fields.forEach(f=> box.appendChild(mkFld(f, S.data.basics)));
     } else {
       const arr=S.data[sc.sec];
@@ -138,13 +159,14 @@ function buildForm(){
         const hd=document.createElement('div'); hd.className='rhead';
         const nm=it.role||it.degree||it.name||it.heading||('#'+(i+1));
         hd.innerHTML='<b>'+(i+1)+'. '+(nm||'—').slice(0,22)+'</b>';
-        const del=document.createElement('button'); del.textContent='🗑️ हटाओ';
+        const del=document.createElement('button'); del.textContent=T('del');
         del.onclick=()=>{ arr.splice(i,1); buildForm(); draw(); };
         hd.appendChild(del); rb.appendChild(hd);
         sc.fields.forEach(f=> rb.appendChild(mkFld(f, it, ()=>{ hd.querySelector('b').textContent=(i+1)+'. '+((it.role||it.degree||it.name||it.heading||'—')).slice(0,22); })));
         box.appendChild(rb);
       });
-      const ab=document.createElement('button'); ab.className='addbtn'; ab.textContent=sc.add;
+      const ab=document.createElement('button'); ab.className='addbtn';
+      ab.textContent=(S.ui==='en'&&sc.addEn)?sc.addEn:sc.add;
       ab.onclick=()=>{ arr.push({}); buildForm(); draw(); };
       box.appendChild(ab);
     }
@@ -152,10 +174,10 @@ function buildForm(){
 }
 function mkFld(f, obj, onch){
   const d=document.createElement('div'); d.className='fld';
-  const l=document.createElement('label'); l.textContent=f.lab; d.appendChild(l);
+  const l=document.createElement('label'); l.textContent=(S.ui==='en'&&f.labEn)?f.labEn:f.lab; d.appendChild(l);
   const el=document.createElement(f.ta?'textarea':'input');
   if(!f.ta){ if(f.num){ el.type='number'; el.min=0; el.max=5; } else el.type='text'; }
-  el.placeholder=f.ph||''; el.value=obj[f.k]??'';
+  el.placeholder=(S.ui==='en'&&f.phEn!==undefined)?f.phEn:(f.ph||''); el.value=obj[f.k]??'';
   el.oninput=()=>{ obj[f.k]=el.value; if(onch)onch(); draw(); };
   d.appendChild(el); return d;
 }
@@ -167,7 +189,7 @@ $('filePhoto').onchange=e=>{
       const c=document.createElement('canvas'); c.width=Math.round(im.width*s); c.height=Math.round(im.height*s);
       c.getContext('2d').drawImage(im,0,0,c.width,c.height);
       S.data.basics.photo=c.toDataURL('image/jpeg',0.88);
-      buildForm(); draw(); toast('📷 Photo लग गई ✓');
+      buildForm(); draw(); toast(T('tPhoto'));
     }; im.src=rd.result; };
   rd.readAsDataURL(f);
 };
@@ -448,10 +470,10 @@ function draw(){
 /* ================= 💾 SAVE / LOAD ================= */
 function dl(name, url){ const a=document.createElement('a'); a.download=name; a.href=url; a.click(); }
 $('btnSave').onclick=()=>{
-  const o={app:'sanskriti-resume', v:1, tpl:S.tpl, data:S.data};
+  const o={app:'sanskriti-resume', v:1, tpl:S.tpl, ui:S.ui, data:S.data};
   dl('resume-'+(S.data.basics.name||'mera').replace(/\s+/g,'-')+'.json',
      URL.createObjectURL(new Blob([JSON.stringify(o,null,1)],{type:'application/json'})));
-  toast('💾 सहेज लिया — यही file फिर खोलने से काम वापस ✓');
+  toast(T('tSave'));
 };
 $('btnLoad').onclick=()=>$('fileLoad').click();
 $('fileLoad').onchange=e=>{
@@ -461,12 +483,13 @@ $('fileLoad').onchange=e=>{
       const o=JSON.parse(rd.result);
       if(o.app!=='sanskriti-resume') throw 0;
       S.tpl=o.tpl||'simple';
+      if(o.ui){ S.ui=o.ui; applyLang(); }
       const nb=blankResume();
       S.data=Object.assign(nb,o.data||{});
       ['work','education','skills','projects','languages','custom'].forEach(k=>{ if(!Array.isArray(S.data[k])) S.data[k]=[]; });
       buildChips(); buildForm(); draw();
-      toast('📂 Resume खुल गया ✓');
-    }catch(_){ toast('❌ यह Resume Maker की file नहीं है'); } };
+      toast(T('tLoad'));
+    }catch(_){ toast(T('tBad')); } };
   rd.readAsText(f);
 };
 /* ---- 🌐 JSON Resume export (international open standard — MIT) ---- */
@@ -482,12 +505,12 @@ $('btnExportJR').onclick=()=>{
     languages:S.data.languages.map(l=>({ language:l.name, fluency:l.level }))
   };
   dl('resume-jsonresume.json', URL.createObjectURL(new Blob([JSON.stringify(jr,null,1)],{type:'application/json'})));
-  toast('🌐 JSON Resume standard में export ✓ — दुनिया के हर tool में चलेगा');
+  toast(T('tJR'));
 };
 
 /* ================= 🖨️ PRINT (300 DPI — हर page PNG → print window) ================= */
 $('btnPrint').onclick=()=>{
-  toast('🖨️ 300 DPI बन रहा है...');
+  toast(T('tPrint'));
   setTimeout(()=>{
     const pages=renderAll(300);
     const imgs=pages.map(cv=>'<img src="'+cv.toDataURL('image/png')+'" style="width:100%;display:block"' ).join('<div style="page-break-after:always"></div>');
@@ -518,9 +541,22 @@ function fillSample(){
   };
 }
 /* header में नमूना button */
-(function(){ const b=document.createElement('button'); b.className='hbtn'; b.textContent='✨ नमूना भरो';
-  b.onclick=()=>{ fillSample(); buildForm(); draw(); toast('✨ नमूना भर गया — अब अपनी जानकारी बदलो'); };
+(function(){ const b=document.createElement('button'); b.className='hbtn'; b.id='btnSample'; b.textContent='✨ नमूना भरो';
+  b.onclick=()=>{ fillSample(); buildForm(); draw(); toast(T('tSample')); };
   $('btnPrint').before(b); })();
+
+/* ================= 🌐 LANGUAGE TOGGLE ================= */
+function applyLang(){
+  $('btnSave').textContent=T('save');
+  $('btnLoad').textContent=T('load');
+  $('btnPrint').textContent=T('print');
+  $('btnSample').textContent=T('sample');
+  $('h3Tpl').textContent=T('tpl');
+  $('btnLang').textContent=T('langBtn');
+  buildForm();
+}
+$('btnLang').onclick=()=>{ S.ui=(S.ui==='hi'?'en':'hi'); applyLang(); draw();
+  toast(S.ui==='en'?'🌐 English UI ✓':'🌐 हिंदी UI ✓'); };
 
 /* ================= 🚀 BOOT ================= */
 buildChips(); buildForm(); fillSample(); buildForm(); draw();
