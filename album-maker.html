@@ -65,7 +65,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v4.9.1 🧲 (Frame Fit)</span>
+  <span class="badge">FREE v5.0 🎭 (Exact Mask Fit)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
@@ -819,9 +819,9 @@ function copySel(){
   if(!idxs.length) return toast('पहले canvas पर कुछ चुनो');
   itemClip=idxs.map(i=>{
     const it=S.items[i];
-    const c=JSON.parse(JSON.stringify({...it, img:undefined, photo:undefined}));
+    const c=JSON.parse(JSON.stringify({...it, img:undefined, photo:undefined, maskImg:undefined}));
     if(it.decor==='img') c._img=it.img;
-    if(it.kind==='photo') c._photo=it.photo;
+    if(it.kind==='photo'){ c._photo=it.photo; if(it.maskImg) c._mask=it.maskImg; }
     return c;
   });
   toast('📋 Copy हो गया'+(idxs.length>1?' ('+idxs.length+' चीज़ें)':'')+' — Paste दबाओ');
@@ -834,9 +834,10 @@ function pasteItem(){
   itemClip.forEach(c=>{
     const it={...c, id:uid++};
     if(it.grp){ it.grp=gmap[it.grp]||(gmap[it.grp]='g'+Date.now()+'_'+Math.random().toString(36).slice(2,6)); }
-    delete it._img; delete it._photo;
+    delete it._img; delete it._photo; delete it._mask;
     if(c._img) it.img=c._img;
     if(c._photo!==undefined) it.photo=c._photo;
+    if(c._mask) it.maskImg=c._mask;
     S.items.push(it); newIdx.push(S.items.length-1);
   });
   S.sel=newIdx[newIdx.length-1]; S.selArr=newIdx.length>1? newIdx : [];
@@ -1021,49 +1022,62 @@ document.querySelectorAll('.shp').forEach(b=>b.onclick=()=>{
 
 /* 🧲 Frame Fit — चुनी photo slot को frame (decor) के transparent opening में fit करो,
    shape अपने आप पहचानो (दिल ❤️ / गोल ⬭ / आयत ▭) */
-function frameFitDetect(img){
-  /* grid-vote तरीका: मोटे cells — cell तभी barrier जब 50%+ opaque हो;
-     पतली सजावटी लकीरें (inner stroke) vote हार जाती हैं ✓ */
-  const smW=160, smH=Math.max(2,Math.round(160*img.naturalHeight/img.naturalWidth));
-  const cv=document.createElement('canvas'); cv.width=smW; cv.height=smH;
-  const g=cv.getContext('2d',{willReadFrequently:true});
-  g.drawImage(img,0,0,smW,smH);
-  const data=g.getImageData(0,0,smW,smH).data;
-  const GW=40, GH=Math.max(2,Math.round(GW*smH/smW));
-  const cw=smW/GW, chh=smH/GH;
-  const wall=new Uint8Array(GW*GH);
-  for(let gy=0;gy<GH;gy++)for(let gx=0;gx<GW;gx++){
-    let op=0,tot=0;
-    const px0=Math.floor(gx*cw), px1=Math.max(px0+1,Math.floor((gx+1)*cw));
-    const py0=Math.floor(gy*chh), py1=Math.max(py0+1,Math.floor((gy+1)*chh));
-    for(let y=py0;y<py1;y++)for(let x=px0;x<px1;x++){ tot++; if(data[(y*smW+x)*4+3]>=40) op++; }
-    if(op/tot>=0.5) wall[gy*GW+gx]=1;
-  }
-  const cx=GW>>1, cy=GH>>1;
-  if(wall[cy*GW+cx]) return null;                      /* center में जगह नहीं */
-  const seen=new Uint8Array(GW*GH); const q=[cx,cy]; seen[cy*GW+cx]=1;
-  let x0=cx,x1=cx,y0=cy,y1=cy,n=0;
-  while(q.length){ const y=q.pop(), x=q.pop(); n++;
+/* 🔍 frameWindow — Acrylic Frame Maker (frame-maker.html v12.10) का autoWindow तरीका:
+   frame PNG की असली transparency से अंदरूनी window + EXACT mask (bezier अंदाज़ा नहीं!)
+   1) alpha पर max-filter — carving/filigree के छोटे gaps भरो (border-flood leak रोक)
+   2) किनारे से flood = background mark — window सिर्फ़ भीतर का enclosed transparent
+   3) center से BFS → window region → mask canvas (region = opaque white) */
+function frameWindow(im){
+  try{
+  const M=640, sc=Math.min(1,M/Math.max(im.naturalWidth,im.naturalHeight));
+  const w=Math.max(60,Math.round(im.naturalWidth*sc)), h=Math.max(60,Math.round(im.naturalHeight*sc));
+  const c=document.createElement('canvas'); c.width=w; c.height=h;
+  const g=c.getContext('2d',{willReadFrequently:true}); g.drawImage(im,0,0,w,h);
+  const d=g.getImageData(0,0,w,h).data;
+  const r0=Math.max(2,Math.round(w*0.008)), a0=new Uint8Array(w*h);
+  for(let i=0;i<w*h;i++) a0[i]=d[i*4+3];
+  const a1=new Uint8Array(w*h), a2=new Uint8Array(w*h);
+  for(let y=0;y<h;y++){ const b=y*w; for(let x=0;x<w;x++){ let m=0;
+    const xa=Math.max(0,x-r0), xb=Math.min(w-1,x+r0);
+    for(let xx=xa;xx<=xb;xx++){ if(a0[b+xx]>m) m=a0[b+xx]; } a1[b+x]=m; } }
+  for(let y=0;y<h;y++){ const ya=Math.max(0,y-r0), yb=Math.min(h-1,y+r0);
+    for(let x=0;x<w;x++){ let m=0;
+      for(let yy=ya;yy<=yb;yy++){ const v=a1[yy*w+x]; if(v>m) m=v; } a2[y*w+x]=m; } }
+  const tr=p=>a2[p]<16;
+  const bg=new Uint8Array(w*h), bst=[];
+  for(let x=0;x<w;x++){ if(tr(x)) bst.push(x); if(tr((h-1)*w+x)) bst.push((h-1)*w+x); }
+  for(let y=0;y<h;y++){ if(tr(y*w)) bst.push(y*w); if(tr(y*w+w-1)) bst.push(y*w+w-1); }
+  while(bst.length){ const p=bst.pop(); if(bg[p]) continue; bg[p]=1;
+    const x=p%w, y=(p/w)|0;
+    if(x>0&&!bg[p-1]&&tr(p-1)) bst.push(p-1);
+    if(x<w-1&&!bg[p+1]&&tr(p+1)) bst.push(p+1);
+    if(y>0&&!bg[p-w]&&tr(p-w)) bst.push(p-w);
+    if(y<h-1&&!bg[p+w]&&tr(p+w)) bst.push(p+w); }
+  const trIn=p=>tr(p)&&!bg[p];
+  let c0=Math.floor(w/2)+Math.floor(h/2)*w;
+  if(!trIn(c0)){ outer:for(let r=2;r<Math.min(w,h)/3;r+=3){ for(let dx=-r;dx<=r;dx+=3){ for(let dy=-r;dy<=r;dy+=3){
+    const x=(w>>1)+dx, y=(h>>1)+dy; if(x<0||y<0||x>=w||y>=h) continue;
+    if(trIn(y*w+x)){ c0=y*w+x; break outer; } } } } }
+  if(!trIn(c0)) return null;
+  const seen=new Uint8Array(w*h), st=[c0]; seen[c0]=1;
+  let x0=w,y0=h,x1=-1,y1=-1,n=0;
+  while(st.length){ const p=st.pop(), x=p%w, y=(p/w)|0; n++;
     if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y;
-    if(x>0&&!wall[y*GW+x-1]&&!seen[y*GW+x-1]){seen[y*GW+x-1]=1;q.push(x-1,y);}
-    if(x<GW-1&&!wall[y*GW+x+1]&&!seen[y*GW+x+1]){seen[y*GW+x+1]=1;q.push(x+1,y);}
-    if(y>0&&!wall[(y-1)*GW+x]&&!seen[(y-1)*GW+x]){seen[(y-1)*GW+x]=1;q.push(x,y-1);}
-    if(y<GH-1&&!wall[(y+1)*GW+x]&&!seen[(y+1)*GW+x]){seen[(y+1)*GW+x]=1;q.push(x,y+1);}
-  }
-  if(n>GW*GH*0.85) return null;                        /* leak — opening साफ़ नहीं */
-  const bw=x1-x0+1, bh=y1-y0+1;
-  if(bw<6||bh<6) return null;
-  /* shape पहचान: दिल = ऊपर-बीच का dip (center col का top नीचे, lobe cols का ऊपर) */
-  const topAt=px=>{ for(let y=y0;y<=y1;y++){ if(seen[y*GW+px]) return y; } return y1; };
-  const tC=topAt(x0+Math.round(bw*0.5)), tL=topAt(x0+Math.round(bw*0.25)), tR=topAt(x0+Math.round(bw*0.75));
-  let shape='rect';
-  if(tC-Math.min(tL,tR) > bh*0.10) shape='heart';
-  else { /* कोना probe: bbox के कोने region में नहीं → गोल/अंडा */
-    const ix=Math.max(1,Math.round(bw*0.06)), iy=Math.max(1,Math.round(bh*0.06));
-    if(!seen[(y0+iy)*GW+(x0+ix)]||!seen[(y0+iy)*GW+(x1-ix)]||!seen[(y1-iy)*GW+(x0+ix)]||!seen[(y1-iy)*GW+(x1-ix)]) shape='oval'; }
-  /* grid cells → small-map px (आधा cell margin जोड़ो — cell vote ने किनारा काटा हो सकता है) */
-  const px=x=>(x+0.5)*cw, py=y=>(y+0.5)*chh;
-  return {x0:px(x0)-cw, y0:py(y0)-chh, x1:px(x1)+cw, y1:py(y1)+chh, smW, smH, shape};
+    if(x>0&&!seen[p-1]&&trIn(p-1)){seen[p-1]=1;st.push(p-1);}
+    if(x<w-1&&!seen[p+1]&&trIn(p+1)){seen[p+1]=1;st.push(p+1);}
+    if(y>0&&!seen[p-w]&&trIn(p-w)){seen[p-w]=1;st.push(p-w);}
+    if(y<h-1&&!seen[p+w]&&trIn(p+w)){seen[p+w]=1;st.push(p+w);} }
+  if(n<w*h*0.005) return null;
+  if(n>w*h*0.92) return null;              /* leak — opening साफ़ नहीं */
+  const mw=x1-x0+1, mh=y1-y0+1;
+  const mc=document.createElement('canvas'); mc.width=mw; mc.height=mh;
+  const mg=mc.getContext('2d'), md=mg.createImageData(mw,mh);
+  for(let yy=y0;yy<=y1;yy++){ const base=yy*w;
+    for(let xx=x0;xx<=x1;xx++){ if(seen[base+xx]){ const o=((yy-y0)*mw+(xx-x0))*4;
+      md.data[o]=md.data[o+1]=md.data[o+2]=md.data[o+3]=255; } } }
+  mg.putImageData(md,0,0);
+  return {x0,y0,x1,y1,w,h,mask:mc};
+  }catch(e){ return null; }
 }
 $('btnFrameFit').onclick=()=>{
   const ps=targetPhotos();
@@ -1076,16 +1090,18 @@ $('btnFrameFit').onclick=()=>{
     if(d.kind==='decor'&&d.decor==='img'&&d.img&&cx>=d.x&&cx<=d.x+d.w&&cy>=d.y&&cy<=d.y+d.h){ fr=d; break; } }
   if(!fr) return toast('❌ कोई frame नहीं मिला — slot को frame के ऊपर रखो');
   if(fr.rot) return toast('❌ घुमा हुआ frame — पहले rotation 0 करो');
-  const r=frameFitDetect(fr.img);
+  const r=frameWindow(fr.img);
   if(!r) return toast('❌ frame के अंदर खाली जगह साफ़ नहीं मिली');
-  /* opening (small-map px) → inches; ~2% अंदर ताकि किनारा frame के नीचे छिपे */
-  const kx=fr.w/r.smW, ky=fr.h/r.smH;
-  const inX=-(r.x1-r.x0)*kx*0.015, inY=-(r.y1-r.y0)*ky*0.015;  /* -1.5% = फैलाओ, किनारा frame के नीचे */
-  it.x=fr.x+r.x0*kx+inX; it.y=fr.y+r.y0*ky+inY;
-  it.w=(r.x1-r.x0+1)*kx-2*inX; it.h=(r.y1-r.y0+1)*ky-2*inY;
-  it.shape=r.shape;
+  /* window (map px) → inches; 1.5% फैलाव ताकि किनारा frame के नीचे छिपे */
+  const kx=fr.w/r.w, ky=fr.h/r.h;
+  const bw=(r.x1-r.x0+1)*kx, bh=(r.y1-r.y0+1)*ky;
+  const ex=bw*0.015, ey=bh*0.015;
+  it.x=fr.x+r.x0*kx-ex; it.y=fr.y+r.y0*ky-ey;
+  it.w=bw+2*ex; it.h=bh+2*ey;
+  it.shape='mask'; it.maskImg=r.mask; it.maskData=r.mask.toDataURL();
+  it.bdW=0;   /* frame ही असली border — photo border बंद */
   draw();
-  toast('🧲 Fit हो गया — shape: '+(r.shape==='heart'?'❤️ दिल':r.shape==='oval'?'⬭ गोल':'▭ आयत'));
+  toast('🧲 Exact fit — photo frame के असली shape में कटा ✓');
 };
 /* 📺 Curve की घुमाव slider — चुनी curve photos पर live */
 $('shCurve').oninput=e=>{ const ps=selPhotos().filter(it=>it.shape==='curve');
@@ -1310,9 +1326,10 @@ function drawItem(c,it,sc,forExport){
     const path=mkPath(X,Y);
     if(it.photo){
       // offscreen tile — fade सिर्फ photo पर लगे, नीचे की चीज़ें सुरक्षित
+      if(it.shape==='mask'&&!it.maskImg&&it.maskData){ const _im=new Image(); _im.onload=()=>{ it.maskImg=_im; draw(); }; _im.src=it.maskData; it.maskImg=null; }
       const oc=document.createElement('canvas'); oc.width=Math.max(2,Math.round(W)); oc.height=Math.max(2,Math.round(H));
       const o=oc.getContext('2d');
-      let op=mkPath(0,0); if(it.shape==='curve'){ op=new Path2D(); op.rect(0,0,W,H); }   /* 📺 curve: tile rect — घुमाव warp में */
+      let op=mkPath(0,0); if(it.shape==='curve'||it.shape==='mask'){ op=new Path2D(); op.rect(0,0,W,H); }   /* 📺 curve / 🎭 mask: tile rect */
       o.clip(op);
       if((it.fx||1)!==1||(it.fy||1)!==1){ o.translate(W/2,H/2); o.scale(it.fx||1,it.fy||1); o.translate(-W/2,-H/2); }   /* ⇄⇅ आईना/उल्टा */
       const sr=it.photo.width/it.photo.height, tr=W/H;
@@ -1341,6 +1358,11 @@ function drawItem(c,it,sc,forExport){
         g.addColorStop(Math.max(0.05,1-f*1.35),'rgba(0,0,0,1)');
         g.addColorStop(1,`rgba(0,0,0,${1-f})`);
         o.fillStyle=g; o.fillRect(0,0,W,H);
+        o.globalCompositeOperation='source-over';
+      }
+      if(it.shape==='mask'&&it.maskImg){   /* 🎭 exact mask — frame की असली shape में कटाई */
+        o.globalCompositeOperation='destination-in';
+        o.drawImage(it.maskImg,0,0,W,H);
         o.globalCompositeOperation='source-over';
       }
       if(window.SkPersp&&SkPersp.has(it)){   /* 🎯 perspective — border+frame भी tile के साथ मुड़े */
@@ -1855,7 +1877,7 @@ async function fixBlobPhotos(){
 }
 function itemsToJSON(items){
   return items.map(it=>{
-    if(it.kind==='photo'){ const {photo,_bdIm,...rest}=it; return {...rest, photoData:photo?photo.src:null}; }
+    if(it.kind==='photo'){ const {photo,_bdIm,maskImg,...rest}=it; return {...rest, photoData:photo?photo.src:null}; }
     if(it.kind==='decor'&&it.decor==='img'){ const {img,...rest}=it; return rest; }
     return {...it};
   });
