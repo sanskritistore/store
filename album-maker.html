@@ -65,7 +65,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v4.7.1 📺 (Curve दिशा)</span>
+  <span class="badge">FREE v4.8 ❤️ (Heart shape)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
@@ -103,6 +103,7 @@ input[type=range]{width:100%}
     <div class="srow">
       <button class="sbtn shp" data-s="rect">▭ Rect</button>
       <button class="sbtn shp" data-s="circle">⭕ Circle</button>
+      <button class="sbtn shp" data-s="heart">❤️ Heart</button>
       <button class="sbtn shp" data-s="oval">⬭ Oval</button>
       <button class="sbtn shp" data-s="arch">🕌 मेहराब</button>
       <button class="sbtn shp" data-s="round">▢ गोल-कोना</button>
@@ -1201,6 +1202,13 @@ function drawItem(c,it,sc,forExport){
     const mkPath=(ox,oy)=>{ const path=new Path2D();
       if(it.tornSide&&(!it.shape||it.shape==='rect'||it.shape==='round')){ tornRect(path,ox,oy,W,H,it.tornSide,it.tornDepth,it.tornSeed,sc); return path; } /* 📄 फटा किनारा */
       if(it.shape==='circle'){ const r=Math.min(W,H)/2; path.arc(ox+W/2,oy+H/2,r,0,7); }
+      else if(it.shape==='heart'){ const x0=ox,y0=oy,w0=W,h0=H;   /* ❤️ दिल — ornate heart frame में fit */
+        path.moveTo(x0+0.5*w0, y0+0.35*h0);
+        path.bezierCurveTo(x0+0.42*w0, y0+0.12*h0, x0+0.04*w0, y0+0.14*h0, x0+0.04*w0, y0+0.38*h0);
+        path.bezierCurveTo(x0+0.04*w0, y0+0.60*h0, x0+0.30*w0, y0+0.80*h0, x0+0.50*w0, y0+0.95*h0);
+        path.bezierCurveTo(x0+0.70*w0, y0+0.80*h0, x0+0.96*w0, y0+0.60*h0, x0+0.96*w0, y0+0.38*h0);
+        path.bezierCurveTo(x0+0.96*w0, y0+0.14*h0, x0+0.58*w0, y0+0.12*h0, x0+0.50*w0, y0+0.35*h0);
+        path.closePath(); }
       else if(it.shape==='oval'){ path.ellipse(ox+W/2,oy+H/2,W/2,H/2,0,0,7); }
       else if(it.shape==='arch'){ const r=W/2, top=oy+r;
         path.moveTo(ox,oy+H); path.lineTo(ox,top); path.arc(ox+r,top,r,Math.PI,0); path.lineTo(ox+W,oy+H); path.closePath(); }
