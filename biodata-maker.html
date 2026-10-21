@@ -67,7 +67,7 @@ body{font-family:'Nirmala UI',system-ui,sans-serif;background:#17191d;color:#e8e
 <body class="notranslate" translate="no">
 <div id="topbar">
   <h1>🌸 संस्कृति Biodata Maker</h1>
-  <span class="badge" id="bdg">FREE v1.4.1 ✏️🖼️👨‍👧</span>
+  <span class="badge" id="bdg">FREE v1.4.2 ✏️🖼️👨‍👧</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJ">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnLoadJ">📂 JSON खोलें</button>
@@ -127,7 +127,7 @@ const $=id=>document.getElementById(id);
 const SECTIONS=[
  {f:[{k:'name'},{k:'dob'},{k:'tob'},{k:'pob'},{k:'ht'},{k:'wt'},
      {k:'skin',sel:'skin'},{k:'rashi',sel:'rashi'},{k:'gotra'},{k:'manglik',sel:'mang'}]},
- {f:[{k:'father'},{k:'focc'},{k:'mother'},{k:'sib'},{k:'native'}]},
+ {f:[{k:'father'},{k:'focc'},{k:'mother'},{k:'native'}]},
  {f:[{k:'edu'},{k:'work'},{k:'income'}]},
  {f:[{k:'addr',area:1},{k:'phone'}]},
 ];
@@ -168,7 +168,9 @@ const S={ tmpl:0, d:{}, photo:null, pz:1, fsz:1, lang:'hi', trans:true,
   schema:null, xlab:{}, photos2:[], sibs:[] };
 /* field key → def (default fields) */
 const FLD={}; SECTIONS.forEach(sec=>sec.f.forEach(f=>FLD[f.k]=f));
-function ensureSchema(){ if(!S.schema) S.schema=SECTIONS.map(sec=>sec.f.map(f=>f.k)); }
+function ensureSchema(){ if(!S.schema) S.schema=SECTIONS.map(sec=>sec.f.map(f=>f.k));
+  /* v1.4.2: पुराना 'sib' single-line field हटाया — अब 👨‍👧 table ही एकमात्र तरीक़ा */
+  S.schema.forEach(a=>{ let i; while((i=a.indexOf('sib'))>=0) a.splice(i,1); }); }
 
 /* ---- 🌐 11 भाषाएँ (config — नई भाषा = यहाँ 1 object; संस्कृति: "जहाँ जाए, वहीँ की भाषा") ---- */
 const LANGS={
