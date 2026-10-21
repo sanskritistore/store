@@ -65,7 +65,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v5.0.2 🎭 (Exact Mask Fit)</span>
+  <span class="badge">FREE v5.1 ✨ (Smart Photo Add)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
@@ -147,7 +147,7 @@ input[type=range]{width:100%}
       <input type="file" id="fileWand" accept="image/*" style="display:none">
     </div>
     <div class="srow">
-      <button class="sbtn" id="btnFill">📷 Photo भरो</button>
+      <button class="sbtn" id="btnFill" title="Frame चुना हो तो slot अपने आप बनकर frame में fit होगा — slot जोड़ने की ज़रूरत नहीं">📷 Photo भरो <small style="opacity:.75">(frame में अपने आप)</small></button>
       <button class="sbtn" id="btnClearPhoto">✖ Photo हटाओ</button>
     </div>
     <div class="srow">
@@ -1091,6 +1091,21 @@ function frameWindow(im){
   return {x0,y0,x1,y1,w,h,mask:mc};
   }catch(e){ return null; }
 }
+/* 🧲 slot को frame की window में exact fit — shared helper (Frame Fit button + smart photo add) */
+function fitSlotToFrame(it, fr){
+  if(fr.rot) return 'rot';
+  const r=frameWindow(fr.img);
+  if(!r) return null;
+  /* window (map px) → inches; 2.5% फैलाव ताकि किनारा carving की गहराई में छिपे */
+  const kx=fr.w/r.w, ky=fr.h/r.h;
+  const bw=(r.x1-r.x0+1)*kx, bh=(r.y1-r.y0+1)*ky;
+  const ex=bw*0.025, ey=bh*0.025;
+  it.x=fr.x+r.x0*kx-ex; it.y=fr.y+r.y0*ky-ey;
+  it.w=bw+2*ex; it.h=bh+2*ey;
+  it.shape='mask'; it.maskImg=r.mask; it.maskData=r.mask.toDataURL();
+  it.bdW=0;   /* frame ही असली border — photo border बंद */
+  return r;
+}
 $('btnFrameFit').onclick=()=>{
   const ps=targetPhotos();
   if(!ps.length) return toast('❌ पहले photo या उसका frame चुनो');
@@ -1101,17 +1116,9 @@ $('btnFrameFit').onclick=()=>{
   for(let i=S.items.length-1;i>=0;i--){ const d=S.items[i];
     if(d.kind==='decor'&&d.decor==='img'&&d.img&&cx>=d.x&&cx<=d.x+d.w&&cy>=d.y&&cy<=d.y+d.h){ fr=d; break; } }
   if(!fr) return toast('❌ कोई frame नहीं मिला — slot को frame के ऊपर रखो');
-  if(fr.rot) return toast('❌ घुमा हुआ frame — पहले rotation 0 करो');
-  const r=frameWindow(fr.img);
-  if(!r) return toast('❌ frame के अंदर खाली जगह साफ़ नहीं मिली');
-  /* window (map px) → inches; 1.5% फैलाव ताकि किनारा frame के नीचे छिपे */
-  const kx=fr.w/r.w, ky=fr.h/r.h;
-  const bw=(r.x1-r.x0+1)*kx, bh=(r.y1-r.y0+1)*ky;
-  const ex=bw*0.025, ey=bh*0.025;   /* 2.5% फैलाव — किनारा carving की गहराई में छिपे (Dev: 'carving me fix honi chahiye') */
-  it.x=fr.x+r.x0*kx-ex; it.y=fr.y+r.y0*ky-ey;
-  it.w=bw+2*ex; it.h=bh+2*ey;
-  it.shape='mask'; it.maskImg=r.mask; it.maskData=r.mask.toDataURL();
-  it.bdW=0;   /* frame ही असली border — photo border बंद */
+  const ok=fitSlotToFrame(it,fr);
+  if(ok==='rot') return toast('❌ घुमा हुआ frame — पहले rotation 0 करो');
+  if(!ok) return toast('❌ frame के अंदर खाली जगह साफ़ नहीं मिली');
   draw();
   toast('🧲 Exact fit — photo frame के असली shape में कटा ✓');
 };
@@ -1131,8 +1138,27 @@ $('txC').oninput=e=>{ const ids=S.selArr.length>1? S.selArr : (S.sel>=0?[S.sel]:
 $('txS').oninput=e=>{ const ids=S.selArr.length>1? S.selArr : (S.sel>=0?[S.sel]:[]); const ts=ids.map(i=>S.items[i]).filter(t=>t&&t.kind==='text'); if(ts.length){ ts.forEach(it=>it.size=+e.target.value); draw(); } };
 /* ================= PHOTO FILL ================= */
 $('btnFill').onclick=()=>{
-  const it=S.items[S.sel];
-  if(!it||it.kind!=='photo'){ toast('पहले photo slot चुनो'); return; }
+  let it=S.items[S.sel];
+  /* ✨ frame चुना है → slot की ज़रूरत ही नहीं: नया slot अपने आप frame में fit, photo सीधे अंदर */
+  if(it&&it.kind==='decor'&&it.decor==='img'&&it.img){
+    const fr=it;
+    const slot={id:uid++,kind:'photo',x:fr.x,y:fr.y,w:fr.w*0.5,h:fr.h*0.5,shape:'rect',bdW:0,bdC:'#d4af37',photo:null,pr:1};
+    const ok=fitSlotToFrame(slot,fr);
+    if(ok==='rot') return toast('❌ घुमा हुआ frame — पहले rotation 0 करो');
+    if(!ok) return toast('❌ frame के अंदर खाली जगह साफ़ नहीं मिली');
+    const fi=S.items.indexOf(fr);
+    S.items.splice(fi,0,slot);   /* photo frame के नीचे — किनारा carving में छिपे */
+    S.sel=fi; S.selArr=[]; draw();
+    toast('✨ Slot अपने आप fit — अब photo चुनो');
+    $('filePhoto').click();
+    return;
+  }
+  if(!it||it.kind!=='photo'){
+    /* कुछ नहीं चुना — page पर इकलौता image frame है तो वही ले लो */
+    const frs=S.items.filter(t=>t.kind==='decor'&&t.decor==='img'&&t.img);
+    if(frs.length===1){ S.sel=S.items.indexOf(frs[0]); S.selArr=[]; $('btnFill').onclick(); return; }
+    toast('पहले frame या photo slot चुनो'); return;
+  }
   $('filePhoto').click();
 };
 $('filePhoto').onchange=e=>{
