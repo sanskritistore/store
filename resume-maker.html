@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>संस्कृति — 📄 Resume Maker</title>
+<script src="assets/js/admin-gate.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f172a;color:#e2e8f0;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+header{display:flex;align-items:center;gap:10px;padding:8px 14px;background:#1e293b;border-bottom:2px solid #f59e0b;flex-wrap:wrap}
+header h1{font-size:17px;color:#fbbf24;white-space:nowrap}
+.badge{background:#15803d;color:#fff;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:700}
+.hbtn{background:#334155;border:1px solid #475569;color:#e2e8f0;padding:7px 13px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600}
+.hbtn:hover{background:#475569}
+.hbtn.main{background:#c2410c;border-color:#ea580c}
+.hbtn.main:hover{background:#ea580c}
+main{display:flex;flex:1;overflow:hidden}
+#side{width:308px;min-width:308px;background:#1e293b;overflow-y:auto;padding:10px;border-right:1px solid #334155}
+#side h3{font-size:13px;color:#fbbf24;margin:12px 0 6px;border-bottom:1px solid #334155;padding-bottom:4px}
+#side h3:first-child{margin-top:0}
+.sbtn{background:#334155;border:1px solid #475569;color:#e2e8f0;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12.5px;font-weight:600;margin:2px 0;width:100%;text-align:left}
+.sbtn:hover{background:#475569}
+.sbtn.on{background:#7c2d12;border-color:#f59e0b}
+.fld{margin:5px 0}
+.fld label{display:block;font-size:11.5px;color:#94a3b8;margin-bottom:2px}
+.fld input,.fld textarea,.fld select{width:100%;background:#0f172a;border:1px solid #334155;color:#e2e8f0;padding:6px 8px;border-radius:6px;font-size:13px;font-family:inherit}
+.fld textarea{resize:vertical;min-height:54px}
+.repbox{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:7px;margin:6px 0}
+.repbox .rhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.repbox .rhead b{font-size:12px;color:#7dd3fc}
+.repbox .rhead button{background:#7f1d1d;border:none;color:#fecaca;border-radius:6px;padding:2px 8px;cursor:pointer;font-size:11px}
+.addbtn{background:#14532d;border:1px dashed #4ade80;color:#bbf7d0;width:100%;padding:6px;border-radius:8px;cursor:pointer;font-size:12px;margin:2px 0 8px}
+.tplchip{display:flex;gap:6px;flex-wrap:wrap}
+.tplchip .sbtn{width:auto;flex:1;text-align:center;min-width:45%}
+#stage{flex:1;overflow:auto;display:flex;flex-direction:column;align-items:center;padding:14px;gap:14px;background:#0b1120}
+#stage canvas{background:#fff;box-shadow:0 4px 24px #0008;border-radius:2px}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#1e293b;border:1px solid #f59e0b;color:#fde68a;padding:9px 18px;border-radius:22px;font-size:13.5px;font-weight:600;display:none;z-index:99;box-shadow:0 4px 18px #000a;max-width:88vw;text-align:center}
+.row{display:flex;gap:6px;align-items:center}
+.row>*{flex:1}
+input[type=color]{padding:2px;height:30px}
+.note{font-size:11px;color:#64748b;margin-top:3px}
+</style>
+</head>
+<body>
+<header>
+  <h1>🌸 संस्कृति Resume Maker</h1>
+  <span class="badge">FREE v1.0 📄 (Resume Builder)</span>
+  <span style="flex:1"></span>
+  <button class="hbtn" id="btnSave">💾 सहेजें</button>
+  <button class="hbtn" id="btnLoad">📂 खोलें</button>
+  <button class="hbtn" id="btnExportJR">🌐 JSON Resume</button>
+  <button class="hbtn main" id="btnPrint">🖨️ Print PDF (300 DPI)</button>
+</header>
+<main>
+  <div id="side">
+    <h3>🎨 Template चुनो</h3>
+    <div class="tplchip" id="tplChips"></div>
+    <div id="formBox"></div>
+  </div>
+  <div id="stage"></div>
+</main>
+<div id="toast"></div>
+<input type="file" id="filePhoto" accept="image/*" style="display:none">
+<input type="file" id="fileLoad" accept=".json" style="display:none">
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+function toast(m){ const t=$('toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._h); t._h=setTimeout(()=>t.style.display='none',3200); }
+
+/* ================= 📋 DATA (JSON Resume standard से मेल — MIT open schema) ================= */
+/* नया resume — खाली ढाँचा; fields यहीं तय, कोई hardcode form नहीं */
+function blankResume(){ return {
+  basics:{ name:'', title:'', phone:'', email:'', address:'', website:'', summary:'', photo:null },
+  work:[],        /* {role, company, start, end, desc} */
+  education:[],   /* {degree, school, start, end, score} */
+  skills:[],      /* {name, level(0-5)} */
+  projects:[],    /* {name, desc, link} */
+  languages:[],   /* {name, level} */
+  custom:[]       /* {heading, desc} — ग्राहक की मर्ज़ी का section */
+};}
+const S={ data:blankResume(), tpl:'simple' };
+
+/* ================= 📋 FORM SCHEMA (config — नया field/section यहाँ जोड़ो, render अपने आप) ================= */
+const SCHEMA=[
+ {sec:'basics', title:'👤 बुनियादी जानकारी', fields:[
+   {k:'name',  lab:'पूरा नाम', ph:'जैसे: राहुल शर्मा'},
+   {k:'title', lab:'पद / एक line', ph:'जैसे: Graphic Designer'},
+   {k:'phone', lab:'फ़ोन', ph:'98765 43210'},
+   {k:'email', lab:'Email', ph:'rahul@gmail.com'},
+   {k:'address', lab:'पता (शहर)', ph:'नई दिल्ली'},
+   {k:'website', lab:'Website (optional)', ph:''},
+   {k:'summary', lab:'अपने बारे में (2-3 lines)', ta:1, ph:'मैं एक मेहनती ...'}]},
+ {sec:'work', title:'💼 काम का अनुभव', add:'+ नौकरी जोड़ो', fields:[
+   {k:'role', lab:'पद', ph:'Sales Executive'},
+   {k:'company', lab:'कंपनी', ph:'ABC Traders, दिल्ली'},
+   {k:'start', lab:'शुरू (साल)', ph:'2022', sm:1},
+   {k:'end', lab:'अंत', ph:'2024 / अभी तक', sm:1},
+   {k:'desc', lab:'क्या काम किया (एक line में एक point)', ta:1, ph:'ग्राहकों से संपर्क\nबिक्री लक्ष्य पूरा किया'}]},
+ {sec:'education', title:'🎓 पढ़ाई', add:'+ पढ़ाई जोड़ो', fields:[
+   {k:'degree', lab:'डिग्री', ph:'B.Com / 12वीं'},
+   {k:'school', lab:'स्कूल / कॉलेज', ph:'दिल्ली विश्वविद्यालय'},
+   {k:'start', lab:'शुरू', ph:'2019', sm:1},
+   {k:'end', lab:'अंत', ph:'2022', sm:1},
+   {k:'score', lab:'अंक / %', ph:'78%'}]},
+ {sec:'skills', title:'⚡ हुनर (Skills)', add:'+ हुनर जोड़ो', fields:[
+   {k:'name', lab:'हुनर', ph:'Photoshop / Tally / English बोलना'},
+   {k:'level', lab:'स्तर 0-5', num:1, ph:'4', sm:1}]},
+ {sec:'projects', title:'🛠️ Projects / काम के नमूने', add:'+ project जोड़ो', fields:[
+   {k:'name', lab:'नाम', ph:'दुकान की website'},
+   {k:'link', lab:'Link (optional)', ph:''},
+   {k:'desc', lab:'विवरण', ta:1, ph:''}]},
+ {sec:'languages', title:'🗣️ भाषाएँ', add:'+ भाषा जोड़ो', fields:[
+   {k:'name', lab:'भाषा', ph:'हिंदी'},
+   {k:'level', lab:'स्तर (जैसे: मातृभाषा / अच्छी)', ph:'मातृभाषा'}]},
+ {sec:'custom', title:'✨ अपना section', add:'+ section जोड़ो', fields:[
+   {k:'heading', lab:'शीर्षक', ph:'प्रमाणपत्र / शौक / संदर्भ'},
+   {k:'desc', lab:'विवरण (एक line में एक point)', ta:1, ph:''}]}
+];
+
+/* ================= 📝 FORM BUILDER (schema से अपने आप — config-driven) ================= */
+function buildForm(){
+  const box=$('formBox'); box.innerHTML='';
+  SCHEMA.forEach(sc=>{
+    const h=document.createElement('h3'); h.textContent=sc.title; box.appendChild(h);
+    if(sc.sec==='basics'){
+      /* 📷 photo button */
+      const pb=document.createElement('button'); pb.className='sbtn'; pb.id='btnPhoto';
+      pb.textContent=S.data.basics.photo?'📷 Photo बदलो ✓':'📷 Photo लगाओ (optional)';
+      pb.onclick=()=>$('filePhoto').click(); box.appendChild(pb);
+      if(S.data.basics.photo){ const rb=document.createElement('button'); rb.className='sbtn';
+        rb.textContent='🚫 Photo हटाओ'; rb.onclick=()=>{ S.data.basics.photo=null; buildForm(); draw(); }; box.appendChild(rb); }
+      sc.fields.forEach(f=> box.appendChild(mkFld(f, S.data.basics)));
+    } else {
+      const arr=S.data[sc.sec];
+      arr.forEach((it,i)=>{
+        const rb=document.createElement('div'); rb.className='repbox';
+        const hd=document.createElement('div'); hd.className='rhead';
+        const nm=it.role||it.degree||it.name||it.heading||('#'+(i+1));
+        hd.innerHTML='<b>'+(i+1)+'. '+(nm||'—').slice(0,22)+'</b>';
+        const del=document.createElement('button'); del.textContent='🗑️ हटाओ';
+        del.onclick=()=>{ arr.splice(i,1); buildForm(); draw(); };
+        hd.appendChild(del); rb.appendChild(hd);
+        sc.fields.forEach(f=> rb.appendChild(mkFld(f, it, ()=>{ hd.querySelector('b').textContent=(i+1)+'. '+((it.role||it.degree||it.name||it.heading||'—')).slice(0,22); })));
+        box.appendChild(rb);
+      });
+      const ab=document.createElement('button'); ab.className='addbtn'; ab.textContent=sc.add;
+      ab.onclick=()=>{ arr.push({}); buildForm(); draw(); };
+      box.appendChild(ab);
+    }
+  });
+}
+function mkFld(f, obj, onch){
+  const d=document.createElement('div'); d.className='fld';
+  const l=document.createElement('label'); l.textContent=f.lab; d.appendChild(l);
+  const el=document.createElement(f.ta?'textarea':'input');
+  if(!f.ta){ if(f.num){ el.type='number'; el.min=0; el.max=5; } else el.type='text'; }
+  el.placeholder=f.ph||''; el.value=obj[f.k]??'';
+  el.oninput=()=>{ obj[f.k]=el.value; if(onch)onch(); draw(); };
+  d.appendChild(el); return d;
+}
+$('filePhoto').onchange=e=>{
+  const f=e.target.files[0]; if(!f) return; e.target.value='';
+  const rd=new FileReader();
+  rd.onload=()=>{ const im=new Image(); im.onload=()=>{
+      const M=600, s=Math.min(1,M/Math.max(im.width,im.height));
+      const c=document.createElement('canvas'); c.width=Math.round(im.width*s); c.height=Math.round(im.height*s);
+      c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+      S.data.basics.photo=c.toDataURL('image/jpeg',0.88);
+      buildForm(); draw(); toast('📷 Photo लग गई ✓');
+    }; im.src=rd.result; };
+  rd.readAsDataURL(f);
+};
+
+/* ================= 🎨 TEMPLATES (config — नया design यहाँ जोड़ो) ================= */
+/* हर template: रंग/font/layout + sections का क्रम — render engine shared */
+const TEMPLATES={
+ simple:{ name:'साधारण (ATS)', layout:'single', photo:false, serif:false,
+   accent:'#111827', sub:'#4b5563', line:'#d1d5db',
+   order:['summary','work','education','skills','projects','languages','custom'],
+   headStyle:'line' },
+ fresher:{ name:'फ्रेशर', layout:'single', photo:true, serif:false,
+   accent:'#0e7490', sub:'#475569', line:'#99f6e4',
+   order:['summary','education','skills','work','projects','languages','custom'],
+   headStyle:'band' },
+ modern:{ name:'मॉडर्न 2-col', layout:'twocol', photo:true, serif:false,
+   accent:'#1e3a5f', sideBg:'#1e3a5f', sideTx:'#e2e8f0', sub:'#475569', line:'#cbd5e1',
+   sideSecs:['contact','skills','languages'], mainSecs:['summary','work','education','projects','custom'],
+   headStyle:'band' },
+ classic:{ name:'देसी क्लासिक', layout:'single', photo:true, serif:true,
+   accent:'#7c2d12', sub:'#57534e', line:'#d6c9a8',
+   order:['summary','work','education','skills','projects','languages','custom'],
+   headStyle:'rules' }
+};
+function buildChips(){
+  const c=$('tplChips'); c.innerHTML='';
+  Object.entries(TEMPLATES).forEach(([id,t])=>{
+    const b=document.createElement('button'); b.className='sbtn'+(S.tpl===id?' on':'');
+    b.textContent=t.name;
+    b.onclick=()=>{ S.tpl=id; buildChips(); draw(); };
+    c.appendChild(b);
+  });
+}
+
+/* ================= 📄 RENDER ENGINE (A4 flow — कितने भी pages) ================= */
+/* A4 inches 8.27×11.69; screen 110px/in, print 300px/in — एक ही draw code, बस scale बदलो */
+const PG={ W:8.27, H:11.69 };
+const FDEV='"Noto Sans Devanagari","Segoe UI",system-ui,sans-serif';
+const FSER='"Noto Serif Devanagari",Georgia,serif';
+function font(t,px,w,st){ return (st||'')+' '+(w||400)+' '+px+'px '+(t.serif?FSER:FDEV); }
+/* ⚠️ Chromium bug: ctx.scale(बड़ा) + sub-px font → text का ऊपरी हिस्सा कट जाता है!
+   इसलिए text हमेशा device-px font + identity transform से draw होता है (TXT), coordinates इंच में ही */
+let SC=110;   /* current render scale (renderAll सेट करता है) */
+function wrap(ctx,text,maxW){
+  const out=[];
+  String(text||'').split('\n').forEach(p=>{
+    if(!p.trim()){ out.push(''); return; }
+    let line='';
+    p.split(/\s+/).forEach(wd=>{
+      const t=line?line+' '+wd:wd;
+      if(ctx.measureText(t).width/SC<=maxW) line=t;
+      else{ if(line)out.push(line); line=wd; }
+    });
+    if(line)out.push(line);
+  });
+  return out;
+}
+/* identity transform पर fillText — font पहले से device-px में set (setF) */
+function TXT(ctx,str,x,y){ const al=ctx.textAlign;
+  ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.textAlign=al;
+  ctx.fillText(str,x*SC,y*SC); ctx.restore(); }
+/* photo image cache */
+let _photoIm=null,_photoSrc=null;
+function photoImg(src){ if(src===_photoSrc&&_photoIm) return _photoIm.complete?_photoIm:null;
+  _photoSrc=src; _photoIm=new Image(); _photoIm.onload=()=>draw(); _photoIm.src=src; return null; }
+
+/* ---- section शीर्षक (resume content English — ATS standard; बदलना हो तो यहाँ) ---- */
+const HEADS={ summary:'PROFILE', work:'EXPERIENCE', education:'EDUCATION', skills:'SKILLS',
+  projects:'PROJECTS', languages:'LANGUAGES', custom:'', contact:'CONTACT' };
+const PT=1/72;   /* pt → inch (canvas user-unit = inch) */
+function setF(ctx,t,pt,w,st){ ctx.font=font(t,pt*PT*SC,w,st); }  /* device-px font — slice bug से बचाव */
+function textH(pt,lines){ return pt*1.28*PT*lines; }
+
+/* ================= 📄 PAGE RENDERER ================= */
+function renderAll(scale){
+  const t=TEMPLATES[S.tpl]||TEMPLATES.simple;
+  const d=S.data;
+  const pages=[];
+  const M=0.55;
+  SC=scale;
+  let cv,ctx,Y,bottom;
+  function startPage(){
+    cv=document.createElement('canvas');
+    cv.width=Math.round(PG.W*scale); cv.height=Math.round(PG.H*scale);
+    ctx=cv.getContext('2d'); ctx.scale(scale,scale);
+    ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,PG.W,PG.H);
+    pages.push(cv);
+    if(t.layout==='twocol'){ drawSidebar(ctx,t,d,scale); Y=0.45; }
+    else Y=M;
+    bottom=PG.H-M+0.15;
+  }
+  startPage();
+  function ensure(h){ if(Y+h>bottom) startPage(); }
+
+  /* ---- header (single-col templates; twocol का header main col में) ---- */
+  const b=d.basics;
+  const hasPhoto=t.photo&&b.photo;
+  let pim=null; if(hasPhoto) pim=photoImg(b.photo);
+
+  if(t.layout==='twocol'){
+    /* नाम + पद main col के ऊपर */
+    setF(ctx,t,24,700); ctx.fillStyle=t.accent;
+    TXT(ctx,b.name||'आपका नाम', 2.95, Y+0.28); 
+    setF(ctx,t,12,500); ctx.fillStyle=t.sub;
+    if(b.title) TXT(ctx,b.title, 2.95, Y+0.50);
+    Y+=0.72;
+  } else if(t.headStyle==='line'){
+    /* ATS — centered, साफ़ */
+    setF(ctx,t,25,700); ctx.fillStyle=t.accent; ctx.textAlign='center';
+    TXT(ctx,b.name||'आपका नाम', PG.W/2, Y+0.30);
+    setF(ctx,t,12,500); ctx.fillStyle=t.sub;
+    if(b.title){ Y+=0.34; TXT(ctx,b.title, PG.W/2, Y+0.14); }
+    const cl=[b.phone,b.email,b.address,b.website].filter(Boolean).join('  |  ');
+    setF(ctx,t,9.5,400); Y+=0.24;
+    if(cl) TXT(ctx,cl, PG.W/2, Y+0.10);
+    ctx.textAlign='left';
+    Y+=0.22; ctx.strokeStyle=t.accent; ctx.lineWidth=0.02;
+    ctx.beginPath(); ctx.moveTo(M,Y); ctx.lineTo(PG.W-M,Y); ctx.stroke(); Y+=0.14;
+  } else if(t.headStyle==='band'){
+    /* fresher — photo + नाम band */
+    const bx=M, bw=PG.W-2*M;
+    if(pim){ ctx.save(); ctx.beginPath(); ctx.arc(bx+0.55,Y+0.55,0.52,0,7); ctx.clip();
+      ctx.drawImage(pim,bx+0.03,Y+0.03,1.04,1.04); ctx.restore();
+      ctx.strokeStyle=t.accent; ctx.lineWidth=0.03;
+      ctx.beginPath(); ctx.arc(bx+0.55,Y+0.55,0.53,0,7); ctx.stroke(); }
+    const tx=bx+(pim?1.3:0);
+    setF(ctx,t,23,700); ctx.fillStyle=t.accent;
+    TXT(ctx,b.name||'आपका नाम', tx, Y+0.42);
+    setF(ctx,t,12,500); ctx.fillStyle=t.sub;
+    if(b.title) TXT(ctx,b.title, tx, Y+0.66);
+    const cl=[b.phone,b.email,b.address].filter(Boolean).join('  |  ');
+    setF(ctx,t,9.5,400); ctx.fillStyle=t.sub;
+    if(cl) TXT(ctx,cl, tx, Y+0.88);
+    Y+=1.22; ctx.fillStyle=t.accent; ctx.fillRect(M,Y,bw,0.03); Y+=0.16;
+  } else {  /* classic — rules + ◆ */
+    setF(ctx,t,24,700); ctx.fillStyle=t.accent; ctx.textAlign='center';
+    TXT(ctx,b.name||'आपका नाम', PG.W/2-(pim?0.6:0), Y+0.32);
+    if(pim){ ctx.save(); ctx.beginPath(); ctx.arc(PG.W-M-0.55,Y+0.45,0.5,0,7); ctx.clip();
+      ctx.drawImage(pim,PG.W-M-1.05,Y-0.05,1.0,1.0); ctx.restore();
+      ctx.strokeStyle=t.accent; ctx.lineWidth=0.025;
+      ctx.beginPath(); ctx.arc(PG.W-M-0.55,Y+0.45,0.51,0,7); ctx.stroke(); }
+    setF(ctx,t,11.5,500); ctx.fillStyle=t.sub;
+    if(b.title){ Y+=0.36; TXT(ctx,b.title, PG.W/2-(pim?0.6:0), Y+0.12); }
+    const cl=[b.phone,b.email,b.address].filter(Boolean).join('  •  ');
+    setF(ctx,t,9.5,400); Y+=0.22;
+    if(cl) TXT(ctx,cl, PG.W/2-(pim?0.6:0), Y+0.10);
+    /* ornament */
+    Y+=0.24; ctx.strokeStyle=t.accent; ctx.lineWidth=0.015;
+    const cy=Y, cx=PG.W/2;
+    ctx.beginPath(); ctx.moveTo(M,cy); ctx.lineTo(cx-0.25,cy); ctx.moveTo(cx+0.25,cy); ctx.lineTo(PG.W-M,cy); ctx.stroke();
+    ctx.fillStyle=t.accent;
+    ctx.beginPath(); ctx.moveTo(cx,cy-0.045); ctx.lineTo(cx+0.07,cy); ctx.lineTo(cx,cy+0.045); ctx.lineTo(cx-0.07,cy); ctx.fill();
+    ctx.textAlign='left'; Y+=0.16;
+  }
+
+  /* ---- section title ---- */
+  function secTitle(txt){
+    if(!txt) return;
+    const hh=0.30; ensure(hh+0.1);
+    const x=(t.layout==='twocol')?2.95:M, w=(t.layout==='twocol')?(PG.W-2.95-M):(PG.W-2*M);
+    if(t.headStyle==='band'){
+      ctx.fillStyle=t.accent; ctx.fillRect(x,Y,w,0.26);
+      setF(ctx,t,11,700); ctx.fillStyle='#ffffff';
+      TXT(ctx,txt, x+0.1, Y+0.185);
+    } else if(t.headStyle==='rules'){
+      setF(ctx,t,12,700); ctx.fillStyle=t.accent; ctx.textAlign='center';
+      const tw=ctx.measureText(txt).width/SC, cx=x+w/2;
+      TXT(ctx,txt, cx, Y+0.19);
+      ctx.strokeStyle=t.line; ctx.lineWidth=0.012;
+      ctx.beginPath(); ctx.moveTo(x,Y+0.13); ctx.lineTo(cx-tw/2-0.15,Y+0.13);
+      ctx.moveTo(cx+tw/2+0.15,Y+0.13); ctx.lineTo(x+w,Y+0.13); ctx.stroke();
+      ctx.textAlign='left';
+    } else {
+      setF(ctx,t,11.5,700); ctx.fillStyle=t.accent;
+      TXT(ctx,txt, x, Y+0.18);
+      ctx.strokeStyle=t.line; ctx.lineWidth=0.014;
+      ctx.beginPath(); ctx.moveTo(x,Y+0.25); ctx.lineTo(x+w,Y+0.25); ctx.stroke();
+    }
+    Y+=0.36;
+  }
+
+  /* ---- generic flow helpers ---- */
+  function colX(){ return t.layout==='twocol'?2.95:M; }
+  function colW(){ return t.layout==='twocol'?(PG.W-2.95-M):(PG.W-2*M); }
+  function para(txt, pt, wgt, color, indent){
+    pt=pt||9.8; const x=colX()+(indent||0), w=colW()-(indent||0);
+    setF(ctx,t,pt,wgt||400);
+    const lines=wrap(ctx,txt,w);
+    ensure(textH(pt,lines.length)+0.04);
+    ctx.fillStyle=color||'#1f2937';
+    lines.forEach(ln=>{ TXT(ctx,ln,x,Y+pt*PT); Y+=pt*1.28*PT; });
+    Y+=0.035;
+  }
+  function bullets(txt){
+    String(txt||'').split('\n').filter(l=>l.trim()).forEach(l=>{
+      const x=colX()+0.16, w=colW()-0.16;
+      setF(ctx,t,9.6,400);
+      const lines=wrap(ctx,l,w-0.14);
+      ensure(textH(9.6,lines.length)+0.02);
+      ctx.fillStyle=t.accent; TXT(ctx,'•',colX()+0.03,Y+9.6*PT);
+      ctx.fillStyle='#1f2937';
+      lines.forEach(ln=>{ TXT(ctx,ln,x,Y+9.6*PT); Y+=9.6*1.26*PT; });
+    });
+    Y+=0.03;
+  }
+  function itemHead(left, right){
+    setF(ctx,t,10.5,700);
+    const lw=wrap(ctx,left,colW()-(right?1.3:0)).length;
+    ensure(textH(10.5,lw)+0.02);
+    ctx.fillStyle='#111827'; TXT(ctx,left,colX(),Y+10.5*PT);
+    if(right){ setF(ctx,t,9.3,500); ctx.fillStyle=t.sub;
+      const rw=ctx.measureText(right).width/SC;
+      TXT(ctx,right,colX()+colW()-rw,Y+10.2*PT); }
+    Y+=10.5*1.3*PT;
+  }
+
+  /* ---- sections ---- */
+  function secBody(key){
+    switch(key){
+      case 'summary': if(b.summary){ secTitle(HEADS.summary); para(b.summary,9.8,400,'#1f2937'); Y+=0.05; } break;
+      case 'work': if(d.work.length){ secTitle(HEADS.work);
+        d.work.forEach(w=>{ itemHead((w.role||'')+(w.company?' — '+w.company:''), [w.start,w.end].filter(Boolean).join(' – '));
+          if(w.desc) bullets(w.desc); Y+=0.06; }); } break;
+      case 'education': if(d.education.length){ secTitle(HEADS.education);
+        d.education.forEach(e=>{ itemHead(e.degree||'', [e.start,e.end].filter(Boolean).join(' – '));
+          if(e.school) para(e.school+(e.score?'  |  '+e.score:''),9.6,400,t.sub); Y+=0.06; }); } break;
+      case 'skills': if(d.skills.length){ secTitle(HEADS.skills);
+        para(d.skills.map(s=>s.name+(s.level?' ('+'★'.repeat(Math.min(5,+s.level||0))+')':'')).filter(Boolean).join('  •  '),9.8,400,'#1f2937'); Y+=0.05; } break;
+      case 'projects': if(d.projects.length){ secTitle(HEADS.projects);
+        d.projects.forEach(p=>{ itemHead(p.name||'', p.link||''); if(p.desc) bullets(p.desc); Y+=0.05; }); } break;
+      case 'languages': if(d.languages.length){ secTitle(HEADS.languages);
+        para(d.languages.map(l=>l.name+(l.level?' — '+l.level:'')).filter(Boolean).join('  •  '),9.8,400,'#1f2937'); Y+=0.05; } break;
+      case 'custom': d.custom.forEach(cu=>{ if(!cu.heading&&!cu.desc) return;
+        secTitle((cu.heading||'').toUpperCase()); if(cu.desc) bullets(cu.desc); Y+=0.04; }); break;
+    }
+  }
+  const order=t.layout==='twocol'?t.mainSecs:t.order;
+  order.forEach(secBody);
+  return pages;
+}
+
+/* ---- twocol sidebar (हर page पर दुबारा — static) ---- */
+function drawSidebar(ctx,t,d,scale){
+  const b=d.basics, SW=2.6;
+  ctx.fillStyle=t.sideBg; ctx.fillRect(0,0,SW,PG.H);
+  let y=0.4;
+  if(b.photo){ const im=photoImg(b.photo);
+    if(im){ ctx.save(); ctx.beginPath(); ctx.arc(SW/2,y+0.6,0.62,0,7); ctx.clip();
+      ctx.drawImage(im,SW/2-0.62,y-0.02,1.24,1.24); ctx.restore();
+      ctx.strokeStyle='#fbbf24'; ctx.lineWidth=0.03;
+      ctx.beginPath(); ctx.arc(SW/2,y+0.6,0.63,0,7); ctx.stroke(); y+=1.45; } }
+  y+=0.1;
+  function sTitle(txt){ setF(ctx,t,10.5,700); ctx.fillStyle='#fbbf24';
+    TXT(ctx,txt,0.28,y+0.14); y+=0.26;
+    ctx.strokeStyle='#ffffff44'; ctx.lineWidth=0.01;
+    ctx.beginPath(); ctx.moveTo(0.28,y); ctx.lineTo(SW-0.28,y); ctx.stroke(); y+=0.08; }
+  function sLine(txt){ setF(ctx,t,9,400); const lines=wrap(ctx,txt,SW-0.56);
+    ctx.fillStyle=t.sideTx; lines.forEach(ln=>{ TXT(ctx,ln,0.28,y+9*PT); y+=9*1.3*PT; }); y+=0.03; }
+  const ct=[b.phone,b.email,b.address,b.website].filter(Boolean);
+  if(ct.length){ sTitle(HEADS.contact); ct.forEach(sLine); y+=0.12; }
+  if(d.skills.length){ sTitle(HEADS.skills);
+    d.skills.forEach(s=>{ if(!s.name) return; sLine(s.name);
+      const lv=Math.min(5,Math.max(0,+s.level||0));
+      ctx.fillStyle='#fbbf24';
+      for(let i=0;i<5;i++){ ctx.beginPath(); ctx.arc(0.34+i*0.16,y+0.045,0.045,0,7);
+        ctx.fillStyle=i<lv?'#fbbf24':'#ffffff33'; ctx.fill(); }
+      y+=0.16; }); y+=0.12; }
+  if(d.languages.length){ sTitle(HEADS.languages);
+    d.languages.forEach(l=>{ if(l.name) sLine(l.name+(l.level?' — '+l.level:'')); }); }
+}
+
+/* ================= 🖥️ SCREEN DRAW ================= */
+function draw(){
+  const st=$('stage'); st.innerHTML='';
+  renderAll(110).forEach(cv=>{ cv.style.maxWidth='92%'; cv.style.height='auto'; st.appendChild(cv); });
+}
+
+/* ================= 💾 SAVE / LOAD ================= */
+function dl(name, url){ const a=document.createElement('a'); a.download=name; a.href=url; a.click(); }
+$('btnSave').onclick=()=>{
+  const o={app:'sanskriti-resume', v:1, tpl:S.tpl, data:S.data};
+  dl('resume-'+(S.data.basics.name||'mera').replace(/\s+/g,'-')+'.json',
+     URL.createObjectURL(new Blob([JSON.stringify(o,null,1)],{type:'application/json'})));
+  toast('💾 सहेज लिया — यही file फिर खोलने से काम वापस ✓');
+};
+$('btnLoad').onclick=()=>$('fileLoad').click();
+$('fileLoad').onchange=e=>{
+  const f=e.target.files[0]; if(!f) return; e.target.value='';
+  const rd=new FileReader();
+  rd.onload=()=>{ try{
+      const o=JSON.parse(rd.result);
+      if(o.app!=='sanskriti-resume') throw 0;
+      S.tpl=o.tpl||'simple';
+      const nb=blankResume();
+      S.data=Object.assign(nb,o.data||{});
+      ['work','education','skills','projects','languages','custom'].forEach(k=>{ if(!Array.isArray(S.data[k])) S.data[k]=[]; });
+      buildChips(); buildForm(); draw();
+      toast('📂 Resume खुल गया ✓');
+    }catch(_){ toast('❌ यह Resume Maker की file नहीं है'); } };
+  rd.readAsText(f);
+};
+/* ---- 🌐 JSON Resume export (international open standard — MIT) ---- */
+$('btnExportJR').onclick=()=>{
+  const b=S.data.basics;
+  const jr={
+    basics:{ name:b.name, label:b.title, email:b.email, phone:b.phone,
+      location:b.address?{address:b.address}:undefined, summary:b.summary },
+    work:S.data.work.map(w=>({ position:w.role, name:w.company, startDate:w.start, endDate:w.end, summary:w.desc })),
+    education:S.data.education.map(e=>({ institution:e.school, area:e.degree, score:e.score, startDate:e.start, endDate:e.end })),
+    skills:S.data.skills.map(s=>({ name:s.name, level:String(s.level||'') })),
+    projects:S.data.projects.map(p=>({ name:p.name, description:p.desc, url:p.link })),
+    languages:S.data.languages.map(l=>({ language:l.name, fluency:l.level }))
+  };
+  dl('resume-jsonresume.json', URL.createObjectURL(new Blob([JSON.stringify(jr,null,1)],{type:'application/json'})));
+  toast('🌐 JSON Resume standard में export ✓ — दुनिया के हर tool में चलेगा');
+};
+
+/* ================= 🖨️ PRINT (300 DPI — हर page PNG → print window) ================= */
+$('btnPrint').onclick=()=>{
+  toast('🖨️ 300 DPI बन रहा है...');
+  setTimeout(()=>{
+    const pages=renderAll(300);
+    const imgs=pages.map(cv=>'<img src="'+cv.toDataURL('image/png')+'" style="width:100%;display:block"' ).join('<div style="page-break-after:always"></div>');
+    const w=window.open('','_blank');
+    w.document.write('<html><head><title>Resume — Print</title><style>body{margin:0}@media print{div{display:none}}</style></head><body>'+imgs+'<scr'+'ipt>onload=()=>setTimeout(()=>print(),400)</scr'+'ipt></body></html>');
+    w.document.close();
+  },60);
+};
+
+/* ================= ✨ नमूना भरो (एक click में demo) ================= */
+function fillSample(){
+  S.data={
+    basics:{ name:'राहुल शर्मा', title:'Sales Executive', phone:'98765 43210', email:'rahul.sharma@gmail.com',
+      address:'नई दिल्ली', website:'', photo:null,
+      summary:'5 साल का बिक्री (sales) का अनुभव। ग्राहकों से अच्छे संबंध बनाना और लक्ष्य समय पर पूरा करना मेरी ताकत है।' },
+    work:[
+      { role:'Senior Sales Executive', company:'ABC Traders, दिल्ली', start:'2022', end:'अभी तक',
+        desc:'50+ दुकानों से नियमित संपर्क और order लेना\nमहीने का बिक्री लक्ष्य 110% तक पूरा किया\nनए ग्राहक जोड़ने के लिए field visits' },
+      { role:'Sales Executive', company:'Sharma Enterprises', start:'2020', end:'2022',
+        desc:'Retail counter संभाला\nबिलिंग और stock record' }],
+    education:[
+      { degree:'B.Com', school:'दिल्ली विश्वविद्यालय', start:'2017', end:'2020', score:'68%' },
+      { degree:'12वीं (Commerce)', school:'Govt. Sr. Sec. School, दिल्ली', start:'2016', end:'2017', score:'78%' }],
+    skills:[ {name:'ग्राहक से बातचीत',level:5}, {name:'Tally',level:4}, {name:'MS Excel',level:4}, {name:'Photoshop',level:3} ],
+    projects:[],
+    languages:[ {name:'हिंदी',level:'मातृभाषा'}, {name:'English',level:'अच्छी'} ],
+    custom:[ {heading:'प्रमाणपत्र', desc:'Tally ERP 9 certificate — 2021'} ]
+  };
+}
+/* header में नमूना button */
+(function(){ const b=document.createElement('button'); b.className='hbtn'; b.textContent='✨ नमूना भरो';
+  b.onclick=()=>{ fillSample(); buildForm(); draw(); toast('✨ नमूना भर गया — अब अपनी जानकारी बदलो'); };
+  $('btnPrint').before(b); })();
+
+/* ================= 🚀 BOOT ================= */
+buildChips(); buildForm(); fillSample(); buildForm(); draw();
+</script>
+</body>
+</html>
