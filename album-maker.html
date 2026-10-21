@@ -65,7 +65,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v5.1 ✨ (Smart Photo Add)</span>
+  <span class="badge">FREE v5.2 🎭 (Border Auto-Mask)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
@@ -900,8 +900,15 @@ function renderBorderLib(){
     const ig=document.createElement('img'); ig.src=b.img; ig.style.cssText='width:100%;height:100%;object-fit:contain';
     d.appendChild(ig);
     d.onclick=()=>{ const ps=selPhotos(); if(!ps.length) return toast('पहले photo चुनो');
-      snapshot(); ps.forEach(it=>{ it.bdImg=b.img; delete it._bdIm; }); draw();
-      toast('🖼️ "'+b.name+'" लगा ✓'+(ps.length>1?' ('+ps.length+' photos)':'')); };
+      snapshot();
+      const im=new Image();
+      im.onload=()=>{ let n=0;
+        ps.forEach(it=>{ it.bdImg=b.img; delete it._bdIm;
+          if(it.shape!=='curve'&&!(window.SkPersp&&SkPersp.has(it))&&maskFromBorder(it,im)) n++; });
+        draw();
+        toast('🖼️ "'+b.name+'" लगा ✓'+(n?' — photo अपने आप frame की shape में कटा 🎭':'')+(ps.length>1?' ('+ps.length+' photos)':'')); };
+      im.onerror=()=>{ ps.forEach(it=>{ it.bdImg=b.img; delete it._bdIm; }); draw(); toast('🖼️ "'+b.name+'" लगा ✓'); };
+      im.src=b.img; };
     const x=document.createElement('span');
     x.textContent='✕'; x.title='sample हटाओ';
     x.style.cssText='position:absolute;top:0;right:2px;color:#f87171;font-size:11px;font-weight:700;text-shadow:0 0 3px #000';
@@ -925,7 +932,9 @@ $('fileBorder').onchange=e=>{
   rd.readAsDataURL(f);
 };
 $('btnNoBorderImg').onclick=()=>{ const ps=selPhotos(); if(!ps.length) return toast('पहले photo चुनो');
-  snapshot(); ps.forEach(it=>{ delete it.bdImg; delete it._bdIm; }); draw(); toast('🚫 Image-border हटा ✓'); };
+  snapshot(); ps.forEach(it=>{ delete it.bdImg; delete it._bdIm;
+    if(it.shape==='mask'&&it._bdMask){ it.shape='rect'; delete it.maskImg; delete it.maskData; delete it.maskDx; delete it.maskDy; delete it.maskDw; delete it.maskDh; delete it._bdMask; } });
+  draw(); toast('🚫 Image-border हटा ✓'); };
 /* ---- 🪄 Border खुद बनाओ — tap करके transparent (frame-maker का tool, 13-10) ---- */
 let wandStack=[];
 $('wandTol').oninput=e=>$('wandTolV').textContent=e.target.value;
@@ -1091,6 +1100,17 @@ function frameWindow(im){
   return {x0,y0,x1,y1,w,h,mask:mc};
   }catch(e){ return null; }
 }
+/* 🎭 border-image से auto-mask — photo border PNG के opening में कटे, बाहर न निकले */
+function maskFromBorder(it, im){
+  const r=frameWindow(im);
+  if(!r) return false;
+  /* r.x0..y1 MAP px में — image के अनुपात में भाग (map image से proportional) */
+  it.shape='mask'; it.maskImg=r.mask; it.maskData=r.mask.toDataURL();
+  it.maskDx=r.x0/r.w; it.maskDy=r.y0/r.h;
+  it.maskDw=(r.x1-r.x0+1)/r.w; it.maskDh=(r.y1-r.y0+1)/r.h;
+  it.bdW=0; it._bdMask=1;
+  return true;
+}
 /* 🧲 slot को frame की window में exact fit — shared helper (Frame Fit button + smart photo add) */
 function fitSlotToFrame(it, fr){
   if(fr.rot) return 'rot';
@@ -1103,6 +1123,7 @@ function fitSlotToFrame(it, fr){
   it.x=fr.x+r.x0*kx-ex; it.y=fr.y+r.y0*ky-ey;
   it.w=bw+2*ex; it.h=bh+2*ey;
   it.shape='mask'; it.maskImg=r.mask; it.maskData=r.mask.toDataURL();
+  it.maskDx=0; it.maskDy=0; it.maskDw=1; it.maskDh=1; delete it._bdMask;
   it.bdW=0;   /* frame ही असली border — photo border बंद */
   return r;
 }
@@ -1111,6 +1132,12 @@ $('btnFrameFit').onclick=()=>{
   if(!ps.length) return toast('❌ पहले photo या उसका frame चुनो');
   const it=ps[ps.length-1];   /* सबसे ऊपर वाली photo */
   if(ps.length>1) toast('ℹ️ '+ps.length+' photos मिलीं — सबसे ऊपर वाली fit होगी');
+  if(it.bdImg){   /* 🖼️ border-laga slot — border की PNG से direct mask (Dev flow) */
+    const go=img=>{ if(!maskFromBorder(it,img)) return toast('❌ border में खाली जगह साफ़ नहीं मिली');
+      draw(); toast('🎭 photo border की असली shape में कटा ✓'); };
+    if(it._bdIm&&it._bdIm.complete&&it._bdIm.naturalWidth) go(it._bdIm);
+    else { const ni=new Image(); ni.onload=()=>{ it._bdIm=ni; go(ni); }; ni.onerror=()=>toast('❌ border load नहीं हुई'); ni.src=it.bdImg; }
+    return; }
   const cx=it.x+it.w/2, cy=it.y+it.h/2;
   let fr=null;
   for(let i=S.items.length-1;i>=0;i--){ const d=S.items[i];
@@ -1400,7 +1427,7 @@ function drawItem(c,it,sc,forExport){
       }
       if(it.shape==='mask'&&it.maskImg){   /* 🎭 exact mask — frame की असली shape में कटाई */
         o.globalCompositeOperation='destination-in';
-        o.drawImage(it.maskImg,0,0,W,H);
+        o.drawImage(it.maskImg,(it.maskDx||0)*W,(it.maskDy||0)*H,(it.maskDw==null?1:it.maskDw)*W,(it.maskDh==null?1:it.maskDh)*H);
         o.globalCompositeOperation='source-over';
       }
       if(window.SkPersp&&SkPersp.has(it)){   /* 🎯 perspective — border+frame भी tile के साथ मुड़े */
