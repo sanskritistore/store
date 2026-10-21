@@ -67,7 +67,7 @@ body{font-family:'Nirmala UI',system-ui,sans-serif;background:#17191d;color:#e8e
 <body class="notranslate" translate="no">
 <div id="topbar">
   <h1>🌸 संस्कृति Biodata Maker</h1>
-  <span class="badge" id="bdg">FREE v1.4.2 ✏️🖼️👨‍👧</span>
+  <span class="badge" id="bdg">FREE v1.4.5 ✏️🖼️👨‍👧</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJ">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnLoadJ">📂 JSON खोलें</button>
@@ -449,7 +449,7 @@ function drawDoc(c,sc,forExport){
   /* header */
   c.textAlign='center'; c.fillStyle=T.headC;
   c.font=HF(sc,0.28*fsz);
-  if(docTxt('header')) c.fillText(docTxt('header'), W/2, y); y+=0.30*sc;
+  if(docTxt('header')) c.fillText(docTxt('header'), W/2, y); y+=(S.lang==='en'?0.46:0.30)*sc;
   /* title */
   c.font=TF(sc,0.46*fsz);
   if(docTxt('title')) c.fillText(docTxt('title'), W/2, y); y+=0.10*sc;
@@ -495,6 +495,7 @@ function drawDoc(c,sc,forExport){
 /* ---- 📋 sections flow (सब layouts share) — labW = label column inches ---- */
 function drawSections(c,sc,X,y,W,T,fsz,labW){
   const pack=LANGS[S.lang];
+  const lim=PH*sc-0.62*sc;           /* footer से ऊपर ही रुको */
   /* dynamic label width — लंबे labels (जैसे English "Father's Occupation") टकराएँ नहीं */
   { const labS=0.22*fsz; let mx=0;
     c.font=LF(sc,labS);
@@ -503,6 +504,7 @@ function drawSections(c,sc,X,y,W,T,fsz,labW){
     labW=Math.max(labW, Math.min(2.9, mx/sc+0.42)); }
   S.schema.forEach((keys,si)=>{
     if(!keys.length){ if(si===1) y=drawSibs(c,sc,X,y,W,T,fsz); return; }
+    if(y+0.62*sc>lim) return;        /* page भर गया → बाकी sections नहीं */
     /* section title */
     const secT=pack.sec[si];
     c.textAlign='left'; c.fillStyle=T.secC;
@@ -516,6 +518,7 @@ function drawSections(c,sc,X,y,W,T,fsz,labW){
     keys.forEach(k=>{
       const f=fldDef(k);
       let v=(S.d[k]||'').trim();
+      if(!v) return;                  /* खाली field = कोई row नहीं (जगह बचे, "—" गायब) */
       if(f.sel && v){ const ix=OPTKEYS[f.sel].indexOf(v); if(ix>=0) v=pack[f.sel][ix]; }
       const lab=labOf(k), labS=0.22*fsz, valS=0.24*fsz;
       c.font=LF(sc,valS);
@@ -525,6 +528,7 @@ function drawSections(c,sc,X,y,W,T,fsz,labW){
         if(c.measureText(t).width>vwR&&cur){ lines.push(cur); cur=wd; } else cur=t; });
       if(cur) lines.push(cur);
       lines.forEach((ln,li)=>{
+        if(y+0.30*sc*fsz>lim) return;  /* footer में न घुसे */
         if(li===0){ c.fillStyle=T.labC; c.font=LF(sc,labS); c.textAlign='left'; c.fillText(lab,X,y);
           c.fillStyle=T.gold; c.textAlign='center'; c.fillText(':',X+(labW-0.22)*sc,y); }
         c.fillStyle=T.valC; c.font=LF(sc,valS); c.textAlign='left';
@@ -566,10 +570,10 @@ function drawSibs(c,sc,X,y,W,T,fsz){
   const hR=c.measureText(pack.sibTH[0]).width, hN=c.measureText(pack.sibTH[1]).width,
         hD=c.measureText(pack.sibTH[2]).width, hM=c.measureText(pack.sibTH[3]).width;
   const wR=Math.max(mR,hR)+pad, wM=Math.max(mM,hM)+pad;
-  const minD=Math.min(Math.max(1.1*sc,hD+pad), totalW*0.40);
-  let wN=Math.min(Math.max(mN,hN)+pad, totalW-wR-wM-minD-0.02*sc);
-  if(wN<0.8*sc) wN=Math.max(0.5*sc, totalW-wR-wM-0.7*sc-0.02*sc);
-  const wD=totalW-wR-wN-wM-0.02*sc;
+  /* details को पहले उसकी पूरी ज़रूरत; name को बचा हुआ (नीचे clip = कभी टकराव नहीं) */
+  let wD=Math.min(Math.max(1.1*sc,hD+pad), totalW*0.45);
+  let wN=totalW-wR-wM-wD-0.02*sc;
+  if(wN<0.85*sc){ wN=Math.max(0.55*sc, totalW-wR-wM-0.7*sc-0.02*sc); wD=totalW-wR-wN-wM-0.02*sc; }
   const defs= rtl? [['m',wM],['d',wD],['n',wN],['r',wR]] : [['r',wR],['n',wN],['d',wD],['m',wM]];
   const thIx={r:0,n:1,d:2,m:3};
   const pos=[]; { let cx= rtl? WR : X;
@@ -577,13 +581,15 @@ function drawSibs(c,sc,X,y,W,T,fsz){
   /* header */
   c.font=LF(sc,hS); c.fillStyle=T.lab;
   pos.forEach(([k,px,w])=>{ c.textAlign=rtl?'right':'left';
-    c.fillText(pack.sibTH[thIx[k]], rtl? px+w-0.03*sc : px+0.03*sc, y); });
+    c.save(); c.beginPath(); c.rect(px, y-hS*sc-0.03*sc, w, hS*sc+0.12*sc); c.clip();
+    c.fillText(pack.sibTH[thIx[k]], rtl? px+w-0.03*sc : px+0.03*sc, y);
+    c.restore(); });
   c.strokeStyle='rgba(180,140,60,0.6)'; c.lineWidth=0.012*sc;
   c.beginPath(); c.moveTo(X,y+0.07*sc); c.lineTo(WR,y+0.07*sc); c.stroke();
   y+=0.07*sc+step;
   /* rows */
   c.font=LF(sc,vS);
-  rows.forEach(sb=>{
+  for(const sb of rows){
     /* विवरण wrap */
     const words=(sb.d||'—').split(/\s+/); const lines=[]; let cur='';
     c.font=LF(sc,vS);
@@ -591,7 +597,7 @@ function drawSibs(c,sc,X,y,W,T,fsz){
       if(c.measureText(tt).width>wD-0.1*sc&&cur){ lines.push(cur); cur=wd; } else cur=tt; });
     if(cur) lines.push(cur);
     const rowH=Math.max(1,lines.length)*step+0.04*sc;
-    if(y+rowH-step*0.5>lim) return;
+    if(y+rowH-step*0.5>lim) break;    /* footer से ऊपर — order में रुको */
     c.fillStyle=T.val;
     pos.forEach(([k,px,w])=>{
       let v='—';
@@ -600,14 +606,16 @@ function drawSibs(c,sc,X,y,W,T,fsz){
       else if(k==='m') v= sb.m==='y'? pack.sibM[0] : sb.m==='n'? pack.sibM[1] : '—';
       c.textAlign=rtl?'right':'left';
       const tx2= rtl? px+w-0.03*sc : px+0.03*sc;
+      c.save(); c.beginPath(); c.rect(px, y-vS*sc-0.03*sc, w, lines.length*step+0.08*sc); c.clip();
       if(k==='d'){ lines.forEach((ln,li)=> c.fillText(ln,tx2,y+li*step)); }
       else c.fillText(v,tx2,y);
+      c.restore();
     });
     c.strokeStyle='rgba(180,140,60,0.22)'; c.lineWidth=0.008*sc;
     const ly=y+(lines.length-1)*step+0.08*sc;
     c.beginPath(); c.moveTo(X,ly); c.lineTo(WR,ly); c.stroke();
     y=ly+step-0.02*sc;
-  });
+  }
   return y+0.04*sc;
 }
 /* ---- 🖼️ PHOTO GALLERY (biodata के अंत में — extra photos) ---- */
