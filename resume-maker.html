@@ -70,7 +70,7 @@ input[type=color]{padding:2px;height:30px}
 <body>
 <header>
   <h1>🌸 संस्कृति Resume Maker</h1>
-  <span class="badge">FREE v1.4 📑 (Studio में Sections जोड़ो/हटाओ)</span>
+  <span class="badge">FREE v1.5 ✨ (Sections को नाम दो)</span>
   <span style="flex:1"></span>
   <button class="hbtn" id="btnLang">🌐 English</button>
   <button class="hbtn" id="btnSave">💾 सहेजें</button>
@@ -129,6 +129,7 @@ const STR={
    stPhoto:'📷 Photo', stPhotoOn:'लगाओ', stPhotoOff:'नहीं',
    stHead:'Heading का style', stHsLine:'सादा line', stHsBand:'रंगीन band', stHsRules:'◆ ornament',
    stSecs:'📑 Sections (▲▼ क्रम • ✖ हटाओ)', stAddSec:'＋ section जोड़ो', stAllAdded:'सारे sections जुड़ चुके ✓',
+   stCusName:'✨ नाम लिखो (जैसे DECLARATION)',
    stSave:'💾 सहेजो', stExport:'📤 Export', stImport:'📥 Import', stDel:'🗑️ हटाओ', stNew:'✨ नया',
    docLang:'📄 Resume की भाषा',
    tTplSaved:'🎨 आपका Template सहेज गया ✓ — chips में दिख रहा है',
@@ -150,6 +151,7 @@ const STR={
    stPhoto:'📷 Photo', stPhotoOn:'Show', stPhotoOff:'Hide',
    stHead:'Heading style', stHsLine:'Plain line', stHsBand:'Color band', stHsRules:'◆ Ornament',
    stSecs:'📑 Sections (▲▼ order • ✖ remove)', stAddSec:'＋ Add section', stAllAdded:'All sections added ✓',
+   stCusName:'✨ Name it (e.g. DECLARATION)',
    stSave:'💾 Save', stExport:'📤 Export', stImport:'📥 Import', stDel:'🗑️ Delete', stNew:'✨ New',
    docLang:'📄 Resume language',
    tTplSaved:'🎨 Your Template saved ✓ — see it in the chips',
@@ -278,7 +280,7 @@ function buildChips(){
     if(id==='_studio') return;
     const b=document.createElement('button'); b.className='sbtn nm'+(S.tpl===id?' on':'');
     b.textContent=(t.custom?'⭐ ':'')+t.name;
-    b.onclick=()=>{ if(STU.open){ openStudio(id); } else { S.tpl=id; buildChips(); draw(); } };
+    b.onclick=()=>{ if(STU.open){ openStudio(id); } else { S.tpl=id; seedCustomSlots(); buildChips(); buildForm(); draw(); } };
     if(t.custom){
       const row=document.createElement('div'); row.className='cchip'; row.appendChild(b);
       const eb=document.createElement('button'); eb.className='mini'; eb.textContent='✏️';
@@ -498,19 +500,23 @@ function renderAll(scale){
       /* 'custom' अलग से नीचे walk में — template में कई custom slots हो सकते हैं */
     }
   }
-  function renderCustom(cu){ if(!cu.heading&&!cu.desc) return;
-    secTitle((cu.heading||'').toUpperCase()); if(cu.desc) bullets(cu.desc); Y+=0.04; }
+  function renderCustom(cu, forceHead){ if(!cu.heading&&!cu.desc&&!forceHead) return;
+    secTitle(((forceHead||cu.heading)||'').toUpperCase()); if(cu.desc) bullets(cu.desc); Y+=0.04; }
   const order=t.layout==='twocol'?t.mainSecs:t.order;
   /* custom slots: slot#1→custom[0], slot#2→custom[1]... आख़िरी slot→बाक़ी सारे */
-  const csTotal=order.filter(s=>s==='custom').length;
+  /* slot का नाम: 'custom:DECLARATION' जैसे — template ही heading तय करे */
+  const isCus=k=>k==='custom'||k.startsWith('custom:');
+  const csTotal=order.filter(isCus).length;
   let csSeen=0;
   order.forEach(key=>{
-    if(key!=='custom'){ secBody(key); return; }
+    if(!isCus(key)){ secBody(key); return; }
     csSeen++;
+    const nm=key.startsWith('custom:')?decodeURIComponent(key.slice(7)):'';
     const customs=d.custom||[];
-    if(csTotal===1){ customs.forEach(renderCustom); return; }
+    if(csTotal===1){ customs.forEach((cu,i)=>renderCustom(cu, i===0?nm:'')); return; }
     const start=csSeen-1;
-    (csSeen===csTotal?customs.slice(start):(customs[start]?[customs[start]]:[])).forEach(renderCustom);
+    (csSeen===csTotal?customs.slice(start):(customs[start]?[customs[start]]:[]))
+      .forEach((cu,i)=>renderCustom(cu, i===0?nm:''));
   });
   return pages;
 }
@@ -570,7 +576,7 @@ $('fileLoad').onchange=e=>{
       if(o.ui){ S.ui=o.ui; applyLang(); }
       S.docLang=o.docLang||'en'; buildDocLang();
       const nb=blankResume();
-      S.data=Object.assign(nb,o.data||{});
+      S.data=Object.assign(nb,o.data||{}); seedCustomSlots();
       ['work','education','skills','projects','languages','custom'].forEach(k=>{ if(!Array.isArray(S.data[k])) S.data[k]=[]; });
       buildChips(); buildForm(); draw();
       toast(T('tLoad'));
@@ -649,6 +655,21 @@ $('btnLang').onclick=()=>{ S.ui=(S.ui==='hi'?'en':'hi'); applyLang(); draw();
 /* ================= 🚀 BOOT ================= */
 /* ================= 🎨 TEMPLATE STUDIO — अपने formats खुद बनाओ ================= */
 const STKEY='rmTplsV1';
+/* template के named custom slots → form में section पहले से तैयार */
+function seedCustomSlots(){
+  const t=TEMPLATES[S.tpl]; if(!t) return;
+  const order=t.layout==='twocol'?t.mainSecs:t.order; if(!order) return;
+  S.data.custom=S.data.custom||[];
+  let ci=0;
+  order.forEach(k=>{
+    if(!(k==='custom'||k.startsWith('custom:'))) return;
+    const i=ci++;
+    if(!k.startsWith('custom:')) return;
+    const nm=decodeURIComponent(k.slice(7));
+    if(!S.data.custom[i]) S.data.custom[i]={heading:nm, desc:''};
+    else if(!S.data.custom[i].heading) S.data.custom[i].heading=nm;
+  });
+}
 function loadCustomTpls(){ try{ const o=JSON.parse(localStorage.getItem(STKEY)||'{}');
   Object.keys(o).forEach(k=>o[k].custom=true); return o; }catch(_){ return {}; } }
 function persistCustomTpls(){ const o={};
@@ -729,7 +750,20 @@ function renderStudio(){
   const so=document.createElement('div'); so.className='secord';
   arr.forEach((s,i)=>{
     const r=document.createElement('div'); r.className='sor';
-    const bb=document.createElement('b'); bb.textContent=(i+1)+'. '+(sn[s]||s)+(s==='custom'?' ✨':''); r.appendChild(bb);
+    const isCus=s==='custom'||s.startsWith('custom:');
+    if(isCus){
+      const bb=document.createElement('b'); bb.textContent=(i+1)+'. '; r.appendChild(bb);
+      const inp=document.createElement('input');
+      inp.value=s.startsWith('custom:')?decodeURIComponent(s.slice(7)):'';
+      inp.placeholder=T('stCusName');
+      inp.style.cssText='flex:1;background:#1e293b;border:1px solid #475569;color:#fbbf24;padding:3px 7px;border-radius:6px;font-size:12px';
+      inp.oninput=()=>{ const v=inp.value.trim();
+        arr[i]=v?('custom:'+encodeURIComponent(v)):'custom';
+        studioPreview(); };
+      r.appendChild(inp);
+    } else {
+      const bb=document.createElement('b'); bb.textContent=(i+1)+'. '+(sn[s]||s); r.appendChild(bb);
+    }
     [['▲',-1],['▼',1]].forEach(([ar,dd])=>{
       const btn=document.createElement('button'); btn.textContent=ar;
       btn.onclick=()=>{ const j=i+dd; if(j<0||j>=arr.length) return;
