@@ -70,7 +70,7 @@ input[type=color]{padding:2px;height:30px}
 <body>
 <header>
   <h1>🌸 संस्कृति Resume Maker</h1>
-  <span class="badge">FREE v1.2 🎨 (Template Studio)</span>
+  <span class="badge">FREE v1.3 📄 (EN/हिंदी Resume + Sections)</span>
   <span style="flex:1"></span>
   <button class="hbtn" id="btnLang">🌐 English</button>
   <button class="hbtn" id="btnSave">💾 सहेजें</button>
@@ -83,6 +83,8 @@ input[type=color]{padding:2px;height:30px}
     <h3 id="h3Tpl">🎨 Template चुनो</h3>
     <div class="tplchip" id="tplChips"></div>
     <button class="sbtn" id="btnStudio" style="text-align:center;border-style:dashed;border-color:#f59e0b;color:#fde68a">🎨 अपना Template बनाओ</button>
+    <div class="strow" style="margin-top:8px"><label id="lblDocLang" style="display:block;font-size:11.5px;color:#94a3b8;margin-bottom:3px">📄 Resume की भाषा</label>
+      <div class="tplchip" id="docLangChips"></div></div>
     <div id="formBox"></div>
   </div>
   <div id="stage"></div>
@@ -128,6 +130,7 @@ const STR={
    stHead:'Heading का style', stHsLine:'सादा line', stHsBand:'रंगीन band', stHsRules:'◆ ornament',
    stSecs:'📑 Sections का क्रम (▲▼ से बदलो)',
    stSave:'💾 सहेजो', stExport:'📤 Export', stImport:'📥 Import', stDel:'🗑️ हटाओ', stNew:'✨ नया',
+   docLang:'📄 Resume की भाषा',
    tTplSaved:'🎨 आपका Template सहेज गया ✓ — chips में दिख रहा है',
    tTplDel:'🗑️ Template हटा दिया', tTplBad:'❌ यह Template file नहीं है',
    tTplImp:'📥 Template आ गया ✓', tNeedName:'❗ पहले Template का नाम लिखो',
@@ -148,6 +151,7 @@ const STR={
    stHead:'Heading style', stHsLine:'Plain line', stHsBand:'Color band', stHsRules:'◆ Ornament',
    stSecs:'📑 Section order (▲▼ to reorder)',
    stSave:'💾 Save', stExport:'📤 Export', stImport:'📥 Import', stDel:'🗑️ Delete', stNew:'✨ New',
+   docLang:'📄 Resume language',
    tTplSaved:'🎨 Your Template saved ✓ — see it in the chips',
    tTplDel:'🗑️ Template deleted', tTplBad:'❌ Not a Template file',
    tTplImp:'📥 Template imported ✓', tNeedName:'❗ Please write a Template name first',
@@ -188,7 +192,7 @@ const SCHEMA=[
  {sec:'languages', title:'🗣️ भाषाएँ', titleEn:'🗣️ Languages', add:'+ भाषा जोड़ो', addEn:'+ Add language', fields:[
    {k:'name', lab:'भाषा', labEn:'Language', ph:'हिंदी', phEn:'Hindi'},
    {k:'level', lab:'स्तर (जैसे: मातृभाषा / अच्छी)', labEn:'Level (e.g. Native / Fluent)', ph:'मातृभाषा', phEn:'Native'}]},
- {sec:'custom', title:'✨ अपना section', titleEn:'✨ Your Own Section', add:'+ section जोड़ो', addEn:'+ Add section', fields:[
+ {sec:'custom', title:'➕ नया section जोड़ो (अपनी heading)', titleEn:'➕ Add Your Own Section', add:'+ और section जोड़ो', addEn:'+ Add another section', fields:[
    {k:'heading', lab:'शीर्षक', labEn:'Heading', ph:'प्रमाणपत्र / शौक / संदर्भ', phEn:'Certificates / Hobbies / References'},
    {k:'desc', lab:'विवरण (एक line में एक point)', labEn:'Details (one point per line)', ta:1, ph:''}]}
 ];
@@ -321,8 +325,13 @@ function photoImg(src){ if(src===_photoSrc&&_photoIm) return _photoIm.complete?_
   _photoSrc=src; _photoIm=new Image(); _photoIm.onload=()=>draw(); _photoIm.src=src; return null; }
 
 /* ---- section शीर्षक (resume content English — ATS standard; बदलना हो तो यहाँ) ---- */
-const HEADS={ summary:'PROFILE', work:'EXPERIENCE', education:'EDUCATION', skills:'SKILLS',
+/* ---- resume की भाषा: English default (customers के लिए standard), हिंदी option भी ---- */
+const HEADS_EN={ summary:'PROFILE', work:'EXPERIENCE', education:'EDUCATION', skills:'SKILLS',
   projects:'PROJECTS', languages:'LANGUAGES', custom:'', contact:'CONTACT' };
+const HEADS_HI={ summary:'परिचय', work:'कार्य अनुभव', education:'शिक्षा', skills:'हुनर',
+  projects:'प्रोजेक्ट्स', languages:'भाषाएँ', custom:'', contact:'संपर्क' };
+S.docLang=S.docLang||'en';
+const HEADS=new Proxy({},{ get:(o,k)=> (S.docLang==='hi'?HEADS_HI:HEADS_EN)[k] });
 const PT=1/72;   /* pt → inch (canvas user-unit = inch) */
 function setF(ctx,t,pt,w,st){ ctx.font=font(t,pt*PT*SC,w,st); }  /* device-px font — slice bug से बचाव */
 function textH(pt,lines){ return pt*1.28*PT*lines; }
@@ -534,7 +543,7 @@ function draw(){
 /* ================= 💾 SAVE / LOAD ================= */
 function dl(name, url){ const a=document.createElement('a'); a.download=name; a.href=url; a.click(); }
 $('btnSave').onclick=()=>{
-  const o={app:'sanskriti-resume', v:1, tpl:S.tpl, ui:S.ui, data:S.data};
+  const o={app:'sanskriti-resume', v:1, tpl:S.tpl, ui:S.ui, docLang:S.docLang, data:S.data};
   dl('resume-'+(S.data.basics.name||'mera').replace(/\s+/g,'-')+'.json',
      URL.createObjectURL(new Blob([JSON.stringify(o,null,1)],{type:'application/json'})));
   toast(T('tSave'));
@@ -548,6 +557,7 @@ $('fileLoad').onchange=e=>{
       if(o.app!=='sanskriti-resume') throw 0;
       S.tpl=o.tpl||'simple';
       if(o.ui){ S.ui=o.ui; applyLang(); }
+      S.docLang=o.docLang||'en'; buildDocLang();
       const nb=blankResume();
       S.data=Object.assign(nb,o.data||{});
       ['work','education','skills','projects','languages','custom'].forEach(k=>{ if(!Array.isArray(S.data[k])) S.data[k]=[]; });
@@ -587,21 +597,21 @@ $('btnPrint').onclick=()=>{
 /* ================= ✨ नमूना भरो (एक click में demo) ================= */
 function fillSample(){
   S.data={
-    basics:{ name:'राहुल शर्मा', title:'Sales Executive', phone:'98765 43210', email:'rahul.sharma@gmail.com',
-      address:'नई दिल्ली', website:'', photo:null,
-      summary:'5 साल का बिक्री (sales) का अनुभव। ग्राहकों से अच्छे संबंध बनाना और लक्ष्य समय पर पूरा करना मेरी ताकत है।' },
+    basics:{ name:'Rahul Sharma', title:'Sales Executive', phone:'98765 43210', email:'rahul.sharma@gmail.com',
+      address:'New Delhi', website:'', photo:null,
+      summary:'5 years of sales experience. Building strong customer relationships and achieving targets on time is my strength.' },
     work:[
-      { role:'Senior Sales Executive', company:'ABC Traders, दिल्ली', start:'2022', end:'अभी तक',
-        desc:'50+ दुकानों से नियमित संपर्क और order लेना\nमहीने का बिक्री लक्ष्य 110% तक पूरा किया\nनए ग्राहक जोड़ने के लिए field visits' },
+      { role:'Senior Sales Executive', company:'ABC Traders, Delhi', start:'2022', end:'Present',
+        desc:'Handling 50+ regular shop orders and relationships\nAchieved 110% of monthly sales target\nField visits to onboard new customers' },
       { role:'Sales Executive', company:'Sharma Enterprises', start:'2020', end:'2022',
-        desc:'Retail counter संभाला\nबिलिंग और stock record' }],
+        desc:'Managed retail counter\nBilling and stock records' }],
     education:[
-      { degree:'B.Com', school:'दिल्ली विश्वविद्यालय', start:'2017', end:'2020', score:'68%' },
-      { degree:'12वीं (Commerce)', school:'Govt. Sr. Sec. School, दिल्ली', start:'2016', end:'2017', score:'78%' }],
-    skills:[ {name:'ग्राहक से बातचीत',level:5}, {name:'Tally',level:4}, {name:'MS Excel',level:4}, {name:'Photoshop',level:3} ],
+      { degree:'B.Com', school:'Delhi University', start:'2017', end:'2020', score:'68%' },
+      { degree:'12th (Commerce)', school:'Govt. Sr. Sec. School, Delhi', start:'2016', end:'2017', score:'78%' }],
+    skills:[ {name:'Customer Relations',level:5}, {name:'Tally',level:4}, {name:'MS Excel',level:4}, {name:'Photoshop',level:3} ],
     projects:[],
-    languages:[ {name:'हिंदी',level:'मातृभाषा'}, {name:'English',level:'अच्छी'} ],
-    custom:[ {heading:'प्रमाणपत्र', desc:'Tally ERP 9 certificate — 2021'} ]
+    languages:[ {name:'Hindi',level:'Native'}, {name:'English',level:'Fluent'} ],
+    custom:[ {heading:'CERTIFICATES', desc:'Tally ERP 9 certificate — 2021'} ]
   };
 }
 /* header में नमूना button */
@@ -618,6 +628,7 @@ function applyLang(){
   $('h3Tpl').textContent=T('tpl');
   $('btnLang').textContent=T('langBtn');
   $('btnStudio').textContent=T('stOpen');
+  $('lblDocLang').textContent=T('docLang');
   if(STU.open) renderStudio();
   buildForm();
 }
@@ -736,6 +747,16 @@ function renderStudio(){
   st.appendChild(bt);
 }
 $('btnStudio').onclick=()=>{ STU.open?closeStudio():openStudio(); };
+/* ---- 📄 resume भाषा chips (English default / हिंदी option) ---- */
+function buildDocLang(){
+  const c=$('docLangChips'); c.innerHTML='';
+  [['en','English'],['hi','हिंदी']].forEach(([v,lb])=>{
+    const b=document.createElement('button'); b.className='sbtn'+(S.docLang===v?' on':'');
+    b.textContent=lb;
+    b.onclick=()=>{ S.docLang=v; buildDocLang(); draw(); };
+    c.appendChild(b);
+  });
+}
 $('fileTpl').onchange=e=>{
   const f=e.target.files[0]; if(!f) return; e.target.value='';
   const rd=new FileReader();
@@ -751,7 +772,7 @@ $('fileTpl').onchange=e=>{
 };
 
 /* ================= 🚀 BOOT ================= */
-buildChips(); buildForm(); fillSample(); buildForm(); draw();
+buildChips(); buildDocLang(); buildForm(); fillSample(); buildForm(); draw();
 </script>
 </body>
 </html>
