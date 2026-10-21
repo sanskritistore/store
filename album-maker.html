@@ -65,7 +65,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v5.0.1 🎭 (Exact Mask Fit)</span>
+  <span class="badge">FREE v5.0.2 🎭 (Exact Mask Fit)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
@@ -1071,6 +1071,16 @@ function frameWindow(im){
     if(y<h-1&&!seen[p+w]&&trIn(p+w)){seen[p+w]=1;st.push(p+w);} }
   if(n<w*h*0.005) return null;
   if(n>w*h*0.92) return null;              /* leak — opening साफ़ नहीं */
+  /* hole-fill: opening के अंदर के dust-specks (design file का कूड़ा) mask में शामिल —
+     border से flood करके जो non-region pixel न पहुँचे = enclosed hole → mask में डालो */
+  const reach=new Uint8Array(w*h), rq=[];
+  const rpush=p=>{ if(!seen[p]&&!reach[p]){reach[p]=1;rq.push(p);} };
+  for(let x=0;x<w;x++){ rpush(x); rpush((h-1)*w+x); }
+  for(let y=0;y<h;y++){ rpush(y*w); rpush(y*w+w-1); }
+  while(rq.length){ const p=rq.pop(), x=p%w, y=(p/w)|0;
+    if(x>0)rpush(p-1); if(x<w-1)rpush(p+1); if(y>0)rpush(p-w); if(y<h-1)rpush(p+w); }
+  for(let yy=y0;yy<=y1;yy++){ const base=yy*w;
+    for(let xx=x0;xx<=x1;xx++){ const p=base+xx; if(!reach[p]) seen[p]=1; } }
   const mw=x1-x0+1, mh=y1-y0+1;
   const mc=document.createElement('canvas'); mc.width=mw; mc.height=mh;
   const mg=mc.getContext('2d'), md=mg.createImageData(mw,mh);
