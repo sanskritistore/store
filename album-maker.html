@@ -65,7 +65,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v4.9 🧲 (Frame Fit)</span>
+  <span class="badge">FREE v4.9.1 🧲 (Frame Fit)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
@@ -1001,7 +1001,23 @@ $('wandAI').onclick=async()=>{
 };
 /* कई चुनीं (घेरकर) तो सब photos पर लगाओ, वरना चुनी एक पर */
 function selPhotos(){ const ids=S.selArr.length>1? S.selArr : (S.sel>=0?[S.sel]:[]); return ids.map(i=>S.items[i]).filter(t=>t&&t.kind==='photo'); }
-document.querySelectorAll('.shp').forEach(b=>b.onclick=()=>{ const ps=selPhotos(); if(ps.length){ ps.forEach(it=>it.shape=b.dataset.s); draw(); if(ps.length>1) toast('✅ '+ps.length+' photos — shape बदला'); } });
+/* 🎯 shape/fit के लिए photos — photo चुनी है तो वही; वरना चुने frame (decor) के नीचे की photos */
+function targetPhotos(){
+  const ps=selPhotos(); if(ps.length) return ps;
+  const sel=(S.selArr.length?S.selArr:[S.sel]).filter(i=>i>=0).map(i=>S.items[i]);
+  const decs=sel.filter(t=>t&&t.kind==='decor');
+  if(!decs.length) return [];
+  const out=[];
+  S.items.forEach(t=>{ if(t.kind!=='photo') return;
+    const cx=t.x+t.w/2, cy=t.y+t.h/2;
+    if(decs.some(d=>d.x!=null&&cx>=d.x&&cx<=d.x+d.w&&cy>=d.y&&cy<=d.y+d.h)) out.push(t); });
+  return out;
+}
+document.querySelectorAll('.shp').forEach(b=>b.onclick=()=>{
+  const ps=targetPhotos();
+  if(!ps.length) return toast('❌ पहले PHOTO चुनो (frame नहीं) — photo frame के नीचे है तो 🧲 Frame Fit दबाओ');
+  ps.forEach(it=>it.shape=b.dataset.s); draw();
+  toast((ps.length>1?'✅ '+ps.length+' photos':'✅ shape')+' — '+b.textContent.trim()); });
 
 /* 🧲 Frame Fit — चुनी photo slot को frame (decor) के transparent opening में fit करो,
    shape अपने आप पहचानो (दिल ❤️ / गोल ⬭ / आयत ▭) */
@@ -1050,9 +1066,10 @@ function frameFitDetect(img){
   return {x0:px(x0)-cw, y0:py(y0)-chh, x1:px(x1)+cw, y1:py(y1)+chh, smW, smH, shape};
 }
 $('btnFrameFit').onclick=()=>{
-  const ps=selPhotos();
-  if(ps.length!==1) return toast('❌ पहले एक photo slot चुनो (frame के ऊपर)');
-  const it=ps[0];
+  const ps=targetPhotos();
+  if(!ps.length) return toast('❌ पहले photo या उसका frame चुनो');
+  const it=ps[ps.length-1];   /* सबसे ऊपर वाली photo */
+  if(ps.length>1) toast('ℹ️ '+ps.length+' photos मिलीं — सबसे ऊपर वाली fit होगी');
   const cx=it.x+it.w/2, cy=it.y+it.h/2;
   let fr=null;
   for(let i=S.items.length-1;i>=0;i--){ const d=S.items[i];
