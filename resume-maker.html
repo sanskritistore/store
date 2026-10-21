@@ -70,7 +70,7 @@ input[type=color]{padding:2px;height:30px}
 <body>
 <header>
   <h1>🌸 संस्कृति Resume Maker</h1>
-  <span class="badge">FREE v1.3 📄 (EN/हिंदी Resume + Sections)</span>
+  <span class="badge">FREE v1.4 📑 (Studio में Sections जोड़ो/हटाओ)</span>
   <span style="flex:1"></span>
   <button class="hbtn" id="btnLang">🌐 English</button>
   <button class="hbtn" id="btnSave">💾 सहेजें</button>
@@ -128,7 +128,7 @@ const STR={
    stFont:'🔤 अक्षर-शैली (Font)', stSans:'सादा', stSerif:'सीरिफ़ (शाही)',
    stPhoto:'📷 Photo', stPhotoOn:'लगाओ', stPhotoOff:'नहीं',
    stHead:'Heading का style', stHsLine:'सादा line', stHsBand:'रंगीन band', stHsRules:'◆ ornament',
-   stSecs:'📑 Sections का क्रम (▲▼ से बदलो)',
+   stSecs:'📑 Sections (▲▼ क्रम • ✖ हटाओ)', stAddSec:'＋ section जोड़ो', stAllAdded:'सारे sections जुड़ चुके ✓',
    stSave:'💾 सहेजो', stExport:'📤 Export', stImport:'📥 Import', stDel:'🗑️ हटाओ', stNew:'✨ नया',
    docLang:'📄 Resume की भाषा',
    tTplSaved:'🎨 आपका Template सहेज गया ✓ — chips में दिख रहा है',
@@ -149,7 +149,7 @@ const STR={
    stFont:'🔤 Font style', stSans:'Simple', stSerif:'Serif (royal)',
    stPhoto:'📷 Photo', stPhotoOn:'Show', stPhotoOff:'Hide',
    stHead:'Heading style', stHsLine:'Plain line', stHsBand:'Color band', stHsRules:'◆ Ornament',
-   stSecs:'📑 Section order (▲▼ to reorder)',
+   stSecs:'📑 Sections (▲▼ order • ✖ remove)', stAddSec:'＋ Add section', stAllAdded:'All sections added ✓',
    stSave:'💾 Save', stExport:'📤 Export', stImport:'📥 Import', stDel:'🗑️ Delete', stNew:'✨ New',
    docLang:'📄 Resume language',
    tTplSaved:'🎨 Your Template saved ✓ — see it in the chips',
@@ -495,12 +495,23 @@ function renderAll(scale){
         d.projects.forEach(p=>{ itemHead(p.name||'', p.link||''); if(p.desc) bullets(p.desc); Y+=0.05; }); } break;
       case 'languages': if(d.languages.length){ secTitle(HEADS.languages);
         para(d.languages.map(l=>l.name+(l.level?' — '+l.level:'')).filter(Boolean).join('  •  '),9.8,400,'#1f2937'); Y+=0.05; } break;
-      case 'custom': d.custom.forEach(cu=>{ if(!cu.heading&&!cu.desc) return;
-        secTitle((cu.heading||'').toUpperCase()); if(cu.desc) bullets(cu.desc); Y+=0.04; }); break;
+      /* 'custom' अलग से नीचे walk में — template में कई custom slots हो सकते हैं */
     }
   }
+  function renderCustom(cu){ if(!cu.heading&&!cu.desc) return;
+    secTitle((cu.heading||'').toUpperCase()); if(cu.desc) bullets(cu.desc); Y+=0.04; }
   const order=t.layout==='twocol'?t.mainSecs:t.order;
-  order.forEach(secBody);
+  /* custom slots: slot#1→custom[0], slot#2→custom[1]... आख़िरी slot→बाक़ी सारे */
+  const csTotal=order.filter(s=>s==='custom').length;
+  let csSeen=0;
+  order.forEach(key=>{
+    if(key!=='custom'){ secBody(key); return; }
+    csSeen++;
+    const customs=d.custom||[];
+    if(csTotal===1){ customs.forEach(renderCustom); return; }
+    const start=csSeen-1;
+    (csSeen===csTotal?customs.slice(start):(customs[start]?[customs[start]]:[])).forEach(renderCustom);
+  });
   return pages;
 }
 
@@ -718,14 +729,35 @@ function renderStudio(){
   const so=document.createElement('div'); so.className='secord';
   arr.forEach((s,i)=>{
     const r=document.createElement('div'); r.className='sor';
-    const bb=document.createElement('b'); bb.textContent=(i+1)+'. '+(sn[s]||s); r.appendChild(bb);
+    const bb=document.createElement('b'); bb.textContent=(i+1)+'. '+(sn[s]||s)+(s==='custom'?' ✨':''); r.appendChild(bb);
     [['▲',-1],['▼',1]].forEach(([ar,dd])=>{
       const btn=document.createElement('button'); btn.textContent=ar;
       btn.onclick=()=>{ const j=i+dd; if(j<0||j>=arr.length) return;
         [arr[i],arr[j]]=[arr[j],arr[i]]; renderStudio(); studioPreview(); };
       r.appendChild(btn); });
+    const del=document.createElement('button'); del.textContent='✖'; del.title=T('stDel');
+    del.onclick=()=>{ arr.splice(i,1); renderStudio(); studioPreview(); };
+    r.appendChild(del);
     so.appendChild(r); });
   st.appendChild(so);
+  /* ＋ section जोड़ो — picker */
+  const addB=document.createElement('button'); addB.className='sbtn'; addB.style.cssText='text-align:center;border-style:dashed;margin-top:6px';
+  addB.textContent=T('stAddSec');
+  addB.onclick=()=>{ STU.picker=!STU.picker; renderStudio(); };
+  st.appendChild(addB);
+  if(STU.picker){
+    const pk=document.createElement('div'); pk.className='stchips'; pk.style.marginTop='6px';
+    const pool=['summary','work','education','skills','projects','languages','custom']
+      .filter(k=> k==='custom' || !arr.includes(k))
+      .filter(k=> !(c.layout==='twocol' && ['skills','languages','contact'].includes(k)));
+    if(!pool.length) pk.appendChild(H('<div class="note">'+T('stAllAdded')+'</div>'));
+    pool.forEach(k=>{
+      const b=document.createElement('button'); b.className='sbtn';
+      b.textContent='＋ '+(sn[k]||k); b.style.flex='1 1 45%';
+      b.onclick=()=>{ arr.push(k); STU.picker=false; renderStudio(); studioPreview(); };
+      pk.appendChild(b); });
+    st.appendChild(pk);
+  }
   /* buttons */
   const bt=H('<div class="stbtns"></div>');
   const mk=(txt,fn,cls)=>{ const b=document.createElement('button'); b.className='sbtn'+(cls||''); b.textContent=txt; b.onclick=fn; bt.appendChild(b); };
