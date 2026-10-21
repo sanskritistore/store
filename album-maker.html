@@ -65,7 +65,7 @@ input[type=range]{width:100%}
 <body>
 <div id="topbar">
   <h1>🌸 संस्कृति Template Maker</h1>
-  <span class="badge">FREE v4.8 ❤️ (Heart shape)</span>
+  <span class="badge">FREE v4.9 🧲 (Frame Fit)</span>
   <span style="flex:1"></span>
   <button class="tbtn" id="btnSaveJson">💾 JSON सहेजें</button>
   <button class="tbtn" id="btnUndo" title="Ctrl+Z">↩️ Undo</button>
@@ -108,6 +108,9 @@ input[type=range]{width:100%}
       <button class="sbtn shp" data-s="arch">🕌 मेहराब</button>
       <button class="sbtn shp" data-s="round">▢ गोल-कोना</button>
       <button class="sbtn shp" data-s="curve">📺 Curve</button>
+    </div>
+    <div class="srow" title="Photo slot frame के अंदर की जगह में अपने आप fit — shape भी frame जैसी (दिल/गोल/आयत)">
+      <button class="sbtn" id="btnFrameFit" style="width:100%;border-color:#d4af37;color:#ffd76a">🧲 Frame में Fit (shape अपने आप)</button>
     </div>
     <div class="srow" title="📺 Curve की घुमाव — ज़्यादा = ज़्यादा उभरी screen">
       <span style="font-size:12px;color:#8fa3c8">📺 घुमाव</span>
@@ -999,6 +1002,74 @@ $('wandAI').onclick=async()=>{
 /* कई चुनीं (घेरकर) तो सब photos पर लगाओ, वरना चुनी एक पर */
 function selPhotos(){ const ids=S.selArr.length>1? S.selArr : (S.sel>=0?[S.sel]:[]); return ids.map(i=>S.items[i]).filter(t=>t&&t.kind==='photo'); }
 document.querySelectorAll('.shp').forEach(b=>b.onclick=()=>{ const ps=selPhotos(); if(ps.length){ ps.forEach(it=>it.shape=b.dataset.s); draw(); if(ps.length>1) toast('✅ '+ps.length+' photos — shape बदला'); } });
+
+/* 🧲 Frame Fit — चुनी photo slot को frame (decor) के transparent opening में fit करो,
+   shape अपने आप पहचानो (दिल ❤️ / गोल ⬭ / आयत ▭) */
+function frameFitDetect(img){
+  /* grid-vote तरीका: मोटे cells — cell तभी barrier जब 50%+ opaque हो;
+     पतली सजावटी लकीरें (inner stroke) vote हार जाती हैं ✓ */
+  const smW=160, smH=Math.max(2,Math.round(160*img.naturalHeight/img.naturalWidth));
+  const cv=document.createElement('canvas'); cv.width=smW; cv.height=smH;
+  const g=cv.getContext('2d',{willReadFrequently:true});
+  g.drawImage(img,0,0,smW,smH);
+  const data=g.getImageData(0,0,smW,smH).data;
+  const GW=40, GH=Math.max(2,Math.round(GW*smH/smW));
+  const cw=smW/GW, chh=smH/GH;
+  const wall=new Uint8Array(GW*GH);
+  for(let gy=0;gy<GH;gy++)for(let gx=0;gx<GW;gx++){
+    let op=0,tot=0;
+    const px0=Math.floor(gx*cw), px1=Math.max(px0+1,Math.floor((gx+1)*cw));
+    const py0=Math.floor(gy*chh), py1=Math.max(py0+1,Math.floor((gy+1)*chh));
+    for(let y=py0;y<py1;y++)for(let x=px0;x<px1;x++){ tot++; if(data[(y*smW+x)*4+3]>=40) op++; }
+    if(op/tot>=0.5) wall[gy*GW+gx]=1;
+  }
+  const cx=GW>>1, cy=GH>>1;
+  if(wall[cy*GW+cx]) return null;                      /* center में जगह नहीं */
+  const seen=new Uint8Array(GW*GH); const q=[cx,cy]; seen[cy*GW+cx]=1;
+  let x0=cx,x1=cx,y0=cy,y1=cy,n=0;
+  while(q.length){ const y=q.pop(), x=q.pop(); n++;
+    if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y;
+    if(x>0&&!wall[y*GW+x-1]&&!seen[y*GW+x-1]){seen[y*GW+x-1]=1;q.push(x-1,y);}
+    if(x<GW-1&&!wall[y*GW+x+1]&&!seen[y*GW+x+1]){seen[y*GW+x+1]=1;q.push(x+1,y);}
+    if(y>0&&!wall[(y-1)*GW+x]&&!seen[(y-1)*GW+x]){seen[(y-1)*GW+x]=1;q.push(x,y-1);}
+    if(y<GH-1&&!wall[(y+1)*GW+x]&&!seen[(y+1)*GW+x]){seen[(y+1)*GW+x]=1;q.push(x,y+1);}
+  }
+  if(n>GW*GH*0.85) return null;                        /* leak — opening साफ़ नहीं */
+  const bw=x1-x0+1, bh=y1-y0+1;
+  if(bw<6||bh<6) return null;
+  /* shape पहचान: दिल = ऊपर-बीच का dip (center col का top नीचे, lobe cols का ऊपर) */
+  const topAt=px=>{ for(let y=y0;y<=y1;y++){ if(seen[y*GW+px]) return y; } return y1; };
+  const tC=topAt(x0+Math.round(bw*0.5)), tL=topAt(x0+Math.round(bw*0.25)), tR=topAt(x0+Math.round(bw*0.75));
+  let shape='rect';
+  if(tC-Math.min(tL,tR) > bh*0.10) shape='heart';
+  else { /* कोना probe: bbox के कोने region में नहीं → गोल/अंडा */
+    const ix=Math.max(1,Math.round(bw*0.06)), iy=Math.max(1,Math.round(bh*0.06));
+    if(!seen[(y0+iy)*GW+(x0+ix)]||!seen[(y0+iy)*GW+(x1-ix)]||!seen[(y1-iy)*GW+(x0+ix)]||!seen[(y1-iy)*GW+(x1-ix)]) shape='oval'; }
+  /* grid cells → small-map px (आधा cell margin जोड़ो — cell vote ने किनारा काटा हो सकता है) */
+  const px=x=>(x+0.5)*cw, py=y=>(y+0.5)*chh;
+  return {x0:px(x0)-cw, y0:py(y0)-chh, x1:px(x1)+cw, y1:py(y1)+chh, smW, smH, shape};
+}
+$('btnFrameFit').onclick=()=>{
+  const ps=selPhotos();
+  if(ps.length!==1) return toast('❌ पहले एक photo slot चुनो (frame के ऊपर)');
+  const it=ps[0];
+  const cx=it.x+it.w/2, cy=it.y+it.h/2;
+  let fr=null;
+  for(let i=S.items.length-1;i>=0;i--){ const d=S.items[i];
+    if(d.kind==='decor'&&d.decor==='img'&&d.img&&cx>=d.x&&cx<=d.x+d.w&&cy>=d.y&&cy<=d.y+d.h){ fr=d; break; } }
+  if(!fr) return toast('❌ कोई frame नहीं मिला — slot को frame के ऊपर रखो');
+  if(fr.rot) return toast('❌ घुमा हुआ frame — पहले rotation 0 करो');
+  const r=frameFitDetect(fr.img);
+  if(!r) return toast('❌ frame के अंदर खाली जगह साफ़ नहीं मिली');
+  /* opening (small-map px) → inches; ~2% अंदर ताकि किनारा frame के नीचे छिपे */
+  const kx=fr.w/r.smW, ky=fr.h/r.smH;
+  const inX=-(r.x1-r.x0)*kx*0.015, inY=-(r.y1-r.y0)*ky*0.015;  /* -1.5% = फैलाओ, किनारा frame के नीचे */
+  it.x=fr.x+r.x0*kx+inX; it.y=fr.y+r.y0*ky+inY;
+  it.w=(r.x1-r.x0+1)*kx-2*inX; it.h=(r.y1-r.y0+1)*ky-2*inY;
+  it.shape=r.shape;
+  draw();
+  toast('🧲 Fit हो गया — shape: '+(r.shape==='heart'?'❤️ दिल':r.shape==='oval'?'⬭ गोल':'▭ आयत'));
+};
 /* 📺 Curve की घुमाव slider — चुनी curve photos पर live */
 $('shCurve').oninput=e=>{ const ps=selPhotos().filter(it=>it.shape==='curve');
   if(ps.length){ ps.forEach(it=>it.curve=+e.target.value); draw(); } };
