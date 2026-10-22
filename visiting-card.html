@@ -37,6 +37,20 @@ main{display:flex;flex:1;overflow:hidden}
 #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#1e293b;border:1px solid #f59e0b;color:#fde68a;padding:9px 18px;border-radius:22px;font-size:13.5px;font-weight:600;display:none;z-index:99;box-shadow:0 4px 18px #000a;max-width:88vw;text-align:center}
 /* ---- 🎨 Template Studio drawer ---- */
 #studio{position:fixed;top:0;right:0;bottom:0;width:302px;background:#1e293b;border-left:2px solid #f59e0b;z-index:60;display:none;overflow-y:auto;padding:12px;box-shadow:-6px 0 30px #000a}
+/* ---- 🖼️ Design Gallery (customer catalog) ---- */
+#gallery{position:fixed;inset:0;background:rgba(2,6,23,.97);z-index:70;display:none;overflow-y:auto;padding:16px}
+#gallery .galhead{position:sticky;top:-16px;background:#0f172a;padding:12px 6px 10px;z-index:2;border-bottom:2px solid #f59e0b;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+#gallery .galhead h2{color:#fbbf24;font-size:17px;margin:0 auto 0 0}
+#gallery .galhead .x{background:#7f1d1d;color:#fff;border:none;border-radius:8px;padding:7px 12px;font-size:14px;cursor:pointer}
+#gallery .galhead .fchips{display:flex;gap:6px;flex-wrap:wrap;width:100%}
+#gallery .fchips button{background:#1e293b;color:#cbd5e1;border:1px solid #475569;border-radius:14px;padding:4px 11px;font-size:11.5px;cursor:pointer}
+#gallery .fchips button.on{background:#f59e0b;color:#111;border-color:#f59e0b;font-weight:700}
+.galgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:13px;margin-top:14px;padding:2px 4px 30px}
+.galcard{background:#1e293b;border:2px solid #334155;border-radius:10px;padding:9px;cursor:pointer;transition:border-color .15s}
+.galcard:hover{border-color:#f59e0b}
+.galcard canvas{width:100%;height:auto;border-radius:3px;display:block}
+.galcard .nm{font-size:11px;color:#cbd5e1;margin-top:7px;text-align:center;font-weight:600}
+.galcard .no{font-size:9.5px;color:#64748b;text-align:center}
 #studio h3{font-size:14px;color:#fbbf24;margin:10px 0 6px;border-bottom:1px solid #334155;padding-bottom:4px}
 #studio h3:first-child{margin-top:0;display:flex;justify-content:space-between;align-items:center}
 #studio .x{background:none;border:none;color:#94a3b8;font-size:16px;cursor:pointer;padding:2px 6px}
@@ -58,7 +72,7 @@ main{display:flex;flex:1;overflow:hidden}
 <header>
   <span style="font-size:20px">🌸</span>
   <h1>संस्कृति Visiting Card Maker</h1>
-  <span class="badge">FREE v1.1 🎨</span>
+  <span class="badge">FREE v1.2 🖼️</span>
   <span style="flex:1"></span>
   <button class="hbtn" id="btnLang">🌐 English</button>
   <button class="hbtn" id="btnSave">💾 सहेजें</button>
@@ -73,6 +87,7 @@ main{display:flex;flex:1;overflow:hidden}
   <div id="stage"></div>
 </main>
 <div id="studio"></div>
+<div id="gallery"></div>
 <div id="toast"></div>
 <input type="file" id="fileLoad" accept=".json" style="display:none">
 <input type="file" id="fileLogo" accept="image/*" style="display:none">
@@ -119,7 +134,9 @@ const STR={
    stFrame:'फ़्रेम (border)', stOn:'लगाओ', stOff:'नहीं',
    stSave:'💾 सहेजो', stExport:'📤 Export', stImport:'📥 Import', stDel:'🗑️ हटाओ',
    tTplSaved:'🎨 आपका Design सहेज गया ✓ — chips में दिख रहा है', tTplDel:'🗑️ Design हटा दिया',
-   tTplBad:'❌ यह Design file नहीं है', tTplImp:'📥 Design आ गया ✓', tNeedName:'❗ पहले Design का नाम लिखो' },
+   tTplBad:'❌ यह Design file नहीं है', tTplImp:'📥 Design आ गया ✓', tNeedName:'❗ पहले Design का नाम लिखो',
+   galBtn:'🖼️ 100+ Designs देखो', galTitle:'🖼️ तैयार Designs — जो पसंद हो उस पर click करो',
+   galAll:'सभी', galPat:'🧩 Pattern वाले', galPick:'✅ Design चुन लिया — अब अपनी जानकारी भरो' },
  en:{ save:'💾 Save', load:'📂 Open', printf:'🖨️ Front Sheet (300 DPI)', printb:'🖨️ Back Sheet (300 DPI)', png:'🖼️ Card PNG (300 DPI)', sample:'✨ Fill Sample', langBtn:'🌐 हिंदी',
    sideF:'🪪 Front', sideB:'🔄 Back',
    tpl:'🎨 Choose Design', logo:'🖼️ Add Logo (optional)', logoCh:'🖼️ Change Logo ✓', logoRm:'🚫 Remove Logo',
@@ -144,7 +161,9 @@ const STR={
    stFrame:'Frame (border)', stOn:'Show', stOff:'Hide',
    stSave:'💾 Save', stExport:'📤 Export', stImport:'📥 Import', stDel:'🗑️ Delete',
    tTplSaved:'🎨 Your Design saved ✓ — see it in the chips', tTplDel:'🗑️ Design deleted',
-   tTplBad:'❌ Not a Design file', tTplImp:'📥 Design imported ✓', tNeedName:'❗ Please write a Design name first' }
+   tTplBad:'❌ Not a Design file', tTplImp:'📥 Design imported ✓', tNeedName:'❗ Please write a Design name first',
+   galBtn:'🖼️ Browse 100+ Designs', galTitle:'🖼️ Ready Designs — click the one you like',
+   galAll:'All', galPat:'🧩 Patterned', galPick:'✅ Design picked — now fill your details' }
 };
 const S={ ui:'hi', side:'front', tplFront:'simple', tplBack:'bbrand', sheet:'a4', cardSize:'35x2', data:null };
 function T(k){ return STR[S.ui][k]; }
@@ -189,6 +208,52 @@ const TEMPLATES={
  bserv:{ name:'बैक: Services', skin:'bServices', bg:'#ffffff', accent:'#0e7490', tx:'#1f2937', sub:'#6b7280', serif:false, align:'left', frame:false },
  bplain:{ name:'बैक: सादा', skin:'bPlain', bg:'#ffffff', accent:'#334155', tx:'#1f2937', sub:'#6b7280', serif:false, align:'center', frame:false }
 };
+
+/* ================= 🖼️ DESIGN LIBRARY GENERATOR (customer catalog — 100+ designs) =================
+   नया रंग-दायरा यहाँ जोड़ो → अपने-आप 8 नए designs (4 skins × 2 fonts) बन जाते हैं */
+const PALETTES=[
+  { n:'शाही मैरून',  bg:'#fff8e7', accent:'#7f1d1d', tx:'#292524', sub:'#78716c', ini:'#fcd34d' },
+  { n:'रॉयल ब्लू',   bg:'#ffffff', accent:'#1e3a8a', tx:'#111827', sub:'#6b7280', ini:'#ffffff' },
+  { n:'डार्क गोल्ड', bg:'#0f172a', accent:'#f59e0b', tx:'#f1f5f9', sub:'#94a3b8', ini:'#f59e0b' },
+  { n:'हरा पत्ता',   bg:'#f0fdf4', accent:'#166534', tx:'#14532d', sub:'#4b5563', ini:'#ffffff' },
+  { n:'केसरिया',     bg:'#fff7ed', accent:'#c2410c', tx:'#1c1917', sub:'#78716c', ini:'#ffffff' },
+  { n:'गुलाबी',      bg:'#fdf2f8', accent:'#9d174d', tx:'#1f2937', sub:'#6b7280', ini:'#fce7f3' },
+  { n:'मिडनाइट',     bg:'#172554', accent:'#60a5fa', tx:'#eff6ff', sub:'#93c5fd', ini:'#bfdbfe' },
+  { n:'भूरा क्लासिक',bg:'#faf5eb', accent:'#78350f', tx:'#292524', sub:'#a8a29e', ini:'#fef3c7' },
+  { n:'फ़िरोज़ी',    bg:'#f0fdfa', accent:'#0f766e', tx:'#134e4a', sub:'#6b7280', ini:'#ccfbf1' },
+  { n:'काला-सफ़ेद',  bg:'#ffffff', accent:'#111111', tx:'#111111', sub:'#6b7280', ini:'#ffffff' },
+  { n:'जामुनी',      bg:'#faf5ff', accent:'#6b21a8', tx:'#1f2937', sub:'#6b7280', ini:'#f3e8ff' },
+  { n:'लाल',         bg:'#fef2f2', accent:'#b91c1c', tx:'#1f2937', sub:'#6b7280', ini:'#fee2e2' }
+];
+const GENSKINS=[ ['plain','सादा'], ['bar','साइड line'], ['bandTop','ऊपर band'], ['bandLeft','बायाँ पैनल'] ];
+(function genLibrary(){
+  let gi=0;
+  PALETTES.forEach(p=>{
+    GENSKINS.forEach(([sk,sl])=>{
+      [false,true].forEach(ser=>{
+        TEMPLATES['g'+(gi++)]=Object.assign({ gen:true,
+          name:p.n+' • '+sl+(ser?' • शाही अक्षर':''),
+          skin:sk, serif:ser, align:(sk==='plain'&&!ser)?'center':'left', frame:false }, p);
+      });
+    });
+  });
+  /* 🧩 Pattern specials — wallpaper वाले खास designs */
+  const SP=[
+    { n:'सोने का खाना',    skin:'plain', serif:true,  align:'center', bg:'#fffbeb', accent:'#b45309', tx:'#78350f', sub:'#a16207', ini:'#fff', frame:true,  pat:{ty:'grid', c:'#b45309', gap:0.22, a:0.25, lw:1} },
+    { n:'मैरून बिंदु',     skin:'bar',   serif:false, align:'left',   bg:'#ffffff', accent:'#7f1d1d', tx:'#1f2937', sub:'#6b7280', ini:'#fff', frame:false, pat:{ty:'dots', c:'#7f1d1d', gap:0.18, a:0.22, lw:1.2} },
+    { n:'फ़िरोज़ी तिरछी',  skin:'bar',   serif:false, align:'left',   bg:'#f0fdfa', accent:'#0f766e', tx:'#134e4a', sub:'#6b7280', ini:'#fff', frame:false, pat:{ty:'d',    c:'#0f766e', gap:0.2,  a:0.2,  lw:1} },
+    { n:'गुलाबी क्रॉस',    skin:'plain', serif:true,  align:'center', bg:'#fdf2f8', accent:'#9d174d', tx:'#500724', sub:'#9d174d', ini:'#fff', frame:true,  pat:{ty:'d2',   c:'#9d174d', gap:0.25, a:0.18, lw:1} },
+    { n:'नीली खाना',       skin:'bandLeft', serif:false, align:'left', bg:'#ffffff', accent:'#1e3a8a', tx:'#1f2937', sub:'#6b7280', ini:'#dbeafe', frame:false, pat:{ty:'grid', c:'#1e3a8a', gap:0.24, a:0.2, lw:1} },
+    { n:'हरी Lines',       skin:'plain', serif:false, align:'center', bg:'#f0fdf4', accent:'#166534', tx:'#14532d', sub:'#4b5563', ini:'#fff', frame:false, pat:{ty:'h',    c:'#166534', gap:0.16, a:0.2, lw:1} },
+    { n:'केसरिया क्रॉस',   skin:'bandTop', serif:false, align:'left',  bg:'#fff7ed', accent:'#c2410c', tx:'#1c1917', sub:'#78716c', ini:'#ffffff', frame:false, pat:{ty:'d2',  c:'#c2410c', gap:0.3,  a:0.16, lw:1} },
+    { n:'जामुनी बिंदु',    skin:'bar',   serif:true,  align:'left',   bg:'#faf5ff', accent:'#6b21a8', tx:'#1f2937', sub:'#6b7280', ini:'#fff', frame:false, pat:{ty:'dots', c:'#6b21a8', gap:0.2,  a:0.22, lw:1.2} },
+    { n:'काली खाना',       skin:'plain', serif:false, align:'center', bg:'#ffffff', accent:'#111111', tx:'#111111', sub:'#6b7280', ini:'#fff', frame:true,  pat:{ty:'grid', c:'#111111', gap:0.28, a:0.14, lw:1} },
+    { n:'भूरी तिरछी',      skin:'bandLeft', serif:true, align:'left',  bg:'#faf5eb', accent:'#78350f', tx:'#292524', sub:'#a8a29e', ini:'#fef3c7', frame:false, pat:{ty:'d', c:'#78350f', gap:0.22, a:0.18, lw:1} },
+    { n:'लाल क्रॉस शाही',  skin:'plain', serif:true,  align:'center', bg:'#fef2f2', accent:'#b91c1c', tx:'#450a0a', sub:'#b91c1c', ini:'#fff', frame:true,  pat:{ty:'d2',   c:'#b91c1c', gap:0.26, a:0.16, lw:1} },
+    { n:'मिडनाइट Lines',   skin:'bar',   serif:false, align:'left',   bg:'#172554', accent:'#60a5fa', tx:'#eff6ff', sub:'#93c5fd', ini:'#bfdbfe', frame:false, pat:{ty:'v',  c:'#60a5fa', gap:0.2,  a:0.18, lw:1} }
+  ];
+  SP.forEach(s=>{ TEMPLATES['g'+(gi++)]=Object.assign({ gen:true, name:s.n }, s); });
+})();
 
 /* ================= 🔤 RENDER HELPERS (inch = unit; TXT slice-bug fix — resume engine से) ================= */
 const FDEV='"Noto Sans Devanagari","Segoe UI",system-ui,sans-serif';
@@ -396,8 +461,8 @@ function renderSheet(scale,sheetKey,side){
   }
   return cv;
 }
-function renderCard(scale,side){
-  const tid=side?(side==='back'?S.tplBack:S.tplFront):activeTplId();
+function renderCard(scale,side,tidOverride){
+  const tid=tidOverride||(side?(side==='back'?S.tplBack:S.tplFront):activeTplId());
   const t=TEMPLATES[tid]||TEMPLATES.simple;
   SC=scale;
   const dm=cardDims();
@@ -441,6 +506,9 @@ function buildForm(){
   /* templates */
   const tc=document.createElement('div'); tc.className='tplchip'; tc.id='tplChips'; side.appendChild(tc);
   buildChips();
+  /* 🖼️ gallery खोलो */
+  const gb=document.createElement('button'); gb.className='sbtn'; gb.style.cssText='width:100%;margin-top:6px;background:#f59e0b;color:#111;font-weight:800';
+  gb.textContent=T('galBtn'); gb.onclick=()=>openGallery(); side.appendChild(gb);
   /* studio सिर्फ़ front designs के लिए */
   if(S.side==='front'){
     const so=document.createElement('button'); so.className='sbtn'; so.style.cssText='width:100%;margin-top:6px;border:1px dashed #f59e0b;color:#fbbf24';
@@ -496,6 +564,7 @@ function buildChips(){
   Object.keys(TEMPLATES).forEach(id=>{
     if(id==='_studio') return;
     const t=TEMPLATES[id];
+    if(t.gen) return;                        /* 🖼️ library designs सिर्फ़ gallery में */
     if(isBack(t)!==(S.side==='back')) return;
     const w=document.createElement('div'); w.className='cchip';
     const b=document.createElement('button'); b.className='sbtn nm'+(activeTplId()===id?' on':'');
@@ -637,6 +706,39 @@ $('fileTpl').onchange=e=>{
   }catch(_){ toast(T('tTplBad')); } };
   rd.readAsText(f);
 };
+
+/* ================= 🖼️ DESIGN GALLERY (customer को दिखाओ → customer चुने) ================= */
+let GALF='all';
+function openGallery(){
+  const g=$('gallery'); g.style.display='block';
+  const H=(html)=>{ const d=document.createElement('div'); d.innerHTML=html; return d.firstElementChild; };
+  g.innerHTML='';
+  const head=H('<div class="galhead"><h2>'+T('galTitle')+'</h2><div class="fchips"></div><button class="x">✖</button></div>');
+  head.querySelector('.x').onclick=()=>{ g.style.display='none'; };
+  const fc=head.querySelector('.fchips');
+  [['all',T('galAll')],['plain',T('skPlain')],['bar',T('skBar')],['bandTop',T('skBandTop')],['bandLeft',T('skBandLeft')],['pat',T('galPat')]].forEach(([v,lb])=>{
+    const b=document.createElement('button'); b.className=(GALF===v?' on':'');
+    b.textContent=lb; b.onclick=()=>{ GALF=v; openGallery(); };
+    fc.appendChild(b); });
+  g.appendChild(head);
+  const grid=H('<div class="galgrid"></div>'); g.appendChild(grid);
+  const ids=Object.keys(TEMPLATES).filter(id=>TEMPLATES[id].gen&&!TEMPLATES[id].custom);
+  let n=0;
+  ids.forEach(id=>{
+    const t=TEMPLATES[id];
+    if(GALF==='pat'){ if(!t.pat||t.pat.ty==='none') return; }
+    else if(GALF!=='all'&&t.skin!==GALF) return;
+    n++;
+    const card=H('<div class="galcard"></div>');
+    const cv=renderCard(150,'front',id);
+    card.appendChild(cv);
+    card.appendChild(H('<div class="nm">'+t.name+'</div>'));
+    card.appendChild(H('<div class="no">#'+n+'</div>'));
+    card.onclick=()=>{ S.side='front'; setActiveTpl(id); $('gallery').style.display='none';
+      buildForm(); draw(); toast(T('galPick')); };
+    grid.appendChild(card);
+  });
+}
 
 /* ================= 💾 SAVE / LOAD / EXPORT ================= */
 function dl(name,url){ const a=document.createElement('a'); a.download=name; a.href=url; a.click(); }
