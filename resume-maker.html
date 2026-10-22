@@ -70,7 +70,7 @@ input[type=color]{padding:2px;height:30px}
 <body>
 <header>
   <h1>🌸 संस्कृति Resume Maker</h1>
-  <span class="badge">FREE v1.5 ✨ (Sections को नाम दो)</span>
+  <span class="badge">FREE v1.6 👤 (Personal Details section)</span>
   <span style="flex:1"></span>
   <button class="hbtn" id="btnLang">🌐 English</button>
   <button class="hbtn" id="btnSave">💾 सहेजें</button>
@@ -108,6 +108,7 @@ function blankResume(){ return {
   skills:[],      /* {name, level(0-5)} */
   projects:[],    /* {name, desc, link} */
   languages:[],   /* {name, level} */
+  personal:[],    /* {label, value} — सरकारी-style निजी जानकारी (DOB, Father's Name...) */
   custom:[]       /* {heading, desc} — ग्राहक की मर्ज़ी का section */
 };}
 const S={ data:blankResume(), tpl:'simple' };
@@ -135,7 +136,7 @@ const STR={
    tTplSaved:'🎨 आपका Template सहेज गया ✓ — chips में दिख रहा है',
    tTplDel:'🗑️ Template हटा दिया', tTplBad:'❌ यह Template file नहीं है',
    tTplImp:'📥 Template आ गया ✓', tNeedName:'❗ पहले Template का नाम लिखो',
-   secNames:{summary:'परिचय (Profile)',work:'अनुभव (Experience)',education:'पढ़ाई (Education)',skills:'हुनर (Skills)',projects:'Projects',languages:'भाषाएँ',custom:'अपना section'} },
+   secNames:{summary:'परिचय (Profile)',work:'अनुभव (Experience)',education:'पढ़ाई (Education)',skills:'हुनर (Skills)',projects:'Projects',languages:'भाषाएँ',personal:'👤 निजी जानकारी',custom:'अपना section'} },
  en:{ save:'💾 Save', load:'📂 Open', print:'🖨️ Print PDF (300 DPI)', sample:'✨ Fill Sample',
    tpl:'🎨 Choose Template', photo:'📷 Add Photo (optional)', photoCh:'📷 Change Photo ✓', photoRm:'🚫 Remove Photo',
    del:'🗑️ Remove', langBtn:'🌐 हिंदी',
@@ -157,7 +158,7 @@ const STR={
    tTplSaved:'🎨 Your Template saved ✓ — see it in the chips',
    tTplDel:'🗑️ Template deleted', tTplBad:'❌ Not a Template file',
    tTplImp:'📥 Template imported ✓', tNeedName:'❗ Please write a Template name first',
-   secNames:{summary:'Profile',work:'Experience',education:'Education',skills:'Skills',projects:'Projects',languages:'Languages',custom:'Custom section'} }
+   secNames:{summary:'Profile',work:'Experience',education:'Education',skills:'Skills',projects:'Projects',languages:'Languages',personal:'👤 Personal Details',custom:'Custom section'} }
 };
 S.ui='hi';
 function T(k){ return STR[S.ui][k]; }
@@ -194,6 +195,9 @@ const SCHEMA=[
  {sec:'languages', title:'🗣️ भाषाएँ', titleEn:'🗣️ Languages', add:'+ भाषा जोड़ो', addEn:'+ Add language', fields:[
    {k:'name', lab:'भाषा', labEn:'Language', ph:'हिंदी', phEn:'Hindi'},
    {k:'level', lab:'स्तर (जैसे: मातृभाषा / अच्छी)', labEn:'Level (e.g. Native / Fluent)', ph:'मातृभाषा', phEn:'Native'}]},
+ {sec:'personal', title:'👤 निजी जानकारी (Personal Details)', titleEn:'👤 Personal Details', add:'+ जानकारी जोड़ो', addEn:'+ Add detail', fields:[
+   {k:'label', lab:'जानकारी का नाम', labEn:'Label', ph:'Date of Birth / पिता का नाम', phEn:'Date of Birth / Nationality'},
+   {k:'value', lab:'मूल्य', labEn:'Value', ph:'05-10-1998', phEn:'05-10-1998'}]},
  {sec:'custom', title:'➕ नया section जोड़ो (अपनी heading)', titleEn:'➕ Add Your Own Section', add:'+ और section जोड़ो', addEn:'+ Add another section', fields:[
    {k:'heading', lab:'शीर्षक', labEn:'Heading', ph:'प्रमाणपत्र / शौक / संदर्भ', phEn:'Certificates / Hobbies / References'},
    {k:'desc', lab:'विवरण (एक line में एक point)', labEn:'Details (one point per line)', ta:1, ph:''}]}
@@ -259,19 +263,19 @@ $('filePhoto').onchange=e=>{
 const TEMPLATES={
  simple:{ name:'साधारण (ATS)', layout:'single', photo:false, serif:false,
    accent:'#111827', sub:'#4b5563', line:'#d1d5db',
-   order:['summary','work','education','skills','projects','languages','custom'],
+   order:['summary','work','education','skills','projects','languages','personal','custom'],
    headStyle:'line' },
  fresher:{ name:'फ्रेशर', layout:'single', photo:true, serif:false,
    accent:'#0e7490', sub:'#475569', line:'#99f6e4',
-   order:['summary','education','skills','work','projects','languages','custom'],
+   order:['summary','education','skills','work','projects','languages','personal','custom'],
    headStyle:'band' },
  modern:{ name:'मॉडर्न 2-col', layout:'twocol', photo:true, serif:false,
    accent:'#1e3a5f', sideBg:'#1e3a5f', sideTx:'#e2e8f0', sub:'#475569', line:'#cbd5e1',
-   sideSecs:['contact','skills','languages'], mainSecs:['summary','work','education','projects','custom'],
+   sideSecs:['contact','skills','languages'], mainSecs:['summary','work','education','projects','personal','custom'],
    headStyle:'band' },
  classic:{ name:'देसी क्लासिक', layout:'single', photo:true, serif:true,
    accent:'#7c2d12', sub:'#57534e', line:'#d6c9a8',
-   order:['summary','work','education','skills','projects','languages','custom'],
+   order:['summary','work','education','skills','projects','languages','personal','custom'],
    headStyle:'rules' }
 };
 function buildChips(){
@@ -329,9 +333,9 @@ function photoImg(src){ if(src===_photoSrc&&_photoIm) return _photoIm.complete?_
 /* ---- section शीर्षक (resume content English — ATS standard; बदलना हो तो यहाँ) ---- */
 /* ---- resume की भाषा: English default (customers के लिए standard), हिंदी option भी ---- */
 const HEADS_EN={ summary:'PROFILE', work:'EXPERIENCE', education:'EDUCATION', skills:'SKILLS',
-  projects:'PROJECTS', languages:'LANGUAGES', custom:'', contact:'CONTACT' };
+  projects:'PROJECTS', languages:'LANGUAGES', custom:'', contact:'CONTACT', personal:'PERSONAL DETAILS' };
 const HEADS_HI={ summary:'परिचय', work:'कार्य अनुभव', education:'शिक्षा', skills:'हुनर',
-  projects:'प्रोजेक्ट्स', languages:'भाषाएँ', custom:'', contact:'संपर्क' };
+  projects:'प्रोजेक्ट्स', languages:'भाषाएँ', custom:'', contact:'संपर्क', personal:'निजी जानकारी' };
 S.docLang=S.docLang||'en';
 const HEADS=new Proxy({},{ get:(o,k)=> (S.docLang==='hi'?HEADS_HI:HEADS_EN)[k] });
 const PT=1/72;   /* pt → inch (canvas user-unit = inch) */
@@ -497,6 +501,22 @@ function renderAll(scale){
         d.projects.forEach(p=>{ itemHead(p.name||'', p.link||''); if(p.desc) bullets(p.desc); Y+=0.05; }); } break;
       case 'languages': if(d.languages.length){ secTitle(HEADS.languages);
         para(d.languages.map(l=>l.name+(l.level?' — '+l.level:'')).filter(Boolean).join('  •  '),9.8,400,'#1f2937'); Y+=0.05; } break;
+      case 'personal': if(d.personal&&d.personal.length){ secTitle(HEADS.personal);
+        /* label : value सीधी table — colon सबकी एक line में */
+        setF(ctx,t,9.8,600);
+        let lw=0; d.personal.forEach(p=>{ const w=ctx.measureText(p.label||'').width/SC; if(w>lw) lw=w; });
+        lw=Math.min(lw,2.3)+0.18;
+        d.personal.forEach(p=>{
+          if(!p.label&&!p.value) return;
+          ensure(9.8*1.5*PT+0.03);
+          setF(ctx,t,9.8,600); ctx.fillStyle='#374151';
+          TXT(ctx,(p.label||''),colX(),Y+9.8*PT);
+          TXT(ctx,':',colX()+lw,Y+9.8*PT);
+          setF(ctx,t,9.8,400); ctx.fillStyle='#1f2937';
+          TXT(ctx,(p.value||''),colX()+lw+0.12,Y+9.8*PT);
+          Y+=9.8*1.45*PT;
+        });
+        Y+=0.05; } break;
       /* 'custom' अलग से नीचे walk में — template में कई custom slots हो सकते हैं */
     }
   }
@@ -577,7 +597,7 @@ $('fileLoad').onchange=e=>{
       S.docLang=o.docLang||'en'; buildDocLang();
       const nb=blankResume();
       S.data=Object.assign(nb,o.data||{}); seedCustomSlots();
-      ['work','education','skills','projects','languages','custom'].forEach(k=>{ if(!Array.isArray(S.data[k])) S.data[k]=[]; });
+      ['work','education','skills','projects','languages','personal','custom'].forEach(k=>{ if(!Array.isArray(S.data[k])) S.data[k]=[]; });
       buildChips(); buildForm(); draw();
       toast(T('tLoad'));
     }catch(_){ toast(T('tBad')); } };
@@ -628,6 +648,8 @@ function fillSample(){
     skills:[ {name:'Customer Relations',level:5}, {name:'Tally',level:4}, {name:'MS Excel',level:4}, {name:'Photoshop',level:3} ],
     projects:[],
     languages:[ {name:'Hindi',level:'Native'}, {name:'English',level:'Fluent'} ],
+    personal:[ {label:'Date of Birth',value:'15 Aug 1998'}, {label:"Father's Name",value:'Ramesh Sharma'},
+      {label:'Nationality',value:'Indian'}, {label:'Marital Status',value:'Single'} ],
     custom:[ {heading:'CERTIFICATES', desc:'Tally ERP 9 certificate — 2021'} ]
   };
 }
@@ -781,7 +803,7 @@ function renderStudio(){
   st.appendChild(addB);
   if(STU.picker){
     const pk=document.createElement('div'); pk.className='stchips'; pk.style.marginTop='6px';
-    const pool=['summary','work','education','skills','projects','languages','custom']
+    const pool=['summary','work','education','skills','projects','languages','personal','custom']
       .filter(k=> k==='custom' || !arr.includes(k))
       .filter(k=> !(c.layout==='twocol' && ['skills','languages','contact'].includes(k)));
     if(!pool.length) pk.appendChild(H('<div class="note">'+T('stAllAdded')+'</div>'));
