@@ -74,7 +74,7 @@ main{display:flex;flex:1;overflow:hidden}
 <header>
   <span style="font-size:20px">🌸</span>
   <h1>संस्कृति Visiting Card Maker</h1>
-  <span class="badge">FREE v1.3 ⭐</span>
+  <span class="badge">FREE v1.4 ✨</span>
   <span style="flex:1"></span>
   <button class="hbtn" id="btnLang">🌐 English</button>
   <button class="hbtn" id="btnSave">💾 सहेजें</button>
@@ -133,7 +133,7 @@ const STR={
    patC:'Pattern का रंग', patGap:'गैप (mm)',
    stFont:'🔤 अक्षर-शैली (Font)', stSans:'सादा', stSerif:'सीरिफ़ (शाही)',
    stAlign:'जमाव (Align)', stAL:'बायाँ', stAC:'बीच',
-   stFrame:'फ़्रेम (border)', stOn:'लगाओ', stOff:'नहीं',
+   stFrame:'फ़्रेम (border)', stOn:'लगाओ', stOff:'नहीं', stPrem:'✨ प्रीमियम असर', stGlow:'✨ Glow', stGold:'🪙 Gold अक्षर', stSpark:'💫 Sparkle',
    stSave:'💾 सहेजो', stExport:'📤 Export', stImport:'📥 Import', stDel:'🗑️ हटाओ',
    tTplSaved:'🎨 आपका Design सहेज गया ✓ — chips में दिख रहा है', tTplDel:'🗑️ Design हटा दिया',
    tTplBad:'❌ यह Design file नहीं है', tTplImp:'📥 Design आ गया ✓', tNeedName:'❗ पहले Design का नाम लिखो',
@@ -160,7 +160,7 @@ const STR={
    patC:'Pattern color', patGap:'Gap (mm)',
    stFont:'🔤 Font style', stSans:'Simple', stSerif:'Serif (royal)',
    stAlign:'Alignment', stAL:'Left', stAC:'Center',
-   stFrame:'Frame (border)', stOn:'Show', stOff:'Hide',
+   stFrame:'Frame (border)', stOn:'Show', stOff:'Hide', stPrem:'✨ Premium effects', stGlow:'✨ Glow', stGold:'🪙 Gold letters', stSpark:'💫 Sparkle',
    stSave:'💾 Save', stExport:'📤 Export', stImport:'📥 Import', stDel:'🗑️ Delete',
    tTplSaved:'🎨 Your Design saved ✓ — see it in the chips', tTplDel:'🗑️ Design deleted',
    tTplBad:'❌ Not a Design file', tTplImp:'📥 Design imported ✓', tNeedName:'❗ Please write a Design name first',
@@ -277,6 +277,22 @@ const GENSKINS=[ ['plain','सादा'], ['bar','साइड line'], ['bandTo
     { n:'गोल्ड कार्ड शाही',skin:'plain', gradBg:'gold', bg:'#e0aa3e', accent:'#7c2d12', tx:'#1c1005', sub:'#5b3a10', ini:'#7c2d12', serif:true, align:'center', frame:true }
   ];
   PREM.forEach(s=>{ TEMPLATES['g'+(gi++)]=Object.assign({ gen:true, prem:true, name:s.n }, s); });
+  /* 💫 REAL GOLD pack — Flori-भाषा: dense sparkle + bokeh + flares + glow + gold अक्षर + comet swoosh */
+  const RG=[
+    { n:'रियल गोल्ड',      skin:'plain', grad:'gold', gradTx:true, glow:true, orbit:true, script:true, align:'center',
+      bg:'#000000', accent:'#e7c37a', tx:'#f5f0e1', sub:'#d9c9a3', sparkle:{c:'#f6e27a', n:150, seed:77, flare:7, bokeh:12} },
+    { n:'गोल्डन वेव प्रो', skin:'waveB', grad:'gold', gradTx:true, glow:true, icons:true, align:'left',
+      bg:'#030303', accent:'#e7c37a', tx:'#f5f5f4', sub:'#d4d4d4', sparkle:{c:'#f6e27a', n:110, seed:31, flare:5, bokeh:8} },
+    { n:'शाही गोल्ड फ्रेम',skin:'plain', grad:'gold', gradTx:true, glow:true, frame:true, serif:true, align:'center',
+      bg:'#0a0805', accent:'#d4af37', tx:'#f5f0e1', sub:'#cbb37a', sparkle:{c:'#f6e27a', n:70, seed:9, flare:4, bokeh:6} },
+    { n:'डायमंड मंडला',    skin:'plain', grad:'gold', gradTx:true, glow:true, mandala:'tr', serif:true, align:'left',
+      bg:'#0b0613', accent:'#d4af37', tx:'#f3edff', sub:'#b8a6d9', sparkle:{c:'#e9d5ff', n:60, seed:19, flare:3, bokeh:6} },
+    { n:'काला सोना प्रो',  skin:'waveL', grad:'gold', gradTx:true, glow:true, icons:true, align:'left',
+      bg:'#000000', accent:'#d4af37', tx:'#f5f5f4', sub:'#d4d4d4', ini:'#f6e27a', sparkle:{c:'#f6e27a', n:90, seed:55, flare:5, bokeh:8} },
+    { n:'सिल्वर नाइट',     skin:'waveB', grad:'silver', gradTx:true, glow:true, icons:true, align:'left',
+      bg:'#05070a', accent:'#cfd8dc', tx:'#eef4f6', sub:'#9fb3ba', sparkle:{c:'#ffffff', n:90, seed:66, flare:4, bokeh:8} }
+  ];
+  RG.forEach(s=>{ TEMPLATES['g'+(gi++)]=Object.assign({ gen:true, prem:true, name:s.n }, s); });
 })();
 
 /* ================= 🔤 RENDER HELPERS (inch = unit; TXT slice-bug fix — resume engine से) ================= */
@@ -343,18 +359,84 @@ function srand(seed){ let a=(seed||7)>>>0; return function(){ a|=0; a=(a+0x6D2B7
   return ((t^(t>>>14))>>>0)/4294967296; }; }
 /* ✨ sparkle/glitter — seeded, हर design का अपना स्थिर pattern */
 function drawSparkle(ctx,sp,ox,oy,W,H){
-  if(!sp||!sp.n) return; const r=srand(sp.seed), n=sp.n;
+  if(!sp||!sp.n) return; const r=srand(sp.seed), n=sp.n, col=sp.c||'#f6e27a';
   ctx.save(); ctx.beginPath(); ctx.rect(ox,oy,W,H); ctx.clip();
+  /* 🌫️ bokeh — धुंधले light spots (सबसे नीचे) */
+  const nb=sp.bokeh||0;
+  for(let i=0;i<nb;i++){
+    const x=ox+r()*W, y=oy+r()*H, R=0.05+r()*0.15;
+    const g=ctx.createRadialGradient(x,y,0,x,y,R);
+    g.addColorStop(0,col+'55'); g.addColorStop(1,col+'00');
+    ctx.globalAlpha=1; ctx.fillStyle=g;
+    ctx.beginPath(); ctx.arc(x,y,R,0,7); ctx.fill();
+  }
+  /* ✨ particles + छोटे stars */
   for(let i=0;i<n;i++){
     const x=ox+r()*W, y=oy+r()*H, s=(0.25+r()*1.1)/SC*1.6, a=0.12+r()*0.55;
-    ctx.globalAlpha=a; ctx.fillStyle=sp.c||'#f6e27a';
+    ctx.globalAlpha=a; ctx.fillStyle=col;
     if(r()<0.16){ const R=s*3.2; ctx.beginPath();
       ctx.moveTo(x,y-R); ctx.quadraticCurveTo(x,y,x+R,y); ctx.quadraticCurveTo(x,y,x,y+R);
       ctx.quadraticCurveTo(x,y,x-R,y); ctx.quadraticCurveTo(x,y,x,y-R); ctx.fill();
     } else { ctx.beginPath(); ctx.arc(x,y,s,0,7); ctx.fill(); }
   }
+  /* 💥 star flares — चमकते cross stars (सबसे ऊपर) */
+  const nf=sp.flare||0;
+  for(let i=0;i<nf;i++){
+    const x=ox+r()*W, y=oy+r()*H, R=0.035+r()*0.055, d=R*0.48;
+    ctx.globalAlpha=0.9; ctx.strokeStyle=col; ctx.lineWidth=0.8/SC;
+    ctx.beginPath(); ctx.moveTo(x-R,y); ctx.lineTo(x+R,y);
+    ctx.moveTo(x,y-R); ctx.lineTo(x,y+R); ctx.stroke();
+    ctx.lineWidth=0.45/SC;
+    ctx.beginPath(); ctx.moveTo(x-d,y-d); ctx.lineTo(x+d,y+d);
+    ctx.moveTo(x-d,y+d); ctx.lineTo(x+d,y-d); ctx.stroke();
+    ctx.fillStyle='#fffbe8'; ctx.beginPath(); ctx.arc(x,y,R*0.22,0,7); ctx.fill();
+  }
   ctx.restore();
 }
+/* 💫 orbit — light-trail swoosh (glow परत + gold + सफ़ेद core + रास्ते की glitter) */
+function drawOrbit(ctx,X,Y,W,H,t){
+  ctx.save(); ctx.beginPath(); ctx.rect(X(0),Y(0),W,H); ctx.clip();
+  const gcol=glowCol(t), mid=t.grad==='silver'?'#e8eef2':(t.grad==='copper'?'#e8b083':'#f6e27a'), core='#fffbe8';
+  const cx=W*0.5, cy=H*0.55, rx=W*0.68, ry=H*0.38, rot=-0.12;
+  const a0=Math.PI*0.94, a1=Math.PI*0.30, sp=Math.abs(a1-a0);   /* smile: left से नीचे होते हुए right comet */
+  const arc=(s0,s1,w,c,blur,al)=>{ ctx.beginPath(); ctx.ellipse(X(cx),Y(cy),rx,ry,rot,s0,s1,true); /* anticlockwise — नीचे का रास्ता */
+    ctx.strokeStyle=c; ctx.lineWidth=w; ctx.lineCap='round'; ctx.globalAlpha=(al==null?1:al);
+    ctx.shadowColor=c; ctx.shadowBlur=blur; ctx.stroke(); ctx.globalAlpha=1; ctx.shadowBlur=0; };
+  /* taper: 3 हिस्से, हर हिस्सा 3 परतें (halo → gold → hot core) */
+  [[a0,Math.PI*0.62,1],[Math.PI*0.62,Math.PI*0.42,0.6],[Math.PI*0.42,a1,0.3]].forEach(([s0,s1,k])=>{
+    arc(s0,s1,0.06*k,gcol,0.05*SC*0+6,0.5);
+    arc(s0,s1,0.022*k,mid,4,0.95);
+    arc(s0,s1,0.008*k,core,2,1);
+  });
+  /* ✨ glitter dust — trail के इर्द-गिर्द */
+  const r=srand((t.sparkle&&t.sparkle.seed)||99);
+  for(let i=0;i<80;i++){
+    const a=a1+r()*(a0-a1), j=(r()-0.5)*0.16;
+    const px=cx+(rx+j)*Math.cos(a)*Math.cos(rot)-(ry+j)*Math.sin(a)*Math.sin(rot);
+    const py=cy+(rx+j)*Math.cos(a)*Math.sin(rot)+(ry+j)*Math.sin(a)*Math.cos(rot);
+    const sz=(0.3+r()*1.2)/SC*1.6;
+    ctx.globalAlpha=0.15+r()*0.6; ctx.fillStyle=(r()<0.15)?core:mid;
+    ctx.shadowColor=mid; ctx.shadowBlur=3;
+    ctx.beginPath(); ctx.arc(X(px),Y(py),sz,0,7); ctx.fill();
+  }
+  ctx.globalAlpha=1; ctx.shadowBlur=0;
+  /* 💥 comet head — चमकता सिरा */
+  const ex=cx+rx*Math.cos(a1)*Math.cos(rot)-ry*Math.sin(a1)*Math.sin(rot);
+  const ey=cy+rx*Math.cos(a1)*Math.sin(rot)+ry*Math.sin(a1)*Math.cos(rot);
+  const g=ctx.createRadialGradient(X(ex),Y(ey),0,X(ex),Y(ey),0.14);
+  g.addColorStop(0,'#fffbe8'); g.addColorStop(0.3,mid+'cc'); g.addColorStop(1,mid+'00');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(X(ex),Y(ey),0.14,0,7); ctx.fill();
+  const R=0.11, d=R*0.42;
+  ctx.strokeStyle='#fffbe8'; ctx.shadowColor=gcol; ctx.shadowBlur=6; ctx.lineWidth=1.1/SC;
+  ctx.beginPath(); ctx.moveTo(X(ex-R),Y(ey)); ctx.lineTo(X(ex+R),Y(ey));
+  ctx.moveTo(X(ex),Y(ey-R)); ctx.lineTo(X(ex),Y(ey+R)); ctx.stroke();
+  ctx.lineWidth=0.6/SC;
+  ctx.beginPath(); ctx.moveTo(X(ex-d),Y(ey-d)); ctx.lineTo(X(ex+d),Y(ey+d));
+  ctx.moveTo(X(ex-d),Y(ey+d)); ctx.lineTo(X(ex+d),Y(ey-d)); ctx.stroke();
+  ctx.shadowBlur=0;
+  ctx.restore();
+}
+function glowCol(t){ return t.grad==='silver'?'#eef6ff':(t.grad==='copper'?'#ffc79b':'#ffe98a'); }
 /* ❂ geometric mandala — original ornament (कोई copy नहीं) */
 function drawMandala(ctx,cx,cy,rad,col,alpha){
   ctx.save(); ctx.globalAlpha=(alpha==null?0.9:alpha);
@@ -378,8 +460,12 @@ function drawCardInto(ctx,t,d,OX,OY){
   ctx.fillStyle=t.gradBg?metGrad(ctx,t.gradBg,X(0),Y(0),X(W),Y(H)):t.bg; ctx.fillRect(X(0),Y(0),W,H);
   drawPattern(ctx,t.pat,X(0),Y(0),W,H);   /* 🧩 Corel-style wallpaper pattern */
   drawSparkle(ctx,t.sparkle,X(0),Y(0),W,H);   /* ✨ gold glitter */
-  if(t.frame){ ctx.strokeStyle=t.accent; ctx.lineWidth=1.4/SC; ctx.strokeRect(X(0.05),Y(0.05),W-0.1,H-0.1);
-    ctx.lineWidth=0.5/SC; ctx.strokeRect(X(0.1),Y(0.1),W-0.2,H-0.2); }
+  if(t.orbit) drawOrbit(ctx,X,Y,W,H,t);       /* 💫 comet swoosh */
+  const gcol=glowCol(t), goldTx=()=>metGrad(ctx,t.grad||'gold',X(0),Y(0),X(W),Y(H));
+  const glowOn=(b)=>{ if(t.glow){ ctx.shadowColor=gcol; ctx.shadowBlur=b*SC; } };
+  const glowOff=()=>{ if(t.glow){ ctx.shadowColor='transparent'; ctx.shadowBlur=0; } };
+  if(t.frame){ glowOn(0.02); ctx.strokeStyle=t.grad&&t.glow?goldTx():t.accent; ctx.lineWidth=1.4/SC; ctx.strokeRect(X(0.05),Y(0.05),W-0.1,H-0.1);
+    ctx.lineWidth=0.5/SC; ctx.strokeRect(X(0.1),Y(0.1),W-0.2,H-0.2); glowOff(); }
   /* ---- 🔄 BACK skins ---- */
   if(t.skin==='bBrand'){
     const lg0=d.logo?logoImg(d.logo):null;
@@ -424,27 +510,28 @@ function drawCardInto(ctx,t,d,OX,OY){
   if(t.skin==='waveL'||t.skin==='waveB'){
     ctx.save(); ctx.beginPath(); ctx.rect(X(0),Y(0),W,H); ctx.clip();
     const wfill=t.grad?metGrad(ctx,t.grad,X(0),Y(0),X(W),Y(H)):t.accent;
-    const echo=t.ini||'#f6e27a';
+    const echo=t.ini||(t.grad==='silver'?'#e8eef2':(t.grad==='copper'?'#f0b58a':'#f6e27a'));
     const wpath=(o)=>{ ctx.beginPath();
       if(t.skin==='waveL'){ const wx=1.15+o;
         ctx.moveTo(X(wx),Y(0));
         ctx.bezierCurveTo(X(wx+0.5),Y(H*0.3),X(wx-0.4),Y(H*0.7),X(wx),Y(H));
         ctx.lineTo(X(0),Y(H)); ctx.lineTo(X(0),Y(0)); ctx.closePath(); }
-      else { const hy=H*0.58+o;
-        ctx.moveTo(X(0),Y(hy+0.1));
-        ctx.bezierCurveTo(X(W*0.35),Y(hy-0.45),X(W*0.65),Y(hy+0.5),X(W),Y(hy-0.05));
+      else { const hy=H*0.76+o;
+        ctx.moveTo(X(0),Y(hy+0.05));
+        ctx.bezierCurveTo(X(W*0.35),Y(hy-0.16),X(W*0.65),Y(hy+0.18),X(W),Y(hy-0.04));
         ctx.lineTo(X(W),Y(H)); ctx.lineTo(X(0),Y(H)); ctx.closePath(); } };
     ctx.fillStyle=wfill; wpath(0); ctx.fill();
+    glowOn(0.02);
     ctx.strokeStyle=echo; ctx.lineWidth=1.6/SC; wpath(t.skin==='waveL'?0.06:-0.055); ctx.stroke();
     ctx.lineWidth=0.8/SC; wpath(t.skin==='waveL'?0.12:-0.11); ctx.stroke();
-    ctx.restore();
+    glowOff(); ctx.restore();
   }
   /* ❂ corner mandala (original geometric ornament) */
   if(t.mandala){
     const mc=t.grad?metGrad(ctx,t.grad,X(0),Y(0),X(W),Y(H)):t.accent;
     const mp={tr:[W-0.02,0.02],tl:[0.02,0.02],br:[W-0.02,H-0.02],bl:[0.02,H-0.02]}[t.mandala]||[W-0.02,0.02];
     ctx.save(); ctx.beginPath(); ctx.rect(X(0),Y(0),W,H); ctx.clip();
-    drawMandala(ctx,X(mp[0]),Y(mp[1]),0.78,mc,0.9);
+    glowOn(0.025); drawMandala(ctx,X(mp[0]),Y(mp[1]),0.78,mc,0.9); glowOff();
     ctx.restore();
   }
   /* logo */
@@ -478,28 +565,30 @@ function drawCardInto(ctx,t,d,OX,OY){
   const setBiz=(pt)=>{ if(t.script) ctx.font='400 '+(pt*bf*PT*SC)+'px '+FSCR; else setF(ctx,t,pt,bw); };
   let y;
   if(bandTxt){
-    setBiz(12); ctx.fillStyle=t.ini||'#ffffff';
+    setBiz(12); ctx.fillStyle=t.gradTx?goldTx():(t.ini||'#ffffff');
     ctx.textAlign=C?'center':'left';
     TXT(ctx,d.biz||'',C?W/2:pad,Y(0.28));
     if(d.tag){ setF(ctx,t,6.5,400,'italic'); ctx.fillStyle=(t.ini||'#ffffff')+'cc'; TXT(ctx,d.tag,C?W/2:pad,Y(0.47)); }
     y=0.86;
     ctx.textAlign=C?'center':'left';
   } else if(t.skin==='bandLeft'||t.skin==='waveL'){
-    setBiz(10.5); ctx.fillStyle=t.accent;
+    setBiz(10.5); ctx.fillStyle=t.gradTx?goldTx():t.accent;
     TXT(ctx,d.biz||'',cX,Y(0.32));
     y=0.44;
     if(d.tag){ setF(ctx,t,6.2,400,'italic'); ctx.fillStyle=t.sub; TXT(ctx,d.tag,cX,Y(y)); y+=0.14; }
   } else {
     y=(C&&logoDrawn)?0.66:0.33;
     const bx=(!C&&logoDrawn&&t.skin!=='bandLeft')?cL+0.62:cX;
-    setBiz(12); ctx.fillStyle=t.accent;
+    setBiz(12); ctx.fillStyle=t.gradTx?goldTx():t.accent;
     TXT(ctx,d.biz||'',bx,Y(y));
     if(d.tag){ setF(ctx,t,6.5,400,'italic'); ctx.fillStyle=t.sub; TXT(ctx,d.tag,bx,Y(y+0.13)); }
-    y+=0.3;
+    y+=(t.skin==='waveB')?0.24:0.3;
   }
   /* name + desig */
-  setF(ctx,t,11,700); ctx.fillStyle=t.tx;
+  setF(ctx,t,11,700); ctx.fillStyle=t.gradTx?goldTx():t.tx;
+  glowOn(0.018);
   TXT(ctx,d.name||'',cX,Y(Math.max(y,(t.skin==='bandTop')?0.86:y)+((t.skin==='bandTop')?0:0.1)));
+  glowOff();
   let ny=Math.max(y,(t.skin==='bandTop')?0.86:y)+((t.skin==='bandTop')?0:0.1);
   if(d.desig){ setF(ctx,t,7.5,600); ctx.fillStyle=t.skin==='bandLeft'?t.accent:(t.accent);
     TXT(ctx,d.desig,cX,Y(ny+0.15)); ny+=0.15; }
@@ -520,14 +609,14 @@ function drawCardInto(ctx,t,d,OX,OY){
   if(d.web){ lines.push(d.web); gly.push('\u{1F310}'); }
   setF(ctx,t,6.3,400); ctx.fillStyle=t.sub;
   if(t.icons) ctx.textAlign='left';
-  let dy=ny+0.13;
-  const step=0.115, maxY=(t.skin==='waveB')?H*0.58-0.18:H-0.09;
+  let dy=ny+((t.skin==='waveB')?0.11:0.13);
+  const step=(t.skin==='waveB')?0.105:0.115, maxY=(t.skin==='waveB')?H*0.70:H-0.09;
   lines.forEach((l,li)=>{ if(dy>maxY) return;
     let tx=t.icons?cL+0.17:cX;
     if(t.icons&&gly[li]){ const chx=cL+0.055, chy=dy-0.038;
       ctx.beginPath(); ctx.arc(X(chx),Y(chy),0.052,0,7);
       ctx.fillStyle=t.grad?metGrad(ctx,t.grad,X(chx-0.05),Y(chy-0.05),X(chx+0.05),Y(chy+0.05)):t.accent; ctx.fill();
-      ctx.fillStyle='#ffffff'; setF(ctx,t,5.5,700); ctx.textAlign='center';
+      ctx.fillStyle=(t.grad==='silver')?'#26333a':'#ffffff'; setF(ctx,t,5.5,700); ctx.textAlign='center';
       TXT(ctx,gly[li],X(chx),Y(chy+0.02));
       ctx.fillStyle=t.sub; setF(ctx,t,6.3,400); ctx.textAlign='left';
       tx=cL+0.17; }
@@ -783,6 +872,18 @@ function renderStudio(){
     b.onclick=()=>{ c.frame=v; renderStudio(); studioPreview(); };
     fr.querySelector('.stchips').appendChild(b); });
   st.appendChild(fr);
+  /* ✨ premium effects — glow / gold अक्षर / sparkle */
+  st.appendChild(H('<h3>'+T('stPrem')+'</h3>'));
+  const mkT=(key,lb,get,set)=>{
+    const row=H('<div class="strow"><label>'+lb+'</label><div class="stchips"></div></div>');
+    [[true,T('stOn')],[false,T('stOff')]].forEach(([v,lb2])=>{
+      const b=document.createElement('button'); b.className='sbtn'+(get()===v?' on':''); b.textContent=lb2;
+      b.onclick=()=>{ set(v); renderStudio(); studioPreview(); };
+      row.querySelector('.stchips').appendChild(b); });
+    st.appendChild(row); };
+  mkT('glow',T('stGlow'),()=>!!c.glow,v=>{ c.glow=v; });
+  mkT('gradTx',T('stGold'),()=>!!c.gradTx,v=>{ c.gradTx=v; if(v&&!c.grad) c.grad='gold'; });
+  mkT('spark',T('stSpark'),()=>!!c.sparkle,v=>{ c.sparkle=v?{c:'#f6e27a',n:100,seed:7,flare:5,bokeh:8}:null; });
   /* buttons */
   const bt=H('<div class="stbtns"></div>');
   const mk=(lb,fn)=>{ const b=document.createElement('button'); b.className='sbtn'; b.textContent=lb; b.onclick=fn; bt.appendChild(b); };
