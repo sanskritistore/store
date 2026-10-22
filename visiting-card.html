@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>संस्कृति — 🪪 Visiting Card Maker</title>
 <script src="assets/js/admin-gate.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Serif+Devanagari:wght@600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f172a;color:#e2e8f0;display:flex;flex-direction:column;height:100vh;overflow:hidden}
@@ -72,7 +74,7 @@ main{display:flex;flex:1;overflow:hidden}
 <header>
   <span style="font-size:20px">🌸</span>
   <h1>संस्कृति Visiting Card Maker</h1>
-  <span class="badge">FREE v1.2 🖼️</span>
+  <span class="badge">FREE v1.3 ⭐</span>
   <span style="flex:1"></span>
   <button class="hbtn" id="btnLang">🌐 English</button>
   <button class="hbtn" id="btnSave">💾 सहेजें</button>
@@ -136,7 +138,7 @@ const STR={
    tTplSaved:'🎨 आपका Design सहेज गया ✓ — chips में दिख रहा है', tTplDel:'🗑️ Design हटा दिया',
    tTplBad:'❌ यह Design file नहीं है', tTplImp:'📥 Design आ गया ✓', tNeedName:'❗ पहले Design का नाम लिखो',
    galBtn:'🖼️ 100+ Designs देखो', galTitle:'🖼️ तैयार Designs — जो पसंद हो उस पर click करो',
-   galAll:'सभी', galPat:'🧩 Pattern वाले', galPick:'✅ Design चुन लिया — अब अपनी जानकारी भरो' },
+   galAll:'सभी', galPrem:'⭐ प्रीमियम', galPat:'🧩 Pattern वाले', galPick:'✅ Design चुन लिया — अब अपनी जानकारी भरो' },
  en:{ save:'💾 Save', load:'📂 Open', printf:'🖨️ Front Sheet (300 DPI)', printb:'🖨️ Back Sheet (300 DPI)', png:'🖼️ Card PNG (300 DPI)', sample:'✨ Fill Sample', langBtn:'🌐 हिंदी',
    sideF:'🪪 Front', sideB:'🔄 Back',
    tpl:'🎨 Choose Design', logo:'🖼️ Add Logo (optional)', logoCh:'🖼️ Change Logo ✓', logoRm:'🚫 Remove Logo',
@@ -163,7 +165,7 @@ const STR={
    tTplSaved:'🎨 Your Design saved ✓ — see it in the chips', tTplDel:'🗑️ Design deleted',
    tTplBad:'❌ Not a Design file', tTplImp:'📥 Design imported ✓', tNeedName:'❗ Please write a Design name first',
    galBtn:'🖼️ Browse 100+ Designs', galTitle:'🖼️ Ready Designs — click the one you like',
-   galAll:'All', galPat:'🧩 Patterned', galPick:'✅ Design picked — now fill your details' }
+   galAll:'All', galPrem:'⭐ Premium', galPat:'🧩 Patterned', galPick:'✅ Design picked — now fill your details' }
 };
 const S={ ui:'hi', side:'front', tplFront:'simple', tplBack:'bbrand', sheet:'a4', cardSize:'35x2', data:null };
 function T(k){ return STR[S.ui][k]; }
@@ -253,11 +255,34 @@ const GENSKINS=[ ['plain','सादा'], ['bar','साइड line'], ['bandTo
     { n:'मिडनाइट Lines',   skin:'bar',   serif:false, align:'left',   bg:'#172554', accent:'#60a5fa', tx:'#eff6ff', sub:'#93c5fd', ini:'#bfdbfe', frame:false, pat:{ty:'v',  c:'#60a5fa', gap:0.2,  a:0.18, lw:1} }
   ];
   SP.forEach(s=>{ TEMPLATES['g'+(gi++)]=Object.assign({ gen:true, name:s.n }, s); });
+  /* ⭐ PREMIUM pack — S-wave, metallic gold, sparkle, mandala, icons, script (सब original) */
+  const PREM=[
+    { n:'गोल्ड वेव',       skin:'waveL', grad:'gold',   bg:'#0a0a0a', accent:'#d4af37', tx:'#f5f5f4', sub:'#d4d4d4', ini:'#f6e27a', icons:true, align:'left' },
+    { n:'हरा शाही वेव',    skin:'waveL', grad:'gold',   bg:'#0c2b21', accent:'#d4af37', tx:'#eef7f2', sub:'#a7c4b5', ini:'#f6e27a', icons:true, align:'left' },
+    { n:'नीला स्टील वेव',  skin:'waveL', grad:'silver', bg:'#0b1c2c', accent:'#cfd8dc', tx:'#eaf4ff', sub:'#9fc3e0', ini:'#ffffff', icons:true, align:'left' },
+    { n:'सोने की धार',     skin:'waveL', grad:'gold',   bg:'#ffffff', accent:'#b8860b', tx:'#292524', sub:'#78716c', ini:'#fff7d6', icons:true, align:'left' },
+    { n:'डार्क सिल्वर वेव',skin:'waveL', grad:'silver', bg:'#141414', accent:'#d9d9d9', tx:'#f5f5f5', sub:'#bdbdbd', ini:'#ffffff', icons:true, align:'left' },
+    { n:'कॉपर वेव',        skin:'waveB', grad:'copper', bg:'#1a0f0a', accent:'#d1915a', tx:'#fde8d7', sub:'#e0b08a', ini:'#f6c89f', icons:true, align:'left' },
+    { n:'गुलाबी सिल्क वेव',skin:'waveB', grad:'gold',   bg:'#2b0f1c', accent:'#e7c37a', tx:'#ffeef5', sub:'#e8a8c0', ini:'#f6e27a', script:true, align:'left' },
+    { n:'रात का चमक',      skin:'waveB', grad:'gold',   bg:'#050505', accent:'#e7c37a', tx:'#f5f0e1', sub:'#d9c9a3', ini:'#f6e27a', script:true, align:'left',
+      sparkle:{c:'#f6e27a', n:120, seed:11} },
+    { n:'चांदी की लहर',    skin:'waveB', grad:'silver', bg:'#101418', accent:'#cfd8dc', tx:'#eef4f6', sub:'#9fb3ba', ini:'#ffffff', icons:true, align:'left',
+      sparkle:{c:'#ffffff', n:80, seed:23} },
+    { n:'मैरून मंडला',     skin:'plain', mandala:'tr', grad:'gold',  bg:'#2b0a1e', accent:'#d4af37', tx:'#fdf3e3', sub:'#e7c98a', serif:true, align:'left' },
+    { n:'शाही मंडला',      skin:'plain', mandala:'tl', grad:'gold',  bg:'#120a2b', accent:'#d4af37', tx:'#f3edff', sub:'#b8a6d9', serif:true, align:'left' },
+    { n:'चांदी मंडला',     skin:'plain', mandala:'br', grad:'silver',bg:'#101418', accent:'#cfd8dc', tx:'#eef4f6', sub:'#9fb3ba', serif:false, align:'left',
+      sparkle:{c:'#ffffff', n:60, seed:5} },
+    { n:'रात सोना',        skin:'plain', bg:'#050505', accent:'#e7c37a', tx:'#f5f0e1', sub:'#d9c9a3', script:true, align:'center',
+      sparkle:{c:'#f6e27a', n:150, seed:42} },
+    { n:'गोल्ड कार्ड शाही',skin:'plain', gradBg:'gold', bg:'#e0aa3e', accent:'#7c2d12', tx:'#1c1005', sub:'#5b3a10', ini:'#7c2d12', serif:true, align:'center', frame:true }
+  ];
+  PREM.forEach(s=>{ TEMPLATES['g'+(gi++)]=Object.assign({ gen:true, prem:true, name:s.n }, s); });
 })();
 
 /* ================= 🔤 RENDER HELPERS (inch = unit; TXT slice-bug fix — resume engine से) ================= */
 const FDEV='"Noto Sans Devanagari","Segoe UI",system-ui,sans-serif';
 const FSER='"Noto Serif Devanagari",Georgia,serif';
+const FSCR='"Great Vibes","Noto Serif Devanagari",cursive';   /* script (OFL free font) */
 const PT=1/72;
 let SC=VIEW_SCALE;
 function font(t,px,w,st){ return (st||'')+' '+(w||400)+' '+px+'px '+(t.serif?FSER:FDEV); }
@@ -304,11 +329,55 @@ function drawPattern(ctx,p,ox,oy,W,H){
       ctx.beginPath(); ctx.arc(ox+x,oy+y,(p.lw||1.2)/SC,0,7); ctx.fill(); } }
   ctx.restore();
 }
+/* ================= ⭐ PREMIUM HELPERS (metallic gradients, sparkle, mandala) ================= */
+function metGrad(ctx,c,x0,y0,x1,y1){
+  const g=ctx.createLinearGradient(x0,y0,x1,y1);
+  ({gold:[[0,'#f9f295'],[.22,'#e0aa3e'],[.5,'#b8860b'],[.75,'#f6e27a'],[1,'#9c6b1e']],
+    silver:[[0,'#ffffff'],[.25,'#d9d9d9'],[.5,'#a8a8a8'],[.75,'#f0f0f0'],[1,'#8f8f8f']],
+    copper:[[0,'#f6c89f'],[.25,'#d1915a'],[.5,'#a05a2c'],[.75,'#e8b083'],[1,'#8a4b23']]
+  }[c]||[[0,'#ccc'],[1,'#999']]).forEach(([p,col])=>g.addColorStop(p,col));
+  return g;
+}
+function srand(seed){ let a=(seed||7)>>>0; return function(){ a|=0; a=(a+0x6D2B79F5)|0;
+  let t=Math.imul(a^(a>>>15),1|a); t=(t+Math.imul(t^(t>>>7),61|t))^t;
+  return ((t^(t>>>14))>>>0)/4294967296; }; }
+/* ✨ sparkle/glitter — seeded, हर design का अपना स्थिर pattern */
+function drawSparkle(ctx,sp,ox,oy,W,H){
+  if(!sp||!sp.n) return; const r=srand(sp.seed), n=sp.n;
+  ctx.save(); ctx.beginPath(); ctx.rect(ox,oy,W,H); ctx.clip();
+  for(let i=0;i<n;i++){
+    const x=ox+r()*W, y=oy+r()*H, s=(0.25+r()*1.1)/SC*1.6, a=0.12+r()*0.55;
+    ctx.globalAlpha=a; ctx.fillStyle=sp.c||'#f6e27a';
+    if(r()<0.16){ const R=s*3.2; ctx.beginPath();
+      ctx.moveTo(x,y-R); ctx.quadraticCurveTo(x,y,x+R,y); ctx.quadraticCurveTo(x,y,x,y+R);
+      ctx.quadraticCurveTo(x,y,x-R,y); ctx.quadraticCurveTo(x,y,x,y-R); ctx.fill();
+    } else { ctx.beginPath(); ctx.arc(x,y,s,0,7); ctx.fill(); }
+  }
+  ctx.restore();
+}
+/* ❂ geometric mandala — original ornament (कोई copy नहीं) */
+function drawMandala(ctx,cx,cy,rad,col,alpha){
+  ctx.save(); ctx.globalAlpha=(alpha==null?0.9:alpha);
+  ctx.strokeStyle=col; ctx.fillStyle=col;
+  ctx.lineWidth=1.1/SC;
+  ctx.beginPath(); ctx.arc(cx,cy,rad,0,7); ctx.stroke();
+  ctx.lineWidth=0.6/SC;
+  ctx.beginPath(); ctx.arc(cx,cy,rad*0.84,0,7); ctx.stroke();
+  for(let i=0;i<12;i++){ ctx.save(); ctx.translate(cx,cy); ctx.rotate(i*Math.PI/6);
+    ctx.beginPath(); ctx.moveTo(0,-rad*0.2);
+    ctx.quadraticCurveTo(rad*0.2,-rad*0.5,0,-rad*0.8);
+    ctx.quadraticCurveTo(-rad*0.2,-rad*0.5,0,-rad*0.2); ctx.stroke(); ctx.restore(); }
+  for(let i=0;i<12;i++){ const a=i*Math.PI/6+Math.PI/12;
+    ctx.beginPath(); ctx.arc(cx+Math.cos(a)*rad*0.63,cy+Math.sin(a)*rad*0.63,rad*0.028,0,7); ctx.fill(); }
+  ctx.beginPath(); ctx.arc(cx,cy,rad*0.055,0,7); ctx.fill();
+  ctx.restore();
+}
 function drawCardInto(ctx,t,d,OX,OY){
   const X=v=>OX+v, Y=v=>OY+v, dm=cardDims(), W=dm.w, H=dm.h, C=t.align==='center';
   /* background */
-  ctx.fillStyle=t.bg; ctx.fillRect(X(0),Y(0),W,H);
+  ctx.fillStyle=t.gradBg?metGrad(ctx,t.gradBg,X(0),Y(0),X(W),Y(H)):t.bg; ctx.fillRect(X(0),Y(0),W,H);
   drawPattern(ctx,t.pat,X(0),Y(0),W,H);   /* 🧩 Corel-style wallpaper pattern */
+  drawSparkle(ctx,t.sparkle,X(0),Y(0),W,H);   /* ✨ gold glitter */
   if(t.frame){ ctx.strokeStyle=t.accent; ctx.lineWidth=1.4/SC; ctx.strokeRect(X(0.05),Y(0.05),W-0.1,H-0.1);
     ctx.lineWidth=0.5/SC; ctx.strokeRect(X(0.1),Y(0.1),W-0.2,H-0.2); }
   /* ---- 🔄 BACK skins ---- */
@@ -351,12 +420,39 @@ function drawCardInto(ctx,t,d,OX,OY){
   if(t.skin==='bar'){ ctx.fillStyle=t.accent; ctx.fillRect(X(0),Y(0),0.14,H); }
   if(t.skin==='bandTop'){ ctx.fillStyle=t.accent; ctx.fillRect(X(0),Y(0),W,0.62); }
   if(t.skin==='bandLeft'){ ctx.fillStyle=t.accent; ctx.fillRect(X(0),Y(0),1.12,H); }
+  /* ⭐ S-curve wave skins (premium) */
+  if(t.skin==='waveL'||t.skin==='waveB'){
+    ctx.save(); ctx.beginPath(); ctx.rect(X(0),Y(0),W,H); ctx.clip();
+    const wfill=t.grad?metGrad(ctx,t.grad,X(0),Y(0),X(W),Y(H)):t.accent;
+    const echo=t.ini||'#f6e27a';
+    const wpath=(o)=>{ ctx.beginPath();
+      if(t.skin==='waveL'){ const wx=1.15+o;
+        ctx.moveTo(X(wx),Y(0));
+        ctx.bezierCurveTo(X(wx+0.5),Y(H*0.3),X(wx-0.4),Y(H*0.7),X(wx),Y(H));
+        ctx.lineTo(X(0),Y(H)); ctx.lineTo(X(0),Y(0)); ctx.closePath(); }
+      else { const hy=H*0.58+o;
+        ctx.moveTo(X(0),Y(hy+0.1));
+        ctx.bezierCurveTo(X(W*0.35),Y(hy-0.45),X(W*0.65),Y(hy+0.5),X(W),Y(hy-0.05));
+        ctx.lineTo(X(W),Y(H)); ctx.lineTo(X(0),Y(H)); ctx.closePath(); } };
+    ctx.fillStyle=wfill; wpath(0); ctx.fill();
+    ctx.strokeStyle=echo; ctx.lineWidth=1.6/SC; wpath(t.skin==='waveL'?0.06:-0.055); ctx.stroke();
+    ctx.lineWidth=0.8/SC; wpath(t.skin==='waveL'?0.12:-0.11); ctx.stroke();
+    ctx.restore();
+  }
+  /* ❂ corner mandala (original geometric ornament) */
+  if(t.mandala){
+    const mc=t.grad?metGrad(ctx,t.grad,X(0),Y(0),X(W),Y(H)):t.accent;
+    const mp={tr:[W-0.02,0.02],tl:[0.02,0.02],br:[W-0.02,H-0.02],bl:[0.02,H-0.02]}[t.mandala]||[W-0.02,0.02];
+    ctx.save(); ctx.beginPath(); ctx.rect(X(0),Y(0),W,H); ctx.clip();
+    drawMandala(ctx,X(mp[0]),Y(mp[1]),0.78,mc,0.9);
+    ctx.restore();
+  }
   /* logo */
   const lg=d.logo?logoImg(d.logo):null;
   let logoDrawn=false;
   if(lg){
     let lx,ly,ls;
-    if(t.skin==='bandLeft'){ ls=0.72; lx=0.2; ly=(H-ls)/2; }
+    if(t.skin==='bandLeft'||t.skin==='waveL'){ ls=0.72; lx=0.2; ly=(H-ls)/2; }
     else if(C){ ls=0.42; lx=(W-ls)/2; ly=(t.skin==='bandTop')?0.72:0.12; }
     else { ls=0.5; lx=(t.skin==='bar')?0.3:0.17; ly=(t.skin==='bandTop')?0.74:0.15; }
     ctx.save(); ctx.beginPath(); ctx.rect(X(lx),Y(ly),ls,ls); ctx.clip();
@@ -366,7 +462,7 @@ function drawCardInto(ctx,t,d,OX,OY){
     ctx.restore(); logoDrawn=true;
   }
   /* bandLeft panel में logo न हो तो initials */
-  if(t.skin==='bandLeft'&&!logoDrawn&&d.biz){
+  if((t.skin==='bandLeft'||t.skin==='waveL')&&!logoDrawn&&d.biz){
     const ini=d.biz.trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
     setF(ctx,t,26,700); ctx.fillStyle=t.ini||'#ffffff'; ctx.textAlign='center';
     TXT(ctx,ini,X(0.56),Y(1.1));
@@ -374,27 +470,29 @@ function drawCardInto(ctx,t,d,OX,OY){
   ctx.textAlign=C?'center':'left';
   /* content area */
   const pad=(t.skin==='bar')?0.3:0.17;
-  const cL=(t.skin==='bandLeft')?1.3:pad, cR=W-pad;
+  const cL=(t.skin==='bandLeft')?1.3:(t.skin==='waveL')?1.62:pad, cR=W-pad;
   const cX=C?W/2:cL, cW=cR-cL;
   const bandTxt=t.skin==='bandTop';
   /* biz */
+  const bf=t.script?1.9:1, bw=t.script?400:700;
+  const setBiz=(pt)=>{ if(t.script) ctx.font='400 '+(pt*bf*PT*SC)+'px '+FSCR; else setF(ctx,t,pt,bw); };
   let y;
   if(bandTxt){
-    setF(ctx,t,12,700); ctx.fillStyle=t.ini||'#ffffff';
+    setBiz(12); ctx.fillStyle=t.ini||'#ffffff';
     ctx.textAlign=C?'center':'left';
     TXT(ctx,d.biz||'',C?W/2:pad,Y(0.28));
     if(d.tag){ setF(ctx,t,6.5,400,'italic'); ctx.fillStyle=(t.ini||'#ffffff')+'cc'; TXT(ctx,d.tag,C?W/2:pad,Y(0.47)); }
     y=0.86;
     ctx.textAlign=C?'center':'left';
-  } else if(t.skin==='bandLeft'){
-    setF(ctx,t,10.5,700); ctx.fillStyle=t.accent;
+  } else if(t.skin==='bandLeft'||t.skin==='waveL'){
+    setBiz(10.5); ctx.fillStyle=t.accent;
     TXT(ctx,d.biz||'',cX,Y(0.32));
     y=0.44;
     if(d.tag){ setF(ctx,t,6.2,400,'italic'); ctx.fillStyle=t.sub; TXT(ctx,d.tag,cX,Y(y)); y+=0.14; }
   } else {
     y=(C&&logoDrawn)?0.66:0.33;
     const bx=(!C&&logoDrawn&&t.skin!=='bandLeft')?cL+0.62:cX;
-    setF(ctx,t,12,700); ctx.fillStyle=t.accent;
+    setBiz(12); ctx.fillStyle=t.accent;
     TXT(ctx,d.biz||'',bx,Y(y));
     if(d.tag){ setF(ctx,t,6.5,400,'italic'); ctx.fillStyle=t.sub; TXT(ctx,d.tag,bx,Y(y+0.13)); }
     y+=0.3;
@@ -413,16 +511,27 @@ function drawCardInto(ctx,t,d,OX,OY){
   else { ctx.moveTo(X(cL),Y(ny)); ctx.lineTo(X(cL+0.7),Y(ny)); }
   ctx.stroke();
   /* details */
-  const lines=[];
-  if(d.phone) lines.push(d.phone+(d.phone2?'  •  '+d.phone2:''));
-  else if(d.phone2) lines.push(d.phone2);
-  if(d.email) lines.push(d.email);
-  if(d.addr){ setF(ctx,t,6.3,400); wrap(ctx,d.addr,cW).slice(0,2).forEach(l=>lines.push(l)); }
-  if(d.web) lines.push(d.web);
+  const lines=[], gly=[];
+  if(d.phone){ lines.push(d.phone+(d.phone2?'  •  '+d.phone2:'')); gly.push('\u260e'); }
+  else if(d.phone2){ lines.push(d.phone2); gly.push('\u260e'); }
+  if(d.email){ lines.push(d.email); gly.push('\u2709'); }
+  if(d.addr){ setF(ctx,t,6.3,400); const ws2=wrap(ctx,d.addr,cW-(t.icons?0.2:0)).slice(0,2);
+    ws2.forEach((l,i)=>{ lines.push(l); gly.push(i===0?'\u25ce':''); }); }
+  if(d.web){ lines.push(d.web); gly.push('\u{1F310}'); }
   setF(ctx,t,6.3,400); ctx.fillStyle=t.sub;
+  if(t.icons) ctx.textAlign='left';
   let dy=ny+0.13;
-  const step=0.115, maxY=H-0.09;
-  lines.forEach(l=>{ if(dy>maxY) return; TXT(ctx,l,cX,Y(dy)); dy+=step; });
+  const step=0.115, maxY=(t.skin==='waveB')?H*0.58-0.18:H-0.09;
+  lines.forEach((l,li)=>{ if(dy>maxY) return;
+    let tx=t.icons?cL+0.17:cX;
+    if(t.icons&&gly[li]){ const chx=cL+0.055, chy=dy-0.038;
+      ctx.beginPath(); ctx.arc(X(chx),Y(chy),0.052,0,7);
+      ctx.fillStyle=t.grad?metGrad(ctx,t.grad,X(chx-0.05),Y(chy-0.05),X(chx+0.05),Y(chy+0.05)):t.accent; ctx.fill();
+      ctx.fillStyle='#ffffff'; setF(ctx,t,5.5,700); ctx.textAlign='center';
+      TXT(ctx,gly[li],X(chx),Y(chy+0.02));
+      ctx.fillStyle=t.sub; setF(ctx,t,6.3,400); ctx.textAlign='left';
+      tx=cL+0.17; }
+    TXT(ctx,l,tx,Y(dy)); dy+=step; });
 }
 
 /* ================= 🖨️ SHEET RENDERER (grid + crop marks) ================= */
@@ -716,7 +825,7 @@ function openGallery(){
   const head=H('<div class="galhead"><h2>'+T('galTitle')+'</h2><div class="fchips"></div><button class="x">✖</button></div>');
   head.querySelector('.x').onclick=()=>{ g.style.display='none'; };
   const fc=head.querySelector('.fchips');
-  [['all',T('galAll')],['plain',T('skPlain')],['bar',T('skBar')],['bandTop',T('skBandTop')],['bandLeft',T('skBandLeft')],['pat',T('galPat')]].forEach(([v,lb])=>{
+  [['all',T('galAll')],['prem',T('galPrem')],['plain',T('skPlain')],['bar',T('skBar')],['bandTop',T('skBandTop')],['bandLeft',T('skBandLeft')],['pat',T('galPat')]].forEach(([v,lb])=>{
     const b=document.createElement('button'); b.className=(GALF===v?' on':'');
     b.textContent=lb; b.onclick=()=>{ GALF=v; openGallery(); };
     fc.appendChild(b); });
@@ -727,6 +836,7 @@ function openGallery(){
   ids.forEach(id=>{
     const t=TEMPLATES[id];
     if(GALF==='pat'){ if(!t.pat||t.pat.ty==='none') return; }
+    else if(GALF==='prem'){ if(!t.prem) return; }
     else if(GALF!=='all'&&t.skin!==GALF) return;
     n++;
     const card=H('<div class="galcard"></div>');
