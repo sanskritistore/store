@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>संस्कृति — 🪪 Visiting Card Maker</title>
+<script src="assets/js/admin-gate.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f172a;color:#e2e8f0;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+header{display:flex;align-items:center;gap:10px;padding:8px 14px;background:#1e293b;border-bottom:2px solid #f59e0b;flex-wrap:wrap}
+header h1{font-size:17px;color:#fbbf24;white-space:nowrap}
+.badge{background:#15803d;color:#fff;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:700}
+.hbtn{background:#334155;border:1px solid #475569;color:#e2e8f0;padding:7px 13px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600}
+.hbtn:hover{background:#475569}
+.hbtn.main{background:#c2410c;border-color:#ea580c}
+.hbtn.main:hover{background:#ea580c}
+main{display:flex;flex:1;overflow:hidden}
+#side{width:300px;min-width:300px;background:#1e293b;overflow-y:auto;padding:10px;border-right:1px solid #334155}
+#side h3{font-size:13px;color:#fbbf24;margin:12px 0 6px;border-bottom:1px solid #334155;padding-bottom:4px}
+#side h3:first-child{margin-top:0}
+.sbtn{background:#334155;border:1px solid #475569;color:#e2e8f0;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12.5px;font-weight:600;margin:2px 0;width:100%;text-align:left}
+.sbtn:hover{background:#475569}
+.sbtn.on{background:#7c2d12;border-color:#f59e0b}
+.fld{margin:5px 0}
+.fld label{display:block;font-size:11.5px;color:#94a3b8;margin-bottom:2px}
+.fld input,.fld textarea{width:100%;background:#0f172a;border:1px solid #334155;color:#e2e8f0;padding:6px 8px;border-radius:6px;font-size:13px;font-family:inherit}
+.fld textarea{resize:vertical;min-height:44px}
+.tplchip{display:flex;gap:6px;flex-wrap:wrap}
+.tplchip .cchip{position:relative;flex:1;min-width:45%}
+.tplchip .cchip .nm{width:100%}
+.tplchip .cchip .mini{position:absolute;top:-5px;right:-5px;display:flex;gap:3px}
+.tplchip .cchip .mini button{background:#475569;border:none;color:#e2e8f0;border-radius:50%;width:19px;height:19px;font-size:10px;cursor:pointer;line-height:1}
+#stage{flex:1;overflow:auto;display:flex;flex-direction:column;align-items:center;padding:14px;gap:14px;background:#0b1120}
+#stage canvas{background:#fff;box-shadow:0 4px 24px #0008;border-radius:2px}
+.stglab{color:#64748b;font-size:12px;font-weight:700;align-self:flex-start;margin-left:4%}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#1e293b;border:1px solid #f59e0b;color:#fde68a;padding:9px 18px;border-radius:22px;font-size:13.5px;font-weight:600;display:none;z-index:99;box-shadow:0 4px 18px #000a;max-width:88vw;text-align:center}
+/* ---- 🎨 Template Studio drawer ---- */
+#studio{position:fixed;top:0;right:0;bottom:0;width:302px;background:#1e293b;border-left:2px solid #f59e0b;z-index:60;display:none;overflow-y:auto;padding:12px;box-shadow:-6px 0 30px #000a}
+#studio h3{font-size:14px;color:#fbbf24;margin:10px 0 6px;border-bottom:1px solid #334155;padding-bottom:4px}
+#studio h3:first-child{margin-top:0;display:flex;justify-content:space-between;align-items:center}
+#studio .x{background:none;border:none;color:#94a3b8;font-size:16px;cursor:pointer;padding:2px 6px}
+#studio .x:hover{color:#f87171}
+.strow{margin:7px 0}
+.strow>label{display:block;font-size:11.5px;color:#94a3b8;margin-bottom:3px}
+.strow>input{width:100%;background:#0f172a;border:1px solid #334155;color:#e2e8f0;padding:7px 9px;border-radius:7px;font-size:13px}
+.stchips{display:flex;gap:5px;flex-wrap:wrap}
+.stchips .sbtn{width:auto;flex:1;text-align:center;padding:6px 4px;font-size:12px;margin:0;white-space:nowrap}
+.clrrow{display:flex;gap:8px;align-items:center;margin:5px 0}
+.clrrow label{flex:1;font-size:12px;color:#cbd5e1}
+.clrrow input{width:44px;height:28px;border:1px solid #475569;border-radius:6px;background:#0f172a;cursor:pointer}
+.stbtns{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px}
+.stbtns .sbtn{flex:1;text-align:center;min-width:45%}
+@media(max-width:760px){ #side{width:44vw;min-width:44vw} }
+</style>
+</head>
+<body>
+<header>
+  <span style="font-size:20px">🌸</span>
+  <h1>संस्कृति Visiting Card Maker</h1>
+  <span class="badge">FREE v1.0 🪪</span>
+  <span style="flex:1"></span>
+  <button class="hbtn" id="btnLang">🌐 English</button>
+  <button class="hbtn" id="btnSave">💾 सहेजें</button>
+  <button class="hbtn" id="btnLoad">📂 खोलें</button>
+  <button class="hbtn" id="btnSample">✨ नमूना भरो</button>
+  <button class="hbtn" id="btnPng">🖼️ Card PNG (300 DPI)</button>
+  <button class="hbtn main" id="btnSheetF">🖨️ Front Sheet</button>
+  <button class="hbtn main" id="btnSheetB">🖨️ Back Sheet</button>
+</header>
+<main>
+  <div id="side"></div>
+  <div id="stage"></div>
+</main>
+<div id="studio"></div>
+<div id="toast"></div>
+<input type="file" id="fileLoad" accept=".json" style="display:none">
+<input type="file" id="fileLogo" accept="image/*" style="display:none">
+<input type="file" id="fileTpl" accept=".json" style="display:none">
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+function toast(m){ const t=$('toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._h); t._h=setTimeout(()=>t.style.display='none',3200); }
+
+/* ================= 📏 CARD + SHEET SIZES (config — नया size यहाँ जोड़ो) ================= */
+const CARD_SIZES={                          /* India में दोनों standard चलते हैं */
+  '35x2': { n:'3.5×2 in', w:3.5,      h:2 },
+  '92x54':{ n:'92×54 mm', w:92/25.4,  h:54/25.4 }
+};
+const SHEETS={
+  a4:   { n:'A4',    w:8.27, h:11.69 },
+  s1218:{ n:'12×18', w:12,   h:18    }
+};
+const PRINT_DPI=300, VIEW_SCALE=240;
+
+/* ================= 🌐 UI LANGUAGE ================= */
+const STR={
+ hi:{ save:'💾 सहेजें', load:'📂 खोलें', printf:'🖨️ Front Sheet (300 DPI)', printb:'🖨️ Back Sheet (300 DPI)', png:'🖼️ Card PNG (300 DPI)', sample:'✨ नमूना भरो', langBtn:'🌐 English',
+   sideF:'🪪 आगे (Front)', sideB:'🔄 पीछे (Back)',
+   tpl:'🎨 Design चुनो', logo:'🖼️ Logo लगाओ (optional)', logoCh:'🖼️ Logo बदलो ✓', logoRm:'🚫 Logo हटाओ',
+   backSec:'🔄 Back side की जानकारी', csize:'📏 Card का Size',
+   sheet:'🖨️ Sheet Size (एक sheet पर कई cards)',
+   duplexNote:'💡 Both-side छपाई: पहले FRONT sheet print करो → sheet को किताब की तरह (long-edge) पलटो → BACK sheet print करो। पहली बार 1 sheet test ज़रूर करो!',
+   stgCard:'— Card Preview —', stgSheetF:'— FRONT Sheet (छपाई इसी की होगी) —', stgSheetB:'— BACK Sheet (columns अपने आप उल्टे — सीधे print करो) —',
+   tLogo:'🖼️ Logo लग गया ✓', tSave:'💾 सहेज लिया — यही file फिर खोलने से काम वापस ✓',
+   tLoad:'📂 Card खुल गया ✓', tBad:'❌ यह Visiting Card Maker की file नहीं है',
+   tSample:'✨ नमूना भर गया — अब अपनी जानकारी बदलो', tPng:'🖼️ Card PNG तैयार ✓',
+   tSheet:'🖨️ FRONT sheet तैयार — print पर भेजो ✓',
+   tBack:'🖨️ BACK sheet तैयार — FRONT के बाद sheet किताब की तरह पलटकर print करो ✓',
+   stOpen:'🎨 अपना Design बनाओ', stTitle:'🎨 Design Studio', stName:'Design का नाम', stNamePh:'जैसे: मेरा शाही card',
+   stSkin:'Design की बनावट', skPlain:'सादा', skBar:'साइड line', skBandTop:'ऊपर band', skBandLeft:'बायाँ पैनल',
+   stColors:'🎨 रंग', stBg:'पीछे का रंग', stAccent:'मुख्य रंग', stTx:'अक्षरों का रंग', stSub:'छोटे अक्षरों का रंग',
+   stFont:'🔤 अक्षर-शैली (Font)', stSans:'सादा', stSerif:'सीरिफ़ (शाही)',
+   stAlign:'जमाव (Align)', stAL:'बायाँ', stAC:'बीच',
+   stFrame:'फ़्रेम (border)', stOn:'लगाओ', stOff:'नहीं',
+   stSave:'💾 सहेजो', stExport:'📤 Export', stImport:'📥 Import', stDel:'🗑️ हटाओ',
+   tTplSaved:'🎨 आपका Design सहेज गया ✓ — chips में दिख रहा है', tTplDel:'🗑️ Design हटा दिया',
+   tTplBad:'❌ यह Design file नहीं है', tTplImp:'📥 Design आ गया ✓', tNeedName:'❗ पहले Design का नाम लिखो' },
+ en:{ save:'💾 Save', load:'📂 Open', printf:'🖨️ Front Sheet (300 DPI)', printb:'🖨️ Back Sheet (300 DPI)', png:'🖼️ Card PNG (300 DPI)', sample:'✨ Fill Sample', langBtn:'🌐 हिंदी',
+   sideF:'🪪 Front', sideB:'🔄 Back',
+   tpl:'🎨 Choose Design', logo:'🖼️ Add Logo (optional)', logoCh:'🖼️ Change Logo ✓', logoRm:'🚫 Remove Logo',
+   backSec:'🔄 Back side details', csize:'📏 Card Size',
+   sheet:'🖨️ Sheet Size (many cards per sheet)',
+   duplexNote:'💡 Both-side printing: print FRONT sheet → flip like a book (long-edge) → print BACK sheet. Test 1 sheet first!',
+   stgCard:'— Card Preview —', stgSheetF:'— FRONT Sheet (this is what prints) —', stgSheetB:'— BACK Sheet (columns auto-mirrored — print as-is) —',
+   tLogo:'🖼️ Logo added ✓', tSave:'💾 Saved — open this file anytime to continue ✓',
+   tLoad:'📂 Card opened ✓', tBad:'❌ This is not a Visiting Card Maker file',
+   tSample:'✨ Sample filled — now replace with your details', tPng:'🖼️ Card PNG ready ✓',
+   tSheet:'🖨️ FRONT sheet ready — send to print ✓',
+   tBack:'🖨️ BACK sheet ready — flip sheet like a book after FRONT and print ✓',
+   stOpen:'🎨 Make Your Own Design', stTitle:'🎨 Design Studio', stName:'Design name', stNamePh:'e.g. My Royal Card',
+   stSkin:'Design structure', skPlain:'Plain', skBar:'Side bar', skBandTop:'Top band', skBandLeft:'Left panel',
+   stColors:'🎨 Colors', stBg:'Background', stAccent:'Accent', stTx:'Text color', stSub:'Sub text color',
+   stFont:'🔤 Font style', stSans:'Simple', stSerif:'Serif (royal)',
+   stAlign:'Alignment', stAL:'Left', stAC:'Center',
+   stFrame:'Frame (border)', stOn:'Show', stOff:'Hide',
+   stSave:'💾 Save', stExport:'📤 Export', stImport:'📥 Import', stDel:'🗑️ Delete',
+   tTplSaved:'🎨 Your Design saved ✓ — see it in the chips', tTplDel:'🗑️ Design deleted',
+   tTplBad:'❌ Not a Design file', tTplImp:'📥 Design imported ✓', tNeedName:'❗ Please write a Design name first' }
+};
+const S={ ui:'hi', side:'front', tplFront:'simple', tplBack:'bbrand', sheet:'a4', cardSize:'35x2', data:null };
+function T(k){ return STR[S.ui][k]; }
+function activeTplId(){ return S.side==='front'?S.tplFront:S.tplBack; }
+function setActiveTpl(id){ if(S.side==='front') S.tplFront=id; else S.tplBack=id; }
+function cardDims(){ return CARD_SIZES[S.cardSize]||CARD_SIZES['35x2']; }
+
+/* ================= 📋 FORM SCHEMA (config — नया field यहाँ जोड़ो, form अपने आप) ================= */
+const SCHEMA=[
+ {sec:'biz', title:'🏢 दुकान / कंपनी', titleEn:'🏢 Business', fields:[
+   {k:'biz', lab:'दुकान/कंपनी का नाम', labEn:'Business name', ph:'CSC Print Cafe'},
+   {k:'tag', lab:'Tagline — छोटी line (optional)', labEn:'Tagline (optional)', ph:'Printing • Laser • Design'}]},
+ {sec:'person', title:'👤 आपकी जानकारी', titleEn:'👤 Your Details', fields:[
+   {k:'name', lab:'आपका नाम', labEn:'Your name', ph:'Dev Brolia'},
+   {k:'desig', lab:'पद / Designation', labEn:'Designation', ph:'Proprietor'}]},
+ {sec:'contact', title:'📞 संपर्क', titleEn:'📞 Contact', fields:[
+   {k:'phone', lab:'फ़ोन 1', labEn:'Phone 1', ph:'98765 43210'},
+   {k:'phone2', lab:'फ़ोन 2 (optional)', labEn:'Phone 2 (optional)'},
+   {k:'email', lab:'Email (optional)', labEn:'Email (optional)', ph:'you@gmail.com'},
+   {k:'addr', lab:'पता (optional)', labEn:'Address (optional)', ta:1, ph:'Shop No. 12, Main Market, New Delhi'},
+   {k:'web', lab:'Website (optional)', labEn:'Website (optional)', ph:'yourshop.in'}]}
+];
+const SCHEMA_BACK=[
+ {sec:'backx', title:'🔄 Back side की extra जानकारी', titleEn:'🔄 Back side extra details', fields:[
+   {k:'services', lab:'Services / ऑफ़र (एक line में एक)', labEn:'Services / offers (one per line)', ta:1, ph:'Document Printing\nPhoto Printing\nLaser Engraving'},
+   {k:'note', lab:'छोटी line / note (optional)', labEn:'Small note line (optional)', ph:'धन्यवाद! / Thank you!'}]}
+];
+function blankCard(){ return { biz:'', tag:'', name:'', desig:'', phone:'', phone2:'', email:'', addr:'', web:'',
+  services:'', note:'', logo:null }; }
+S.data=blankCard();
+
+/* ================= 🎨 DESIGNS (config — रंग/font/skin; नया design यहाँ या Studio से) ================= */
+const TEMPLATES={
+ simple:{ name:'सादा', skin:'bar', bg:'#ffffff', accent:'#0e7490', tx:'#1f2937', sub:'#6b7280', serif:false, align:'left', frame:false },
+ dark:{ name:'मॉडर्न डार्क', skin:'plain', bg:'#0f172a', accent:'#f59e0b', tx:'#f1f5f9', sub:'#94a3b8', serif:false, align:'left', frame:false },
+ royal:{ name:'शाही', skin:'plain', bg:'#fdf8ec', accent:'#b45309', tx:'#7c2d12', sub:'#a16207', serif:true, align:'center', frame:true },
+ corp:{ name:'कॉर्पोरेट', skin:'bandTop', bg:'#ffffff', accent:'#1e40af', tx:'#1f2937', sub:'#6b7280', serif:false, align:'left', frame:false },
+ panel:{ name:'रंगीन पैनल', skin:'bandLeft', bg:'#ffffff', accent:'#c2410c', tx:'#1f2937', sub:'#6b7280', serif:false, align:'left', frame:false },
+ minimal:{ name:'मिनिमल', skin:'plain', bg:'#ffffff', accent:'#374151', tx:'#111827', sub:'#9ca3af', serif:false, align:'center', frame:false }
+ /* ---- Back side designs (services/note fields इस्तेमाल करते हैं) ---- */
+ ,bbrand:{ name:'बैक: Brand', skin:'bBrand', bg:'#0f172a', accent:'#f59e0b', tx:'#f1f5f9', sub:'#94a3b8', serif:false, align:'center', frame:false },
+ bserv:{ name:'बैक: Services', skin:'bServices', bg:'#ffffff', accent:'#0e7490', tx:'#1f2937', sub:'#6b7280', serif:false, align:'left', frame:false },
+ bplain:{ name:'बैक: सादा', skin:'bPlain', bg:'#ffffff', accent:'#334155', tx:'#1f2937', sub:'#6b7280', serif:false, align:'center', frame:false }
+};
+
+/* ================= 🔤 RENDER HELPERS (inch = unit; TXT slice-bug fix — resume engine से) ================= */
+const FDEV='"Noto Sans Devanagari","Segoe UI",system-ui,sans-serif';
+const FSER='"Noto Serif Devanagari",Georgia,serif';
+const PT=1/72;
+let SC=VIEW_SCALE;
+function font(t,px,w,st){ return (st||'')+' '+(w||400)+' '+px+'px '+(t.serif?FSER:FDEV); }
+function setF(ctx,t,pt,w,st){ ctx.font=font(t,pt*PT*SC,w,st); }
+function TXT(ctx,str,x,y){ const al=ctx.textAlign;
+  ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.textAlign=al;
+  ctx.fillText(str,x*SC,y*SC); ctx.restore(); }
+function wrap(ctx,text,maxW){
+  const out=[];
+  String(text||'').split('\n').forEach(p=>{
+    if(!p.trim()){ out.push(''); return; }
+    let line='';
+    p.split(/\s+/).forEach(wd=>{
+      const t=line?line+' '+wd:wd;
+      if(ctx.measureText(t).width/SC<=maxW) line=t;
+      else{ if(line)out.push(line); line=wd; }
+    });
+    if(line)out.push(line);
+  });
+  return out;
+}
+/* logo cache */
+let _lgIm=null,_lgSrc=null;
+function logoImg(src){ if(src===_lgSrc&&_lgIm) return _lgIm.complete&&_lgIm.naturalWidth?_lgIm:null;
+  _lgSrc=src; _lgIm=new Image(); _lgIm.onload=()=>draw(); _lgIm.src=src; return null; }
+
+/* ================= 🪪 CARD RENDERER (OX,OY = sheet में card की जगह; screen पर 0,0) ================= */
+function drawCardInto(ctx,t,d,OX,OY){
+  const X=v=>OX+v, Y=v=>OY+v, dm=cardDims(), W=dm.w, H=dm.h, C=t.align==='center';
+  /* background */
+  ctx.fillStyle=t.bg; ctx.fillRect(X(0),Y(0),W,H);
+  if(t.frame){ ctx.strokeStyle=t.accent; ctx.lineWidth=1.4/SC; ctx.strokeRect(X(0.05),Y(0.05),W-0.1,H-0.1);
+    ctx.lineWidth=0.5/SC; ctx.strokeRect(X(0.1),Y(0.1),W-0.2,H-0.2); }
+  /* ---- 🔄 BACK skins ---- */
+  if(t.skin==='bBrand'){
+    const lg0=d.logo?logoImg(d.logo):null;
+    let by=0.42;
+    if(lg0){ const ls=0.6, ir=lg0.naturalWidth/lg0.naturalHeight;
+      let dw=ls,dh=ls; if(ir>1) dh=ls/ir; else dw=ls*ir;
+      ctx.drawImage(lg0,X((W-dw)/2),Y(by+(ls-dh)/2),dw,dh); by+=ls+0.1; }
+    ctx.textAlign='center';
+    setF(ctx,t,13,700); ctx.fillStyle=t.accent; TXT(ctx,d.biz||'',X(W/2),Y(by+0.18)); by+=0.18;
+    if(d.tag){ setF(ctx,t,7,400,'italic'); ctx.fillStyle=t.sub; TXT(ctx,d.tag,X(W/2),Y(by+0.14)); by+=0.14; }
+    if(d.note){ setF(ctx,t,6.5,600); ctx.fillStyle=t.tx; TXT(ctx,d.note,X(W/2),Y(H-0.14)); }
+    return;
+  }
+  if(t.skin==='bServices'){
+    ctx.textAlign='left';
+    setF(ctx,t,11,700); ctx.fillStyle=t.accent; TXT(ctx,d.biz||'',X(0.2),Y(0.3));
+    ctx.strokeStyle=t.accent; ctx.lineWidth=1/SC;
+    ctx.beginPath(); ctx.moveTo(X(0.2),Y(0.42)); ctx.lineTo(X(0.9),Y(0.42)); ctx.stroke();
+    setF(ctx,t,7.5,500); ctx.fillStyle=t.tx;
+    let sy=0.6;
+    String(d.services||'').split('\n').filter(l=>l.trim()).forEach(l=>{
+      if(sy>H-0.3) return;
+      TXT(ctx,'•  '+l.trim(),X(0.24),Y(sy)); sy+=0.16; });
+    if(d.note){ setF(ctx,t,6.5,600,'italic'); ctx.fillStyle=t.sub; ctx.textAlign='center'; TXT(ctx,d.note,X(W/2),Y(H-0.14)); }
+    return;
+  }
+  if(t.skin==='bPlain'){
+    const lg1=d.logo?logoImg(d.logo):null;
+    ctx.textAlign='center';
+    if(lg1){ const ls=0.5, ir=lg1.naturalWidth/lg1.naturalHeight;
+      let dw=ls,dh=ls; if(ir>1) dh=ls/ir; else dw=ls*ir;
+      ctx.drawImage(lg1,X((W-dw)/2),Y((H-dh)/2-0.08),dw,dh); }
+    if(d.biz){ setF(ctx,t,9,700); ctx.fillStyle=t.accent; TXT(ctx,d.biz,X(W/2),Y(H-0.32)); }
+    if(d.note){ setF(ctx,t,6,400); ctx.fillStyle=t.sub; TXT(ctx,d.note,X(W/2),Y(H-0.16)); }
+    return;
+  }
+  /* skin */
+  if(t.skin==='bar'){ ctx.fillStyle=t.accent; ctx.fillRect(X(0),Y(0),0.14,H); }
+  if(t.skin==='bandTop'){ ctx.fillStyle=t.accent; ctx.fillRect(X(0),Y(0),W,0.62); }
+  if(t.skin==='bandLeft'){ ctx.fillStyle=t.accent; ctx.fillRect(X(0),Y(0),1.12,H); }
+  /* logo */
+  const lg=d.logo?logoImg(d.logo):null;
+  let logoDrawn=false;
+  if(lg){
+    let lx,ly,ls;
+    if(t.skin==='bandLeft'){ ls=0.72; lx=0.2; ly=(H-ls)/2; }
+    else if(C){ ls=0.42; lx=(W-ls)/2; ly=(t.skin==='bandTop')?0.72:0.12; }
+    else { ls=0.5; lx=(t.skin==='bar')?0.3:0.17; ly=(t.skin==='bandTop')?0.74:0.15; }
+    ctx.save(); ctx.beginPath(); ctx.rect(X(lx),Y(ly),ls,ls); ctx.clip();
+    const ir=lg.naturalWidth/lg.naturalHeight;
+    let dw=ls,dh=ls; if(ir>1) dh=ls/ir; else dw=ls*ir;
+    ctx.drawImage(lg,X(lx+(ls-dw)/2),Y(ly+(ls-dh)/2),dw,dh);
+    ctx.restore(); logoDrawn=true;
+  }
+  /* bandLeft panel में logo न हो तो initials */
+  if(t.skin==='bandLeft'&&!logoDrawn&&d.biz){
+    const ini=d.biz.trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
+    setF(ctx,t,26,700); ctx.fillStyle='#ffffff'; ctx.textAlign='center';
+    TXT(ctx,ini,X(0.56),Y(1.1));
+  }
+  ctx.textAlign=C?'center':'left';
+  /* content area */
+  const pad=(t.skin==='bar')?0.3:0.17;
+  const cL=(t.skin==='bandLeft')?1.3:pad, cR=W-pad;
+  const cX=C?W/2:cL, cW=cR-cL;
+  const bandTxt=t.skin==='bandTop';
+  /* biz */
+  let y;
+  if(bandTxt){
+    setF(ctx,t,12,700); ctx.fillStyle='#ffffff';
+    ctx.textAlign=C?'center':'left';
+    TXT(ctx,d.biz||'',C?W/2:pad,Y(0.28));
+    if(d.tag){ setF(ctx,t,6.5,400,'italic'); ctx.fillStyle='#ffffffcc'; TXT(ctx,d.tag,C?W/2:pad,Y(0.47)); }
+    y=0.86;
+    ctx.textAlign=C?'center':'left';
+  } else if(t.skin==='bandLeft'){
+    setF(ctx,t,10.5,700); ctx.fillStyle=t.accent;
+    TXT(ctx,d.biz||'',cX,Y(0.32));
+    y=0.44;
+    if(d.tag){ setF(ctx,t,6.2,400,'italic'); ctx.fillStyle=t.sub; TXT(ctx,d.tag,cX,Y(y)); y+=0.14; }
+  } else {
+    y=(C&&logoDrawn)?0.66:0.33;
+    const bx=(!C&&logoDrawn&&t.skin!=='bandLeft')?cL+0.62:cX;
+    setF(ctx,t,12,700); ctx.fillStyle=t.accent;
+    TXT(ctx,d.biz||'',bx,Y(y));
+    if(d.tag){ setF(ctx,t,6.5,400,'italic'); ctx.fillStyle=t.sub; TXT(ctx,d.tag,bx,Y(y+0.13)); }
+    y+=0.3;
+  }
+  /* name + desig */
+  setF(ctx,t,11,700); ctx.fillStyle=t.tx;
+  TXT(ctx,d.name||'',cX,Y(Math.max(y,(t.skin==='bandTop')?0.86:y)+((t.skin==='bandTop')?0:0.1)));
+  let ny=Math.max(y,(t.skin==='bandTop')?0.86:y)+((t.skin==='bandTop')?0:0.1);
+  if(d.desig){ setF(ctx,t,7.5,600); ctx.fillStyle=t.skin==='bandLeft'?t.accent:(t.accent);
+    TXT(ctx,d.desig,cX,Y(ny+0.15)); ny+=0.15; }
+  /* divider */
+  ny+=0.12;
+  ctx.strokeStyle=t.accent; ctx.lineWidth=1/SC;
+  ctx.beginPath();
+  if(C){ ctx.moveTo(X(W/2-0.5),Y(ny)); ctx.lineTo(X(W/2+0.5),Y(ny)); }
+  else { ctx.moveTo(X(cL),Y(ny)); ctx.lineTo(X(cL+0.7),Y(ny)); }
+  ctx.stroke();
+  /* details */
+  const lines=[];
+  if(d.phone) lines.push(d.phone+(d.phone2?'  •  '+d.phone2:''));
+  else if(d.phone2) lines.push(d.phone2);
+  if(d.email) lines.push(d.email);
+  if(d.addr){ setF(ctx,t,6.3,400); wrap(ctx,d.addr,cW).slice(0,2).forEach(l=>lines.push(l)); }
+  if(d.web) lines.push(d.web);
+  setF(ctx,t,6.3,400); ctx.fillStyle=t.sub;
+  let dy=ny+0.13;
+  const step=0.115, maxY=H-0.09;
+  lines.forEach(l=>{ if(dy>maxY) return; TXT(ctx,l,cX,Y(dy)); dy+=step; });
+}
+
+/* ================= 🖨️ SHEET RENDERER (grid + crop marks) ================= */
+function sheetGrid(sh){
+  const dm=cardDims();
+  const cols=Math.floor(sh.w/dm.w), rows=Math.floor(sh.h/dm.h);
+  const gx=(sh.w-cols*dm.w)/2, gy=(sh.h-rows*dm.h)/2;
+  return { cols, rows, gx, gy };
+}
+function cropMarks(ctx,ox,oy,w,h){
+  ctx.strokeStyle='#9ca3af'; ctx.lineWidth=1.2/SC;
+  const g=0.03,l=0.12;
+  [[ox,oy,-1,-1],[ox+w,oy,1,-1],[ox,oy+h,-1,1],[ox+w,oy+h,1,1]].forEach(([cx,cy,sx,sy])=>{
+    ctx.beginPath();
+    ctx.moveTo(cx+sx*g,cy); ctx.lineTo(cx+sx*(g+l),cy);
+    ctx.moveTo(cx,cy+sy*g); ctx.lineTo(cx,cy+sy*(g+l));
+    ctx.stroke();
+  });
+}
+/* side='back' → columns mirror (long-edge flip पर हर back अपने front के ठीक पीछे) */
+function renderSheet(scale,sheetKey,side){
+  const sh=SHEETS[sheetKey];
+  const tid=side==='back'?S.tplBack:S.tplFront;
+  const t=TEMPLATES[tid]||TEMPLATES.simple, d=S.data;
+  SC=scale;
+  const cv=document.createElement('canvas');
+  cv.width=Math.round(sh.w*scale); cv.height=Math.round(sh.h*scale);
+  const ctx=cv.getContext('2d'); ctx.scale(scale,scale);
+  ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,sh.w,sh.h);
+  const g=sheetGrid(sh), dm=cardDims();
+  for(let r=0;r<g.rows;r++) for(let c=0;c<g.cols;c++){
+    const cc=(side==='back')?(g.cols-1-c):c;
+    const ox=g.gx+cc*dm.w, oy=g.gy+r*dm.h;
+    drawCardInto(ctx,t,d,ox,oy);
+    cropMarks(ctx,ox,oy,dm.w,dm.h);
+  }
+  return cv;
+}
+function renderCard(scale,side){
+  const tid=side?(side==='back'?S.tplBack:S.tplFront):activeTplId();
+  const t=TEMPLATES[tid]||TEMPLATES.simple;
+  SC=scale;
+  const dm=cardDims();
+  const cv=document.createElement('canvas');
+  cv.width=Math.round(dm.w*scale); cv.height=Math.round(dm.h*scale);
+  const ctx=cv.getContext('2d'); ctx.scale(scale,scale);
+  drawCardInto(ctx,t,S.data,0,0);
+  return cv;
+}
+
+/* ================= 🖥️ SCREEN DRAW ================= */
+function draw(){
+  const st=$('stage'); st.innerHTML='';
+  /* दोनों sides के card previews */
+  const l1=document.createElement('div'); l1.className='stglab'; l1.textContent=T('stgCard')+'  '+T('sideF'); st.appendChild(l1);
+  const cv=renderCard(VIEW_SCALE,'front'); cv.style.maxWidth='92%'; cv.style.height='auto'; st.appendChild(cv);
+  const l1b=document.createElement('div'); l1b.className='stglab'; l1b.textContent=T('stgCard')+'  '+T('sideB'); st.appendChild(l1b);
+  const cvb=renderCard(VIEW_SCALE,'back'); cvb.style.maxWidth='92%'; cvb.style.height='auto'; st.appendChild(cvb);
+  /* दोनों sheets */
+  const sh=SHEETS[S.sheet], sc=Math.min(620/sh.w,760/sh.h);
+  const l2=document.createElement('div'); l2.className='stglab'; l2.textContent=T('stgSheetF'); st.appendChild(l2);
+  const sv=renderSheet(sc,S.sheet,'front'); sv.style.maxWidth='92%'; sv.style.height='auto'; st.appendChild(sv);
+  const l2b=document.createElement('div'); l2b.className='stglab'; l2b.textContent=T('stgSheetB'); st.appendChild(l2b);
+  const svb=renderSheet(sc,S.sheet,'back'); svb.style.maxWidth='92%'; svb.style.height='auto'; st.appendChild(svb);
+}
+
+/* ================= 🧩 SIDEBAR ================= */
+function buildForm(){
+  const side=$('side');
+  side.innerHTML='';
+  /* 🔄 Front/Back toggle */
+  const hs0=document.createElement('h3'); hs0.textContent=T('tpl'); side.appendChild(hs0);
+  const sd=document.createElement('div'); sd.className='tplchip';
+  [['front',T('sideF')],['back',T('sideB')]].forEach(([v,lb])=>{
+    const b=document.createElement('button'); b.className='sbtn'+(S.side===v?' on':'');
+    b.style.flex='1'; b.style.textAlign='center'; b.textContent=lb;
+    b.onclick=()=>{ S.side=v; buildForm(); draw(); };
+    sd.appendChild(b);
+  });
+  side.appendChild(sd);
+  /* templates */
+  const tc=document.createElement('div'); tc.className='tplchip'; tc.id='tplChips'; side.appendChild(tc);
+  buildChips();
+  /* studio सिर्फ़ front designs के लिए */
+  if(S.side==='front'){
+    const so=document.createElement('button'); so.className='sbtn'; so.style.cssText='width:100%;margin-top:6px;border:1px dashed #f59e0b;color:#fbbf24';
+    so.textContent=T('stOpen'); so.onclick=()=>openStudio(); side.appendChild(so);
+  }
+  /* logo */
+  const hl=document.createElement('h3'); hl.textContent='🖼️ Logo'; side.appendChild(hl);
+  const lb=document.createElement('button'); lb.className='sbtn'; lb.id='btnLogo';
+  lb.textContent=S.data.logo?T('logoCh'):T('logo');
+  lb.onclick=()=>$('fileLogo').click(); side.appendChild(lb);
+  if(S.data.logo){ const rb=document.createElement('button'); rb.className='sbtn'; rb.style.color='#fca5a5';
+    rb.textContent=T('logoRm'); rb.onclick=()=>{ S.data.logo=null; buildForm(); draw(); }; side.appendChild(rb); }
+  /* schema sections */
+  (S.side==='back'?SCHEMA_BACK:SCHEMA).forEach(sec=>{
+    const h=document.createElement('h3'); h.textContent=(S.ui==='en'&&sec.titleEn)?sec.titleEn:sec.title; side.appendChild(h);
+    sec.fields.forEach(f=>{
+      const w=document.createElement('div'); w.className='fld';
+      const lb2=document.createElement('label'); lb2.textContent=(S.ui==='en'&&f.labEn)?f.labEn:f.lab; w.appendChild(lb2);
+      const inp=document.createElement(f.ta?'textarea':'input');
+      inp.value=S.data[f.k]||''; inp.placeholder=(S.ui==='en'?(f.phEn||f.ph):(f.ph||f.phEn))||'';
+      inp.oninput=()=>{ S.data[f.k]=inp.value; draw(); };
+      w.appendChild(inp); side.appendChild(w);
+    });
+  });
+  /* sheet size */
+  const hcs=document.createElement('h3'); hcs.textContent=T('csize'); side.appendChild(hcs);
+  const csc=document.createElement('div'); csc.className='tplchip';
+  Object.keys(CARD_SIZES).forEach(k=>{
+    const b=document.createElement('button'); b.className='sbtn'+(S.cardSize===k?' on':'');
+    b.style.flex='1'; b.style.textAlign='center'; b.textContent=CARD_SIZES[k].n;
+    b.onclick=()=>{ S.cardSize=k; buildForm(); draw(); };
+    csc.appendChild(b);
+  });
+  side.appendChild(csc);
+  const hs=document.createElement('h3'); hs.textContent=T('sheet'); side.appendChild(hs);
+  const sc=document.createElement('div'); sc.className='tplchip';
+  Object.keys(SHEETS).forEach(k=>{
+    const sh=SHEETS[k], g=sheetGrid(sh);
+    const b=document.createElement('button'); b.className='sbtn'+(S.sheet===k?' on':'');
+    b.style.flex='1'; b.style.textAlign='center';
+    b.textContent=sh.n+' ('+(g.cols*g.rows)+')';
+    b.onclick=()=>{ S.sheet=k; buildForm(); draw(); };
+    sc.appendChild(b);
+  });
+  side.appendChild(sc);
+  /* duplex guide */
+  const dn=document.createElement('div'); dn.style.cssText='margin-top:8px;padding:8px 10px;background:#1e293b;border:1px solid #475569;border-radius:8px;font-size:11.5px;line-height:1.5;color:#e2e8f0';
+  dn.textContent=T('duplexNote'); side.appendChild(dn);
+}
+function buildChips(){
+  const tc=$('tplChips'); if(!tc) return; tc.innerHTML='';
+  const isBack=t=>t.skin==='bBrand'||t.skin==='bServices'||t.skin==='bPlain';
+  Object.keys(TEMPLATES).forEach(id=>{
+    if(id==='_studio') return;
+    const t=TEMPLATES[id];
+    if(isBack(t)!==(S.side==='back')) return;
+    const w=document.createElement('div'); w.className='cchip';
+    const b=document.createElement('button'); b.className='sbtn nm'+(activeTplId()===id?' on':'');
+    b.textContent=(t.custom?'⭐ ':'')+t.name;
+    b.onclick=()=>{ if(STU.open){ openStudio(id); } else { setActiveTpl(id); buildForm(); draw(); } };
+    w.appendChild(b);
+    if(t.custom){
+      const m=document.createElement('div'); m.className='mini';
+      const e=document.createElement('button'); e.textContent='✏️'; e.title='edit';
+      e.onclick=(ev)=>{ ev.stopPropagation(); openStudio(id); };
+      const del=document.createElement('button'); del.textContent='🗑️'; del.title='delete';
+      del.onclick=(ev)=>{ ev.stopPropagation(); delete TEMPLATES[id]; persistCustomTpls();
+        if(activeTplId()===id) setActiveTpl('simple'); buildForm(); draw(); toast(T('tTplDel')); };
+      m.appendChild(e); m.appendChild(del); w.appendChild(m);
+    }
+    tc.appendChild(w);
+  });
+}
+
+/* ================= 🎨 DESIGN STUDIO ================= */
+const STKEY='vcTplsV1';
+function loadCustomTpls(){ try{ const o=JSON.parse(localStorage.getItem(STKEY)||'{}');
+  Object.keys(o).forEach(k=>o[k].custom=true); return o; }catch(_){ return {}; } }
+function persistCustomTpls(){ const o={};
+  Object.entries(TEMPLATES).forEach(([id,t])=>{ if(t.custom) o[id]=t; });
+  localStorage.setItem(STKEY, JSON.stringify(o)); }
+Object.assign(TEMPLATES, loadCustomTpls());
+
+const STU={ open:false, editId:null, cfg:null };
+function studioPreview(){ TEMPLATES._studio=STU.cfg; S.tplFront='_studio'; draw(); }
+function openStudio(baseId){
+  const base=TEMPLATES[baseId||S.tplFront]||TEMPLATES.simple;
+  STU.cfg=JSON.parse(JSON.stringify(base));
+  STU.cfg.name=(baseId&&TEMPLATES[baseId].custom)?base.name:'';
+  STU.editId=(baseId&&TEMPLATES[baseId].custom)?baseId:null;
+  STU.open=true; renderStudio(); studioPreview();
+}
+function closeStudio(){ STU.open=false; $('studio').style.display='none';
+  delete TEMPLATES._studio; if(S.tplFront==='_studio') S.tplFront=STU.editId||'simple';
+  buildForm(); draw(); }
+function renderStudio(){
+  const st=$('studio'); st.style.display='block'; st.innerHTML='';
+  const c=STU.cfg;
+  const H=(html)=>{ const d=document.createElement('div'); d.innerHTML=html; return d.firstElementChild; };
+  st.appendChild(H('<h3>'+T('stTitle')+'<button class="x" id="stX">✖</button></h3>'));
+  st.querySelector('#stX').onclick=closeStudio;
+  /* नाम */
+  const nm=H('<div class="strow"><label>'+T('stName')+'</label><input placeholder="'+T('stNamePh')+'"></div>');
+  const nmi=nm.querySelector('input'); nmi.value=c.name||'';
+  nmi.oninput=()=>{ c.name=nmi.value; }; st.appendChild(nm);
+  /* skin */
+  const sk=H('<div class="strow"><label>'+T('stSkin')+'</label><div class="stchips"></div></div>');
+  [['plain',T('skPlain')],['bar',T('skBar')],['bandTop',T('skBandTop')],['bandLeft',T('skBandLeft')]].forEach(([v,lb])=>{
+    const b=document.createElement('button'); b.className='sbtn'+(c.skin===v?' on':''); b.textContent=lb;
+    b.onclick=()=>{ c.skin=v; renderStudio(); studioPreview(); };
+    sk.querySelector('.stchips').appendChild(b); });
+  st.appendChild(sk);
+  /* रंग */
+  st.appendChild(H('<h3>'+T('stColors')+'</h3>'));
+  [['bg',T('stBg')],['accent',T('stAccent')],['tx',T('stTx')],['sub',T('stSub')]].forEach(([k,lb])=>{
+    const r=H('<div class="clrrow"><label>'+lb+'</label><input type="color"></div>');
+    const inp=r.querySelector('input'); inp.value=c[k]||'#334155';
+    inp.oninput=()=>{ c[k]=inp.value; studioPreview(); };
+    st.appendChild(r); });
+  /* font */
+  const ft=H('<div class="strow"><label>'+T('stFont')+'</label><div class="stchips"></div></div>');
+  [[false,T('stSans')],[true,T('stSerif')]].forEach(([v,lb])=>{
+    const b=document.createElement('button'); b.className='sbtn'+(!!c.serif===v?' on':''); b.textContent=lb;
+    b.onclick=()=>{ c.serif=v; renderStudio(); studioPreview(); };
+    ft.querySelector('.stchips').appendChild(b); });
+  st.appendChild(ft);
+  /* align */
+  const al=H('<div class="strow"><label>'+T('stAlign')+'</label><div class="stchips"></div></div>');
+  [['left',T('stAL')],['center',T('stAC')]].forEach(([v,lb])=>{
+    const b=document.createElement('button'); b.className='sbtn'+(c.align===v?' on':''); b.textContent=lb;
+    b.onclick=()=>{ c.align=v; renderStudio(); studioPreview(); };
+    al.querySelector('.stchips').appendChild(b); });
+  st.appendChild(al);
+  /* frame */
+  const fr=H('<div class="strow"><label>'+T('stFrame')+'</label><div class="stchips"></div></div>');
+  [[true,T('stOn')],[false,T('stOff')]].forEach(([v,lb])=>{
+    const b=document.createElement('button'); b.className='sbtn'+(!!c.frame===v?' on':''); b.textContent=lb;
+    b.onclick=()=>{ c.frame=v; renderStudio(); studioPreview(); };
+    fr.querySelector('.stchips').appendChild(b); });
+  st.appendChild(fr);
+  /* buttons */
+  const bt=H('<div class="stbtns"></div>');
+  const mk=(lb,fn)=>{ const b=document.createElement('button'); b.className='sbtn'; b.textContent=lb; b.onclick=fn; bt.appendChild(b); };
+  mk(T('stSave'),()=>{
+    if(!c.name||!c.name.trim()){ toast(T('tNeedName')); return; }
+    const id=STU.editId||('c'+Date.now().toString(36));
+    TEMPLATES[id]=Object.assign({},c,{custom:true});
+    S.tplFront=id;
+    persistCustomTpls(); STU.editId=id;
+    buildForm(); draw(); toast(T('tTplSaved'));
+  });
+  mk(T('stExport'),()=>{
+    if(!c.name||!c.name.trim()){ toast(T('tNeedName')); return; }
+    dl('design-'+c.name.replace(/\s+/g,'-')+'.json',
+       URL.createObjectURL(new Blob([JSON.stringify({app:'sanskriti-vc-tpl',v:1,tpl:c},null,1)],{type:'application/json'})));
+  });
+  mk(T('stImport'),()=>$('fileTpl').click());
+  if(STU.editId) mk(T('stDel'),()=>{ delete TEMPLATES[STU.editId]; persistCustomTpls(); closeStudio(); toast(T('tTplDel')); });
+  st.appendChild(bt);
+}
+$('fileTpl').onchange=e=>{
+  const f=e.target.files[0]; if(!f) return; e.target.value='';
+  const rd=new FileReader();
+  rd.onload=()=>{ try{
+    const o=JSON.parse(rd.result);
+    if(o.app!=='sanskriti-vc-tpl'||!o.tpl) throw 0;
+    const id='c'+Date.now().toString(36);
+    TEMPLATES[id]=Object.assign({},o.tpl,{custom:true});
+    persistCustomTpls(); buildForm(); draw(); toast(T('tTplImp'));
+  }catch(_){ toast(T('tTplBad')); } };
+  rd.readAsText(f);
+};
+
+/* ================= 💾 SAVE / LOAD / EXPORT ================= */
+function dl(name,url){ const a=document.createElement('a'); a.download=name; a.href=url; a.click(); }
+$('btnSave').onclick=()=>{
+  const o={app:'sanskriti-visiting-card', v:2, tplFront:S.tplFront, tplBack:S.tplBack, cardSize:S.cardSize, ui:S.ui, sheet:S.sheet, data:S.data};
+  dl('card-'+(S.data.biz||S.data.name||'mera').replace(/\s+/g,'-')+'.json',
+     URL.createObjectURL(new Blob([JSON.stringify(o,null,1)],{type:'application/json'})));
+  toast(T('tSave'));
+};
+$('btnLoad').onclick=()=>$('fileLoad').click();
+$('fileLoad').onchange=e=>{
+  const f=e.target.files[0]; if(!f) return; e.target.value='';
+  const rd=new FileReader();
+  rd.onload=()=>{ try{
+    const o=JSON.parse(rd.result);
+    if(o.app!=='sanskriti-visiting-card') throw 0;
+    if(o.tpl){ S.tplFront=o.tpl; }                    /* पुरानी v1 file — front design */
+    if(o.tplFront) S.tplFront=o.tplFront;
+    if(o.tplBack) S.tplBack=o.tplBack;
+    if(o.cardSize&&CARD_SIZES[o.cardSize]) S.cardSize=o.cardSize;
+    const BACKSK={'bBrand':1,'bServices':1,'bPlain':1};
+    if(!TEMPLATES[S.tplFront]||BACKSK[TEMPLATES[S.tplFront].skin]) S.tplFront='simple';
+    if(!TEMPLATES[S.tplBack]||!BACKSK[TEMPLATES[S.tplBack].skin]) S.tplBack='bbrand';
+    if(o.ui){ S.ui=o.ui; applyLang(); }
+    S.sheet=o.sheet&&SHEETS[o.sheet]?o.sheet:'a4';
+    S.data=Object.assign(blankCard(),o.data||{});
+    buildForm(); draw(); toast(T('tLoad'));
+  }catch(_){ toast(T('tBad')); } };
+  rd.readAsText(f);
+};
+$('fileLogo').onchange=e=>{
+  const f=e.target.files[0]; if(!f) return; e.target.value='';
+  const rd=new FileReader();
+  rd.onload=()=>{ S.data.logo=rd.result; buildForm(); draw(); toast(T('tLogo')); };
+  rd.readAsDataURL(f);
+};
+$('btnPng').onclick=()=>{
+  dl('visiting-card-'+S.side+'-300dpi.png', renderCard(PRINT_DPI,S.side).toDataURL('image/png'));
+  toast(T('tPng'));
+};
+$('btnSheetF').onclick=()=>{
+  const sh=SHEETS[S.sheet];
+  dl('cards-front-'+sh.n.replace('×','x')+'-300dpi.png', renderSheet(PRINT_DPI,S.sheet,'front').toDataURL('image/png'));
+  toast(T('tSheet'));
+};
+$('btnSheetB').onclick=()=>{
+  const sh=SHEETS[S.sheet];
+  dl('cards-back-'+sh.n.replace('×','x')+'-300dpi.png', renderSheet(PRINT_DPI,S.sheet,'back').toDataURL('image/png'));
+  toast(T('tBack'));
+};
+$('btnSample').onclick=()=>{
+  S.data={ biz:'CSC Print Cafe', tag:'Printing • Laser • Design', name:'Dev Brolia', desig:'Proprietor',
+    phone:'98731 52325', phone2:'', email:'printcafe@gmail.com',
+    addr:'Shop No. 12, Connaught Place, New Delhi — 110001', web:'sanskritistore.co.in',
+    services:'Document Printing\nPhoto Printing\nLaser Engraving\nID Cards & Banners', note:'धन्यवाद! Thank You!', logo:null };
+  buildForm(); draw(); toast(T('tSample'));
+};
+function applyLang(){
+  document.documentElement.lang=S.ui;
+  $('btnLang').textContent=T('langBtn');
+  $('btnSave').textContent=T('save');
+  $('btnLoad').textContent=T('load');
+  $('btnSample').textContent=T('sample');
+  $('btnPng').textContent=T('png');
+  $('btnSheetF').textContent=T('printf');
+  $('btnSheetB').textContent=T('printb');
+  buildForm(); draw();
+}
+$('btnLang').onclick=()=>{ S.ui=(S.ui==='hi')?'en':'hi'; applyLang(); };
+
+/* ================= 🚀 BOOT ================= */
+applyLang();
+$('btnSample').click();
+</script>
+</body>
+</html>
