@@ -58,7 +58,7 @@ main{display:flex;flex:1;overflow:hidden}
 <header>
   <span style="font-size:20px">🌸</span>
   <h1>संस्कृति Visiting Card Maker</h1>
-  <span class="badge">FREE v1.0 🪪</span>
+  <span class="badge">FREE v1.1 🎨</span>
   <span style="flex:1"></span>
   <button class="hbtn" id="btnLang">🌐 English</button>
   <button class="hbtn" id="btnSave">💾 सहेजें</button>
@@ -110,6 +110,10 @@ const STR={
    stOpen:'🎨 अपना Design बनाओ', stTitle:'🎨 Design Studio', stName:'Design का नाम', stNamePh:'जैसे: मेरा शाही card',
    stSkin:'Design की बनावट', skPlain:'सादा', skBar:'साइड line', skBandTop:'ऊपर band', skBandLeft:'बायाँ पैनल',
    stColors:'🎨 रंग', stBg:'पीछे का रंग', stAccent:'मुख्य रंग', stTx:'अक्षरों का रंग', stSub:'छोटे अक्षरों का रंग',
+   stIni:'पैनल पर अक्षर (जैसे CP) का रंग',
+   stPat:'🧩 Background Pattern (Corel-जैसा)', patNone:'🚫 बंद', patH:'━ Lines', patV:'┃ Lines',
+   patD:'╱ तिरछी', patD2:'✕ क्रॉस', patGrid:'▦ खाना', patDots:'• बिंदु',
+   patC:'Pattern का रंग', patGap:'गैप (mm)',
    stFont:'🔤 अक्षर-शैली (Font)', stSans:'सादा', stSerif:'सीरिफ़ (शाही)',
    stAlign:'जमाव (Align)', stAL:'बायाँ', stAC:'बीच',
    stFrame:'फ़्रेम (border)', stOn:'लगाओ', stOff:'नहीं',
@@ -131,6 +135,10 @@ const STR={
    stOpen:'🎨 Make Your Own Design', stTitle:'🎨 Design Studio', stName:'Design name', stNamePh:'e.g. My Royal Card',
    stSkin:'Design structure', skPlain:'Plain', skBar:'Side bar', skBandTop:'Top band', skBandLeft:'Left panel',
    stColors:'🎨 Colors', stBg:'Background', stAccent:'Accent', stTx:'Text color', stSub:'Sub text color',
+   stIni:'Panel letters (like CP) color',
+   stPat:'🧩 Background Pattern (Corel-style)', patNone:'🚫 Off', patH:'━ Lines', patV:'┃ Lines',
+   patD:'╱ Diagonal', patD2:'✕ Cross', patGrid:'▦ Grid', patDots:'• Dots',
+   patC:'Pattern color', patGap:'Gap (mm)',
    stFont:'🔤 Font style', stSans:'Simple', stSerif:'Serif (royal)',
    stAlign:'Alignment', stAL:'Left', stAC:'Center',
    stFrame:'Frame (border)', stOn:'Show', stOff:'Hide',
@@ -212,10 +220,30 @@ function logoImg(src){ if(src===_lgSrc&&_lgIm) return _lgIm.complete&&_lgIm.natu
   _lgSrc=src; _lgIm=new Image(); _lgIm.onload=()=>draw(); _lgIm.src=src; return null; }
 
 /* ================= 🪪 CARD RENDERER (OX,OY = sheet में card की जगह; screen पर 0,0) ================= */
+/* 🧩 Corel-जैसे background patterns (lines/boxes/dots) — t.pat={ty,c,gap(in),a,lw(px)} */
+function drawPattern(ctx,p,ox,oy,W,H){
+  if(!p||!p.ty||p.ty==='none') return;
+  const g=Math.max(0.04,p.gap||0.2);
+  ctx.save();
+  ctx.beginPath(); ctx.rect(ox,oy,W,H); ctx.clip();   /* card से बाहर कुछ न जाए */
+  ctx.globalAlpha=(p.a!=null?p.a:0.35);
+  ctx.strokeStyle=p.c||'#000000'; ctx.lineWidth=(p.lw||1)/SC;
+  ctx.beginPath();
+  if(p.ty==='h'||p.ty==='grid') for(let y=g;y<H;y+=g){ ctx.moveTo(ox,oy+y); ctx.lineTo(ox+W,oy+y); }
+  if(p.ty==='v'||p.ty==='grid') for(let x=g;x<W;x+=g){ ctx.moveTo(ox+x,oy); ctx.lineTo(ox+x,oy+H); }
+  if(p.ty==='d'||p.ty==='d2') for(let k=-H;k<W+H;k+=g){ ctx.moveTo(ox+k,oy); ctx.lineTo(ox+k+H,oy+H); }
+  if(p.ty==='d2') for(let k=-H;k<W+H;k+=g){ ctx.moveTo(ox+k+H,oy); ctx.lineTo(ox+k,oy+H); }
+  ctx.stroke();
+  if(p.ty==='dots'){ ctx.fillStyle=p.c||'#000000';
+    for(let y=g;y<H;y+=g) for(let x=g;x<W;x+=g){
+      ctx.beginPath(); ctx.arc(ox+x,oy+y,(p.lw||1.2)/SC,0,7); ctx.fill(); } }
+  ctx.restore();
+}
 function drawCardInto(ctx,t,d,OX,OY){
   const X=v=>OX+v, Y=v=>OY+v, dm=cardDims(), W=dm.w, H=dm.h, C=t.align==='center';
   /* background */
   ctx.fillStyle=t.bg; ctx.fillRect(X(0),Y(0),W,H);
+  drawPattern(ctx,t.pat,X(0),Y(0),W,H);   /* 🧩 Corel-style wallpaper pattern */
   if(t.frame){ ctx.strokeStyle=t.accent; ctx.lineWidth=1.4/SC; ctx.strokeRect(X(0.05),Y(0.05),W-0.1,H-0.1);
     ctx.lineWidth=0.5/SC; ctx.strokeRect(X(0.1),Y(0.1),W-0.2,H-0.2); }
   /* ---- 🔄 BACK skins ---- */
@@ -275,7 +303,7 @@ function drawCardInto(ctx,t,d,OX,OY){
   /* bandLeft panel में logo न हो तो initials */
   if(t.skin==='bandLeft'&&!logoDrawn&&d.biz){
     const ini=d.biz.trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
-    setF(ctx,t,26,700); ctx.fillStyle='#ffffff'; ctx.textAlign='center';
+    setF(ctx,t,26,700); ctx.fillStyle=t.ini||'#ffffff'; ctx.textAlign='center';
     TXT(ctx,ini,X(0.56),Y(1.1));
   }
   ctx.textAlign=C?'center':'left';
@@ -287,10 +315,10 @@ function drawCardInto(ctx,t,d,OX,OY){
   /* biz */
   let y;
   if(bandTxt){
-    setF(ctx,t,12,700); ctx.fillStyle='#ffffff';
+    setF(ctx,t,12,700); ctx.fillStyle=t.ini||'#ffffff';
     ctx.textAlign=C?'center':'left';
     TXT(ctx,d.biz||'',C?W/2:pad,Y(0.28));
-    if(d.tag){ setF(ctx,t,6.5,400,'italic'); ctx.fillStyle='#ffffffcc'; TXT(ctx,d.tag,C?W/2:pad,Y(0.47)); }
+    if(d.tag){ setF(ctx,t,6.5,400,'italic'); ctx.fillStyle=(t.ini||'#ffffff')+'cc'; TXT(ctx,d.tag,C?W/2:pad,Y(0.47)); }
     y=0.86;
     ctx.textAlign=C?'center':'left';
   } else if(t.skin==='bandLeft'){
@@ -532,6 +560,30 @@ function renderStudio(){
     const inp=r.querySelector('input'); inp.value=c[k]||'#334155';
     inp.oninput=()=>{ c[k]=inp.value; studioPreview(); };
     st.appendChild(r); });
+  /* ✒️ पैनल/initials रंग (bandLeft के CP जैसे) */
+  const inir=H('<div class="clrrow"><label>'+T('stIni')+'</label><input type="color"></div>');
+  const inii=inir.querySelector('input'); inii.value=c.ini||'#ffffff';
+  inii.oninput=()=>{ c.ini=inii.value; studioPreview(); };
+  st.appendChild(inir);
+  /* 🧩 Background pattern (Corel-जैसा) */
+  st.appendChild(H('<h3>'+T('stPat')+'</h3>'));
+  const pats=H('<div class="strow"><div class="stchips"></div></div>');
+  const PC=()=>{ c.pat=Object.assign({ty:'none',c:'#b45309',gap:0.2,a:0.35,lw:1},c.pat||{}); return c.pat; };
+  [['none',T('patNone')],['h',T('patH')],['v',T('patV')],['d',T('patD')],['d2',T('patD2')],['grid',T('patGrid')],['dots',T('patDots')]].forEach(([v,lb])=>{
+    const b=document.createElement('button'); b.className='sbtn'+(((c.pat&&c.pat.ty)||'none')===v?' on':'');
+    b.textContent=lb; b.onclick=()=>{ PC().ty=v; renderStudio(); studioPreview(); };
+    pats.querySelector('.stchips').appendChild(b); });
+  st.appendChild(pats);
+  if(c.pat&&c.pat.ty&&c.pat.ty!=='none'){
+    const pr=H('<div class="clrrow"><label>'+T('patC')+'</label><input type="color"></div>');
+    const pi=pr.querySelector('input'); pi.value=c.pat.c||'#b45309';
+    pi.oninput=()=>{ c.pat.c=pi.value; studioPreview(); };
+    st.appendChild(pr);
+    const gr=H('<div class="strow"><label>'+T('patGap')+'</label><input type="number" min="2" max="30" step="1" style="width:70px"></div>');
+    const gi=gr.querySelector('input'); gi.value=Math.round((c.pat.gap||0.2)*25.4);
+    gi.oninput=()=>{ c.pat.gap=Math.max(2,+gi.value||5)/25.4; studioPreview(); };
+    st.appendChild(gr);
+  }
   /* font */
   const ft=H('<div class="strow"><label>'+T('stFont')+'</label><div class="stchips"></div></div>');
   [[false,T('stSans')],[true,T('stSerif')]].forEach(([v,lb])=>{
