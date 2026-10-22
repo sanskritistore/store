@@ -101,12 +101,14 @@ function toast(m){ const t=$('toast'); t.textContent=m; t.style.display='block';
 
 /* ================= 📏 CARD + SHEET SIZES (config — नया size यहाँ जोड़ो) ================= */
 const CARD_SIZES={                          /* India में दोनों standard चलते हैं */
+  '85x55':{ n:'85×55 mm', w:85/25.4,  h:55/25.4 },
   '35x2': { n:'3.5×2 in', w:3.5,      h:2 },
   '92x54':{ n:'92×54 mm', w:92/25.4,  h:54/25.4 }
 };
 const SHEETS={
-  a4:   { n:'A4',    w:8.27, h:11.69 },
-  s1218:{ n:'12×18', w:12,   h:18    }
+  s1218L:{ n:'12×18 आड़ी',  w:18,   h:12,   gap:6/25.4 },   /* 5×5=25 cards (85×55) */
+  s1218: { n:'12×18 खड़ी',  w:12,   h:18,   gap:6/25.4 },
+  a4:    { n:'A4',          w:8.27, h:11.69,gap:3/25.4 }
 };
 const PRINT_DPI=300, VIEW_SCALE=240;
 
@@ -175,7 +177,7 @@ const STR={
    galBtn:'🖼️ Browse 100+ Designs', galTitle:'🖼️ Ready Designs — click the one you like',
    galAll:'All', galPrem:'⭐ Premium', galPat:'🧩 Patterned', galPick:'✅ Design picked — now fill your details' }
 };
-const S={ ui:'hi', side:'front', tplFront:'simple', tplBack:'bbrand', sheet:'a4', cardSize:'35x2', data:null };
+const S={ ui:'hi', side:'front', tplFront:'simple', tplBack:'bbrand', sheet:'s1218L', cardSize:'85x55', data:null };
 function T(k){ return STR[S.ui][k]; }
 function activeTplId(){ return S.side==='front'?S.tplFront:S.tplBack; }
 function setActiveTpl(id){ if(S.side==='front') S.tplFront=id; else S.tplBack=id; }
@@ -635,31 +637,31 @@ function drawCardInto(ctx,t,d,OX,OY){
   if(bandTxt){
     setBiz(12); ctx.fillStyle=t.gradTx?goldTx():(t.ini||'#ffffff');
     ctx.textAlign=C?'center':'left';
-    TXT(ctx,d.biz||'',C?W/2:pad,Y(0.28));
-    if(d.tag){ setF(ctx,t,6.5,400,'italic'); ctx.fillStyle=(t.ini||'#ffffff')+'cc'; TXT(ctx,d.tag,C?W/2:pad,Y(0.47)); }
+    TXT(ctx,d.biz||'',X(C?W/2:pad),Y(0.28));
+    if(d.tag){ setF(ctx,t,6.5,400,'italic'); ctx.fillStyle=(t.ini||'#ffffff')+'cc'; TXT(ctx,d.tag,X(C?W/2:pad),Y(0.47)); }
     y=0.86;
     ctx.textAlign=C?'center':'left';
   } else if(t.skin==='bandLeft'||t.skin==='waveL'){
     setBiz(10.5); ctx.fillStyle=t.gradTx?goldTx():t.accent;
-    TXT(ctx,d.biz||'',cX,Y(0.32));
+    TXT(ctx,d.biz||'',X(cX),Y(0.32));
     y=0.44;
-    if(d.tag){ setF(ctx,t,6.2,400,'italic'); ctx.fillStyle=t.sub; TXT(ctx,d.tag,cX,Y(y)); y+=0.14; }
+    if(d.tag){ setF(ctx,t,6.2,400,'italic'); ctx.fillStyle=t.sub; TXT(ctx,d.tag,X(cX),Y(y)); y+=0.14; }
   } else {
     y=(C&&logoDrawn)?0.66:0.33;
     const bx=(!C&&logoDrawn&&t.skin!=='bandLeft')?cL+0.62:cX;
     setBiz(12); ctx.fillStyle=t.gradTx?goldTx():t.accent;
-    TXT(ctx,d.biz||'',bx,Y(y));
-    if(d.tag){ setF(ctx,t,6.5,400,'italic'); ctx.fillStyle=t.sub; TXT(ctx,d.tag,bx,Y(y+0.13)); }
+    TXT(ctx,d.biz||'',X(bx),Y(y));
+    if(d.tag){ setF(ctx,t,6.5,400,'italic'); ctx.fillStyle=t.sub; TXT(ctx,d.tag,X(bx),Y(y+0.13)); }
     y+=(t.skin==='waveB')?0.24:0.3;
   }
   /* name + desig */
   setF(ctx,t,11,700); ctx.fillStyle=t.gradTx?goldTx():t.tx;
   glowOn(0.018);
-  TXT(ctx,d.name||'',cX,Y(Math.max(y,(t.skin==='bandTop')?0.86:y)+((t.skin==='bandTop')?0:0.1)));
+  TXT(ctx,d.name||'',X(cX),Y(Math.max(y,(t.skin==='bandTop')?0.86:y)+((t.skin==='bandTop')?0:0.1)));
   glowOff();
   let ny=Math.max(y,(t.skin==='bandTop')?0.86:y)+((t.skin==='bandTop')?0:0.1);
   if(d.desig){ setF(ctx,t,7.5,600); ctx.fillStyle=t.skin==='bandLeft'?t.accent:(t.accent);
-    TXT(ctx,d.desig,cX,Y(ny+0.15)); ny+=0.15; }
+    TXT(ctx,d.desig,X(cX),Y(ny+0.15)); ny+=0.15; }
   /* divider */
   ny+=0.12;
   ctx.strokeStyle=t.accent; ctx.lineWidth=1/SC;
@@ -688,19 +690,19 @@ function drawCardInto(ctx,t,d,OX,OY){
       TXT(ctx,gly[li],X(chx),Y(chy+0.02));
       ctx.fillStyle=t.sub; setF(ctx,t,6.3,400); ctx.textAlign='left';
       tx=cL+0.17; }
-    TXT(ctx,l,tx,Y(dy)); dy+=step; });
+    TXT(ctx,l,X(tx),Y(dy)); dy+=step; });
 }
 
 /* ================= 🖨️ SHEET RENDERER (grid + crop marks) ================= */
 function sheetGrid(sh){
-  const dm=cardDims();
-  const cols=Math.floor(sh.w/dm.w), rows=Math.floor(sh.h/dm.h);
-  const gx=(sh.w-cols*dm.w)/2, gy=(sh.h-rows*dm.h)/2;
-  return { cols, rows, gx, gy };
+  const dm=cardDims(), gap=sh.gap||0;
+  const cols=Math.floor((sh.w+gap)/(dm.w+gap)), rows=Math.floor((sh.h+gap)/(dm.h+gap));
+  const gx=(sh.w-(cols*dm.w+(cols-1)*gap))/2, gy=(sh.h-(rows*dm.h+(rows-1)*gap))/2;
+  return { cols, rows, gx, gy, gap };
 }
 function cropMarks(ctx,ox,oy,w,h){
-  ctx.strokeStyle='#9ca3af'; ctx.lineWidth=1.2/SC;
-  const g=0.03,l=0.12;
+  ctx.strokeStyle='#374151'; ctx.lineWidth=1.2/SC;
+  const g=1/25.4, l=2/25.4;   /* 2mm cutting marks */
   [[ox,oy,-1,-1],[ox+w,oy,1,-1],[ox,oy+h,-1,1],[ox+w,oy+h,1,1]].forEach(([cx,cy,sx,sy])=>{
     ctx.beginPath();
     ctx.moveTo(cx+sx*g,cy); ctx.lineTo(cx+sx*(g+l),cy);
@@ -721,7 +723,7 @@ function renderSheet(scale,sheetKey,side){
   const g=sheetGrid(sh), dm=cardDims();
   for(let r=0;r<g.rows;r++) for(let c=0;c<g.cols;c++){
     const cc=(side==='back')?(g.cols-1-c):c;
-    const ox=g.gx+cc*dm.w, oy=g.gy+r*dm.h;
+    const ox=g.gx+cc*(dm.w+g.gap), oy=g.gy+r*(dm.h+g.gap);
     drawCardInto(ctx,t,d,ox,oy);
     cropMarks(ctx,ox,oy,dm.w,dm.h);
   }
