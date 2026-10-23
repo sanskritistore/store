@@ -138,7 +138,7 @@ const STR={
    tSheet:'🖨️ FRONT sheet तैयार — print पर भेजो ✓',
    tBack:'🖨️ BACK sheet तैयार — FRONT के बाद sheet किताब की तरह पलटकर print करो ✓',
    stOpen:'🎨 अपना Design बनाओ', stTitle:'🎨 Design Studio', stName:'Design का नाम', stNamePh:'जैसे: मेरा शाही card',
-   stSkin:'Design की बनावट', skPlain:'सादा', skBar:'साइड line', skBandTop:'ऊपर band', skBandLeft:'बायाँ पैनल',
+   stSkin:'Design की बनावट', skPlain:'सादा', skBar:'साइड line', skBandTop:'ऊपर band', skBandLeft:'बायाँ पैनल', skBlank:'⬜ खाली',
    stColors:'🎨 रंग', stBg:'पीछे का रंग', stAccent:'मुख्य रंग', stTx:'अक्षरों का रंग', stSub:'छोटे अक्षरों का रंग',
    stIni:'पैनल पर अक्षर (जैसे CP) का रंग',
    stPat:'🧩 Background Pattern (Corel-जैसा)', patNone:'🚫 बंद', patH:'━ Lines', patV:'┃ Lines',
@@ -171,7 +171,7 @@ const STR={
    tSheet:'🖨️ FRONT sheet ready — send to print ✓',
    tBack:'🖨️ BACK sheet ready — flip sheet like a book after FRONT and print ✓',
    stOpen:'🎨 Make Your Own Design', stTitle:'🎨 Design Studio', stName:'Design name', stNamePh:'e.g. My Royal Card',
-   stSkin:'Design structure', skPlain:'Plain', skBar:'Side bar', skBandTop:'Top band', skBandLeft:'Left panel',
+   stSkin:'Design structure', skPlain:'Plain', skBlank:'⬜ Blank', skBar:'Side bar', skBandTop:'Top band', skBandLeft:'Left panel',
    stColors:'🎨 Colors', stBg:'Background', stAccent:'Accent', stTx:'Text color', stSub:'Sub text color',
    stIni:'Panel letters (like CP) color',
    stPat:'🧩 Background Pattern (Corel-style)', patNone:'🚫 Off', patH:'━ Lines', patV:'┃ Lines',
@@ -546,6 +546,7 @@ function drawEls(ctx,X,Y,W,H,t){
       drawSparkle(ctx,{c:e.c||'#f6e27a',n:e.n||80,seed:(e.seed==null?7:e.seed),flare:(e.flare==null?4:e.flare),bokeh:(e.bokeh==null?6:e.bokeh)},X(e.x),Y(e.y),e.w||W,e.h||H);
     } else if(e.ty==='text'){
       if(e.script) ctx.font=(e.bold?700:400)+' '+((e.size||9)*PT*SC)+'px '+FSCR;
+      else if(e.fk!=null) ctx.font=(e.ital?'italic ':'')+(e.bold?700:400)+' '+((e.size||9)*PT*SC)+'px '+((FONTS[e.fk]||FONTS[0]).css);
       else setF(ctx,t,e.size||9,e.bold?700:600);
       ctx.fillStyle=fill; ctx.textAlign='center';
       TXT(ctx,e.str||'',X(e.x),Y(e.y));
@@ -651,6 +652,7 @@ function drawCardInto(ctx,t,d,OX,OY){
     ctx.strokeRect(X(_b.x-0.05),Y(_b.y-0.05),_b.w+0.1,_b.h+0.1);
     ctx.setLineDash([]); ctx.fillStyle='#ff5f56';
     ctx.beginPath(); ctx.arc(X(_b.x-0.05),Y(_b.y-0.05),0.05,0,7); ctx.fill(); ctx.restore(); }
+  if(t.skin==='blank'){ if(REC) window._txHits={}; return; }  /* ⬜ खाली card — सिर्फ़ bg + elements */
   /* logo */
   const lg=d.logo?logoImg(d.logo):null;
   let logoDrawn=false;
@@ -1036,7 +1038,7 @@ function renderStudio(){
   nmi.oninput=()=>{ c.name=nmi.value; }; st.appendChild(nm);
   /* skin */
   const sk=H('<div class="strow"><label>'+T('stSkin')+'</label><div class="stchips"></div></div>');
-  [['plain',T('skPlain')],['bar',T('skBar')],['bandTop',T('skBandTop')],['bandLeft',T('skBandLeft')]].forEach(([v,lb])=>{
+  [['plain',T('skPlain')],['bar',T('skBar')],['bandTop',T('skBandTop')],['bandLeft',T('skBandLeft')],['blank',T('skBlank')]].forEach(([v,lb])=>{
     const b=document.createElement('button'); b.className='sbtn'+(c.skin===v?' on':''); b.textContent=lb;
     b.onclick=()=>{ c.skin=v; renderStudio(); studioPreview(); };
     sk.querySelector('.stchips').appendChild(b); });
@@ -1054,24 +1056,7 @@ function renderStudio(){
   inii.oninput=()=>{ c.ini=inii.value; studioPreview(); };
   st.appendChild(inir);
   /* 🧩 Background pattern (Corel-जैसा) */
-  st.appendChild(H('<h3>'+T('stPat')+'</h3>'));
-  const pats=H('<div class="strow"><div class="stchips"></div></div>');
-  const PC=()=>{ c.pat=Object.assign({ty:'none',c:'#b45309',gap:0.2,a:0.35,lw:1},c.pat||{}); return c.pat; };
-  [['none',T('patNone')],['h',T('patH')],['v',T('patV')],['d',T('patD')],['d2',T('patD2')],['grid',T('patGrid')],['dots',T('patDots')]].forEach(([v,lb])=>{
-    const b=document.createElement('button'); b.className='sbtn'+(((c.pat&&c.pat.ty)||'none')===v?' on':'');
-    b.textContent=lb; b.onclick=()=>{ PC().ty=v; renderStudio(); studioPreview(); };
-    pats.querySelector('.stchips').appendChild(b); });
-  st.appendChild(pats);
-  if(c.pat&&c.pat.ty&&c.pat.ty!=='none'){
-    const pr=H('<div class="clrrow"><label>'+T('patC')+'</label><input type="color"></div>');
-    const pi=pr.querySelector('input'); pi.value=c.pat.c||'#b45309';
-    pi.oninput=()=>{ c.pat.c=pi.value; studioPreview(); };
-    st.appendChild(pr);
-    const gr=H('<div class="strow"><label>'+T('patGap')+'</label><input type="number" min="2" max="30" step="1" style="width:70px"></div>');
-    const gi=gr.querySelector('input'); gi.value=Math.round((c.pat.gap||0.2)*25.4);
-    gi.oninput=()=>{ c.pat.gap=Math.max(2,+gi.value||5)/25.4; studioPreview(); };
-    st.appendChild(gr);
-  }
+  if(c.skin!=='blank'){
   /* 🔤 TEXT PANEL — सिर्फ़ चुने text पर काम (कोई global mode नहीं) */
   if(!c.sz) c.sz={}; if(!c.bold) c.bold={}; if(!c.ital) c.ital={};
   const _roles=[['biz','fBiz'],['tag','fTag'],['name','fName'],['desig','fDesig'],['det','fDet']];
@@ -1110,6 +1095,8 @@ function renderStudio(){
     txp.appendChild(H('<p style="font-size:11px;color:#8ea0b5;margin:4px 0 0">'+T('txGate')+'</p>'));
   }
   st.appendChild(txp);
+  }
+  if(c.skin!=='blank'){
   /* align */
   const al=H('<div class="strow"><label>'+T('stAlign')+'</label><div class="stchips"></div></div>');
   [['left',T('stAL')],['center',T('stAC')]].forEach(([v,lb])=>{
@@ -1117,6 +1104,7 @@ function renderStudio(){
     b.onclick=()=>{ c.align=v; renderStudio(); studioPreview(); };
     al.querySelector('.stchips').appendChild(b); });
   st.appendChild(al);
+  }
   /* frame */
   const fr=H('<div class="strow"><label>'+T('stFrame')+'</label><div class="stchips"></div></div>');
   [[true,T('stOn')],[false,T('stOff')]].forEach(([v,lb])=>{
@@ -1189,13 +1177,21 @@ function renderStudio(){
     if(e.ty==='text'){ const tr=H('<div class="strow"><label>Text</label><input style="flex:1"></div>');
       const ti=tr.querySelector('input'); ti.value=e.str||'';
       ti.oninput=()=>{ e.str=ti.value; studioPreview(); }; st.appendChild(tr);
-      mkRange(T('elSize'),4,18,0.5,()=>e.size,v=>e.size=v);
+      mkRange(T('elSize'),4,28,0.5,()=>e.size,v=>e.size=v);
+      const fr2=H('<div class="strow"><label>Font</label></div>');
+      const fd2=document.createElement('select'); fd2.className='finp'; fd2.style.cssText='flex:1;font-size:13px;padding:5px';
+      FONTS.forEach((f,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=f.n; o.style.fontFamily=f.css; fd2.appendChild(o); });
+      fd2.value=(e.fk==null?fkOf(c,null):e.fk);
+      fd2.onchange=()=>{ e.fk=parseInt(fd2.value); e.script=0; stuSnap(); renderStudio(); studioPreview(); try{ document.fonts.ready.then(()=>studioPreview()); }catch(_){ } };
+      fr2.appendChild(fd2); st.appendChild(fr2);
       const ft=H('<div class="strow"><label>Style</label><div class="stchips"></div></div>');
       const sc=document.createElement('button'); sc.className='sbtn'+(e.script?' on':''); sc.textContent=T('elScript');
       sc.onclick=()=>{ e.script=!e.script; renderStudio(); studioPreview(); };
       const bd=document.createElement('button'); bd.className='sbtn'+(e.bold?' on':''); bd.textContent=T('elBold');
       bd.onclick=()=>{ e.bold=!e.bold; renderStudio(); studioPreview(); };
-      ft.querySelector('.stchips').appendChild(sc); ft.querySelector('.stchips').appendChild(bd);
+      const ib2=document.createElement('button'); ib2.className='sbtn'+(e.ital?' on':''); ib2.textContent='I'; ib2.style.fontStyle='italic';
+      ib2.onclick=()=>{ e.ital=!e.ital; stuSnap(); renderStudio(); studioPreview(); };
+      ft.querySelector('.stchips').appendChild(sc); ft.querySelector('.stchips').appendChild(bd); ft.querySelector('.stchips').appendChild(ib2);
       st.appendChild(ft); }
     if(e.ty!=='sparkle'&&e.ty!=='mandala'){
       const gl=H('<div class="strow"><label>'+T('stGlow')+'</label><div class="stchips"></div></div>');
