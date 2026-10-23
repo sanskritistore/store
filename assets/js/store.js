@@ -23,7 +23,7 @@ function shell(active){
   ['category.html?c=handicraft','हैंडीक्राफ्ट','handicraft'],['category.html?c=cyber','🖨️ Cyber Cafe','cyber']]
   .filter(n=>!hid.includes(n[2]));
  $('#hd').innerHTML=`<div class="wrap"><div class="hd-in">
-  <a class="logo" href="index.html">${CFG.site.name}<span>STORES & DIGITAL</span></a>
+  <a class="logo" href="index.html"><img src="brand/icon-512.png" alt="संस्कृति" style="height:32px;width:32px;border-radius:50%;object-fit:cover;vertical-align:-7px;margin-right:7px">${CFG.site.name}<span>STORES & DIGITAL</span></a>
   <div class="hd-acts"><a class="hd-cart" href="cart.html">🛒<b class="cart-count"></b></a>
   <a class="hd-wa" href="${wa('नमस्ते! मुझे जानकारी चाहिए।')}" target="_blank">WhatsApp</a></div></div>
   <nav class="hd-nav">${nav.map(n=>`<a href="${n[0]}" class="${active===n[2]?'on':''}">${n[1]}</a>`).join('')}</nav></div>
