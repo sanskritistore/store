@@ -932,6 +932,7 @@ function elLite(){ TEMPLATES._studio=STU.cfg;
   const cv=renderCard(VIEW_SCALE,'front'); cv.id='cvF'; cv.style.maxWidth='92%'; cv.style.height='auto';
   old.replaceWith(cv); attachElDrag(cv); }
 function openStudio(baseId){
+  if(!STU.open) STU.from=(S.tplFront!=='_studio')?S.tplFront:null;   /* 🧠 असली selection याद */
   const base=TEMPLATES[baseId||S.tplFront]||TEMPLATES.simple;
   STU.cfg=JSON.parse(JSON.stringify(base));
   STU.cfg.name=(baseId&&TEMPLATES[baseId].custom)?base.name:'';
@@ -940,7 +941,7 @@ function openStudio(baseId){
   STU.open=true; renderStudio(); studioPreview();
 }
 function closeStudio(){ STU.open=false; $('studio').style.display='none';
-  delete TEMPLATES._studio; if(S.tplFront==='_studio') S.tplFront=STU.editId||'simple';
+  delete TEMPLATES._studio; if(S.tplFront==='_studio') S.tplFront=STU.editId||STU.from||'simple'; STU.from=null;
   buildForm(); draw(); }
 function renderStudio(){
   const st=$('studio'); st.style.display='block'; st.innerHTML='';
