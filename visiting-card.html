@@ -145,13 +145,13 @@ const STR={
    patD:'╱ तिरछी', patD2:'✕ क्रॉस', patGrid:'▦ खाना', patDots:'• बिंदु',
    patC:'Pattern का रंग', patGap:'गैप (mm)',
    stFont:'🔤 Font चुनो', stSans:'सादा', stSerif:'सीरिफ़ (शाही)',
-   fBiz:'दुकान का नाम', fName:'आपका नाम', fDesig:'पद', fDet:'संपर्क lines',
+   fBiz:'दुकान का नाम', fTag:'Tagline', fName:'आपका नाम', fDesig:'पद', fDet:'संपर्क lines',
    stAlign:'जमाव (Align)', stAL:'बायाँ', stAC:'बीच',
    stFrame:'फ़्रेम (border)', stOn:'लगाओ', stOff:'नहीं', stPrem:'✨ प्रीमियम असर', stGlow:'✨ Glow', stGold:'🪙 Gold अक्षर', stSpark:'💫 Sparkle',
    elAdd:'🧩 Elements — खुद बनाओ', elNew:'नया जोड़ो', elList:'चुनें', elLine:'📏 Line', elCurve:'🌊 Curve',
    elMandala:'❂ Mandala', elSpark:'💫 Sparkle', elText:'📝 Text', elColor:'रंग', elGrad:'🪙 धातु',
    elSize:'Size', elTh:'मोटाई', elAng:'कोण', elLen:'लंबाई', elCnt:'मात्रा', elDel:'🗑️ हटाओ',
-   elDragHint:'👆 card पर text छूकर चुनो • 🖱️ खींचकर हिलाओ • ⌨️ Del=हटाओ • Ctrl+Z=वापस • Ctrl+C/V=नकल • Arrows=हिलाओ', stAllTxt:'सब texts (कोई चुना नहीं)', elScript:'✍️ Script', elBold:'B', elW:'चौड़ाई', elH:'ऊँचाई',
+   elDragHint:'👆 card पर text छूकर चुनो • 🖱️ खींचकर हिलाओ • ⌨️ Del=हटाओ • Ctrl+Z=वापस • Ctrl+C/V=नकल • Arrows=हिलाओ', txPick:'👆 पहले card पर text छूकर चुनो', txGate:'Text चुनोगे तभी font / size / B / I खुलेंगे — बिना चुने कुछ नहीं बदलेगा ✓', txHandle:'🖱️ Box के कोने के ⚪ गोले को खींचो = बड़ा / छोटा', elScript:'✍️ Script', elBold:'B', elW:'चौड़ाई', elH:'ऊँचाई',
    stSave:'💾 सहेजो', stExport:'📤 Export', stImport:'📥 Import', stDel:'🗑️ हटाओ',
    tTplSaved:'🎨 आपका Design सहेज गया ✓ — chips में दिख रहा है', tTplDel:'🗑️ Design हटा दिया',
    tTplBad:'❌ यह Design file नहीं है', tTplImp:'📥 Design आ गया ✓', tNeedName:'❗ पहले Design का नाम लिखो',
@@ -178,13 +178,13 @@ const STR={
    patD:'╱ Diagonal', patD2:'✕ Cross', patGrid:'▦ Grid', patDots:'• Dots',
    patC:'Pattern color', patGap:'Gap (mm)',
    stFont:'🔤 Choose font', stSans:'Simple', stSerif:'Serif (royal)',
-   fBiz:'Business name', fName:'Your name', fDesig:'Designation', fDet:'Contact lines',
+   fBiz:'Business name', fTag:'Tagline', fName:'Your name', fDesig:'Designation', fDet:'Contact lines',
    stAlign:'Alignment', stAL:'Left', stAC:'Center',
    stFrame:'Frame (border)', stOn:'Show', stOff:'Hide', stPrem:'✨ Premium effects', stGlow:'✨ Glow', stGold:'🪙 Gold letters', stSpark:'💫 Sparkle',
    elAdd:'🧩 Elements — build your own', elNew:'Add new', elList:'Select', elLine:'📏 Line', elCurve:'🌊 Curve',
    elMandala:'❂ Mandala', elSpark:'💫 Sparkle', elText:'📝 Text', elColor:'Color', elGrad:'🪙 Metal',
    elSize:'Size', elTh:'Thickness', elAng:'Angle', elLen:'Length', elCnt:'Count', elDel:'🗑️ Delete',
-   elDragHint:'🖱️ Drag to move • ⌨️ Del=remove • Ctrl+Z=undo • Ctrl+C/V=copy-paste • Arrows=nudge', stAllTxt:'All texts (none selected)', elScript:'✍️ Script', elBold:'B', elW:'Width', elH:'Height',
+   elDragHint:'🖱️ Drag to move • ⌨️ Del=remove • Ctrl+Z=undo • Ctrl+C/V=copy-paste • Arrows=nudge', txPick:'👆 First tap a text on the card', txGate:'Select a text first — nothing changes until you do ✓', txHandle:'🖱️ Drag the ⚪ dot at box corner = bigger / smaller', elScript:'✍️ Script', elBold:'B', elW:'Width', elH:'Height',
    stSave:'💾 Save', stExport:'📤 Export', stImport:'📥 Import', stDel:'🗑️ Delete',
    tTplSaved:'🎨 Your Design saved ✓ — see it in the chips', tTplDel:'🗑️ Design deleted',
    tTplBad:'❌ Not a Design file', tTplImp:'📥 Design imported ✓', tNeedName:'❗ Please write a Design name first',
@@ -686,20 +686,20 @@ function drawCardInto(ctx,t,d,OX,OY){
     setBiz(12); ctx.fillStyle=t.gradTx?goldTx():(t.ini||'#ffffff');
     ctx.textAlign=C?'center':'left';
     txR('biz',ctx,d.biz||'',X(C?W/2:pad),Y(0.28));
-    if(d.tag){ setF(ctx,t,6.5,400,'italic','biz'); ctx.fillStyle=(t.ini||'#ffffff')+'cc'; txR('biz',ctx,d.tag,X(C?W/2:pad),Y(0.47)); }
+    if(d.tag){ setF(ctx,t,6.5*szOf(t,'tag'),wOf(t,'tag',400,600),'italic','tag'); ctx.fillStyle=(t.ini||'#ffffff')+'cc'; txR('tag',ctx,d.tag,X(C?W/2:pad),Y(0.47)); }
     y=0.86;
     ctx.textAlign=C?'center':'left';
   } else if(t.skin==='bandLeft'||t.skin==='waveL'){
     setBiz(10.5); ctx.fillStyle=t.gradTx?goldTx():t.accent;
     txR('biz',ctx,d.biz||'',X(cX),Y(0.32));
     y=0.44;
-    if(d.tag){ setF(ctx,t,6.2,400,'italic','biz'); ctx.fillStyle=t.sub; txR('biz',ctx,d.tag,X(cX),Y(y)); y+=0.14; }
+    if(d.tag){ setF(ctx,t,6.2*szOf(t,'tag'),wOf(t,'tag',400,600),'italic','tag'); ctx.fillStyle=t.sub; txR('tag',ctx,d.tag,X(cX),Y(y)); y+=0.14; }
   } else {
     y=(C&&logoDrawn)?0.66:0.33;
     const bx=(!C&&logoDrawn&&t.skin!=='bandLeft')?cL+0.62:cX;
     setBiz(12); ctx.fillStyle=t.gradTx?goldTx():t.accent;
     txR('biz',ctx,d.biz||'',X(bx),Y(y));
-    if(d.tag){ setF(ctx,t,6.5,400,'italic','biz'); ctx.fillStyle=t.sub; txR('biz',ctx,d.tag,X(bx),Y(y+0.13)); }
+    if(d.tag){ setF(ctx,t,6.5*szOf(t,'tag'),wOf(t,'tag',400,600),'italic','tag'); ctx.fillStyle=t.sub; txR('tag',ctx,d.tag,X(bx),Y(y+0.13)); }
     y+=(t.skin==='waveB')?0.24:0.3;
   }
   /* name + desig */
@@ -744,7 +744,10 @@ function drawCardInto(ctx,t,d,OX,OY){
     if(_b){ ctx.save(); ctx.strokeStyle='#ff5f56'; ctx.lineWidth=1.6/SC; ctx.setLineDash([0.05,0.035]);
       ctx.strokeRect(X(_b.x0-0.03),Y(_b.y0-0.02),(_b.x1-_b.x0)+0.06,(_b.y1-_b.y0)+0.05);
       ctx.setLineDash([]); ctx.fillStyle='#ff5f56';
-      ctx.beginPath(); ctx.arc(X(_b.x0-0.03),Y(_b.y0-0.02),0.05,0,7); ctx.fill(); ctx.restore(); } }
+      ctx.beginPath(); ctx.arc(X(_b.x0-0.03),Y(_b.y0-0.02),0.05,0,7); ctx.fill();
+      /* ⚪ resize handle (नीचे-दाएँ) — खींचकर बड़ा/छोटा */
+      ctx.beginPath(); ctx.arc(X(_b.x1+0.03),Y(_b.y1+0.03),0.06,0,7);
+      ctx.fillStyle='#ffffff'; ctx.fill(); ctx.lineWidth=2.4/SC; ctx.stroke(); ctx.restore(); } }
 }
 
 /* ================= 🖨️ SHEET RENDERER (grid + crop marks) ================= */
@@ -962,6 +965,11 @@ function attachElDrag(cv){
   const toIn=(ev)=>{ const r=cv.getBoundingClientRect(); const p=(ev.touches&&ev.touches[0])||ev;
     return { x:(p.clientX-r.left)/r.width*dm.w, y:(p.clientY-r.top)/r.height*dm.h }; };
   const down=(ev)=>{ if(!STU.open||!STU.cfg) return; const p=toIn(ev); const els=STU.cfg.els||[];
+    /* ⚪ resize handle पकड़ा? */
+    if(STU.txSel&&window._txHits&&window._txHits[STU.txSel]){ const hb=window._txHits[STU.txSel];
+      if(Math.abs(p.x-(hb.x1+0.03))<0.12&&Math.abs(p.y-(hb.y1+0.03))<0.12){
+        STU.txDrag={k:STU.txSel, sz0:((STU.cfg.sz||{})[STU.txSel]||1), x0:p.x};
+        ev.preventDefault(); return; } }
     for(let i=els.length-1;i>=0;i--){ if(elHit(els[i],p.x,p.y,dm.w,dm.h)){
       STU.sel=i; STU.txSel=null; STU.drag={dx:p.x-els[i].x,dy:p.y-els[i].y};
       renderStudio(); studioPreview(); ev.preventDefault(); return; } }
@@ -979,7 +987,15 @@ function attachElDrag(cv){
   document.addEventListener('mouseup',elDocUp);
   document.addEventListener('touchend',elDocUp);
 }
-function elDocMove(ev){ if(!STU.drag||STU.sel==null||!STU.cfg||!STU.open) return;
+function elDocMove(ev){
+  if(STU.txDrag&&STU.open&&STU.cfg){
+    const cv2=document.getElementById('cvF'); if(!cv2) return;
+    const dm2=cardDims(); const r2=cv2.getBoundingClientRect(); const pp=(ev.touches&&ev.touches[0])||ev;
+    const xx=(pp.clientX-r2.left)/r2.width*dm2.w;
+    if(!STU.cfg.sz) STU.cfg.sz={};
+    STU.cfg.sz[STU.txDrag.k]=Math.round(Math.max(0.5,Math.min(1.8,STU.txDrag.sz0+(xx-STU.txDrag.x0)*1.4))*100)/100;
+    studioPreview(); ev.preventDefault(); return; }
+  if(!STU.drag||STU.sel==null||!STU.cfg||!STU.open) return;
   const cv=document.getElementById('cvF'); if(!cv) return;
   const dm=cardDims(); const r=cv.getBoundingClientRect(); const p=(ev.touches&&ev.touches[0])||ev;
   const x=(p.clientX-r.left)/r.width*dm.w, y=(p.clientY-r.top)/r.height*dm.h;
@@ -987,7 +1003,9 @@ function elDocMove(ev){ if(!STU.drag||STU.sel==null||!STU.cfg||!STU.open) return
   e.x=Math.round(Math.max(-0.3,Math.min(dm.w+0.3,x-STU.drag.dx))*100)/100;
   e.y=Math.round(Math.max(-0.3,Math.min(dm.h+0.3,y-STU.drag.dy))*100)/100;
   elLite(); ev.preventDefault(); }
-function elDocUp(){ if(STU.drag){ STU.drag=null; if(STU.open){ stuSnap(); renderStudio(); studioPreview(); } } }
+function elDocUp(){
+  if(STU.txDrag){ STU.txDrag=null; if(STU.open){ stuSnap(); renderStudio(); studioPreview(); } return; }
+  if(STU.drag){ STU.drag=null; if(STU.open){ stuSnap(); renderStudio(); studioPreview(); } } }
 function elLite(){ TEMPLATES._studio=STU.cfg;
   if(STU.sel!=null) TEMPLATES._studio._selIdx=STU.sel; else delete TEMPLATES._studio._selIdx;
   const old=document.getElementById('cvF'); if(!old){ studioPreview(); return; }
@@ -999,12 +1017,12 @@ function openStudio(baseId){
   STU.cfg=JSON.parse(JSON.stringify(base));
   STU.cfg.name=(baseId&&TEMPLATES[baseId].custom)?base.name:'';
   STU.editId=(baseId&&TEMPLATES[baseId].custom)?baseId:null;
-  STU.sel=null; STU.drag=null; STU.txSel=null; STU.hist=[]; STU.hi=-1;
+  STU.sel=null; STU.drag=null; STU.txSel=null; STU.txDrag=null; STU.hist=[]; STU.hi=-1;
   STU.open=true; renderStudio(); stuSnap(); studioPreview();
 }
 function closeStudio(){ STU.open=false; $('studio').style.display='none';
   delete TEMPLATES._studio; if(S.tplFront==='_studio') S.tplFront=STU.editId||STU.from||'simple'; STU.from=null;
-  STU.txSel=null; window._recHits=false; window._txSel=null; window._txHits={};
+  STU.txSel=null; STU.txDrag=null; window._recHits=false; window._txSel=null; window._txHits={};
   buildForm(); draw(); }
 function renderStudio(){
   const st=$('studio'); st.style.display='block'; st.innerHTML='';
@@ -1054,35 +1072,32 @@ function renderStudio(){
     gi.oninput=()=>{ c.pat.gap=Math.max(2,+gi.value||5)/25.4; studioPreview(); };
     st.appendChild(gr);
   }
-  /* 🔤 TEXT PANEL (professional — Corel जैसा): चुना text या सब */
+  /* 🔤 TEXT PANEL — सिर्फ़ चुने text पर काम (कोई global mode नहीं) */
   if(!c.sz) c.sz={}; if(!c.bold) c.bold={}; if(!c.ital) c.ital={};
-  const _roles=[['biz','fBiz'],['name','fName'],['desig','fDesig'],['det','fDet']];
+  const _roles=[['biz','fBiz'],['tag','fTag'],['name','fName'],['desig','fDesig'],['det','fDet']];
   const txp=H('<div style="background:#141d2b;border:1px solid #2c3a4f;border-radius:10px;padding:9px;margin:4px 0"></div>');
   const tsel=STU.txSel;
   txp.appendChild(H('<div style="font-size:12px;font-weight:700;color:'+(tsel?'#fbbf24':'#9db2c9')+';margin-bottom:2px">'
-    +(tsel?('✏️ '+T(_roles.find(r=>r[0]===tsel)[1])):('🔤 '+T('stAllTxt')))+'</div>'));
-  /* role चुनो chips (card छूने के अलावा रास्ता) */
+    +(tsel?('✏️ '+T(_roles.find(r=>r[0]===tsel)[1])):T('txPick'))+'</div>'));
   const rch=H('<div class="stchips" style="margin-bottom:2px"></div>');
   _roles.forEach(([k,lb])=>{ const b=document.createElement('button');
     b.className='sbtn'+(STU.txSel===k?' on':''); b.textContent=T(lb); b.style.fontSize='11px';
     b.onclick=()=>{ STU.txSel=(STU.txSel===k)?null:k; STU.sel=null; renderStudio(); studioPreview(); };
     rch.appendChild(b); });
   txp.appendChild(rch);
-  /* font DROPDOWN — हर नाम अपनी लिखावट में (Corel जैसा) */
   const fsel=document.createElement('select'); fsel.className='finp';
   fsel.style.cssText='width:100%;font-size:14px;padding:7px;margin:2px 0';
   FONTS.forEach((f,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=f.n; o.style.fontFamily=f.css; fsel.appendChild(o); });
-  fsel.value=fkOf(c,tsel||null);
-  fsel.onchange=()=>{ const fk=parseInt(fsel.value);
-    if(STU.txSel){ c.fonts=c.fonts||{}; c.fonts[STU.txSel]=fk; toast('✏️ सिर्फ़ चुने text का font बदला'); }
-    else { c.fontKey=fk; c.fonts={}; toast('🔤 सब texts का font बदला'); }
-    stuSnap(); renderStudio(); studioPreview();
-    try{ document.fonts.ready.then(()=>studioPreview()); }catch(_){ } };
+  if(tsel){ fsel.value=fkOf(c,tsel);
+    fsel.onchange=()=>{ const fk=parseInt(fsel.value);
+      c.fonts=c.fonts||{}; c.fonts[tsel]=fk;
+      stuSnap(); renderStudio(); studioPreview();
+      try{ document.fonts.ready.then(()=>studioPreview()); }catch(_){ } };
+  } else { fsel.disabled=true; fsel.style.opacity=0.45; }
   txp.appendChild(fsel);
-  /* size + B + I — सिर्फ़ चुने text के */
   if(tsel){ const k=tsel;
     const sr=H('<div style="display:flex;gap:6px;align-items:center;margin-top:4px"><input type="range" style="flex:1"><button class="sbtn" style="font-weight:800">B</button><button class="sbtn" style="font-style:italic">I</button></div>');
-    const inp=sr.children[0]; inp.min=0.7; inp.max=1.5; inp.step=0.05; inp.value=c.sz[k]||1;
+    const inp=sr.children[0]; inp.min=0.5; inp.max=1.8; inp.step=0.05; inp.value=c.sz[k]||1;
     inp.oninput=()=>{ c.sz[k]=parseFloat(inp.value); studioPreview(); };
     inp.addEventListener('change',()=>stuSnap());
     const bb=sr.children[1]; if(c.bold[k]) bb.classList.add('on');
@@ -1090,8 +1105,9 @@ function renderStudio(){
     const ib=sr.children[2]; if(c.ital[k]) ib.classList.add('on');
     ib.onclick=()=>{ c.ital[k]=!c.ital[k]; stuSnap(); renderStudio(); studioPreview(); };
     txp.appendChild(sr);
+    txp.appendChild(H('<p style="font-size:11px;color:#8ea0b5;margin:4px 0 0">'+T('txHandle')+'</p>'));
   } else {
-    txp.appendChild(H('<p style="font-size:11px;color:#8ea0b5;margin:4px 0 0">👆 Card पर text छूओ (या ऊपर chip दबाओ) — उसी का size / Bold / Italic यहाँ खुलेगा</p>'));
+    txp.appendChild(H('<p style="font-size:11px;color:#8ea0b5;margin:4px 0 0">'+T('txGate')+'</p>'));
   }
   st.appendChild(txp);
   /* align */
