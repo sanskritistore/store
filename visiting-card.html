@@ -68,7 +68,15 @@ main{display:flex;flex:1;overflow:hidden}
 .stbtns{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px}
 .stbtns .sbtn{flex:1;text-align:center;min-width:45%}
 @media(max-width:760px){ #side{width:44vw;min-width:44vw} }
+/* 🖨️ direct print — screen पर app, paper पर सिर्फ़ sheet */
+#printArea{ display:none; }
+@media print{
+  body>*:not(#printArea){ display:none !important; }
+  #printArea{ display:block !important; margin:0; padding:0; }
+  #printArea img{ display:block; margin:0; }
+}
 </style>
+<style id="pageStyle"></style>
 </head>
 <body>
 <header>
@@ -83,6 +91,8 @@ main{display:flex;flex:1;overflow:hidden}
   <button class="hbtn" id="btnPng">🖼️ Card PNG (300 DPI)</button>
   <button class="hbtn main" id="btnSheetF">🖨️ Front Sheet</button>
   <button class="hbtn main" id="btnSheetB">🖨️ Back Sheet</button>
+  <button class="hbtn main" id="btnPrintF">🖨️ Direct Print</button>
+  <button class="hbtn" id="btnPrintB">🔄 Direct Back</button>
 </header>
 <main>
   <div id="side"></div>
@@ -114,7 +124,8 @@ const PRINT_DPI=300, VIEW_SCALE=240;
 
 /* ================= 🌐 UI LANGUAGE ================= */
 const STR={
- hi:{ save:'💾 सहेजें', load:'📂 खोलें', printf:'🖨️ Front Sheet (300 DPI)', printb:'🖨️ Back Sheet (300 DPI)', png:'🖼️ Card PNG (300 DPI)', sample:'✨ नमूना भरो', langBtn:'🌐 English',
+ hi:{ save:'💾 सहेजें', load:'📂 खोलें', printf:'⬇️ Front Sheet PNG', printb:'⬇️ Back Sheet PNG', dprintf:'🖨️ Direct Print (Front)', dprintb:'🔄 Direct Print (Back)',
+   tPrint:'🖨️ Print dialog में: Paper = SHEETNAME, Scale = Default/100% चुनें!', png:'🖼️ Card PNG (300 DPI)', sample:'✨ नमूना भरो', langBtn:'🌐 English',
    sideF:'🪪 आगे (Front)', sideB:'🔄 पीछे (Back)',
    tpl:'🎨 Design चुनो', logo:'🖼️ Logo लगाओ (optional)', logoCh:'🖼️ Logo बदलो ✓', logoRm:'🚫 Logo हटाओ',
    backSec:'🔄 Back side की जानकारी', csize:'📏 Card का Size',
@@ -145,7 +156,8 @@ const STR={
    tTplBad:'❌ यह Design file नहीं है', tTplImp:'📥 Design आ गया ✓', tNeedName:'❗ पहले Design का नाम लिखो',
    galBtn:'🖼️ 100+ Designs देखो', galTitle:'🖼️ तैयार Designs — जो पसंद हो उस पर click करो',
    galAll:'सभी', galPrem:'⭐ प्रीमियम', galPat:'🧩 Pattern वाले', galPick:'✅ Design चुन लिया — अब अपनी जानकारी भरो' },
- en:{ save:'💾 Save', load:'📂 Open', printf:'🖨️ Front Sheet (300 DPI)', printb:'🖨️ Back Sheet (300 DPI)', png:'🖼️ Card PNG (300 DPI)', sample:'✨ Fill Sample', langBtn:'🌐 हिंदी',
+ en:{ save:'💾 Save', load:'📂 Open', printf:'⬇️ Front Sheet PNG', printb:'⬇️ Back Sheet PNG', dprintf:'🖨️ Direct Print (Front)', dprintb:'🔄 Direct Print (Back)',
+   tPrint:'🖨️ In print dialog: Paper = SHEETNAME, Scale = Default/100%!', png:'🖼️ Card PNG (300 DPI)', sample:'✨ Fill Sample', langBtn:'🌐 हिंदी',
    sideF:'🪪 Front', sideB:'🔄 Back',
    tpl:'🎨 Choose Design', logo:'🖼️ Add Logo (optional)', logoCh:'🖼️ Change Logo ✓', logoRm:'🚫 Remove Logo',
    backSec:'🔄 Back side details', csize:'📏 Card Size',
@@ -1185,6 +1197,21 @@ $('fileLogo').onchange=e=>{
   rd.onload=()=>{ S.data.logo=rd.result; buildForm(); draw(); toast(T('tLogo')); };
   rd.readAsDataURL(f);
 };
+/* 🖨️ direct print — exact-size image + @page, browser dialog से सीधे printer */
+function directPrint(side){
+  const sh=SHEETS[S.sheet];
+  const pa=document.getElementById('printArea');
+  pa.innerHTML='';
+  const img=new Image();
+  img.src=renderSheet(PRINT_DPI,S.sheet,side).toDataURL('image/png');
+  img.style.width=sh.w+'in'; img.style.height=sh.h+'in';
+  pa.appendChild(img);
+  document.getElementById('pageStyle').textContent='@page{ size:'+sh.w+'in '+sh.h+'in; margin:0; }';
+  toast(T('tPrint').replace('SHEETNAME',sh.n));
+  img.onload=()=>{ setTimeout(()=>{ window.print(); },60); };
+}
+$('btnPrintF').onclick=()=>directPrint('front');
+$('btnPrintB').onclick=()=>directPrint('back');
 $('btnPng').onclick=()=>{
   dl('visiting-card-'+S.side+'-300dpi.png', pngDpi(renderCard(PRINT_DPI,S.side).toDataURL('image/png'),PRINT_DPI));
   toast(T('tPng'));
@@ -1215,6 +1242,8 @@ function applyLang(){
   $('btnPng').textContent=T('png');
   $('btnSheetF').textContent=T('printf');
   $('btnSheetB').textContent=T('printb');
+  $('btnPrintF').textContent=T('dprintf');
+  $('btnPrintB').textContent=T('dprintb');
   buildForm(); draw();
 }
 $('btnLang').onclick=()=>{ S.ui=(S.ui==='hi')?'en':'hi'; applyLang(); };
@@ -1223,5 +1252,6 @@ $('btnLang').onclick=()=>{ S.ui=(S.ui==='hi')?'en':'hi'; applyLang(); };
 applyLang();
 $('btnSample').click();
 </script>
+<div id='printArea'></div>
 </body>
 </html>
