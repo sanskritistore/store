@@ -151,7 +151,7 @@ const STR={
    elAdd:'🧩 Elements — खुद बनाओ', elNew:'नया जोड़ो', elList:'चुनें', elLine:'📏 Line', elCurve:'🌊 Curve',
    elMandala:'❂ Mandala', elSpark:'💫 Sparkle', elText:'📝 Text', elColor:'रंग', elGrad:'🪙 धातु',
    elSize:'Size', elTh:'मोटाई', elAng:'कोण', elLen:'लंबाई', elCnt:'मात्रा', elDel:'🗑️ हटाओ',
-   elDragHint:'👆 card पर text छूकर चुनो • 🖱️ खींचकर हिलाओ • ⌨️ Del=हटाओ • Ctrl+Z=वापस • Ctrl+C/V=नकल • Arrows=हिलाओ', elScript:'✍️ Script', elBold:'B', elW:'चौड़ाई', elH:'ऊँचाई',
+   elDragHint:'👆 card पर text छूकर चुनो • 🖱️ खींचकर हिलाओ • ⌨️ Del=हटाओ • Ctrl+Z=वापस • Ctrl+C/V=नकल • Arrows=हिलाओ', stAllTxt:'सब texts (कोई चुना नहीं)', elScript:'✍️ Script', elBold:'B', elW:'चौड़ाई', elH:'ऊँचाई',
    stSave:'💾 सहेजो', stExport:'📤 Export', stImport:'📥 Import', stDel:'🗑️ हटाओ',
    tTplSaved:'🎨 आपका Design सहेज गया ✓ — chips में दिख रहा है', tTplDel:'🗑️ Design हटा दिया',
    tTplBad:'❌ यह Design file नहीं है', tTplImp:'📥 Design आ गया ✓', tNeedName:'❗ पहले Design का नाम लिखो',
@@ -184,7 +184,7 @@ const STR={
    elAdd:'🧩 Elements — build your own', elNew:'Add new', elList:'Select', elLine:'📏 Line', elCurve:'🌊 Curve',
    elMandala:'❂ Mandala', elSpark:'💫 Sparkle', elText:'📝 Text', elColor:'Color', elGrad:'🪙 Metal',
    elSize:'Size', elTh:'Thickness', elAng:'Angle', elLen:'Length', elCnt:'Count', elDel:'🗑️ Delete',
-   elDragHint:'🖱️ Drag to move • ⌨️ Del=remove • Ctrl+Z=undo • Ctrl+C/V=copy-paste • Arrows=nudge', elScript:'✍️ Script', elBold:'B', elW:'Width', elH:'Height',
+   elDragHint:'🖱️ Drag to move • ⌨️ Del=remove • Ctrl+Z=undo • Ctrl+C/V=copy-paste • Arrows=nudge', stAllTxt:'All texts (none selected)', elScript:'✍️ Script', elBold:'B', elW:'Width', elH:'Height',
    stSave:'💾 Save', stExport:'📤 Export', stImport:'📥 Import', stDel:'🗑️ Delete',
    tTplSaved:'🎨 Your Design saved ✓ — see it in the chips', tTplDel:'🗑️ Design deleted',
    tTplBad:'❌ Not a Design file', tTplImp:'📥 Design imported ✓', tNeedName:'❗ Please write a Design name first',
@@ -344,12 +344,13 @@ const FONTS=[                                   /* 🔤 fontKey — नया fo
   { n:'Rozha शादी',  css:'"Rozha One",'+FSER },         /* शादी हिंदी display */
   { n:'Baloo हिंदी', css:'"Baloo 2",'+FDEV }            /* मोटा हिंदी */
 ];
-function font(t,px,w,st){ const fk=(t.fontKey==null?(t.serif?1:0):t.fontKey);
-  return (st||'')+' '+(w||400)+' '+px+'px '+((FONTS[fk]||FONTS[0]).css); }
+function fkOf(t,role){ if(role&&t.fonts&&t.fonts[role]!=null) return t.fonts[role];
+  return (t.fontKey==null?(t.serif?1:0):t.fontKey); }
+function font(t,px,w,st,role){ return (st||'')+' '+(w||400)+' '+px+'px '+((FONTS[fkOf(t,role)]||FONTS[0]).css); }
 function szOf(t,k){ return (t.sz&&t.sz[k])||1; }            /* text size गुणक */
 function wOf(t,k,defw,bw){ return (t.bold&&t.bold[k])?(bw||800):defw; }   /* Bold */
 function iOf(t,k){ return (t.ital&&t.ital[k])?'italic':undefined; }        /* Italic */
-function setF(ctx,t,pt,w,st){ ctx.font=font(t,pt*PT*SC,w,st); }
+function setF(ctx,t,pt,w,st,role){ ctx.font=font(t,pt*PT*SC,w,st,role); }
 function TXT(ctx,str,x,y){ const al=ctx.textAlign;
   ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.textAlign=al;
   ctx.fillText(str,x*SC,y*SC); ctx.restore(); }
@@ -679,26 +680,26 @@ function drawCardInto(ctx,t,d,OX,OY){
   /* biz */
   const bf=t.script?1.9:1, bw=t.script?400:700;
   const setBiz=(pt)=>{ if(t.script) ctx.font=wOf(t,'biz',400,700)+' '+(pt*szOf(t,'biz')*bf*PT*SC)+'px '+FSCR;
-    else setF(ctx,t,pt*szOf(t,'biz'),wOf(t,'biz',bw),iOf(t,'biz')); };
+    else setF(ctx,t,pt*szOf(t,'biz'),wOf(t,'biz',bw),iOf(t,'biz'),'biz'); };
   let y;
   if(bandTxt){
     setBiz(12); ctx.fillStyle=t.gradTx?goldTx():(t.ini||'#ffffff');
     ctx.textAlign=C?'center':'left';
     txR('biz',ctx,d.biz||'',X(C?W/2:pad),Y(0.28));
-    if(d.tag){ setF(ctx,t,6.5,400,'italic'); ctx.fillStyle=(t.ini||'#ffffff')+'cc'; txR('biz',ctx,d.tag,X(C?W/2:pad),Y(0.47)); }
+    if(d.tag){ setF(ctx,t,6.5,400,'italic','biz'); ctx.fillStyle=(t.ini||'#ffffff')+'cc'; txR('biz',ctx,d.tag,X(C?W/2:pad),Y(0.47)); }
     y=0.86;
     ctx.textAlign=C?'center':'left';
   } else if(t.skin==='bandLeft'||t.skin==='waveL'){
     setBiz(10.5); ctx.fillStyle=t.gradTx?goldTx():t.accent;
     txR('biz',ctx,d.biz||'',X(cX),Y(0.32));
     y=0.44;
-    if(d.tag){ setF(ctx,t,6.2,400,'italic'); ctx.fillStyle=t.sub; txR('biz',ctx,d.tag,X(cX),Y(y)); y+=0.14; }
+    if(d.tag){ setF(ctx,t,6.2,400,'italic','biz'); ctx.fillStyle=t.sub; txR('biz',ctx,d.tag,X(cX),Y(y)); y+=0.14; }
   } else {
     y=(C&&logoDrawn)?0.66:0.33;
     const bx=(!C&&logoDrawn&&t.skin!=='bandLeft')?cL+0.62:cX;
     setBiz(12); ctx.fillStyle=t.gradTx?goldTx():t.accent;
     txR('biz',ctx,d.biz||'',X(bx),Y(y));
-    if(d.tag){ setF(ctx,t,6.5,400,'italic'); ctx.fillStyle=t.sub; txR('biz',ctx,d.tag,X(bx),Y(y+0.13)); }
+    if(d.tag){ setF(ctx,t,6.5,400,'italic','biz'); ctx.fillStyle=t.sub; txR('biz',ctx,d.tag,X(bx),Y(y+0.13)); }
     y+=(t.skin==='waveB')?0.24:0.3;
   }
   /* name + desig */
@@ -721,10 +722,10 @@ function drawCardInto(ctx,t,d,OX,OY){
   if(d.phone){ lines.push(d.phone+(d.phone2?'  •  '+d.phone2:'')); gly.push('\u260e'); }
   else if(d.phone2){ lines.push(d.phone2); gly.push('\u260e'); }
   if(d.email){ lines.push(d.email); gly.push('\u2709'); }
-  if(d.addr){ setF(ctx,t,6.3*szOf(t,'det'),wOf(t,'det',400,700),iOf(t,'det')); const ws2=wrap(ctx,d.addr,cW-(t.icons?0.2:0)).slice(0,2);
+  if(d.addr){ setF(ctx,t,6.3*szOf(t,'det'),wOf(t,'det',400,700),iOf(t,'det'),'det'); const ws2=wrap(ctx,d.addr,cW-(t.icons?0.2:0)).slice(0,2);
     ws2.forEach((l,i)=>{ lines.push(l); gly.push(i===0?'\u25ce':''); }); }
   if(d.web){ lines.push(d.web); gly.push('\u{1F310}'); }
-  setF(ctx,t,6.3*szOf(t,'det'),wOf(t,'det',400,700),iOf(t,'det')); ctx.fillStyle=t.sub;
+  setF(ctx,t,6.3*szOf(t,'det'),wOf(t,'det',400,700),iOf(t,'det'),'det'); ctx.fillStyle=t.sub;
   if(t.icons) ctx.textAlign='left';
   let dy=ny+((t.skin==='waveB')?0.11:0.13);
   const step=(t.skin==='waveB')?0.105:0.115, maxY=(t.skin==='waveB')?H*0.70:H-0.09;
@@ -965,8 +966,9 @@ function attachElDrag(cv){
       STU.sel=i; STU.txSel=null; STU.drag={dx:p.x-els[i].x,dy:p.y-els[i].y};
       renderStudio(); studioPreview(); ev.preventDefault(); return; } }
     /* 👆 text पर click? */
-    const th=window._txHits||{}; let role=null;
-    Object.keys(th).forEach(rr=>{ const b=th[rr]; if(p.x>=b.x0&&p.x<=b.x1&&p.y>=b.y0&&p.y<=b.y1) role=rr; });
+    const th=window._txHits||{}; let role=null; const pad2=0.06;
+    Object.keys(th).forEach(rr=>{ const b=th[rr];
+      if(p.x>=b.x0-pad2&&p.x<=b.x1+pad2&&p.y>=b.y0-pad2&&p.y<=b.y1+pad2) role=rr; });
     if(role){ if(STU.txSel!==role){ STU.txSel=role; STU.sel=null; renderStudio(); studioPreview(); } ev.preventDefault(); return; }
     if(STU.sel!=null||STU.txSel){ STU.sel=null; STU.txSel=null; renderStudio(); studioPreview(); } };
   cv.addEventListener('mousedown',down);
@@ -1052,31 +1054,46 @@ function renderStudio(){
     gi.oninput=()=>{ c.pat.gap=Math.max(2,+gi.value||5)/25.4; studioPreview(); };
     st.appendChild(gr);
   }
-  /* 🔤 font — family + हर text का size / Bold / Italic */
-  const ft=H('<div class="strow"><label>'+T('stFont')+'</label><div class="stchips"></div></div>');
-  const curFk=(c.fontKey==null?(c.serif?1:0):c.fontKey);
-  FONTS.forEach((f,i)=>{ const b=document.createElement('button');
-    b.className='sbtn'+(curFk===i?' on':''); b.textContent=f.n; b.style.fontFamily=f.css;
-    b.onclick=()=>{ c.fontKey=i; renderStudio(); studioPreview();
-      try{ document.fonts.ready.then(()=>studioPreview()); }catch(_){ } };
-    ft.querySelector('.stchips').appendChild(b); });
-  st.appendChild(ft);
+  /* 🔤 TEXT PANEL (professional — Corel जैसा): चुना text या सब */
   if(!c.sz) c.sz={}; if(!c.bold) c.bold={}; if(!c.ital) c.ital={};
-  [['biz','fBiz'],['name','fName'],['desig','fDesig'],['det','fDet']].forEach(([k,lb])=>{
-    const r=H('<div class="strow"><label>'+T(lb)+'</label><input type="range" style="flex:1"><div class="stchips"></div></div>');
-    if(STU.txSel===k){ r.style.outline='2px solid #ef4444'; r.style.borderRadius='9px';
-      setTimeout(()=>{ try{ r.scrollIntoView({block:'center'}); }catch(_){ } },50); }
-    const lb2=r.querySelector('label'); lb2.style.cursor='pointer'; lb2.title='👆 card पर text छूकर भी चुन सकते हो';
-    lb2.onclick=()=>{ STU.txSel=(STU.txSel===k)?null:k; STU.sel=null; renderStudio(); studioPreview(); };
-    const inp=r.querySelector('input[type=range]'); inp.min=0.7; inp.max=1.5; inp.step=0.05; inp.value=c.sz[k]||1;
+  const _roles=[['biz','fBiz'],['name','fName'],['desig','fDesig'],['det','fDet']];
+  const txp=H('<div style="background:#141d2b;border:1px solid #2c3a4f;border-radius:10px;padding:9px;margin:4px 0"></div>');
+  const tsel=STU.txSel;
+  txp.appendChild(H('<div style="font-size:12px;font-weight:700;color:'+(tsel?'#fbbf24':'#9db2c9')+';margin-bottom:2px">'
+    +(tsel?('✏️ '+T(_roles.find(r=>r[0]===tsel)[1])):('🔤 '+T('stAllTxt')))+'</div>'));
+  /* role चुनो chips (card छूने के अलावा रास्ता) */
+  const rch=H('<div class="stchips" style="margin-bottom:2px"></div>');
+  _roles.forEach(([k,lb])=>{ const b=document.createElement('button');
+    b.className='sbtn'+(STU.txSel===k?' on':''); b.textContent=T(lb); b.style.fontSize='11px';
+    b.onclick=()=>{ STU.txSel=(STU.txSel===k)?null:k; STU.sel=null; renderStudio(); studioPreview(); };
+    rch.appendChild(b); });
+  txp.appendChild(rch);
+  /* font DROPDOWN — हर नाम अपनी लिखावट में (Corel जैसा) */
+  const fsel=document.createElement('select'); fsel.className='finp';
+  fsel.style.cssText='width:100%;font-size:14px;padding:7px;margin:2px 0';
+  FONTS.forEach((f,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=f.n; o.style.fontFamily=f.css; fsel.appendChild(o); });
+  fsel.value=fkOf(c,tsel||null);
+  fsel.onchange=()=>{ const fk=parseInt(fsel.value);
+    if(STU.txSel){ c.fonts=c.fonts||{}; c.fonts[STU.txSel]=fk; toast('✏️ सिर्फ़ चुने text का font बदला'); }
+    else { c.fontKey=fk; c.fonts={}; toast('🔤 सब texts का font बदला'); }
+    stuSnap(); renderStudio(); studioPreview();
+    try{ document.fonts.ready.then(()=>studioPreview()); }catch(_){ } };
+  txp.appendChild(fsel);
+  /* size + B + I — सिर्फ़ चुने text के */
+  if(tsel){ const k=tsel;
+    const sr=H('<div style="display:flex;gap:6px;align-items:center;margin-top:4px"><input type="range" style="flex:1"><button class="sbtn" style="font-weight:800">B</button><button class="sbtn" style="font-style:italic">I</button></div>');
+    const inp=sr.children[0]; inp.min=0.7; inp.max=1.5; inp.step=0.05; inp.value=c.sz[k]||1;
     inp.oninput=()=>{ c.sz[k]=parseFloat(inp.value); studioPreview(); };
-    const bx=r.querySelector('.stchips');
-    const bb=document.createElement('button'); bb.className='sbtn'+(c.bold[k]?' on':''); bb.textContent='B'; bb.style.fontWeight=800;
-    bb.onclick=()=>{ c.bold[k]=!c.bold[k]; renderStudio(); studioPreview(); };
-    const ib=document.createElement('button'); ib.className='sbtn'+(c.ital[k]?' on':''); ib.textContent='I'; ib.style.fontStyle='italic';
-    ib.onclick=()=>{ c.ital[k]=!c.ital[k]; renderStudio(); studioPreview(); };
-    bx.appendChild(bb); bx.appendChild(ib);
-    st.appendChild(r); });
+    inp.addEventListener('change',()=>stuSnap());
+    const bb=sr.children[1]; if(c.bold[k]) bb.classList.add('on');
+    bb.onclick=()=>{ c.bold[k]=!c.bold[k]; stuSnap(); renderStudio(); studioPreview(); };
+    const ib=sr.children[2]; if(c.ital[k]) ib.classList.add('on');
+    ib.onclick=()=>{ c.ital[k]=!c.ital[k]; stuSnap(); renderStudio(); studioPreview(); };
+    txp.appendChild(sr);
+  } else {
+    txp.appendChild(H('<p style="font-size:11px;color:#8ea0b5;margin:4px 0 0">👆 Card पर text छूओ (या ऊपर chip दबाओ) — उसी का size / Bold / Italic यहाँ खुलेगा</p>'));
+  }
+  st.appendChild(txp);
   /* align */
   const al=H('<div class="strow"><label>'+T('stAlign')+'</label><div class="stchips"></div></div>');
   [['left',T('stAL')],['center',T('stAC')]].forEach(([v,lb])=>{
