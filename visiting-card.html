@@ -6,7 +6,7 @@
 <title>संस्कृति — 🪪 Visiting Card Maker</title>
 <script src="assets/js/admin-gate.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Serif+Devanagari:wght@600;700&family=Poppins:wght@400;600;700;800&family=Mukta:wght@400;600;700;800&family=Playfair+Display:wght@500;700;800&family=Tiro+Devanagari+Hindi:ital@0;1&family=Cinzel:wght@500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Serif+Devanagari:wght@600;700&family=Poppins:wght@400;600;700;800&family=Mukta:wght@400;600;700;800&family=Playfair+Display:wght@500;700;800&family=Tiro+Devanagari+Hindi:ital@0;1&family=Cinzel:wght@500;700;800&family=Montserrat:wght@400;600;700;800&family=Raleway:ital,wght@0,400;0,600;0,700;1,400&family=Oswald:wght@400;600;700&family=Bebas+Neue&family=Dancing+Script:wght@500;700&family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Hind:wght@400;600;700&family=Kalam:wght@400;700&family=Rozha+One&family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f172a;color:#e2e8f0;display:flex;flex-direction:column;height:100vh;overflow:hidden}
@@ -151,7 +151,7 @@ const STR={
    elAdd:'🧩 Elements — खुद बनाओ', elNew:'नया जोड़ो', elList:'चुनें', elLine:'📏 Line', elCurve:'🌊 Curve',
    elMandala:'❂ Mandala', elSpark:'💫 Sparkle', elText:'📝 Text', elColor:'रंग', elGrad:'🪙 धातु',
    elSize:'Size', elTh:'मोटाई', elAng:'कोण', elLen:'लंबाई', elCnt:'मात्रा', elDel:'🗑️ हटाओ',
-   elDragHint:'☝️ Element को card पर drag करके हिलाएँ', elScript:'✍️ Script', elBold:'B', elW:'चौड़ाई', elH:'ऊँचाई',
+   elDragHint:'🖱️ खींचकर हिलाओ • ⌨️ Delete=हटाओ • Ctrl+Z=वापस • Ctrl+C/V=नकल • Arrows=धीरे हिलाओ', elScript:'✍️ Script', elBold:'B', elW:'चौड़ाई', elH:'ऊँचाई',
    stSave:'💾 सहेजो', stExport:'📤 Export', stImport:'📥 Import', stDel:'🗑️ हटाओ',
    tTplSaved:'🎨 आपका Design सहेज गया ✓ — chips में दिख रहा है', tTplDel:'🗑️ Design हटा दिया',
    tTplBad:'❌ यह Design file नहीं है', tTplImp:'📥 Design आ गया ✓', tNeedName:'❗ पहले Design का नाम लिखो',
@@ -184,7 +184,7 @@ const STR={
    elAdd:'🧩 Elements — build your own', elNew:'Add new', elList:'Select', elLine:'📏 Line', elCurve:'🌊 Curve',
    elMandala:'❂ Mandala', elSpark:'💫 Sparkle', elText:'📝 Text', elColor:'Color', elGrad:'🪙 Metal',
    elSize:'Size', elTh:'Thickness', elAng:'Angle', elLen:'Length', elCnt:'Count', elDel:'🗑️ Delete',
-   elDragHint:'☝️ Drag elements on the card to move them', elScript:'✍️ Script', elBold:'B', elW:'Width', elH:'Height',
+   elDragHint:'🖱️ Drag to move • ⌨️ Del=remove • Ctrl+Z=undo • Ctrl+C/V=copy-paste • Arrows=nudge', elScript:'✍️ Script', elBold:'B', elW:'Width', elH:'Height',
    stSave:'💾 Save', stExport:'📤 Export', stImport:'📥 Import', stDel:'🗑️ Delete',
    tTplSaved:'🎨 Your Design saved ✓ — see it in the chips', tTplDel:'🗑️ Design deleted',
    tTplBad:'❌ Not a Design file', tTplImp:'📥 Design imported ✓', tNeedName:'❗ Please write a Design name first',
@@ -332,7 +332,17 @@ const FONTS=[                                   /* 🔤 fontKey — नया fo
   { n:'Mukta',      css:'"Mukta",'+FDEV },
   { n:'Playfair',   css:'"Playfair Display",'+FSER },
   { n:'Tiro हिंदी',  css:'"Tiro Devanagari Hindi",'+FSER },
-  { n:'Cinzel',     css:'"Cinzel",'+FSER }
+  { n:'Cinzel',     css:'"Cinzel",'+FSER },
+  { n:'Montserrat', css:'"Montserrat",'+FDEV },        /* modern card */
+  { n:'Raleway',    css:'"Raleway",'+FDEV },           /* elegant premium */
+  { n:'Oswald',     css:'"Oswald",'+FDEV },            /* banner headline */
+  { n:'Bebas',      css:'"Bebas Neue",'+FDEV },        /* banner display */
+  { n:'Lora',       css:'"Lora",'+FSER },              /* letterhead */
+  { n:'Dancing',    css:'"Dancing Script",'+FSCR },    /* शादी English */
+  { n:'Hind',       css:'"Hind",'+FDEV },              /* साफ़ हिंदी */
+  { n:'Kalam',      css:'"Kalam",'+FDEV },             /* हिंदी लिखावट */
+  { n:'Rozha शादी',  css:'"Rozha One",'+FSER },         /* शादी हिंदी display */
+  { n:'Baloo हिंदी', css:'"Baloo 2",'+FDEV }            /* मोटा हिंदी */
 ];
 function font(t,px,w,st){ const fk=(t.fontKey==null?(t.serif?1:0):t.fontKey);
   return (st||'')+' '+(w||400)+' '+px+'px '+((FONTS[fk]||FONTS[0]).css); }
@@ -893,7 +903,37 @@ function persistCustomTpls(){ const o={};
   localStorage.setItem(STKEY, JSON.stringify(o)); }
 Object.assign(TEMPLATES, loadCustomTpls());
 
-const STU={ open:false, editId:null, cfg:null };
+const STU={ open:false, editId:null, cfg:null, hist:[], hi:-1, clip:null, _nk:false };
+function stuSnap(){ if(!STU.cfg) return;
+  const c=JSON.parse(JSON.stringify(STU.cfg)); delete c._selIdx;
+  STU.hist=STU.hist.slice(0,STU.hi+1); STU.hist.push(JSON.stringify(c));
+  if(STU.hist.length>40) STU.hist.shift(); STU.hi=STU.hist.length-1; }
+function stuUndo(){ if(STU.hi>0){ STU.hi--; STU.cfg=JSON.parse(STU.hist[STU.hi]); STU.sel=null;
+  renderStudio(); studioPreview(); toast('↩️ वापस'); } }
+function stuRedo(){ if(STU.hi<STU.hist.length-1){ STU.hi++; STU.cfg=JSON.parse(STU.hist[STU.hi]); STU.sel=null;
+  renderStudio(); studioPreview(); toast('↪️ आगे'); } }
+/* ⌨️ Photoshop-style shortcuts (studio खुला हो तब) */
+if(!window._KBW){ window._KBW=1; document.addEventListener('keydown',(ev)=>{
+  if(!STU.open||!STU.cfg) return;
+  const tg=(ev.target.tagName||'').toLowerCase();
+  if(tg==='input'||tg==='textarea'||ev.target.isContentEditable) return;
+  const k=ev.key.toLowerCase(), ct=ev.ctrlKey||ev.metaKey, e=STU.sel!=null?STU.cfg.els[STU.sel]:null;
+  if(ct&&k==='z'&&!ev.shiftKey){ ev.preventDefault(); stuUndo(); }
+  else if(ct&&(k==='y'||(k==='z'&&ev.shiftKey))){ ev.preventDefault(); stuRedo(); }
+  else if((k==='delete'||k==='backspace')&&e){ ev.preventDefault();
+    STU.cfg.els.splice(STU.sel,1); STU.sel=null; stuSnap(); renderStudio(); studioPreview(); toast('🗑️ हटाया'); }
+  else if(ct&&k==='c'&&e){ STU.clip=JSON.parse(JSON.stringify(e)); toast('📋 नकल'); }
+  else if(ct&&(k==='v'||k==='d')&&STU.clip){ ev.preventDefault();
+    const n=JSON.parse(JSON.stringify(STU.clip)); n.x+=0.09; n.y+=0.09;
+    STU.cfg.els.push(n); stuSnap(); STU.sel=STU.cfg.els.length-1; renderStudio(); studioPreview(); toast('📄 चिपकाया'); }
+  else if(k==='escape'){ STU.sel=null; renderStudio(); studioPreview(); }
+  else if(k.indexOf('arrow')===0&&e){ ev.preventDefault();
+    if(STU._nkT) clearTimeout(STU._nkT); STU._nkT=setTimeout(()=>stuSnap(),700);
+    const st=ev.shiftKey?0.05:0.01;
+    if(k==='arrowleft')e.x-=st; if(k==='arrowright')e.x+=st;
+    if(k==='arrowup')e.y-=st; if(k==='arrowdown')e.y+=st;
+    studioPreview(); }
+}); }
 function studioPreview(){ TEMPLATES._studio=STU.cfg;
   if(STU.sel!=null) TEMPLATES._studio._selIdx=STU.sel; else delete TEMPLATES._studio._selIdx;
   S.tplFront='_studio'; draw(); }
@@ -925,7 +965,7 @@ function elDocMove(ev){ if(!STU.drag||STU.sel==null||!STU.cfg||!STU.open) return
   e.x=Math.round(Math.max(-0.3,Math.min(dm.w+0.3,x-STU.drag.dx))*100)/100;
   e.y=Math.round(Math.max(-0.3,Math.min(dm.h+0.3,y-STU.drag.dy))*100)/100;
   elLite(); ev.preventDefault(); }
-function elDocUp(){ if(STU.drag){ STU.drag=null; if(STU.open){ renderStudio(); studioPreview(); } } }
+function elDocUp(){ if(STU.drag){ STU.drag=null; if(STU.open){ stuSnap(); renderStudio(); studioPreview(); } } }
 function elLite(){ TEMPLATES._studio=STU.cfg;
   if(STU.sel!=null) TEMPLATES._studio._selIdx=STU.sel; else delete TEMPLATES._studio._selIdx;
   const old=document.getElementById('cvF'); if(!old){ studioPreview(); return; }
@@ -937,8 +977,8 @@ function openStudio(baseId){
   STU.cfg=JSON.parse(JSON.stringify(base));
   STU.cfg.name=(baseId&&TEMPLATES[baseId].custom)?base.name:'';
   STU.editId=(baseId&&TEMPLATES[baseId].custom)?baseId:null;
-  STU.sel=null; STU.drag=null;
-  STU.open=true; renderStudio(); studioPreview();
+  STU.sel=null; STU.drag=null; STU.hist=[]; STU.hi=-1;
+  STU.open=true; renderStudio(); stuSnap(); studioPreview();
 }
 function closeStudio(){ STU.open=false; $('studio').style.display='none';
   delete TEMPLATES._studio; if(S.tplFront==='_studio') S.tplFront=STU.editId||STU.from||'simple'; STU.from=null;
@@ -996,7 +1036,8 @@ function renderStudio(){
   const curFk=(c.fontKey==null?(c.serif?1:0):c.fontKey);
   FONTS.forEach((f,i)=>{ const b=document.createElement('button');
     b.className='sbtn'+(curFk===i?' on':''); b.textContent=f.n; b.style.fontFamily=f.css;
-    b.onclick=()=>{ c.fontKey=i; renderStudio(); studioPreview(); };
+    b.onclick=()=>{ c.fontKey=i; renderStudio(); studioPreview();
+      try{ document.fonts.ready.then(()=>studioPreview()); }catch(_){ } };
     ft.querySelector('.stchips').appendChild(b); });
   st.appendChild(ft);
   if(!c.sz) c.sz={}; if(!c.bold) c.bold={}; if(!c.ital) c.ital={};
@@ -1049,7 +1090,7 @@ function renderStudio(){
       mandala:{ty:'mandala',x:dm.w*0.82,y:dm.h*0.28,r:0.42,c:'#d4af37',grad:'gold'},
       sparkle:{ty:'sparkle',x:0,y:0,w:dm.w,h:dm.h,n:90,c:'#f6e27a',seed:Math.floor(Math.random()*999),flare:4,bokeh:6},
       text:{ty:'text',x:dm.w*0.5,y:dm.h*0.5,str:'Sanskriti',size:9,c:c.accent||'#d4af37',grad:'gold',script:true,bold:true} };
-      c.els.push(defs[ty]); STU.sel=c.els.length-1; renderStudio(); studioPreview(); };
+      c.els.push(defs[ty]); stuSnap(); STU.sel=c.els.length-1; renderStudio(); studioPreview(); };
     addRow.querySelector('.stchips').appendChild(b); });
   st.appendChild(addRow);
   if(c.els.length){
@@ -1064,9 +1105,11 @@ function renderStudio(){
     const e=c.els[STU.sel];
     const mkRange=(lb,min,max,step,get,set)=>{ const r=H('<div class="strow"><label>'+lb+'</label><input type="range" style="flex:1"></div>');
       const inp=r.querySelector('input'); inp.min=min; inp.max=max; inp.step=step; inp.value=get();
+      inp.addEventListener('change',()=>stuSnap());
       inp.oninput=()=>{ set(parseFloat(inp.value)); studioPreview(); }; st.appendChild(r); };
     const cr=H('<div class="clrrow"><label>'+T('elColor')+'</label><input type="color"></div>');
     const ci=cr.querySelector('input'); ci.value=e.c||'#d4af37';
+    ci.addEventListener('change',()=>stuSnap());
     ci.oninput=()=>{ e.c=ci.value; if(e.grad) e.grad=null; studioPreview(); };
     st.appendChild(cr);
     const gr=H('<div class="strow"><label>'+T('elGrad')+'</label><div class="stchips"></div></div>');
@@ -1105,7 +1148,7 @@ function renderStudio(){
       st.appendChild(gl); }
     const dl=H('<div class="stbtns"></div>'); const db=document.createElement('button');
     db.className='sbtn'; db.textContent=T('elDel');
-    db.onclick=()=>{ c.els.splice(STU.sel,1); STU.sel=null; renderStudio(); studioPreview(); };
+    db.onclick=()=>{ c.els.splice(STU.sel,1); STU.sel=null; stuSnap(); renderStudio(); studioPreview(); };
     dl.appendChild(db); st.appendChild(dl);
     st.appendChild(H('<p style="font-size:11px;color:#8ea0b5;margin:6px 0">'+T('elDragHint')+'</p>'));
   }
@@ -1229,6 +1272,8 @@ $('fileLogo').onchange=e=>{
 };
 /* 🖨️ direct print — exact-size image + @page, browser dialog से सीधे printer */
 function directPrint(side){
+  if(document.fonts&&!directPrint._ok){ directPrint._ok=1; toast('🔤 fonts...');
+    document.fonts.ready.then(()=>directPrint(side)); return; }
   const sh=SHEETS[S.sheet];
   const pa=document.getElementById('printArea');
   pa.innerHTML='';
