@@ -307,7 +307,59 @@ const TEMPLATES={
  gradcap:{ name:'🎓 पढ़ाई', skin:'blank', bg:null, accent:'#1e40af', els:[
    {ty:'icon',ic:'gradcap',x:1.3,y:0.52,w:0.72,h:0.64,c:'#1e40af'},
    {ty:'text',x:1.667,y:1.78,str:'{biz}',size:20,c:'#1e3a8a',fk:7,bold:true},
-   {ty:'text',x:1.667,y:2.18,str:'{tag}',size:11,c:'#475569',fk:0} ] }
+   {ty:'text',x:1.667,y:2.18,str:'{tag}',size:11,c:'#475569',fk:0} ] }, shahi:{ name:'👑 शाही अक्षर', skin:'blank', bg:'#1a0f14', accent:'#d4af37', els:[
+   {ty:'icon',ic:'mukut',x:1.447,y:0.3,w:0.44,h:0.36,c:'#d4af37'},
+   {ty:'text',x:1.667,y:1.45,str:'{l1}',size:100,c:'#d4af37',fk:15},
+   {ty:'icon',ic:'belcorner',x:0.28,y:2.05,w:0.6,h:0.6,c:'#b08d2e'},
+   {ty:'icon',ic:'belcorner',x:2.45,y:2.05,w:0.6,h:0.6,c:'#b08d2e',rot:180},
+   {ty:'line',x:1.02,y:2.12,len:1.3,ang:0,w:0.02,c:'#8a6d1f'},
+   {ty:'text',x:1.667,y:2.52,str:'{biz}',size:22,c:'#e8c766',fk:15,bold:true},
+   {ty:'text',x:1.667,y:2.88,str:'{tag}',size:10,c:'#a98f4a',fk:0} ] },
+ golbel:{ name:'⭕ गोल बेल', skin:'blank', bg:'#0f1a2e', accent:'#d4af37', els:[
+   {ty:'shape',sh:'circle',x:0.32,y:0.32,w:2.7,h:2.7,c:'rgba(0,0,0,0)',ol:{c:'#d4af37',w:0.035}},
+   {ty:'shape',sh:'circle',x:0.45,y:0.45,w:2.44,h:2.44,c:'rgba(0,0,0,0)',ol:{c:'#8a6d1f',w:0.015}},
+   {ty:'icon',ic:'bel',x:2.18,y:0.5,w:0.72,h:0.72,c:'#d4af37'},
+   {ty:'text',x:1.667,y:1.52,str:'{l1}',size:88,c:'#d4af37',fk:15},
+   {ty:'text',x:1.667,y:2.42,str:'{biz}',size:19,c:'#f1e3b3',fk:15,bold:true},
+   {ty:'line',x:1.12,y:2.68,len:1.1,ang:0,w:0.015,c:'#8a6d1f'},
+   {ty:'text',x:1.667,y:2.9,str:'{tag}',size:9,c:'#9db2d0',fk:0} ] },
+ jharokhat:{ name:'🪟 झरोखा अक्षर', skin:'blank', bg:'#fdf6e9', accent:'#7c2d12', els:[
+   {ty:'icon',ic:'jharokha',x:0.97,y:0.3,w:1.4,h:1.85,c:'#7c2d12'},
+   {ty:'text',x:1.667,y:1.28,str:'{l1}',size:72,c:'#7c2d12',fk:15},
+   {ty:'text',x:1.667,y:2.5,str:'{biz}',size:22,c:'#7c2d12',fk:15,bold:true},
+   {ty:'line',x:1.07,y:2.76,len:1.2,ang:0,w:0.02,c:'#d4af37'},
+   {ty:'text',x:1.667,y:2.98,str:'{tag}',size:10,c:'#a16207',fk:0} ] },
+ shubh:{ name:'🪔 शुभ दीया', skin:'blank', bg:'#1c0f0a', accent:'#f59e0b', els:[
+   {ty:'text',x:1.667,y:1.2,str:'{l1}',size:95,c:'#f59e0b',fk:15},
+   {ty:'icon',ic:'diya',x:1.337,y:1.92,w:0.66,h:0.66,c:'#fbbf24'},
+   {ty:'text',x:1.667,y:2.85,str:'{biz}',size:20,c:'#fcd34d',fk:15,bold:true},
+   {ty:'text',x:1.667,y:3.12,str:'{tag}',size:9,c:'#b45309',fk:0} ] },
+ gendat:{ name:'🌼 गेंदा अक्षर', skin:'blank', bg:'#fffbeb', accent:'#ea580c', els:[
+   {ty:'icon',ic:'marigold',x:0.4,y:0.45,w:0.62,h:0.62,c:'#ea580c'},
+   {ty:'icon',ic:'marigold',x:2.31,y:0.45,w:0.62,h:0.62,c:'#ea580c'},
+   {ty:'text',x:1.667,y:1.3,str:'{l1}',size:105,c:'#9a3412',fk:15},
+   {ty:'text',x:1.667,y:2.42,str:'{biz}',size:21,c:'#7c2d12',fk:15,bold:true},
+   {ty:'line',x:1.07,y:2.72,len:1.2,ang:0,w:0.02,c:'#d4af37'},
+   {ty:'text',x:1.667,y:3.12,str:'{tag}',size:10,c:'#b45309',fk:0} ] },
+ mor:{ name:'🦚 मोर अक्षर', skin:'blank', bg:'#052e2b', accent:'#d4af37', els:[
+   {ty:'icon',ic:'morpankh',x:1.12,y:0.22,w:1.1,h:1.1,c:'#0d9488'},
+   {ty:'text',x:1.667,y:1.62,str:'{l1}',size:88,c:'#fbbf24',fk:15},
+   {ty:'text',x:1.667,y:2.5,str:'{biz}',size:20,c:'#fcd34d',fk:15,bold:true},
+   {ty:'line',x:1.07,y:2.76,len:1.2,ang:0,w:0.015,c:'#0d9488'},
+   {ty:'text',x:1.667,y:2.98,str:'{tag}',size:9,c:'#5eead4',fk:0} ] },
+ paisleyt:{ name:'🥭 कैरी अक्षर', skin:'blank', bg:'#fff7ed', accent:'#ea580c', els:[
+   {ty:'icon',ic:'paisley',x:0.42,y:0.55,w:0.6,h:0.6,c:'#fb923c'},
+   {ty:'icon',ic:'paisley',x:2.31,y:0.55,w:0.6,h:0.6,c:'#fb923c',rot:180},
+   {ty:'text',x:1.667,y:1.35,str:'{l1}',size:100,c:'#c2410c',fk:15},
+   {ty:'text',x:1.667,y:2.42,str:'{biz}',size:21,c:'#9a3412',fk:15,bold:true},
+   {ty:'icon',ic:'paisley',x:1.5,y:2.62,w:0.35,h:0.35,c:'#fdba74'},
+   {ty:'text',x:1.667,y:3.12,str:'{tag}',size:10,c:'#c2410c',fk:0} ] },
+ kalasht:{ name:'🏺 कलश अक्षर', skin:'blank', bg:'#450a0a', accent:'#fbbf24', els:[
+   {ty:'icon',ic:'kalash',x:1.367,y:0.24,w:0.6,h:0.6,c:'#fbbf24'},
+   {ty:'text',x:1.667,y:1.52,str:'{l1}',size:92,c:'#fbbf24',fk:15},
+   {ty:'line',x:1.02,y:2.05,len:1.3,ang:0,w:0.02,c:'#b45309'},
+   {ty:'text',x:1.667,y:2.5,str:'{biz}',size:20,c:'#fcd34d',fk:15,bold:true},
+   {ty:'text',x:1.667,y:2.86,str:'{tag}',size:10,c:'#fca5a5',fk:0} ] }
 };
 
 /* ================= 🔤 RENDER HELPERS (inch = unit; TXT slice-bug fix — resume engine से) ================= */
@@ -557,13 +609,27 @@ dumbbell:{n:'डंबल',d(c){c.beginPath();c.rect(12,36,9,28);c.rect(23,28,9,
 lotus:{n:'कमल',d(c){c.beginPath();c.ellipse(50,44,12,26,0,0,7);c.fill();[-0.5,0.5].forEach(a=>{c.save();c.translate(50,64);c.rotate(a);c.beginPath();c.ellipse(0,-20,11,24,0,0,7);c.fill();c.restore();});[-1.05,1.05].forEach(a=>{c.save();c.translate(50,68);c.rotate(a);c.beginPath();c.ellipse(0,-18,10,21,0,0,7);c.fill();c.restore();});}},
 award:{n:'मेडल',d(c){c.beginPath();c.moveTo(38,50);c.lineTo(28,86);c.lineTo(40,78);c.lineTo(47,90);c.lineTo(52,52);c.closePath();c.moveTo(62,50);c.lineTo(72,86);c.lineTo(60,78);c.lineTo(53,90);c.lineTo(48,52);c.closePath();c.fill();c.beginPath();c.arc(50,34,21,0,7);c.arc(50,34,12,0,7,true);c.fill();}},
 hanger:{n:'हैंगर',d(c){c.lineWidth=6;c.lineCap='round';c.beginPath();c.arc(50,20,9,Math.PI*0.85,Math.PI*2.1);c.lineTo(50,36);c.stroke();c.beginPath();c.moveTo(50,34);c.lineTo(88,72);c.lineTo(12,72);c.closePath();c.fill();}},
-tag:{n:'टैग',d(c){c.beginPath();c.moveTo(20,20);c.lineTo(56,20);c.lineTo(84,48);c.lineTo(52,80);c.lineTo(20,48);c.closePath();c.moveTo(38,34);c.arc(33,34,5,0,7);c.fill('evenodd');}}
+tag:{n:'टैग',d(c){c.beginPath();c.moveTo(20,20);c.lineTo(56,20);c.lineTo(84,48);c.lineTo(52,80);c.lineTo(20,48);c.closePath();c.moveTo(38,34);c.arc(33,34,5,0,7);c.fill('evenodd');}},
+ diya:{n:'दीया',d(c){c.beginPath();c.moveTo(50,4);c.bezierCurveTo(64,22,68,36,50,54);c.bezierCurveTo(32,36,36,22,50,4);c.moveTo(14,62);c.bezierCurveTo(22,86,78,86,86,62);c.lineTo(76,62);c.bezierCurveTo(69,76,31,76,24,62);c.closePath();c.moveTo(12,90);c.rect(12,90,76,6);c.fill();}},
+ bel:{n:'बेल टहनी',d(c){c.lineWidth=8;c.lineCap='round';c.beginPath();c.moveTo(20,92);c.bezierCurveTo(38,64,54,36,80,10);c.stroke();c.beginPath();[[32,74,-0.6],[46,52,0.7],[60,34,-0.6],[74,18,0.7]].forEach(L=>{c.save();c.translate(L[0],L[1]);c.rotate(L[2]);c.moveTo(0,0);c.quadraticCurveTo(13,-11,30,-3);c.quadraticCurveTo(13,8,0,0);c.restore();});c.fill();}},
+ mukut:{n:'मुकुट',d(c){c.beginPath();c.moveTo(24,70);c.bezierCurveTo(22,52,18,42,12,32);c.bezierCurveTo(26,38,34,52,36,70);c.closePath();c.moveTo(76,70);c.bezierCurveTo(78,52,82,42,88,32);c.bezierCurveTo(74,38,66,52,64,70);c.closePath();c.moveTo(50,68);c.bezierCurveTo(44,50,44,36,50,22);c.bezierCurveTo(56,36,56,50,50,68);c.closePath();c.moveTo(17,30);c.arc(12,30,5,0,7);c.moveTo(93,30);c.arc(88,30,5,0,7);c.moveTo(55,16);c.arc(50,16,6,0,7);c.moveTo(22,74);c.rect(22,74,56,13);c.fill();}},
+ paisley:{n:'कैरी',d(c){c.lineWidth=9;c.lineCap='round';c.beginPath();c.moveTo(32,90);c.bezierCurveTo(8,72,10,42,34,24);c.bezierCurveTo(56,8,86,14,84,38);c.bezierCurveTo(82,56,62,62,50,50);c.bezierCurveTo(42,42,48,30,58,32);c.stroke();c.beginPath();c.arc(68,42,5,0,7);c.fill();}},
+ marigold:{n:'गेंदा',d(c){for(let i=0;i<8;i++){c.save();c.translate(50,50);c.rotate(i*Math.PI/4);c.beginPath();c.ellipse(0,-26,12,23,0,0,7);c.fill();c.restore();}c.beginPath();c.arc(50,50,13,0,7);c.fill();}},
+ morpankh:{n:'मोर पंख',d(c){c.lineWidth=4;c.lineCap='round';c.beginPath();c.moveTo(50,96);c.lineTo(50,58);c.stroke();c.lineWidth=3;c.beginPath();c.moveTo(50,74);c.lineTo(35,66);c.moveTo(50,74);c.lineTo(65,66);c.moveTo(50,86);c.lineTo(38,80);c.moveTo(50,86);c.lineTo(62,80);c.stroke();c.beginPath();c.moveTo(50,4);c.bezierCurveTo(74,20,78,42,50,60);c.bezierCurveTo(22,42,26,20,50,4);c.moveTo(50,20);c.bezierCurveTo(62,28,64,40,50,50);c.bezierCurveTo(36,40,38,28,50,20);c.fill('evenodd');}},
+ belcorner:{n:'कोना बेल',d(c){c.lineWidth=7;c.lineCap='round';c.beginPath();c.moveTo(14,88);c.bezierCurveTo(12,52,48,52,50,32);c.bezierCurveTo(52,12,72,8,86,14);c.stroke();c.beginPath();c.save();c.translate(28,62);c.rotate(-0.5);c.moveTo(0,0);c.quadraticCurveTo(11,-9,25,-2);c.quadraticCurveTo(11,7,0,0);c.restore();c.save();c.translate(62,18);c.rotate(0.4);c.moveTo(0,0);c.quadraticCurveTo(11,-9,25,-2);c.quadraticCurveTo(11,7,0,0);c.restore();c.fill();c.beginPath();c.arc(88,14,5,0,7);c.fill();}},
+ kalash:{n:'कलश',d(c){c.beginPath();c.moveTo(26,54);c.bezierCurveTo(16,70,26,90,50,90);c.bezierCurveTo(74,90,84,70,74,54);c.closePath();c.moveTo(22,46);c.rect(22,46,56,8);c.moveTo(60,36);c.arc(50,36,10,0,7);c.fill();c.lineWidth=6;c.lineCap='round';c.beginPath();c.moveTo(46,46);c.bezierCurveTo(40,32,32,26,24,22);c.moveTo(50,46);c.bezierCurveTo(50,30,50,24,50,12);c.moveTo(54,46);c.bezierCurveTo(60,32,68,26,76,22);c.stroke();}},
+ jharokha:{n:'झरोखा',d(c){c.beginPath();c.moveTo(18,94);c.lineTo(18,44);c.bezierCurveTo(18,26,34,12,50,6);c.bezierCurveTo(66,12,82,26,82,44);c.lineTo(82,94);c.closePath();c.moveTo(27,94);c.lineTo(27,46);c.bezierCurveTo(27,32,40,21,50,16);c.bezierCurveTo(60,21,73,32,73,46);c.lineTo(73,94);c.closePath();c.fill('evenodd');}},
+ flame:{n:'ज्योति',d(c){c.beginPath();c.moveTo(50,6);c.bezierCurveTo(66,26,72,44,50,64);c.bezierCurveTo(28,44,34,26,50,6);c.moveTo(50,32);c.bezierCurveTo(57,40,59,46,50,56);c.bezierCurveTo(41,46,43,40,50,32);c.fill('evenodd');}},
 };
 function icDraw(ctx,d,x,y,w,h){ ctx.save(); ctx.translate(x,y); ctx.scale(w/100,h/100); d(ctx); ctx.restore(); }
 
 /* 🔗 {biz}/{tag}/{ini} tokens — template text में form का data अपने-आप भरता है */
-function elTok(s){ const d=S.data||{}; const ini=(d.biz||'').trim().split(/\s+/).slice(0,2).map(w=>(w[0]||'')).join('').toUpperCase();
-  return String(s||'').replace(/\{biz\}/g,d.biz||'').replace(/\{tag\}/g,d.tag||'').replace(/\{ini\}/g,ini); }
+function elTok(s){ const d=S.data||{}; const nm=(d.biz||'').trim();
+  const ini=nm.split(/\s+/).slice(0,2).map(w=>(w[0]||'')).join('').toUpperCase();
+  let l1='',rest='';
+  try{ const seg=new Intl.Segmenter('hi',{granularity:'grapheme'}); const parts=[...seg.segment(nm)].map(x=>x.segment); l1=parts[0]||''; rest=parts.slice(1).join(''); }
+  catch(e){ l1=nm[0]||''; rest=nm.slice(1); }
+  return String(s||'').replace(/\{biz\}/g,d.biz||'').replace(/\{tag\}/g,d.tag||'').replace(/\{ini\}/g,ini).replace(/\{l1\}/g,l1).replace(/\{rest\}/g,rest); }
 function drawEls(ctx,X,Y,W,H,t){
   (t.els||[]).forEach(e=>{
     const fill=e.grad?metGrad(ctx,e.grad,X(0),Y(0),X(W),Y(H)):(e.c||t.accent||'#d4af37');
