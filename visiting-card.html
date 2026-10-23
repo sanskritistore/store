@@ -6,7 +6,7 @@
 <title>संस्कृति — 🪪 Visiting Card Maker</title>
 <script src="assets/js/admin-gate.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Serif+Devanagari:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Serif+Devanagari:wght@600;700&family=Poppins:wght@400;600;700;800&family=Mukta:wght@400;600;700;800&family=Playfair+Display:wght@500;700;800&family=Tiro+Devanagari+Hindi:ital@0;1&family=Cinzel:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f172a;color:#e2e8f0;display:flex;flex-direction:column;height:100vh;overflow:hidden}
@@ -144,7 +144,8 @@ const STR={
    stPat:'🧩 Background Pattern (Corel-जैसा)', patNone:'🚫 बंद', patH:'━ Lines', patV:'┃ Lines',
    patD:'╱ तिरछी', patD2:'✕ क्रॉस', patGrid:'▦ खाना', patDots:'• बिंदु',
    patC:'Pattern का रंग', patGap:'गैप (mm)',
-   stFont:'🔤 अक्षर-शैली (Font)', stSans:'सादा', stSerif:'सीरिफ़ (शाही)',
+   stFont:'🔤 Font चुनो', stSans:'सादा', stSerif:'सीरिफ़ (शाही)',
+   fBiz:'दुकान का नाम', fName:'आपका नाम', fDesig:'पद', fDet:'संपर्क lines',
    stAlign:'जमाव (Align)', stAL:'बायाँ', stAC:'बीच',
    stFrame:'फ़्रेम (border)', stOn:'लगाओ', stOff:'नहीं', stPrem:'✨ प्रीमियम असर', stGlow:'✨ Glow', stGold:'🪙 Gold अक्षर', stSpark:'💫 Sparkle',
    elAdd:'🧩 Elements — खुद बनाओ', elNew:'नया जोड़ो', elList:'चुनें', elLine:'📏 Line', elCurve:'🌊 Curve',
@@ -176,7 +177,8 @@ const STR={
    stPat:'🧩 Background Pattern (Corel-style)', patNone:'🚫 Off', patH:'━ Lines', patV:'┃ Lines',
    patD:'╱ Diagonal', patD2:'✕ Cross', patGrid:'▦ Grid', patDots:'• Dots',
    patC:'Pattern color', patGap:'Gap (mm)',
-   stFont:'🔤 Font style', stSans:'Simple', stSerif:'Serif (royal)',
+   stFont:'🔤 Choose font', stSans:'Simple', stSerif:'Serif (royal)',
+   fBiz:'Business name', fName:'Your name', fDesig:'Designation', fDet:'Contact lines',
    stAlign:'Alignment', stAL:'Left', stAC:'Center',
    stFrame:'Frame (border)', stOn:'Show', stOff:'Hide', stPrem:'✨ Premium effects', stGlow:'✨ Glow', stGold:'🪙 Gold letters', stSpark:'💫 Sparkle',
    elAdd:'🧩 Elements — build your own', elNew:'Add new', elList:'Select', elLine:'📏 Line', elCurve:'🌊 Curve',
@@ -323,7 +325,20 @@ const FSER='"Noto Serif Devanagari",Georgia,serif';
 const FSCR='"Great Vibes","Noto Serif Devanagari",cursive';   /* script (OFL free font) */
 const PT=1/72;
 let SC=VIEW_SCALE;
-function font(t,px,w,st){ return (st||'')+' '+(w||400)+' '+px+'px '+(t.serif?FSER:FDEV); }
+const FONTS=[                                   /* 🔤 fontKey — नया font यहाँ जोड़ो (सब OFL/free) */
+  { n:'सादा',       css:FDEV },
+  { n:'सीरिफ़',      css:FSER },
+  { n:'Poppins',    css:'"Poppins",'+FDEV },
+  { n:'Mukta',      css:'"Mukta",'+FDEV },
+  { n:'Playfair',   css:'"Playfair Display",'+FSER },
+  { n:'Tiro हिंदी',  css:'"Tiro Devanagari Hindi",'+FSER },
+  { n:'Cinzel',     css:'"Cinzel",'+FSER }
+];
+function font(t,px,w,st){ const fk=(t.fontKey==null?(t.serif?1:0):t.fontKey);
+  return (st||'')+' '+(w||400)+' '+px+'px '+((FONTS[fk]||FONTS[0]).css); }
+function szOf(t,k){ return (t.sz&&t.sz[k])||1; }            /* text size गुणक */
+function wOf(t,k,defw,bw){ return (t.bold&&t.bold[k])?(bw||800):defw; }   /* Bold */
+function iOf(t,k){ return (t.ital&&t.ital[k])?'italic':undefined; }        /* Italic */
 function setF(ctx,t,pt,w,st){ ctx.font=font(t,pt*PT*SC,w,st); }
 function TXT(ctx,str,x,y){ const al=ctx.textAlign;
   ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.textAlign=al;
@@ -644,7 +659,8 @@ function drawCardInto(ctx,t,d,OX,OY){
   const bandTxt=t.skin==='bandTop';
   /* biz */
   const bf=t.script?1.9:1, bw=t.script?400:700;
-  const setBiz=(pt)=>{ if(t.script) ctx.font='400 '+(pt*bf*PT*SC)+'px '+FSCR; else setF(ctx,t,pt,bw); };
+  const setBiz=(pt)=>{ if(t.script) ctx.font=wOf(t,'biz',400,700)+' '+(pt*szOf(t,'biz')*bf*PT*SC)+'px '+FSCR;
+    else setF(ctx,t,pt*szOf(t,'biz'),wOf(t,'biz',bw),iOf(t,'biz')); };
   let y;
   if(bandTxt){
     setBiz(12); ctx.fillStyle=t.gradTx?goldTx():(t.ini||'#ffffff');
@@ -667,12 +683,12 @@ function drawCardInto(ctx,t,d,OX,OY){
     y+=(t.skin==='waveB')?0.24:0.3;
   }
   /* name + desig */
-  setF(ctx,t,11,700); ctx.fillStyle=t.gradTx?goldTx():t.tx;
+  setF(ctx,t,11*szOf(t,'name'),wOf(t,'name',700),iOf(t,'name')); ctx.fillStyle=t.gradTx?goldTx():t.tx;
   glowOn(0.018);
   TXT(ctx,d.name||'',X(cX),Y(Math.max(y,(t.skin==='bandTop')?0.86:y)+((t.skin==='bandTop')?0:0.1)));
   glowOff();
   let ny=Math.max(y,(t.skin==='bandTop')?0.86:y)+((t.skin==='bandTop')?0:0.1);
-  if(d.desig){ setF(ctx,t,7.5,600); ctx.fillStyle=t.skin==='bandLeft'?t.accent:(t.accent);
+  if(d.desig){ setF(ctx,t,7.5*szOf(t,'desig'),wOf(t,'desig',600),iOf(t,'desig')); ctx.fillStyle=t.skin==='bandLeft'?t.accent:(t.accent);
     TXT(ctx,d.desig,X(cX),Y(ny+0.15)); ny+=0.15; }
   /* divider */
   ny+=0.12;
@@ -686,10 +702,10 @@ function drawCardInto(ctx,t,d,OX,OY){
   if(d.phone){ lines.push(d.phone+(d.phone2?'  •  '+d.phone2:'')); gly.push('\u260e'); }
   else if(d.phone2){ lines.push(d.phone2); gly.push('\u260e'); }
   if(d.email){ lines.push(d.email); gly.push('\u2709'); }
-  if(d.addr){ setF(ctx,t,6.3,400); const ws2=wrap(ctx,d.addr,cW-(t.icons?0.2:0)).slice(0,2);
+  if(d.addr){ setF(ctx,t,6.3*szOf(t,'det'),wOf(t,'det',400,700),iOf(t,'det')); const ws2=wrap(ctx,d.addr,cW-(t.icons?0.2:0)).slice(0,2);
     ws2.forEach((l,i)=>{ lines.push(l); gly.push(i===0?'\u25ce':''); }); }
   if(d.web){ lines.push(d.web); gly.push('\u{1F310}'); }
-  setF(ctx,t,6.3,400); ctx.fillStyle=t.sub;
+  setF(ctx,t,6.3*szOf(t,'det'),wOf(t,'det',400,700),iOf(t,'det')); ctx.fillStyle=t.sub;
   if(t.icons) ctx.textAlign='left';
   let dy=ny+((t.skin==='waveB')?0.11:0.13);
   const step=(t.skin==='waveB')?0.105:0.115, maxY=(t.skin==='waveB')?H*0.70:H-0.09;
@@ -974,13 +990,26 @@ function renderStudio(){
     gi.oninput=()=>{ c.pat.gap=Math.max(2,+gi.value||5)/25.4; studioPreview(); };
     st.appendChild(gr);
   }
-  /* font */
+  /* 🔤 font — family + हर text का size / Bold / Italic */
   const ft=H('<div class="strow"><label>'+T('stFont')+'</label><div class="stchips"></div></div>');
-  [[false,T('stSans')],[true,T('stSerif')]].forEach(([v,lb])=>{
-    const b=document.createElement('button'); b.className='sbtn'+(!!c.serif===v?' on':''); b.textContent=lb;
-    b.onclick=()=>{ c.serif=v; renderStudio(); studioPreview(); };
+  const curFk=(c.fontKey==null?(c.serif?1:0):c.fontKey);
+  FONTS.forEach((f,i)=>{ const b=document.createElement('button');
+    b.className='sbtn'+(curFk===i?' on':''); b.textContent=f.n; b.style.fontFamily=f.css;
+    b.onclick=()=>{ c.fontKey=i; renderStudio(); studioPreview(); };
     ft.querySelector('.stchips').appendChild(b); });
   st.appendChild(ft);
+  if(!c.sz) c.sz={}; if(!c.bold) c.bold={}; if(!c.ital) c.ital={};
+  [['biz','fBiz'],['name','fName'],['desig','fDesig'],['det','fDet']].forEach(([k,lb])=>{
+    const r=H('<div class="strow"><label>'+T(lb)+'</label><input type="range" style="flex:1"><div class="stchips"></div></div>');
+    const inp=r.querySelector('input'); inp.min=0.7; inp.max=1.5; inp.step=0.05; inp.value=c.sz[k]||1;
+    inp.oninput=()=>{ c.sz[k]=parseFloat(inp.value); studioPreview(); };
+    const bx=r.querySelector('.stchips');
+    const bb=document.createElement('button'); bb.className='sbtn'+(c.bold[k]?' on':''); bb.textContent='B'; bb.style.fontWeight=800;
+    bb.onclick=()=>{ c.bold[k]=!c.bold[k]; renderStudio(); studioPreview(); };
+    const ib=document.createElement('button'); ib.className='sbtn'+(c.ital[k]?' on':''); ib.textContent='I'; ib.style.fontStyle='italic';
+    ib.onclick=()=>{ c.ital[k]=!c.ital[k]; renderStudio(); studioPreview(); };
+    bx.appendChild(bb); bx.appendChild(ib);
+    st.appendChild(r); });
   /* align */
   const al=H('<div class="strow"><label>'+T('stAlign')+'</label><div class="stchips"></div></div>');
   [['left',T('stAL')],['center',T('stAC')]].forEach(([v,lb])=>{
