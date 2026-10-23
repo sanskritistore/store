@@ -106,9 +106,9 @@ const CARD_SIZES={                          /* India में दोनों s
   '92x54':{ n:'92×54 mm', w:92/25.4,  h:54/25.4 }
 };
 const SHEETS={
-  s1218L:{ n:'12×18 आड़ी',  w:18,   h:12,   gap:6/25.4 },   /* 5×5=25 cards (85×55) */
-  s1218: { n:'12×18 खड़ी',  w:12,   h:18,   gap:6/25.4 },
-  a4:    { n:'A4',          w:8.27, h:11.69,gap:3/25.4 }
+  s1218L:{ n:'12×18 आड़ी',  w:18,   h:12,   gap:2/25.4 },   /* 5×5=25 cards (85×55) */
+  s1218: { n:'12×18 खड़ी',  w:12,   h:18,   gap:2/25.4 },
+  a4:    { n:'A4',          w:8.27, h:11.69,gap:2/25.4 }
 };
 const PRINT_DPI=300, VIEW_SCALE=240;
 
@@ -695,14 +695,17 @@ function drawCardInto(ctx,t,d,OX,OY){
 
 /* ================= 🖨️ SHEET RENDERER (grid + crop marks) ================= */
 function sheetGrid(sh){
-  const dm=cardDims(), gap=sh.gap||0;
-  const cols=Math.floor((sh.w+gap)/(dm.w+gap)), rows=Math.floor((sh.h+gap)/(dm.h+gap));
+  const dm=cardDims(), gap=sh.gap||0, minM=(sh.minM==null?8/25.4:sh.minM);  /* printer-safe किनारा */
+  let cols=Math.max(1,Math.floor((sh.w+gap)/(dm.w+gap)));
+  let rows=Math.max(1,Math.floor((sh.h+gap)/(dm.h+gap)));
+  while(cols>1&&(sh.w-(cols*dm.w+(cols-1)*gap))/2<minM) cols--;
+  while(rows>1&&(sh.h-(rows*dm.h+(rows-1)*gap))/2<minM) rows--;
   const gx=(sh.w-(cols*dm.w+(cols-1)*gap))/2, gy=(sh.h-(rows*dm.h+(rows-1)*gap))/2;
   return { cols, rows, gx, gy, gap };
 }
 function cropMarks(ctx,ox,oy,w,h){
   ctx.strokeStyle='#374151'; ctx.lineWidth=1.2/SC;
-  const g=1/25.4, l=2/25.4;   /* 2mm cutting marks */
+  const g=0, l=2/25.4;   /* 2mm cutting marks — gutter भर में, Corel imposition जैसे */
   [[ox,oy,-1,-1],[ox+w,oy,1,-1],[ox,oy+h,-1,1],[ox+w,oy+h,1,1]].forEach(([cx,cy,sx,sy])=>{
     ctx.beginPath();
     ctx.moveTo(cx+sx*g,cy); ctx.lineTo(cx+sx*(g+l),cy);
@@ -1133,6 +1136,21 @@ function openGallery(){
 }
 
 /* ================= 💾 SAVE / LOAD / EXPORT ================= */
+/* 📌 PNG में DPI लिखो (pHYs) — Corel/Photoshop में exact inch size खुले */
+const _crcT=(()=>{ const t=[]; for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1); t[n]=c>>>0; } return t; })();
+function _crc32(b){ let c=0xFFFFFFFF; for(let i=0;i<b.length;i++) c=_crcT[(c^b[i])&0xFF]^(c>>>8); return (c^0xFFFFFFFF)>>>0; }
+function pngDpi(dataUrl,dpi){
+  const bin=atob(dataUrl.split(',')[1]), u8=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) u8[i]=bin.charCodeAt(i);
+  const ppm=Math.round(dpi/0.0254), chunk=new Uint8Array(21), dv=new DataView(chunk.buffer);
+  dv.setUint32(0,9); chunk.set([0x70,0x48,0x59,0x73],4);   /* 'pHYs' */
+  dv.setUint32(8,ppm); dv.setUint32(12,ppm); chunk[16]=1;
+  dv.setUint32(17,_crc32(chunk.subarray(4,17)));
+  const out=new Uint8Array(u8.length+21);
+  out.set(u8.subarray(0,33),0); out.set(chunk,33); out.set(u8.subarray(33),54);
+  let st=''; for(let i=0;i<out.length;i+=0x8000) st+=String.fromCharCode.apply(null,out.subarray(i,i+0x8000));
+  return 'data:image/png;base64,'+btoa(st);
+}
 function dl(name,url){ const a=document.createElement('a'); a.download=name; a.href=url; a.click(); }
 $('btnSave').onclick=()=>{
   const o={app:'sanskriti-visiting-card', v:2, tplFront:S.tplFront, tplBack:S.tplBack, cardSize:S.cardSize, ui:S.ui, sheet:S.sheet, data:S.data};
@@ -1168,17 +1186,17 @@ $('fileLogo').onchange=e=>{
   rd.readAsDataURL(f);
 };
 $('btnPng').onclick=()=>{
-  dl('visiting-card-'+S.side+'-300dpi.png', renderCard(PRINT_DPI,S.side).toDataURL('image/png'));
+  dl('visiting-card-'+S.side+'-300dpi.png', pngDpi(renderCard(PRINT_DPI,S.side).toDataURL('image/png'),PRINT_DPI));
   toast(T('tPng'));
 };
 $('btnSheetF').onclick=()=>{
   const sh=SHEETS[S.sheet];
-  dl('cards-front-'+sh.n.replace('×','x')+'-300dpi.png', renderSheet(PRINT_DPI,S.sheet,'front').toDataURL('image/png'));
+  dl('cards-front-'+sh.n.replace('×','x')+'-300dpi.png', pngDpi(renderSheet(PRINT_DPI,S.sheet,'front').toDataURL('image/png'),PRINT_DPI));
   toast(T('tSheet'));
 };
 $('btnSheetB').onclick=()=>{
   const sh=SHEETS[S.sheet];
-  dl('cards-back-'+sh.n.replace('×','x')+'-300dpi.png', renderSheet(PRINT_DPI,S.sheet,'back').toDataURL('image/png'));
+  dl('cards-back-'+sh.n.replace('×','x')+'-300dpi.png', pngDpi(renderSheet(PRINT_DPI,S.sheet,'back').toDataURL('image/png'),PRINT_DPI));
   toast(T('tBack'));
 };
 $('btnSample').onclick=()=>{
