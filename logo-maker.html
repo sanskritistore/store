@@ -163,7 +163,7 @@ const STR={
    stSave:'💾 सहेजो', stExport:'📤 Export', stImport:'📥 Import', stDel:'🗑️ हटाओ',
    tTplSaved:'🎨 आपका Design सहेज गया ✓ — chips में दिख रहा है', tTplDel:'🗑️ Design हटा दिया',
    tTplBad:'❌ यह Design file नहीं है', tTplImp:'📥 Design आ गया ✓', tNeedName:'❗ पहले Design का नाम लिखो',
-   galBtn:'🖼️ 100+ Designs देखो', galTitle:'🖼️ तैयार Designs — जो पसंद हो उस पर click करो',
+   galBtn:'🖼️ सब Designs देखो', galTitle:'🖼️ तैयार Designs — जो पसंद हो उस पर click करो',
    galAll:'सभी', galPrem:'⭐ प्रीमियम', galPat:'🧩 Pattern वाले', galPick:'✅ Design चुन लिया — अब अपनी जानकारी भरो' },
  en:{ save:'💾 Save', load:'📂 Open', printf:'⬇️ Front Sheet PNG', printb:'⬇️ Back Sheet PNG', dprintf:'🖨️ Direct Print (Front)', dprintb:'🔄 Direct Print (Back)',
    tPrint:'🖨️ In print dialog: Paper = SHEETNAME, Scale = Default/100%!', pngW:'⬇️ PNG Web (1024px)', pngP:'⬇️ PNG Print (3000px)', sample:'✨ Fill Sample', langBtn:'🌐 हिंदी',
@@ -231,7 +231,83 @@ const TEMPLATES={
    {ty:'shape',sh:'round',x:1.12,y:0.30,w:1.10,h:1.10,c:'#fdf3e3',ol:{c:'#b45309',w:4},shd:{c:'rgba(120,53,15,0.35)',b:0.05,x:0,y:0.04}},
    {ty:'text',x:1.667,y:1.25,str:'{ini}',size:64,c:'#b45309',fk:6,bold:true},
    {ty:'text',x:1.667,y:2.15,str:'{biz}',size:22,c:'#292524',fk:6,bold:true},
-   {ty:'text',x:1.667,y:2.55,str:'{tag}',size:11,c:'#a16207',fk:0} ] }
+   {ty:'text',x:1.667,y:2.55,str:'{tag}',size:11,c:'#a16207',fk:0} ] }, icontop:{ name:'⭐ आइकन+नाम', skin:'blank', bg:null, accent:'#1e293b', els:[
+   {ty:'icon',ic:'star',x:1.217,y:0.45,w:0.9,h:0.9,c:'#f59e0b'},
+   {ty:'text',x:1.667,y:2.0,str:'{biz}',size:24,c:'#1e293b',fk:7,bold:true},
+   {ty:'line',x:1.02,y:2.28,len:1.3,ang:0,w:0.025,c:'#cbd5e1'},
+   {ty:'text',x:1.667,y:2.62,str:'{tag}',size:11,c:'#64748b',fk:0} ] },
+ iconleft:{ name:'↔️ साइड लॉकअप', skin:'blank', bg:null, accent:'#d97706', els:[
+   {ty:'icon',ic:'bolt',x:0.42,y:1.25,w:0.75,h:0.85,c:'#f59e0b'},
+   {ty:'text',x:2.18,y:1.62,str:'{biz}',size:19,c:'#1c1917',fk:7,bold:true},
+   {ty:'text',x:2.18,y:2.02,str:'{tag}',size:10,c:'#78716c',fk:0} ] },
+ seal:{ name:'🔵 गोल मुहर', skin:'blank', bg:null, accent:'#0e7490', els:[
+   {ty:'shape',sh:'circle',x:0.37,y:0.37,w:2.6,h:2.6,c:'#ffffff',ol:{c:'#0e7490',w:0.05}},
+   {ty:'shape',sh:'circle',x:0.62,y:0.62,w:2.1,h:2.1,c:'#ffffff',ol:{c:'#67e8f9',w:0.02}},
+   {ty:'icon',ic:'lotus',x:1.37,y:0.92,w:0.6,h:0.6,c:'#0e7490'},
+   {ty:'text',x:1.667,y:1.95,str:'{biz}',size:19,c:'#0e7490',fk:4,bold:true},
+   {ty:'text',x:1.667,y:2.32,str:'{tag}',size:9,c:'#64748b',fk:0} ] },
+ crown:{ name:'👑 शाही ताज', skin:'blank', bg:null, accent:'#b45309', els:[
+   {ty:'icon',ic:'crown',x:1.32,y:0.38,w:0.7,h:0.62,c:'#d4af37'},
+   {ty:'text',x:1.667,y:1.55,str:'{biz}',size:24,c:'#7c2d12',fk:6,bold:true},
+   {ty:'line',x:0.87,y:1.88,len:0.8,ang:0,w:0.02,c:'#d4af37'},
+   {ty:'line',x:1.67,y:1.88,len:0.8,ang:0,w:0.02,c:'#d4af37'},
+   {ty:'icon',ic:'diamond',x:1.587,y:1.78,w:0.16,h:0.16,c:'#d4af37'},
+   {ty:'text',x:1.667,y:2.22,str:'{tag}',size:11,c:'#a16207',fk:0},
+   {ty:'line',x:0.97,y:2.62,len:1.4,ang:0,w:0.015,c:'#d4af37'} ] },
+ script:{ name:'✍️ साइन स्टाइल', skin:'blank', bg:null, accent:'#111827', els:[
+   {ty:'text',x:1.667,y:1.5,str:'{biz}',size:36,c:'#111827',fk:12},
+   {ty:'line',x:1.07,y:1.95,len:1.2,ang:0,w:0.018,c:'#9ca3af'},
+   {ty:'text',x:1.667,y:2.3,str:'{tag}',size:12,c:'#6b7280',fk:2,ls:3} ] },
+ geometric:{ name:'◼️ ज्यामितिक', skin:'blank', bg:null, accent:'#0e7490', els:[
+   {ty:'shape',sh:'rect',x:0.5,y:1.17,w:1.0,h:1.0,c:'#0e7490'},
+   {ty:'text',x:1.0,y:1.78,str:'{ini}',size:34,c:'#ffffff',fk:7,bold:true},
+   {ty:'text',x:2.28,y:1.58,str:'{biz}',size:17,c:'#164e63',fk:7,bold:true},
+   {ty:'text',x:2.28,y:1.98,str:'{tag}',size:9,c:'#64748b',fk:0} ] },
+ leafnat:{ name:'🌿 हरियाली', skin:'blank', bg:null, accent:'#15803d', els:[
+   {ty:'icon',ic:'leaf',x:1.32,y:0.5,w:0.7,h:0.7,c:'#15803d'},
+   {ty:'text',x:1.667,y:1.75,str:'{biz}',size:22,c:'#14532d',fk:3,bold:true},
+   {ty:'text',x:1.667,y:2.15,str:'{tag}',size:11,c:'#4d7c0f',fk:0} ] },
+ boltpwr:{ name:'⚡ पावर', skin:'blank', bg:null, accent:'#fbbf24', els:[
+   {ty:'shape',sh:'circle',x:0.57,y:0.57,w:2.2,h:2.2,c:'#1e293b'},
+   {ty:'icon',ic:'bolt',x:1.42,y:1.0,w:0.5,h:0.62,c:'#fbbf24'},
+   {ty:'text',x:1.667,y:2.05,str:'{biz}',size:17,c:'#ffffff',fk:7,bold:true},
+   {ty:'text',x:1.667,y:2.4,str:'{tag}',size:9,c:'#94a3b8',fk:0} ] },
+ shieldpro:{ name:'🛡️ ढाल प्रो', skin:'blank', bg:null, accent:'#1d4ed8', els:[
+   {ty:'icon',ic:'shield',x:1.27,y:0.45,w:0.8,h:0.9,c:'#1d4ed8'},
+   {ty:'text',x:1.667,y:1.85,str:'{biz}',size:20,c:'#1e3a8a',fk:6,bold:true},
+   {ty:'text',x:1.667,y:2.25,str:'{tag}',size:10,c:'#475569',fk:0} ] },
+ heartcare:{ name:'❤️ केयर', skin:'blank', bg:null, accent:'#dc2626', els:[
+   {ty:'icon',ic:'heart',x:1.37,y:0.55,w:0.65,h:0.62,c:'#dc2626'},
+   {ty:'text',x:1.667,y:1.7,str:'{biz}',size:20,c:'#7f1d1d',fk:7,bold:true},
+   {ty:'text',x:1.667,y:2.1,str:'{tag}',size:11,c:'#b91c1c',fk:0} ] },
+ cupcafe:{ name:'☕ कैफ़े', skin:'blank', bg:null, accent:'#78350f', els:[
+   {ty:'icon',ic:'cup',x:1.32,y:0.48,w:0.7,h:0.68,c:'#78350f'},
+   {ty:'text',x:1.667,y:1.7,str:'{biz}',size:22,c:'#451a03',fk:11,bold:true},
+   {ty:'text',x:1.667,y:2.12,str:'{tag}',size:11,c:'#92400e',fk:0} ] },
+ homereal:{ name:'🏠 प्रॉपर्टी', skin:'blank', bg:null, accent:'#0369a1', els:[
+   {ty:'icon',ic:'house',x:1.32,y:0.45,w:0.7,h:0.66,c:'#0369a1'},
+   {ty:'text',x:1.667,y:1.72,str:'{biz}',size:21,c:'#0c4a6e',fk:7,bold:true},
+   {ty:'text',x:1.667,y:2.12,str:'{tag}',size:10,c:'#64748b',fk:0} ] },
+ gearfix:{ name:'⚙️ मरम्मत', skin:'blank', bg:null, accent:'#334155', els:[
+   {ty:'icon',ic:'gear',x:1.32,y:0.48,w:0.7,h:0.7,c:'#334155'},
+   {ty:'text',x:1.667,y:1.75,str:'{biz}',size:22,c:'#1e293b',fk:9,bold:true},
+   {ty:'text',x:1.667,y:2.16,str:'{tag}',size:10,c:'#64748b',fk:0} ] },
+ salon:{ name:'✂️ सैलून', skin:'blank', bg:null, accent:'#be185d', els:[
+   {ty:'icon',ic:'scissors',x:1.32,y:0.5,w:0.7,h:0.66,c:'#be185d'},
+   {ty:'text',x:1.667,y:1.78,str:'{biz}',size:22,c:'#9d174d',fk:4,ital:true},
+   {ty:'text',x:1.667,y:2.18,str:'{tag}',size:11,c:'#be185d',fk:0} ] },
+ lotusbeauty:{ name:'🌸 ब्यूटी', skin:'blank', bg:null, accent:'#db2777', els:[
+   {ty:'icon',ic:'lotus',x:1.32,y:0.42,w:0.7,h:0.66,c:'#db2777'},
+   {ty:'text',x:1.667,y:1.72,str:'{biz}',size:22,c:'#831843',fk:4,bold:true},
+   {ty:'text',x:1.667,y:2.12,str:'{tag}',size:10,c:'#9d174d',fk:0} ] },
+ printpro:{ name:'🖨️ प्रिंट प्रो', skin:'blank', bg:null, accent:'#0e7490', els:[
+   {ty:'icon',ic:'printer',x:1.3,y:0.48,w:0.72,h:0.68,c:'#0e7490'},
+   {ty:'text',x:1.667,y:1.78,str:'{biz}',size:24,c:'#155e75',fk:10},
+   {ty:'text',x:1.667,y:2.2,str:'{tag}',size:10,c:'#64748b',fk:0} ] },
+ gradcap:{ name:'🎓 पढ़ाई', skin:'blank', bg:null, accent:'#1e40af', els:[
+   {ty:'icon',ic:'gradcap',x:1.3,y:0.52,w:0.72,h:0.64,c:'#1e40af'},
+   {ty:'text',x:1.667,y:1.78,str:'{biz}',size:20,c:'#1e3a8a',fk:7,bold:true},
+   {ty:'text',x:1.667,y:2.18,str:'{tag}',size:11,c:'#475569',fk:0} ] }
 };
 
 /* ================= 🔤 RENDER HELPERS (inch = unit; TXT slice-bug fix — resume engine से) ================= */
