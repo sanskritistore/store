@@ -151,7 +151,7 @@ const STR={
    elAdd:'🧩 Elements — खुद बनाओ', elNew:'नया जोड़ो', elList:'चुनें', elLine:'📏 Line', elCurve:'🌊 Curve',
    elMandala:'❂ Mandala', elSpark:'💫 Sparkle', elText:'📝 Text', elColor:'रंग', elGrad:'🪙 धातु',
    elSize:'Size', elTh:'मोटाई', elAng:'कोण', elLen:'लंबाई', elCnt:'मात्रा', elDel:'🗑️ हटाओ',
-   elDragHint:'🖱️ खींचकर हिलाओ • ⌨️ Delete=हटाओ • Ctrl+Z=वापस • Ctrl+C/V=नकल • Arrows=धीरे हिलाओ', elScript:'✍️ Script', elBold:'B', elW:'चौड़ाई', elH:'ऊँचाई',
+   elDragHint:'👆 card पर text छूकर चुनो • 🖱️ खींचकर हिलाओ • ⌨️ Del=हटाओ • Ctrl+Z=वापस • Ctrl+C/V=नकल • Arrows=हिलाओ', elScript:'✍️ Script', elBold:'B', elW:'चौड़ाई', elH:'ऊँचाई',
    stSave:'💾 सहेजो', stExport:'📤 Export', stImport:'📥 Import', stDel:'🗑️ हटाओ',
    tTplSaved:'🎨 आपका Design सहेज गया ✓ — chips में दिख रहा है', tTplDel:'🗑️ Design हटा दिया',
    tTplBad:'❌ यह Design file नहीं है', tTplImp:'📥 Design आ गया ✓', tNeedName:'❗ पहले Design का नाम लिखो',
@@ -633,6 +633,15 @@ function drawCardInto(ctx,t,d,OX,OY){
     glowOn(0.025); drawMandala(ctx,X(mp[0]),Y(mp[1]),0.78,mc,0.9); glowOff();
     ctx.restore();
   }
+  /* 👆 text चुनाव recording (studio खुला हो तब) */
+  const REC=window._recHits?{}:null;
+  const recBox=(role,x0,y0,x1,y1)=>{ if(!REC) return;
+    const b=REC[role]||(REC[role]={x0:1e9,y0:1e9,x1:-1e9,y1:-1e9});
+    b.x0=Math.min(b.x0,x0); b.y0=Math.min(b.y0,y0); b.x1=Math.max(b.x1,x1); b.y1=Math.max(b.y1,y1); };
+  const txR=(role,c2,str,x,y)=>{ TXT(c2,str,x,y); if(!REC||!str) return;
+    const w=c2.measureText(str).width/SC, m=/([\d.]+)px/.exec(c2.font), fs=(m?parseFloat(m[1]):10)/SC;
+    const ta=c2.textAlign, xx=(ta==='center')?x-w/2:((ta==='right')?x-w:x);
+    recBox(role,xx-OX,y-fs-OY,xx-OX+w,y+fs*0.32-OY); };
   /* 🧩 custom elements (Studio drag tools) */
   drawEls(ctx,X,Y,W,H,t);
   /* 🔴 selection ring (Studio खुला हो तो) */
@@ -675,31 +684,31 @@ function drawCardInto(ctx,t,d,OX,OY){
   if(bandTxt){
     setBiz(12); ctx.fillStyle=t.gradTx?goldTx():(t.ini||'#ffffff');
     ctx.textAlign=C?'center':'left';
-    TXT(ctx,d.biz||'',X(C?W/2:pad),Y(0.28));
-    if(d.tag){ setF(ctx,t,6.5,400,'italic'); ctx.fillStyle=(t.ini||'#ffffff')+'cc'; TXT(ctx,d.tag,X(C?W/2:pad),Y(0.47)); }
+    txR('biz',ctx,d.biz||'',X(C?W/2:pad),Y(0.28));
+    if(d.tag){ setF(ctx,t,6.5,400,'italic'); ctx.fillStyle=(t.ini||'#ffffff')+'cc'; txR('biz',ctx,d.tag,X(C?W/2:pad),Y(0.47)); }
     y=0.86;
     ctx.textAlign=C?'center':'left';
   } else if(t.skin==='bandLeft'||t.skin==='waveL'){
     setBiz(10.5); ctx.fillStyle=t.gradTx?goldTx():t.accent;
-    TXT(ctx,d.biz||'',X(cX),Y(0.32));
+    txR('biz',ctx,d.biz||'',X(cX),Y(0.32));
     y=0.44;
-    if(d.tag){ setF(ctx,t,6.2,400,'italic'); ctx.fillStyle=t.sub; TXT(ctx,d.tag,X(cX),Y(y)); y+=0.14; }
+    if(d.tag){ setF(ctx,t,6.2,400,'italic'); ctx.fillStyle=t.sub; txR('biz',ctx,d.tag,X(cX),Y(y)); y+=0.14; }
   } else {
     y=(C&&logoDrawn)?0.66:0.33;
     const bx=(!C&&logoDrawn&&t.skin!=='bandLeft')?cL+0.62:cX;
     setBiz(12); ctx.fillStyle=t.gradTx?goldTx():t.accent;
-    TXT(ctx,d.biz||'',X(bx),Y(y));
-    if(d.tag){ setF(ctx,t,6.5,400,'italic'); ctx.fillStyle=t.sub; TXT(ctx,d.tag,X(bx),Y(y+0.13)); }
+    txR('biz',ctx,d.biz||'',X(bx),Y(y));
+    if(d.tag){ setF(ctx,t,6.5,400,'italic'); ctx.fillStyle=t.sub; txR('biz',ctx,d.tag,X(bx),Y(y+0.13)); }
     y+=(t.skin==='waveB')?0.24:0.3;
   }
   /* name + desig */
   setF(ctx,t,11*szOf(t,'name'),wOf(t,'name',700),iOf(t,'name')); ctx.fillStyle=t.gradTx?goldTx():t.tx;
   glowOn(0.018);
-  TXT(ctx,d.name||'',X(cX),Y(Math.max(y,(t.skin==='bandTop')?0.86:y)+((t.skin==='bandTop')?0:0.1)));
+  txR('name',ctx,d.name||'',X(cX),Y(Math.max(y,(t.skin==='bandTop')?0.86:y)+((t.skin==='bandTop')?0:0.1)));
   glowOff();
   let ny=Math.max(y,(t.skin==='bandTop')?0.86:y)+((t.skin==='bandTop')?0:0.1);
   if(d.desig){ setF(ctx,t,7.5*szOf(t,'desig'),wOf(t,'desig',600),iOf(t,'desig')); ctx.fillStyle=t.skin==='bandLeft'?t.accent:(t.accent);
-    TXT(ctx,d.desig,X(cX),Y(ny+0.15)); ny+=0.15; }
+    txR('desig',ctx,d.desig,X(cX),Y(ny+0.15)); ny+=0.15; }
   /* divider */
   ny+=0.12;
   ctx.strokeStyle=t.accent; ctx.lineWidth=1/SC;
@@ -728,7 +737,13 @@ function drawCardInto(ctx,t,d,OX,OY){
       TXT(ctx,gly[li],X(chx),Y(chy+0.02));
       ctx.fillStyle=t.sub; setF(ctx,t,6.3,400); ctx.textAlign='left';
       tx=cL+0.17; }
-    TXT(ctx,l,X(tx),Y(dy)); dy+=step; });
+    txR('det',ctx,l,X(tx),Y(dy)); dy+=step; });
+  /* 🔴 चुने text का box + mouse hits export */
+  if(REC){ window._txHits=REC; const _sr=window._txSel, _b=_sr&&REC[_sr];
+    if(_b){ ctx.save(); ctx.strokeStyle='#ff5f56'; ctx.lineWidth=1.6/SC; ctx.setLineDash([0.05,0.035]);
+      ctx.strokeRect(X(_b.x0-0.03),Y(_b.y0-0.02),(_b.x1-_b.x0)+0.06,(_b.y1-_b.y0)+0.05);
+      ctx.setLineDash([]); ctx.fillStyle='#ff5f56';
+      ctx.beginPath(); ctx.arc(X(_b.x0-0.03),Y(_b.y0-0.02),0.05,0,7); ctx.fill(); ctx.restore(); } }
 }
 
 /* ================= 🖨️ SHEET RENDERER (grid + crop marks) ================= */
@@ -926,7 +941,7 @@ if(!window._KBW){ window._KBW=1; document.addEventListener('keydown',(ev)=>{
   else if(ct&&(k==='v'||k==='d')&&STU.clip){ ev.preventDefault();
     const n=JSON.parse(JSON.stringify(STU.clip)); n.x+=0.09; n.y+=0.09;
     STU.cfg.els.push(n); stuSnap(); STU.sel=STU.cfg.els.length-1; renderStudio(); studioPreview(); toast('📄 चिपकाया'); }
-  else if(k==='escape'){ STU.sel=null; renderStudio(); studioPreview(); }
+  else if(k==='escape'){ STU.sel=null; STU.txSel=null; renderStudio(); studioPreview(); }
   else if(k.indexOf('arrow')===0&&e){ ev.preventDefault();
     if(STU._nkT) clearTimeout(STU._nkT); STU._nkT=setTimeout(()=>stuSnap(),700);
     const st=ev.shiftKey?0.05:0.01;
@@ -936,6 +951,7 @@ if(!window._KBW){ window._KBW=1; document.addEventListener('keydown',(ev)=>{
 }); }
 function studioPreview(){ TEMPLATES._studio=STU.cfg;
   if(STU.sel!=null) TEMPLATES._studio._selIdx=STU.sel; else delete TEMPLATES._studio._selIdx;
+  window._recHits=true; window._txSel=STU.txSel||null;
   S.tplFront='_studio'; draw(); }
 /* 🖱️ element drag (mouse + touch) */
 let ELWIRED=false;
@@ -946,9 +962,13 @@ function attachElDrag(cv){
     return { x:(p.clientX-r.left)/r.width*dm.w, y:(p.clientY-r.top)/r.height*dm.h }; };
   const down=(ev)=>{ if(!STU.open||!STU.cfg) return; const p=toIn(ev); const els=STU.cfg.els||[];
     for(let i=els.length-1;i>=0;i--){ if(elHit(els[i],p.x,p.y,dm.w,dm.h)){
-      STU.sel=i; STU.drag={dx:p.x-els[i].x,dy:p.y-els[i].y};
+      STU.sel=i; STU.txSel=null; STU.drag={dx:p.x-els[i].x,dy:p.y-els[i].y};
       renderStudio(); studioPreview(); ev.preventDefault(); return; } }
-    if(STU.sel!=null){ STU.sel=null; renderStudio(); studioPreview(); } };
+    /* 👆 text पर click? */
+    const th=window._txHits||{}; let role=null;
+    Object.keys(th).forEach(rr=>{ const b=th[rr]; if(p.x>=b.x0&&p.x<=b.x1&&p.y>=b.y0&&p.y<=b.y1) role=rr; });
+    if(role){ if(STU.txSel!==role){ STU.txSel=role; STU.sel=null; renderStudio(); studioPreview(); } ev.preventDefault(); return; }
+    if(STU.sel!=null||STU.txSel){ STU.sel=null; STU.txSel=null; renderStudio(); studioPreview(); } };
   cv.addEventListener('mousedown',down);
   cv.addEventListener('touchstart',down,{passive:false});
   if(ELWIRED) return; ELWIRED=true;
@@ -977,11 +997,12 @@ function openStudio(baseId){
   STU.cfg=JSON.parse(JSON.stringify(base));
   STU.cfg.name=(baseId&&TEMPLATES[baseId].custom)?base.name:'';
   STU.editId=(baseId&&TEMPLATES[baseId].custom)?baseId:null;
-  STU.sel=null; STU.drag=null; STU.hist=[]; STU.hi=-1;
+  STU.sel=null; STU.drag=null; STU.txSel=null; STU.hist=[]; STU.hi=-1;
   STU.open=true; renderStudio(); stuSnap(); studioPreview();
 }
 function closeStudio(){ STU.open=false; $('studio').style.display='none';
   delete TEMPLATES._studio; if(S.tplFront==='_studio') S.tplFront=STU.editId||STU.from||'simple'; STU.from=null;
+  STU.txSel=null; window._recHits=false; window._txSel=null; window._txHits={};
   buildForm(); draw(); }
 function renderStudio(){
   const st=$('studio'); st.style.display='block'; st.innerHTML='';
@@ -1043,7 +1064,11 @@ function renderStudio(){
   if(!c.sz) c.sz={}; if(!c.bold) c.bold={}; if(!c.ital) c.ital={};
   [['biz','fBiz'],['name','fName'],['desig','fDesig'],['det','fDet']].forEach(([k,lb])=>{
     const r=H('<div class="strow"><label>'+T(lb)+'</label><input type="range" style="flex:1"><div class="stchips"></div></div>');
-    const inp=r.querySelector('input'); inp.min=0.7; inp.max=1.5; inp.step=0.05; inp.value=c.sz[k]||1;
+    if(STU.txSel===k){ r.style.outline='2px solid #ef4444'; r.style.borderRadius='9px';
+      setTimeout(()=>{ try{ r.scrollIntoView({block:'center'}); }catch(_){ } },50); }
+    const lb2=r.querySelector('label'); lb2.style.cursor='pointer'; lb2.title='👆 card पर text छूकर भी चुन सकते हो';
+    lb2.onclick=()=>{ STU.txSel=(STU.txSel===k)?null:k; STU.sel=null; renderStudio(); studioPreview(); };
+    const inp=r.querySelector('input[type=range]'); inp.min=0.7; inp.max=1.5; inp.step=0.05; inp.value=c.sz[k]||1;
     inp.oninput=()=>{ c.sz[k]=parseFloat(inp.value); studioPreview(); };
     const bx=r.querySelector('.stchips');
     const bb=document.createElement('button'); bb.className='sbtn'+(c.bold[k]?' on':''); bb.textContent='B'; bb.style.fontWeight=800;
