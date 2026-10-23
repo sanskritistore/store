@@ -153,6 +153,7 @@ const STR={
    elShBox:'▭ Box', elShRound:'▢ गोल Box', elShCirc:'⬤ गोला', elShTri:'▲ तिकोना', elShStar:'★ तारा', elImg:'🖼️ Photo',
    elLayer:'परत (Layer)', elUp:'⬆️ ऊपर', elDn:'⬇️ नीचे', elNew2:'Shape / Photo जोड़ो (Canva-जैसा)',
    elGrid:'▦ Grid', elSnap:'🧲 चुंबक', elAlign:'जमाओ', elLock:'🔒 ताला', elGrp:'🔗 समूह', elGrpHint:'कम से कम 2 चीज़ें चुनो, फिर ✓', elGrpOk:'✓ बाँधो', elGrpOff:'⛓️ खोलो',
+   elRot:'घुमाओ (Rotate)', elOut:'✏️ किनारा', elOutW:'किनारे की मोटाई', elShd:'💧 परछाई', elShdD:'परछाई दूरी', elShdB:'धुंधलापन', elOp:'🌫️ पारदर्शिता', stGrad2:'🌈 रंग-मिश्रण', elLs:'🔤 अक्षर दूरी', elLh:'📏 लाइन दूरी',
    elSize:'Size', elTh:'मोटाई', elAng:'कोण', elLen:'लंबाई', elCnt:'मात्रा', elDel:'🗑️ हटाओ',
    elDragHint:'👆 card पर text छूकर चुनो • 🖱️ खींचकर हिलाओ • ⌨️ Del=हटाओ • Ctrl+Z=वापस • Ctrl+C/V=नकल • Arrows=हिलाओ', txPick:'👆 पहले card पर text छूकर चुनो', txGate:'Text चुनोगे तभी font / size / B / I खुलेंगे — बिना चुने कुछ नहीं बदलेगा ✓', txHandle:'🖱️ Box के कोने के ⚪ गोले को खींचो = बड़ा / छोटा', elScript:'✍️ Script', elBold:'B', elW:'चौड़ाई', elH:'ऊँचाई',
    stSave:'💾 सहेजो', stExport:'📤 Export', stImport:'📥 Import', stDel:'🗑️ हटाओ',
@@ -189,6 +190,7 @@ const STR={
    elShBox:'▭ Box', elShRound:'▢ Round box', elShCirc:'⬤ Circle', elShTri:'▲ Triangle', elShStar:'★ Star', elImg:'🖼️ Photo',
    elLayer:'Layer', elUp:'⬆️ Up', elDn:'⬇️ Down', elNew2:'Add shape / photo (Canva-style)',
    elGrid:'▦ Grid', elSnap:'🧲 Snap', elAlign:'Align', elLock:'🔒 Lock', elGrp:'🔗 Group', elGrpHint:'Pick 2+ items, then ✓', elGrpOk:'✓ Group', elGrpOff:'⛓️ Ungroup',
+   elRot:'Rotate', elOut:'✏️ Outline', elOutW:'Outline width', elShd:'💧 Shadow', elShdD:'Shadow distance', elShdB:'Softness', elOp:'🌫️ Opacity', stGrad2:'🌈 Gradient bg', elLs:'🔤 Letter spacing', elLh:'📏 Line gap',
    elSize:'Size', elTh:'Thickness', elAng:'Angle', elLen:'Length', elCnt:'Count', elDel:'🗑️ Delete',
    elDragHint:'🖱️ Drag to move • ⌨️ Del=remove • Ctrl+Z=undo • Ctrl+C/V=copy-paste • Arrows=nudge', txPick:'👆 First tap a text on the card', txGate:'Select a text first — nothing changes until you do ✓', txHandle:'🖱️ Drag the ⚪ dot at box corner = bigger / smaller', elScript:'✍️ Script', elBold:'B', elW:'Width', elH:'Height',
    stSave:'💾 Save', stExport:'📤 Export', stImport:'📥 Import', stDel:'🗑️ Delete',
@@ -400,6 +402,8 @@ function drawPattern(ctx,p,ox,oy,W,H){
   ctx.restore();
 }
 /* ================= ⭐ PREMIUM HELPERS (metallic gradients, sparkle, mandala) ================= */
+function linGrad(ctx,c1,c2,dir,x0,y0,x1,y1){ const g=dir==='h'?ctx.createLinearGradient(x0,y0,x1,y0):(dir==='d'?ctx.createLinearGradient(x0,y0,x1,y1):ctx.createLinearGradient(x0,y0,x0,y1));
+  g.addColorStop(0,c1||'#000000'); g.addColorStop(1,c2||'#ffffff'); return g; }
 function metGrad(ctx,c,x0,y0,x1,y1){
   const g=ctx.createLinearGradient(x0,y0,x1,y1);
   ({gold:[[0,'#f9f295'],[.22,'#e0aa3e'],[.5,'#b8860b'],[.75,'#f6e27a'],[1,'#9c6b1e']],
@@ -530,6 +534,12 @@ function drawEls(ctx,X,Y,W,H,t){
     const fill=e.grad?metGrad(ctx,e.grad,X(0),Y(0),X(W),Y(H)):(e.c||t.accent||'#d4af37');
     ctx.save();
     if(e.glow){ ctx.shadowColor=glowCol({grad:e.grad||'gold'}); ctx.shadowBlur=0.022*SC; }
+    if(e.op!=null) ctx.globalAlpha=e.op;   /* 🌫️ opacity */
+    if(e.shd){ ctx.shadowColor=e.shd.c||'rgba(0,0,0,0.55)'; ctx.shadowBlur=(e.shd.b==null?0.02:e.shd.b)*SC;   /* 💧 shadow */
+      ctx.shadowOffsetX=(e.shd.x==null?0.03:e.shd.x)*SC; ctx.shadowOffsetY=(e.shd.y==null?0.03:e.shd.y)*SC; }
+    if(e.rot&&e.ty!=='text'){ const b=elBounds(e,W,H); let cx=e.x, cy=e.y;   /* ↻ rotate */
+      if(e.ty!=='line'&&e.ty!=='mandala'){ cx=b.x+b.w/2; cy=b.y+b.h/2; }
+      ctx.translate(X(cx),Y(cy)); ctx.rotate(e.rot*Math.PI/180); ctx.translate(-X(cx),-Y(cy)); }
     if(e.ty==='line'){
       const a=(e.ang||0)*Math.PI/180;
       ctx.strokeStyle=fill; ctx.lineWidth=e.w||0.02; ctx.lineCap='round';
@@ -541,10 +551,10 @@ function drawEls(ctx,X,Y,W,H,t){
       ctx.beginPath(); ctx.moveTo(X(e.x),Y(e.y+e.h*0.65));
       ctx.bezierCurveTo(X(e.x+e.w*0.3),Y(e.y-e.h*0.12),X(e.x+e.w*0.7),Y(e.y+e.h*1.12),X(e.x+e.w),Y(e.y+e.h*0.32));
       ctx.stroke();
-      ctx.shadowBlur=0; ctx.globalAlpha=0.85; ctx.lineWidth=Math.max(th*0.28,0.008);
+      ctx.shadowBlur=0; ctx.globalAlpha=0.85*(e.op==null?1:e.op); ctx.lineWidth=Math.max(th*0.28,0.008);
       ctx.beginPath(); ctx.moveTo(X(e.x),Y(e.y+e.h*0.65+th*1.4));
       ctx.bezierCurveTo(X(e.x+e.w*0.3),Y(e.y-e.h*0.12+th*1.4),X(e.x+e.w*0.7),Y(e.y+e.h*1.12+th*1.4),X(e.x+e.w),Y(e.y+e.h*0.32+th*1.4));
-      ctx.stroke(); ctx.globalAlpha=1;
+      ctx.stroke(); ctx.globalAlpha=(e.op==null?1:e.op);
     } else if(e.ty==='mandala'){
       ctx.beginPath(); ctx.rect(X(0),Y(0),W,H); ctx.clip();
       drawMandala(ctx,X(e.x),Y(e.y),e.r||0.45,fill,0.95);
@@ -565,6 +575,7 @@ function drawEls(ctx,X,Y,W,H,t){
         ctx.closePath(); }
       else { ctx.rect(sx,sy,sw,shh); }
       ctx.fill();
+      if(e.ol&&e.ol.w>0){ ctx.strokeStyle=e.ol.c; ctx.lineWidth=e.ol.w*2; ctx.lineJoin='round'; ctx.stroke(); }
     } else if(e.ty==='img'){
       if(e.src){ const im2=logoImg(e.src);
         if(im2.complete&&im2.naturalWidth) ctx.drawImage(im2,X(e.x),Y(e.y),e.w||1,e.h||1); }
@@ -572,9 +583,16 @@ function drawEls(ctx,X,Y,W,H,t){
       if(e.script) ctx.font=(e.bold?700:400)+' '+((e.size||9)*PT*SC)+'px '+FSCR;
       else if(e.fk!=null) ctx.font=(e.ital?'italic ':'')+(e.bold?700:400)+' '+((e.size||9)*PT*SC)+'px '+((FONTS[e.fk]||FONTS[0]).css);
       else setF(ctx,t,e.size||9,e.bold?700:600);
-      ctx.fillStyle=fill; ctx.textAlign='center';
-      TXT(ctx,e.str||'',X(e.x),Y(e.y));
-      ctx.textAlign='left';
+      ctx.fillStyle=fill;
+      try{ ctx.letterSpacing=((e.ls||0)*PT*SC)+'px'; }catch(_){ }
+      const lns=(e.str||'').split('\n'), lhh=(e.size||9)*PT*SC*(e.lh||1.3);
+      const drawTx=(px,py)=>{ lns.forEach((ln,li)=>{ const yy=py+li*lhh;
+        if(e.ol&&e.ol.w>0){ ctx.strokeStyle=e.ol.c; ctx.lineWidth=Math.max(0.5,e.ol.w*2*SC); ctx.lineJoin='round'; ctx.strokeText(ln,px,yy); }
+        ctx.fillText(ln,px,yy); }); };
+      ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.textAlign='center';
+      if(e.rot){ ctx.translate(X(e.x)*SC,Y(e.y)*SC); ctx.rotate(e.rot*Math.PI/180); drawTx(0,0); }
+      else drawTx(X(e.x)*SC,Y(e.y)*SC);
+      ctx.restore(); try{ ctx.letterSpacing='0px'; }catch(_){ }
     }
     ctx.restore();
   });
@@ -582,7 +600,7 @@ function drawEls(ctx,X,Y,W,H,t){
 function drawCardInto(ctx,t,d,OX,OY){
   const X=v=>OX+v, Y=v=>OY+v, dm=cardDims(), W=dm.w, H=dm.h, C=t.align==='center';
   /* background */
-  ctx.fillStyle=t.gradBg?metGrad(ctx,t.gradBg,X(0),Y(0),X(W),Y(H)):t.bg; ctx.fillRect(X(0),Y(0),W,H);
+  ctx.fillStyle=t.gradBg?metGrad(ctx,t.gradBg,X(0),Y(0),X(W),Y(H)):(t.bg2?linGrad(ctx,t.bg,t.bg2,t.bgDir||'v',X(0),Y(0),X(W),Y(H)):t.bg); ctx.fillRect(X(0),Y(0),W,H);   /* 🌈 bg2 gradient */
   drawPattern(ctx,t.pat,X(0),Y(0),W,H);   /* 🧩 Corel-style wallpaper pattern */
   drawSparkle(ctx,t.sparkle,X(0),Y(0),W,H);   /* ✨ gold glitter */
   if(t.orbit) drawOrbit(ctx,X,Y,W,H,t);       /* 💫 comet swoosh */
@@ -1143,6 +1161,18 @@ function renderStudio(){
   const inii=inir.querySelector('input'); inii.value=c.ini||'#ffffff';
   inii.oninput=()=>{ c.ini=inii.value; studioPreview(); };
   st.appendChild(inir);
+  /* 🌈 gradient bg (Phase 2) */
+  const g2r=H('<div class="clrrow"><label>'+T('stGrad2')+'</label><input type="color"></div>');
+  const g2i=g2r.querySelector('input'); g2i.value=c.bg2||'#1e3a8a';
+  g2i.oninput=()=>{ c.bg2=g2i.value; studioPreview(); };
+  g2i.addEventListener('change',()=>{ stuSnap(); renderStudio(); });
+  st.appendChild(g2r);
+  if(c.bg2){ const gd=H('<div class="strow"><label>🌈</label><div class="stchips"></div></div>');
+    [['v','⬇️'],['h','➡️'],['d','↘️'],['',T('stOff')]].forEach(([v,lb])=>{ const b4=document.createElement('button');
+      b4.className='sbtn'+((v&&((c.bgDir||'v')===v))?' on':'');
+      b4.textContent=lb; b4.onclick=()=>{ if(v===''){ c.bg2=null; } else { c.bgDir=v; } stuSnap(); renderStudio(); studioPreview(); };
+      gd.querySelector('.stchips').appendChild(b4); });
+    st.appendChild(gd); }
   /* 🧩 Background pattern (Corel-जैसा) */
   if(c.skin!=='blank'){
   /* 🔤 TEXT PANEL — सिर्फ़ चुने text पर काम (कोई global mode नहीं) */
@@ -1291,6 +1321,25 @@ function renderStudio(){
       b.onclick=()=>{ e.grad=v||null; renderStudio(); studioPreview(); };
       gr.querySelector('.stchips').appendChild(b); });
     st.appendChild(gr);
+    /* 🎨 Phase 2 — Opacity / Outline / Shadow / Rotate / Spacing */
+    mkRange(T('elOp'),15,100,5,()=>Math.round((e.op==null?1:e.op)*100),v=>e.op=(v>=100?null:v/100));
+    if(e.ty==='shape'||e.ty==='text'){ const olr=H('<div class="clrrow"><label>'+T('elOut')+'</label><input type="color"></div>');
+      const oli=olr.querySelector('input'); oli.value=(e.ol&&e.ol.c)||'#000000';
+      oli.oninput=()=>{ e.ol=e.ol||{c:'#000000',w:0.012}; e.ol.c=oli.value; studioPreview(); };
+      oli.addEventListener('change',()=>stuSnap()); st.appendChild(olr);
+      mkRange(T('elOutW'),0,0.05,0.002,()=>((e.ol&&e.ol.w)||0),v=>{ e.ol=e.ol||{c:'#000000'}; e.ol.w=v; }); }
+    if(e.ty!=='sparkle'&&e.ty!=='mandala'){
+      const sdr=H('<div class="strow"><label>'+T('elShd')+'</label><div class="stchips"></div></div>');
+      [[false,T('stOff')],[true,T('stOn')]].forEach(([v,lb])=>{ const b5=document.createElement('button');
+        b5.className='sbtn'+(!!e.shd===v?' on':''); b5.textContent=lb;
+        b5.onclick=()=>{ e.shd=v?{c:'rgba(0,0,0,0.55)',x:0.03,y:0.03,b:0.025}:null; stuSnap(); renderStudio(); studioPreview(); };
+        sdr.querySelector('.stchips').appendChild(b5); });
+      st.appendChild(sdr);
+      if(e.shd){ mkRange(T('elShdD'),0,0.1,0.005,()=>e.shd.x,v=>{ e.shd.x=v; e.shd.y=v; });
+        mkRange(T('elShdB'),0,0.08,0.005,()=>e.shd.b,v=>e.shd.b=v); } }
+    if(e.ty!=='sparkle'){ mkRange(T('elRot'),-180,180,1,()=>e.rot||0,v=>e.rot=v||null); }
+    if(e.ty==='text'){ mkRange(T('elLs'),0,8,0.5,()=>e.ls||0,v=>e.ls=v||null);
+      mkRange(T('elLh'),1,2.2,0.05,()=>e.lh||1.3,v=>e.lh=v); }
     if(e.ty==='line'){ mkRange(T('elLen'),0.2,3.3,0.05,()=>e.len,v=>e.len=v);
       mkRange(T('elAng'),-180,180,1,()=>e.ang,v=>e.ang=v);
       mkRange(T('elTh'),0.005,0.08,0.005,()=>e.w,v=>e.w=v); }
