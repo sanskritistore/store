@@ -768,8 +768,9 @@ function elTok(s){ const d=S.data||{}; const nm=(d.biz||'').trim();
 function drawEls(ctx,X,Y,W,H,t){
   (t.els||[]).forEach(e=>{
     const fill=e.grad?metGrad(ctx,e.grad,X(0),Y(0),X(W),Y(H)):(e.c||t.accent||'#d4af37');
-    ctx.save();
-    if(e.glow){ ctx.shadowColor=e.glowC||glowCol({grad:e.grad||'gold'}); ctx.shadowBlur=(e.glow===true?0.022:e.glow)*SC; }
+    const _gm=e.glow?[0.35,1.0,2.3]:[1];   /* 🔥 neon: tight+mid+wide passes */
+    _gm.forEach(_m=>{ ctx.save();
+    if(e.glow){ ctx.shadowColor=e.glowC||glowCol({grad:e.grad||'gold'}); ctx.shadowBlur=(e.glow===true?0.022:e.glow)*SC*_m; }
     if(e.op!=null) ctx.globalAlpha=e.op;   /* 🌫️ opacity */
     if(e.shd){ ctx.shadowColor=e.shd.c||'rgba(0,0,0,0.55)'; ctx.shadowBlur=(e.shd.b==null?0.02:e.shd.b)*SC;   /* 💧 shadow */
       ctx.shadowOffsetX=(e.shd.x==null?0.03:e.shd.x)*SC; ctx.shadowOffsetY=(e.shd.y==null?0.03:e.shd.y)*SC; }
@@ -880,7 +881,7 @@ function drawEls(ctx,X,Y,W,H,t){
       else drawTx(X(e.x)*SC,Y(e.y)*SC);
       ctx.restore(); try{ ctx.letterSpacing='0px'; }catch(_){ }
     }
-    ctx.restore();
+    ctx.restore(); });
   });
 }
 function drawCardInto(ctx,t,d,OX,OY){
