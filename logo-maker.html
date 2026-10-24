@@ -329,17 +329,17 @@ const TEMPLATES={
    {ty:'img',src:'brand/parts/rustic-bel-1.png',glow:0.04,glowC:'#ffb45e',x:2.62,y:0.95,w:0.42,h:0.62,rot:-28} ] },
  rusticwall:{ name:'💡 Rustic Wall', skin:'blank', prem:1, gen:1, bg:'#d8c8ae', accent:'#1b1512',
    halo:[{c:'rgba(255,245,224,0.55)',y:0.34,r:0.92},{c:'rgba(110,85,55,0.20)',y:1.02,r:0.75,c2:'rgba(110,85,55,0)'}], els:[
-   {ty:'shape',sh:'circle',c:'transparent',ol:{c:'#1b1512',w:0.020},glow:0.12,glowC:'#ffd9a0',x:0.315,y:0.30,w:2.7,h:2.7},
+   {ty:'shape',sh:'circle',c:'transparent',ol:{c:'#1b1512',w:0.020},glow:0.12,glowC:'#ffcf8a',x:0.315,y:0.30,w:2.7,h:2.7},
    {ty:'img',src:'brand/parts/rustic-bulb-black.png',glow:0.14,glowC:'#ffc98a',x:1.405,y:0.28,w:0.52,h:0.97},
-   {ty:'text',str:'{biz}',script:true,size:34,c:'#1b1512',glow:0.09,glowC:'#ffd9a0',x:1.665,y:1.52},
-   {ty:'text',str:'{tag}',fk:6,size:11,ls:5,bold:true,c:'#1b1512',glow:0.07,glowC:'#ffd9a0',x:1.665,y:2.02},
+   {ty:'text',str:'{biz}',script:true,size:34,c:'#1b1512',glow:0.09,glowC:'#ffcf8a',x:1.665,y:1.52},
+   {ty:'text',str:'{tag}',fk:6,size:11,ls:5,bold:true,c:'#1b1512',glow:0.07,glowC:'#ffcf8a',x:1.665,y:2.02},
    {ty:'shape',sh:'rect',c:'#1b1512',glow:0.03,glowC:'#ffc98a',x:0.72,y:1.975,w:0.42,h:0.016},
    {ty:'shape',sh:'rect',c:'#1b1512',glow:0.03,glowC:'#ffc98a',x:2.19,y:1.975,w:0.42,h:0.016},
    {ty:'text',str:'Designed to Inspire',fk:11,ital:true,size:7.5,c:'#3a2f26',x:1.665,y:2.24},
    {ty:'shape',sh:'rect',c:'#1b1512',x:1.32,y:2.40,w:0.26,h:0.013},
    {ty:'text',str:'✦',fk:7,size:8.5,c:'#1b1512',x:1.665,y:2.45},
    {ty:'shape',sh:'rect',c:'#1b1512',x:1.75,y:2.40,w:0.26,h:0.013},
-   {ty:'img',src:'brand/parts/rustic-bel-1.png',filt:'saturate(0.1) brightness(0.4)',glow:0.08,glowC:'#ffd9a0',x:2.56,y:0.98,w:0.44,h:0.65,rot:-22} ] },
+   {ty:'img',src:'brand/parts/rustic-bel-1.png',filt:'saturate(0.1) brightness(0.4)',glow:0.08,glowC:'#ffcf8a',x:2.56,y:0.98,w:0.44,h:0.65,rot:-22} ] },
  royalwings:{ name:'🪔 पंख शाही', skin:'blank', prem:1, gen:1, bg:'#0c101e', accent:'#d4af37', els:[
    {ty:'img',src:'brand/parts/wings-diya.png',x:0.42,y:0.40,w:2.50,h:1.12},
    {ty:'text',x:1.667,y:1.92,str:'{biz}',size:30,grad:'gold',fk:15,bold:true},
@@ -771,7 +771,7 @@ function elTok(s){ const d=S.data||{}; const nm=(d.biz||'').trim();
 function drawEls(ctx,X,Y,W,H,t){
   (t.els||[]).forEach(e=>{
     const fill=e.grad?metGrad(ctx,e.grad,X(0),Y(0),X(W),Y(H)):(e.c||t.accent||'#d4af37');
-    const _gm=e.glow?[[0.16,'#ffffff',0.78],[0.45,'#ffffff',0.38],[1.0,null,0],[2.1,'#9a6a35',0.4]]:[[1,null,0]];   /* 🔥 neon: hot core→deep falloff */
+    const _gm=e.glow?[[0.16,'#ffffff',0.78],[0.45,'#ffffff',0.38],[1.0,null,0],[2.1,'#d98f4a',0.5]]:[[1,null,0]];   /* 🔥 neon: hot core→deep falloff */
     _gm.forEach(_p=>{ const _m=_p[0]; ctx.save();
     if(e.glow){ const _g0=e.glowC||glowCol({grad:e.grad||'gold'}); ctx.shadowColor=_p[1]?_gMix(_g0,_p[1],_p[2]):_g0; ctx.shadowBlur=(e.glow===true?0.022:e.glow)*SC*_m; }
     if(e.op!=null) ctx.globalAlpha=e.op;   /* 🌫️ opacity */
@@ -1604,14 +1604,14 @@ function renderStudio(){
     st.appendChild(gr);
     mkRange(T('elGlow'),0,0.30,0.01,()=>e.glow===true?0.022:(e.glow||0),v=>{ e.glow=v||null; if(v&&!e.glowC) e.glowC=null; });
     const rw=H('<div class="clrrow"><label>'+T('elGlowC')+'</label></div>');
-    const rwc=H('<input type="color">'); rwc.value=(e.glowC&&e.glowC[0]==='#')?e.glowC:'#ffd9a0';
+    const rwc=H('<input type="color">'); rwc.value=(e.glowC&&e.glowC[0]==='#')?e.glowC:'#ffcf8a';
     rwc.oninput=()=>{ e.glowC=rwc.value; if(!e.glow) e.glow=0.06; renderStudio(); studioPreview(); };
     rw.appendChild(rwc);
     const rbtn=document.createElement('button'); rbtn.className='sbtn'; rbtn.textContent=T('elRustic'); rbtn.style.cssText='margin-left:6px;font-size:11px';
     rbtn.onclick=()=>{ if(e.ty==='img'||e.ty==='qr'){ e.filt='saturate(0.1) brightness(0.4)'; }
       else if(e.ty==='shape'){ if(e.c&&e.c!=='transparent') e.c='#1b1512'; e.grad=null; if(e.ol) e.ol.c='#1b1512'; else e.ol={c:'#1b1512',w:0.02}; }
       else { e.c='#1b1512'; e.grad=null; if(e.ol) e.ol.c='#1b1512'; }
-      e.glow=0.09; e.glowC='#ffd9a0'; stuSnap(); renderStudio(); studioPreview(); };
+      e.glow=0.09; e.glowC='#ffcf8a'; stuSnap(); renderStudio(); studioPreview(); };
     rw.appendChild(rbtn); st.appendChild(rw);
     /* 🎨 Phase 2 — Opacity / Outline / Shadow / Rotate / Spacing */
     mkRange(T('elOp'),15,100,5,()=>Math.round((e.op==null?1:e.op)*100),v=>e.op=(v>=100?null:v/100));
