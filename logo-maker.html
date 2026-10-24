@@ -145,7 +145,7 @@ const STR={
    stOpen:'🎨 अपना Design बनाओ', stTitle:'🎨 Design Studio', stName:'Design का नाम', stNamePh:'जैसे: मेरा शाही card',
    stSkin:'Design की बनावट', skPlain:'सादा', skBar:'साइड line', skBandTop:'ऊपर band', skBandLeft:'बायाँ पैनल', skBlank:'⬜ खाली',
    stColors:'🎨 रंग', stBg:'पीछे का रंग', stAccent:'मुख्य रंग', stTx:'अक्षरों का रंग', stSub:'छोटे अक्षरों का रंग',
-   stHalo:'🔆 गरम रोशनी', elGlow:'🔆 Glow', stHalo:'🔆 Warm light', elGlow:'🔆 Glow', stIni:'पैनल पर अक्षर (जैसे CP) का रंग',
+   stHalo:'🔆 गरम रोशनी', elGlow:'🔆 Glow', elGlowC:'Glow का रंग', elRustic:'🔥 Rustic बनाओ (काला+गरम glow)', stHalo:'🔆 Warm light', elGlow:'🔆 Glow', elGlowC:'Glow colour', elRustic:'🔥 Make Rustic (black + warm glow)', stIni:'पैनल पर अक्षर (जैसे CP) का रंग',
    stPat:'🧩 Background Pattern (Corel-जैसा)', patNone:'🚫 बंद', patH:'━ Lines', patV:'┃ Lines',
    patD:'╱ तिरछी', patD2:'✕ क्रॉस', patGrid:'▦ खाना', patDots:'• बिंदु',
    patC:'Pattern का रंग', patGap:'गैप (mm)',
@@ -1599,6 +1599,16 @@ function renderStudio(){
       gr.querySelector('.stchips').appendChild(b); });
     st.appendChild(gr);
     mkRange(T('elGlow'),0,0.30,0.01,()=>e.glow===true?0.022:(e.glow||0),v=>{ e.glow=v||null; if(v&&!e.glowC) e.glowC=null; });
+    const rw=H('<div class="clrrow"><label>'+T('elGlowC')+'</label></div>');
+    const rwc=H('<input type="color">'); rwc.value=(e.glowC&&e.glowC[0]==='#')?e.glowC:'#ff8400';
+    rwc.oninput=()=>{ e.glowC=rwc.value; if(!e.glow) e.glow=0.06; renderStudio(); studioPreview(); };
+    rw.appendChild(rwc);
+    const rbtn=document.createElement('button'); rbtn.className='sbtn'; rbtn.textContent=T('elRustic'); rbtn.style.cssText='margin-left:6px;font-size:11px';
+    rbtn.onclick=()=>{ if(e.ty==='img'||e.ty==='qr'){ e.filt='saturate(0.1) brightness(0.4)'; }
+      else if(e.ty==='shape'){ if(e.c&&e.c!=='transparent') e.c='#1b1512'; e.grad=null; if(e.ol) e.ol.c='#1b1512'; else e.ol={c:'#1b1512',w:0.02}; }
+      else { e.c='#1b1512'; e.grad=null; if(e.ol) e.ol.c='#1b1512'; }
+      e.glow=0.09; e.glowC='#ff8400'; stuSnap(); renderStudio(); studioPreview(); };
+    rw.appendChild(rbtn); st.appendChild(rw);
     /* 🎨 Phase 2 — Opacity / Outline / Shadow / Rotate / Spacing */
     mkRange(T('elOp'),15,100,5,()=>Math.round((e.op==null?1:e.op)*100),v=>e.op=(v>=100?null:v/100));
     if(e.ty==='shape'||e.ty==='text'){ const olr=H('<div class="clrrow"><label>'+T('elOut')+'</label><input type="color"></div>');
