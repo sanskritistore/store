@@ -160,6 +160,7 @@ const STR={
    elLayer:'परत (Layer)', elUp:'⬆️ ऊपर', elDn:'⬇️ नीचे', elNew2:'Shape / Photo जोड़ो (Canva-जैसा)',
    elGrid:'▦ Grid', elSnap:'🧲 चुंबक', elAlign:'जमाओ', elLock:'🔒 ताला', elGrp:'🔗 समूह', elGrpHint:'कम से कम 2 चीज़ें चुनो, फिर ✓', elGrpOk:'✓ बाँधो', elGrpOff:'⛓️ खोलो',
    elRot:'घुमाओ (Rotate)', elOut:'✏️ किनारा', elOutW:'किनारे की मोटाई', elShd:'💧 परछाई', elShdD:'परछाई दूरी', elShdB:'धुंधलापन', elOp:'🌫️ पारदर्शिता', stGrad2:'🌈 रंग-मिश्रण', elLs:'🔤 अक्षर दूरी', elLh:'📏 लाइन दूरी', elQR:'🔳 QR कोड', elQrTxt:'लिंक/नंबर (wa.me...)', elQrD:'गहरा रंग', elQrL:'हल्का रंग', elCL:'⬅️ बाएँ से काटो', elCR:'दाएँ से काटो ➡️', elCT:'⬆️ ऊपर से काटो', elCB:'नीचे से काटो ⬇️', elIcon:'⭐ Icon', icTitle:'⭐ Icon चुनो — सब original',
+   elPCol:'🎨 पार्ट रंग', pfGold:'सोना', pfSilver:'चाँदी', pfRose:'गुलाबी', pfCopper:'ताँबा', pfRed:'लाल', pfGreen:'हरा', pfBlue:'नीला', pfPurple:'बैंगनी', pfBlack:'काला', ptAll:'सभी', ptRoyal:'👑 शाही', ptAmmbi:'🌿 आम्बी', ptDeep:'🪔 दीपक', ptS:'Ⓢ S लोगो', pt3d:'✨ 3D',
    elSize:'Size', elTh:'मोटाई', elAng:'कोण', elLen:'लंबाई', elCnt:'मात्रा', elDel:'🗑️ हटाओ',
    elDragHint:'👆 card पर text छूकर चुनो • 🖱️ खींचकर हिलाओ • ⌨️ Del=हटाओ • Ctrl+Z=वापस • Ctrl+C/V=नकल • Arrows=हिलाओ', txPick:'👆 पहले card पर text छूकर चुनो', txGate:'Text चुनोगे तभी font / size / B / I खुलेंगे — बिना चुने कुछ नहीं बदलेगा ✓', txHandle:'🖱️ Box के कोने के ⚪ गोले को खींचो = बड़ा / छोटा', elScript:'✍️ Script', elBold:'B', elW:'चौड़ाई', elH:'ऊँचाई',
    stSave:'💾 सहेजो', stExport:'📤 Export', stImport:'📥 Import', stDel:'🗑️ हटाओ',
@@ -198,6 +199,7 @@ const STR={
    elLayer:'Layer', elUp:'⬆️ Up', elDn:'⬇️ Down', elNew2:'Add shape / photo (Canva-style)',
    elGrid:'▦ Grid', elSnap:'🧲 Snap', elAlign:'Align', elLock:'🔒 Lock', elGrp:'🔗 Group', elGrpHint:'Pick 2+ items, then ✓', elGrpOk:'✓ Group', elGrpOff:'⛓️ Ungroup',
    elRot:'Rotate', elOut:'✏️ Outline', elOutW:'Outline width', elShd:'💧 Shadow', elShdD:'Shadow distance', elShdB:'Softness', elOp:'🌫️ Opacity', stGrad2:'🌈 Gradient bg', elLs:'🔤 Letter spacing', elLh:'📏 Line gap', elQR:'🔳 QR Code', elQrTxt:'Link/number (wa.me...)', elQrD:'Dark color', elQrL:'Light color', elCL:'Crop left ⬅️', elCR:'Crop right ➡️', elCT:'Crop top ⬆️', elCB:'Crop bottom ⬇️', elIcon:'⭐ Icon', icTitle:'⭐ Pick an icon — all original',
+   elPCol:'🎨 Part colour', pfGold:'Gold', pfSilver:'Silver', pfRose:'Rose', pfCopper:'Copper', pfRed:'Red', pfGreen:'Green', pfBlue:'Blue', pfPurple:'Purple', pfBlack:'Black', ptAll:'All', ptRoyal:'👑 Royal', ptAmmbi:'🌿 Paisley', ptDeep:'🪔 Diya', ptS:'Ⓢ S logos', pt3d:'✨ 3D',
    elSize:'Size', elTh:'Thickness', elAng:'Angle', elLen:'Length', elCnt:'Count', elDel:'🗑️ Delete',
    elDragHint:'🖱️ Drag to move • ⌨️ Del=remove • Ctrl+Z=undo • Ctrl+C/V=copy-paste • Arrows=nudge', txPick:'👆 First tap a text on the card', txGate:'Select a text first — nothing changes until you do ✓', txHandle:'🖱️ Drag the ⚪ dot at box corner = bigger / smaller', elScript:'✍️ Script', elBold:'B', elW:'Width', elH:'Height',
    stSave:'💾 Save', stExport:'📤 Export', stImport:'📥 Import', stDel:'🗑️ Delete',
@@ -243,7 +245,58 @@ const PARTS=[
  {src:'brand/parts/line.png',         n:'पतली रेखा',    w:2.20, a:0.024},
  {src:'brand/parts/line-pair.png',    n:'जोड़ी रेखा',   w:2.60, a:0.027},
  {src:'brand/parts/ornament.png',     n:'फूल',          w:0.75, a:0.376},
- {src:'brand/parts/ornament-strip.png',n:'नीचे की बेल', w:1.80, a:0.116}
+ {src:'brand/parts/ornament-strip.png',n:'नीचे की बेल', w:1.80, a:0.116},
+ {src:'brand/parts/ammbi-01.png',n:'आम्बी १',w:1.20,a:0.620,g:'ammbi'},
+ {src:'brand/parts/ammbi-02.png',n:'आम्बी २',w:1.20,a:0.551,g:'ammbi'},
+ {src:'brand/parts/ammbi-03.png',n:'आम्बी ३',w:1.20,a:0.594,g:'ammbi'},
+ {src:'brand/parts/ammbi-04.png',n:'आम्बी ४',w:1.20,a:0.476,g:'ammbi'},
+ {src:'brand/parts/ammbi-05.png',n:'आम्बी ५',w:1.20,a:0.487,g:'ammbi'},
+ {src:'brand/parts/ammbi-06.png',n:'आम्बी ६',w:1.20,a:0.559,g:'ammbi'},
+ {src:'brand/parts/ammbi-07.png',n:'आम्बी ७',w:1.20,a:0.609,g:'ammbi'},
+ {src:'brand/parts/ammbi-08.png',n:'आम्बी ८',w:1.20,a:0.493,g:'ammbi'},
+ {src:'brand/parts/ammbi-09.png',n:'आम्बी ९',w:0.55,a:1.479,g:'ammbi'},
+ {src:'brand/parts/ammbi-10.png',n:'आम्बी १०',w:0.55,a:1.479,g:'ammbi'},
+ {src:'brand/parts/ammbi-11.png',n:'खड़ी आम्बी',w:0.55,a:2.333,g:'ammbi'},
+ {src:'brand/parts/ammbi-12.png',n:'गोल आम्बी',w:0.75,a:0.995,g:'ammbi'},
+ {src:'brand/parts/ammbi-13.png',n:'कोना आम्बी',w:0.85,a:0.987,g:'ammbi'},
+ {src:'brand/parts/ammbi-14.png',n:'मोर आम्बी',w:0.75,a:1.116,g:'ammbi'},
+ {src:'brand/parts/ammbi-15.png',n:'कमल आम्बी',w:0.75,a:0.834,g:'ammbi'},
+ {src:'brand/parts/ammbi-16.png',n:'बेल आम्बी',w:0.55,a:2.252,g:'ammbi'},
+ {src:'brand/parts/ammbi-17.png',n:'मीनाकारी',w:0.55,a:1.390,g:'ammbi'},
+ {src:'brand/parts/ammbi-18.png',n:'जुड़वा आम्बी',w:0.75,a:0.735,g:'ammbi'},
+ {src:'brand/parts/ammbi-19.png',n:'नन्ही आम्बी',w:0.38,a:1.500,g:'ammbi'},
+ {src:'brand/parts/ammbi-20.png',n:'नन्ही आम्बी २',w:0.38,a:1.481,g:'ammbi'},
+ {src:'brand/parts/deep-katora.png',n:'शाही कटोरा',w:1.00,a:0.777,g:'deep'},
+ {src:'brand/parts/deep-handle.png',n:'हैंडल दीया',w:1.30,a:0.462,g:'deep'},
+ {src:'brand/parts/deep-kamal.png',n:'कमल दीया',w:1.00,a:0.766,g:'deep'},
+ {src:'brand/parts/deep-mor.png',n:'मोर दीया',w:0.95,a:0.895,g:'deep'},
+ {src:'brand/parts/deep-khada.png',n:'खड़ा दीया',w:0.55,a:1.557,g:'deep'},
+ {src:'brand/parts/deep-chauda.png',n:'चौड़ा दीया',w:1.30,a:0.481,g:'deep'},
+ {src:'brand/parts/deep-jhula.png',n:'झूलता दीया',w:0.70,a:1.331,g:'deep'},
+ {src:'brand/parts/deep-mitti.png',n:'मिट्टी दीया',w:0.95,a:0.693,g:'deep'},
+ {src:'brand/parts/deep-swastik.png',n:'स्वस्तिक दीया',w:0.90,a:0.901,g:'deep'},
+ {src:'brand/parts/deep-tara.png',n:'तारा दीया',w:1.10,a:0.599,g:'deep'},
+ {src:'brand/parts/deep-patta.png',n:'पत्ता दीया',w:1.10,a:0.488,g:'deep'},
+ {src:'brand/parts/deep-hathi.png',n:'हाथी दीया',w:0.85,a:1.054,g:'deep'},
+ {src:'brand/parts/deep-shankh.png',n:'शंख दीया',w:1.20,a:0.476,g:'deep'},
+ {src:'brand/parts/deep-samai.png',n:'समाई दीया',w:0.45,a:2.451,g:'deep'},
+ {src:'brand/parts/deep-panch.png',n:'पंचारती',w:1.10,a:0.662,g:'deep'},
+ {src:'brand/parts/deep-urli.png',n:'उरली',w:1.20,a:0.484,g:'deep'},
+ {src:'brand/parts/deep-matki.png',n:'मटकी दीया',w:0.90,a:0.932,g:'deep'},
+ {src:'brand/parts/deep-step.png',n:'सीढ़ी दीया',w:0.80,a:1.204,g:'deep'},
+ {src:'brand/parts/s-ring.png',n:'S घेरा',w:1.35,a:1.009,g:'s'},
+ {src:'brand/parts/s-peacock.png',n:'S मोर',w:1.30,a:1.082,g:'s'},
+ {src:'brand/parts/s-wings.png',n:'S पंख-ताज',w:2.30,a:0.496,g:'s'},
+ {src:'brand/parts/s-mandala.png',n:'S मंडल',w:1.35,a:1.034,g:'s'},
+ {src:'brand/parts/a3d-01.png',n:'3D आम्बी १',w:0.72,a:1.523,g:'3d'},
+ {src:'brand/parts/a3d-02.png',n:'3D आम्बी २',w:0.72,a:1.812,g:'3d'},
+ {src:'brand/parts/a3d-03.png',n:'3D करली',w:0.72,a:1.020,g:'3d'},
+ {src:'brand/parts/a3d-04.png',n:'3D आम्बी ३',w:0.72,a:1.580,g:'3d'},
+ {src:'brand/parts/a3d-05.png',n:'3D जुड़वा',w:0.72,a:1.179,g:'3d'},
+ {src:'brand/parts/a3d-06.png',n:'3D कोना',w:0.72,a:1.014,g:'3d'},
+ {src:'brand/parts/a3d-07.png',n:'3D फूल',w:0.72,a:1.203,g:'3d'},
+ {src:'brand/parts/a3d-08.png',n:'3D बेल',w:0.72,a:1.061,g:'3d'},
+ {src:'brand/parts/a3d-09.png',n:'3D बूंद',w:0.72,a:1.715,g:'3d'},
 ];
 const TEMPLATES={
  blank:{ name:'खाली (पारदर्शी)', skin:'blank', bg:null, accent:'#d4af37', els:[] },
@@ -731,7 +784,9 @@ function drawEls(ctx,X,Y,W,H,t){
         if(im2&&im2.complete&&im2.naturalWidth){ const cp=e.crop||{};   /* ✂️ crop */
           const sl=(cp.l||0)*im2.naturalWidth, st2=(cp.t||0)*im2.naturalHeight;
           const sw=im2.naturalWidth*(1-(cp.l||0)-(cp.r||0)), sh2=im2.naturalHeight*(1-(cp.t||0)-(cp.b||0));
-          if(sw>4&&sh2>4) ctx.drawImage(im2,sl,st2,sw,sh2,X(e.x),Y(e.y),e.w||1,e.h||1); } }
+          if(sw>4&&sh2>4){ if(e.filt){ ctx.save(); ctx.filter=e.filt; }
+            ctx.drawImage(im2,sl,st2,sw,sh2,X(e.x),Y(e.y),e.w||1,e.h||1);
+            if(e.filt) ctx.restore(); } } }
     } else if(e.ty==='qr'){   /* 🔳 QR code */
       const q=e.qr||{}, key=(q.txt||'')+'|';
       if(!e._qc||e._qc.key!==key){ try{ const qr0=qrcode(0,'M'); qr0.addData(q.txt||' '); qr0.make();
@@ -1502,7 +1557,14 @@ function renderStudio(){
         qci.addEventListener('change',()=>stuSnap()); st.appendChild(qc); }); }
     if(e.ty==='img'){   /* ✂️ crop sliders */
       [[T('elCL'),'l'],[T('elCR'),'r'],[T('elCT'),'t'],[T('elCB'),'b']].forEach(([lb,kk])=>{
-        mkRange(lb,0,0.4,0.01,()=>((e.crop||{})[kk]||0),v=>{ e.crop=e.crop||{}; e.crop[kk]=v; }); }); }
+        mkRange(lb,0,0.4,0.01,()=>((e.crop||{})[kk]||0),v=>{ e.crop=e.crop||{}; e.crop[kk]=v; }); });
+      /* 🎨 पार्ट रंग — hue filter swatches */
+      const pfR=H('<div class="strow"><label>'+T('elPCol')+'</label><div class="stchips"></div></div>');
+      [['','pfGold'],['saturate(0) brightness(1.75)','pfSilver'],['hue-rotate(-20deg) saturate(1.3) brightness(1.08)','pfRose'],['hue-rotate(-14deg) brightness(0.85) saturate(1.15)','pfCopper'],['hue-rotate(-45deg) saturate(1.7)','pfRed'],['hue-rotate(80deg) saturate(1.15)','pfGreen'],['hue-rotate(190deg) saturate(1.1)','pfBlue'],['hue-rotate(245deg) saturate(1.1)','pfPurple'],['saturate(0.1) brightness(0.4)','pfBlack']].forEach(([f,kk])=>{
+        const b=document.createElement('button'); b.className='sbtn'+((e.filt||'')===f?' on':''); b.textContent=T(kk);
+        b.onclick=()=>{ e.filt=f||undefined; renderStudio(); studioPreview(); };
+        pfR.querySelector('.stchips').appendChild(b); });
+      st.appendChild(pfR); }
     if(e.ty!=='sparkle'&&e.ty!=='mandala'){
       const gl=H('<div class="strow"><label>'+T('stGlow')+'</label><div class="stchips"></div></div>');
       [[true,T('stOn')],[false,T('stOff')]].forEach(([v,lb])=>{ const b=document.createElement('button');
@@ -1586,22 +1648,32 @@ function openPartsPicker(){                    /* 🪔 Royal Parts picker — �
   const box=document.createElement('div');
   box.style.cssText='background:#1a2233;border:1px solid #3b4a63;border-radius:12px;padding:14px;max-width:560px;max-height:80vh;overflow:auto';
   box.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b style="color:#fbbf24">'+T('elParts')+'</b><button id="ptX" style="background:#7f1d1d;color:#fff;border:0;border-radius:6px;padding:4px 10px;cursor:pointer">✖</button></div>';
+  const tabs=document.createElement('div');
+  tabs.style.cssText='display:flex;gap:5px;flex-wrap:wrap;margin-bottom:9px';
   const grid=document.createElement('div');
   grid.style.cssText='display:grid;grid-template-columns:repeat(4,1fr);gap:8px';
-  PARTS.forEach(p=>{
-    const cell=document.createElement('button');
-    cell.style.cssText='background:#0c101e;border:1px solid #3b4a63;border-radius:8px;padding:6px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px';
-    const im=document.createElement('img'); im.src=p.src; im.alt=p.n;
-    im.style.cssText='max-width:100%;height:52px;object-fit:contain';
-    cell.appendChild(im);
-    const nm=document.createElement('span'); nm.textContent=p.n; nm.style.cssText='font-size:10px;color:#cbd5e1';
-    cell.appendChild(nm);
-    cell.onclick=()=>{ const dm9=cardDims(); const w9=Math.min(p.w,dm9.w*0.9), h9=w9*p.a;
-      c.els.push({ty:'img',src:p.src,x:(dm9.w-w9)/2,y:(dm9.h-h9)/2,w:w9,h:h9});
-      STU.sel=c.els.length-1; stuSnap(); renderStudio(); studioPreview(); document.body.removeChild(ov); };
-    grid.appendChild(cell);
-  });
-  box.appendChild(grid); ov.appendChild(box);
+  const renderGrid=(g)=>{
+    grid.innerHTML='';
+    [...tabs.children].forEach(b=>b.style.background=b.dataset.g===g?'#92400e':'#0c101e');
+    PARTS.filter(p=>!g||((p.g||'royal')===g)).forEach(p=>{
+      const cell=document.createElement('button');
+      cell.style.cssText='background:#0c101e;border:1px solid #3b4a63;border-radius:8px;padding:6px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px';
+      const im=document.createElement('img'); im.src=p.src; im.alt=p.n;
+      im.style.cssText='max-width:100%;height:52px;object-fit:contain';
+      cell.appendChild(im);
+      const nm=document.createElement('span'); nm.textContent=p.n; nm.style.cssText='font-size:10px;color:#cbd5e1';
+      cell.appendChild(nm);
+      cell.onclick=()=>{ const dm9=cardDims(); const w9=Math.min(p.w,dm9.w*0.9), h9=w9*p.a;
+        c.els.push({ty:'img',src:p.src,x:(dm9.w-w9)/2,y:(dm9.h-h9)/2,w:w9,h:h9});
+        STU.sel=c.els.length-1; stuSnap(); renderStudio(); studioPreview(); document.body.removeChild(ov); };
+      grid.appendChild(cell);
+    }); };
+  [['','ptAll'],['royal','ptRoyal'],['ammbi','ptAmmbi'],['deep','ptDeep'],['s','ptS'],['3d','pt3d']].forEach(([g,kk])=>{
+    const b=document.createElement('button'); b.dataset.g=g; b.textContent=T(kk);
+    b.style.cssText='background:#0c101e;color:#fde68a;border:1px solid #3b4a63;border-radius:6px;padding:3px 9px;cursor:pointer;font-size:11px';
+    b.onclick=()=>renderGrid(g); tabs.appendChild(b); });
+  box.appendChild(tabs); box.appendChild(grid); ov.appendChild(box);
+  renderGrid('');
   box.querySelector('#ptX').onclick=()=>document.body.removeChild(ov);
   ov.onclick=(ev)=>{ if(ev.target===ov) document.body.removeChild(ov); };
   document.body.appendChild(ov);
