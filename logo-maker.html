@@ -664,6 +664,9 @@ function drawOrbit(ctx,X,Y,W,H,t){
   ctx.shadowBlur=0;
   ctx.restore();
 }
+function _gMix(hx,tx,k){ try{ const p=v=>[parseInt(v.slice(1,3),16),parseInt(v.slice(3,5),16),parseInt(v.slice(5,7),16)];
+  if(!hx||hx[0]!=='#'||hx.length<7) return hx; const a=p(hx), b=p(tx);
+  return 'rgb('+a.map((v,i)=>Math.round(v+(b[i]-v)*k)).join(',')+')'; }catch(_){ return hx; } }
 function glowCol(t){ return t.grad==='silver'?'#eef6ff':(t.grad==='copper'?'#ffc79b':'#ffe98a'); }
 /* ❂ geometric mandala — original ornament (कोई copy नहीं) */
 function drawMandala(ctx,cx,cy,rad,col,alpha){
@@ -768,9 +771,9 @@ function elTok(s){ const d=S.data||{}; const nm=(d.biz||'').trim();
 function drawEls(ctx,X,Y,W,H,t){
   (t.els||[]).forEach(e=>{
     const fill=e.grad?metGrad(ctx,e.grad,X(0),Y(0),X(W),Y(H)):(e.c||t.accent||'#d4af37');
-    const _gm=e.glow?[0.35,1.0,2.3]:[1];   /* 🔥 neon: tight+mid+wide passes */
-    _gm.forEach(_m=>{ ctx.save();
-    if(e.glow){ ctx.shadowColor=e.glowC||glowCol({grad:e.grad||'gold'}); ctx.shadowBlur=(e.glow===true?0.022:e.glow)*SC*_m; }
+    const _gm=e.glow?[[0.16,'#ffffff',0.78],[0.45,'#ffffff',0.38],[1.0,null,0],[2.1,'#8a3c00',0.45]]:[[1,null,0]];   /* 🔥 neon: hot core→deep falloff */
+    _gm.forEach(_p=>{ const _m=_p[0]; ctx.save();
+    if(e.glow){ const _g0=e.glowC||glowCol({grad:e.grad||'gold'}); ctx.shadowColor=_p[1]?_gMix(_g0,_p[1],_p[2]):_g0; ctx.shadowBlur=(e.glow===true?0.022:e.glow)*SC*_m; }
     if(e.op!=null) ctx.globalAlpha=e.op;   /* 🌫️ opacity */
     if(e.shd){ ctx.shadowColor=e.shd.c||'rgba(0,0,0,0.55)'; ctx.shadowBlur=(e.shd.b==null?0.02:e.shd.b)*SC;   /* 💧 shadow */
       ctx.shadowOffsetX=(e.shd.x==null?0.03:e.shd.x)*SC; ctx.shadowOffsetY=(e.shd.y==null?0.03:e.shd.y)*SC; }
