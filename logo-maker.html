@@ -145,7 +145,7 @@ const STR={
    stOpen:'🎨 अपना Design बनाओ', stTitle:'🎨 Design Studio', stName:'Design का नाम', stNamePh:'जैसे: मेरा शाही card',
    stSkin:'Design की बनावट', skPlain:'सादा', skBar:'साइड line', skBandTop:'ऊपर band', skBandLeft:'बायाँ पैनल', skBlank:'⬜ खाली',
    stColors:'🎨 रंग', stBg:'पीछे का रंग', stAccent:'मुख्य रंग', stTx:'अक्षरों का रंग', stSub:'छोटे अक्षरों का रंग',
-   stIni:'पैनल पर अक्षर (जैसे CP) का रंग',
+   stHalo:'🔆 गरम रोशनी', elGlow:'🔆 Glow', stHalo:'🔆 Warm light', elGlow:'🔆 Glow', stIni:'पैनल पर अक्षर (जैसे CP) का रंग',
    stPat:'🧩 Background Pattern (Corel-जैसा)', patNone:'🚫 बंद', patH:'━ Lines', patV:'┃ Lines',
    patD:'╱ तिरछी', patD2:'✕ क्रॉस', patGrid:'▦ खाना', patDots:'• बिंदु',
    patC:'Pattern का रंग', patGap:'गैप (mm)',
@@ -315,17 +315,17 @@ const TEMPLATES={
    {ty:'img',src:'brand/parts/divider.png',x:1.065,y:1.58,w:1.20,h:0.155},
    {ty:'text',x:1.667,y:2.84,str:'{biz}',size:24,grad:'gold',fk:15,bold:true},
    {ty:'text',x:1.667,y:3.12,str:'{tag}',size:10.5,c:'#c9a227',fk:0} ] },
- rusticaura:{ name:'💡 Rustic लाइट्स', skin:'blank', prem:1, gen:1, bg:'#17110a', accent:'#e9c766', els:[
-   {ty:'shape',sh:'circle',c:'transparent',ol:{c:'#d4af37',w:0.016},x:0.165,y:0.42,w:3.0,h:3.0},
-   {ty:'img',src:'brand/parts/rustic-bulb-2.png',x:1.36,y:0.30,w:0.61,h:0.62},
-   {ty:'text',str:'{biz}',script:true,size:31,grad:'gold',x:1.665,y:1.60},
-   {ty:'text',str:'{tag}',fk:6,size:12,ls:5,bold:true,c:'#e8d9a0',x:1.665,y:2.04},
+ rusticaura:{ name:'💡 Rustic लाइट्स', skin:'blank', prem:1, gen:1, bg:'#17110a', accent:'#e9c766', halo:{c:'rgba(255,145,55,0.32)',y:0.40,r:0.85}, els:[
+   {ty:'shape',sh:'circle',c:'transparent',ol:{c:'#d4af37',w:0.016},glow:0.05,glowC:'#ffb45e',x:0.165,y:0.42,w:3.0,h:3.0},
+   {ty:'img',src:'brand/parts/rustic-bulb-2.png',glow:0.07,glowC:'#ffb45e',x:1.36,y:0.30,w:0.61,h:0.62},
+   {ty:'text',str:'{biz}',script:true,size:31,grad:'gold',glow:0.05,glowC:'#ffb45e',x:1.665,y:1.60},
+   {ty:'text',str:'{tag}',fk:6,size:12,ls:5,bold:true,c:'#e8d9a0',glow:0.03,glowC:'#ffb45e',x:1.665,y:2.04},
    {ty:'shape',sh:'rect',c:'#c8a24a',x:0.72,y:1.995,w:0.42,h:0.014},
    {ty:'shape',sh:'rect',c:'#c8a24a',x:2.19,y:1.995,w:0.42,h:0.014},
    {ty:'shape',sh:'rect',c:'#c8a24a',x:1.30,y:2.47,w:0.28,h:0.012},
    {ty:'text',str:'✦',fk:7,size:9,c:'#e9c766',x:1.665,y:2.52},
    {ty:'shape',sh:'rect',c:'#c8a24a',x:1.75,y:2.47,w:0.28,h:0.012},
-   {ty:'img',src:'brand/parts/rustic-bel-1.png',x:2.62,y:0.95,w:0.42,h:0.62,rot:-28} ] },
+   {ty:'img',src:'brand/parts/rustic-bel-1.png',glow:0.04,glowC:'#ffb45e',x:2.62,y:0.95,w:0.42,h:0.62,rot:-28} ] },
  royalwings:{ name:'🪔 पंख शाही', skin:'blank', prem:1, gen:1, bg:'#0c101e', accent:'#d4af37', els:[
    {ty:'img',src:'brand/parts/wings-diya.png',x:0.42,y:0.40,w:2.50,h:1.12},
    {ty:'text',x:1.667,y:1.92,str:'{biz}',size:30,grad:'gold',fk:15,bold:true},
@@ -755,7 +755,7 @@ function drawEls(ctx,X,Y,W,H,t){
   (t.els||[]).forEach(e=>{
     const fill=e.grad?metGrad(ctx,e.grad,X(0),Y(0),X(W),Y(H)):(e.c||t.accent||'#d4af37');
     ctx.save();
-    if(e.glow){ ctx.shadowColor=glowCol({grad:e.grad||'gold'}); ctx.shadowBlur=0.022*SC; }
+    if(e.glow){ ctx.shadowColor=e.glowC||glowCol({grad:e.grad||'gold'}); ctx.shadowBlur=(e.glow===true?0.022:e.glow)*SC; }
     if(e.op!=null) ctx.globalAlpha=e.op;   /* 🌫️ opacity */
     if(e.shd){ ctx.shadowColor=e.shd.c||'rgba(0,0,0,0.55)'; ctx.shadowBlur=(e.shd.b==null?0.02:e.shd.b)*SC;   /* 💧 shadow */
       ctx.shadowOffsetX=(e.shd.x==null?0.03:e.shd.x)*SC; ctx.shadowOffsetY=(e.shd.y==null?0.03:e.shd.y)*SC; }
@@ -873,6 +873,10 @@ function drawCardInto(ctx,t,d,OX,OY){
   const X=v=>OX+v, Y=v=>OY+v, dm=cardDims(), W=dm.w, H=dm.h, C=t.align==='center';
   /* background */
   if(t.bg){ ctx.fillStyle=t.gradBg?metGrad(ctx,t.gradBg,X(0),Y(0),X(W),Y(H)):(t.bg2?linGrad(ctx,t.bg,t.bg2,t.bgDir||'v',X(0),Y(0),X(W),Y(H)):t.bg); ctx.fillRect(X(0),Y(0),W,H); }   /* 🌈 bg2 gradient — bg:null = पारदर्शी */
+  if(t.halo){ const hx=X(W*(t.halo.x==null?0.5:t.halo.x)), hy=Y(H*(t.halo.y==null?0.42:t.halo.y)), hr=W*(t.halo.r||0.78);
+    const hg=ctx.createRadialGradient(hx,hy,0,hx,hy,hr);
+    hg.addColorStop(0,t.halo.c||'rgba(255,150,60,0.30)'); hg.addColorStop(1,'rgba(255,150,60,0)');
+    ctx.fillStyle=hg; ctx.fillRect(X(0),Y(0),W,H); }   /* 🔆 warm light halo */
   drawPattern(ctx,t.pat,X(0),Y(0),W,H);   /* 🧩 Corel-style wallpaper pattern */
   drawSparkle(ctx,t.sparkle,X(0),Y(0),W,H);   /* ✨ gold glitter */
   if(t.orbit) drawOrbit(ctx,X,Y,W,H,t);       /* 💫 comet swoosh */
@@ -1405,6 +1409,10 @@ function renderStudio(){
     const inp=r.querySelector('input'); inp.value=c[k]||'#334155';
     inp.oninput=()=>{ c[k]=inp.value; studioPreview(); };
     st.appendChild(r); });
+  const hlr=H('<div class="clrrow"><label>'+T('stHalo')+'</label></div>');
+  const hlb=document.createElement('button'); hlb.className='sbtn'+(c.halo?' on':''); hlb.textContent=c.halo?'✓ लगी':'नहीं';
+  hlb.onclick=()=>{ c.halo=c.halo?null:{c:'rgba(255,150,60,0.30)',y:0.42,r:0.78}; stuSnap(); renderStudio(); studioPreview(); };
+  hlr.appendChild(hlb); st.appendChild(hlr);
   /* ✒️ पैनल/initials रंग (bandLeft के CP जैसे) */
   const inir=H('<div class="clrrow"><label>'+T('stIni')+'</label><input type="color"></div>');
   const inii=inir.querySelector('input'); inii.value=c.ini||'#ffffff';
@@ -1575,6 +1583,7 @@ function renderStudio(){
       b.onclick=()=>{ e.grad=v||null; renderStudio(); studioPreview(); };
       gr.querySelector('.stchips').appendChild(b); });
     st.appendChild(gr);
+    mkRange(T('elGlow'),0,0.15,0.005,()=>e.glow===true?0.022:(e.glow||0),v=>{ e.glow=v||null; if(v&&!e.glowC) e.glowC=null; });
     /* 🎨 Phase 2 — Opacity / Outline / Shadow / Rotate / Spacing */
     mkRange(T('elOp'),15,100,5,()=>Math.round((e.op==null?1:e.op)*100),v=>e.op=(v>=100?null:v/100));
     if(e.ty==='shape'||e.ty==='text'){ const olr=H('<div class="clrrow"><label>'+T('elOut')+'</label><input type="color"></div>');
