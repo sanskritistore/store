@@ -329,17 +329,17 @@ const TEMPLATES={
    {ty:'img',src:'brand/parts/rustic-bel-1.png',glow:0.04,glowC:'#ffb45e',x:2.62,y:0.95,w:0.42,h:0.62,rot:-28} ] },
  rusticwall:{ name:'💡 Rustic Wall', skin:'blank', prem:1, gen:1, bg:'#d8c8ae', accent:'#1b1512',
    halo:[{c:'rgba(255,244,222,0.75)',y:0.34,r:0.95},{c:'rgba(110,85,55,0.28)',y:1.02,r:0.75,c2:'rgba(110,85,55,0)'}], els:[
-   {ty:'shape',sh:'circle',c:'transparent',ol:{c:'#1b1512',w:0.020},glow:0.09,glowC:'#ff8c1a',x:0.315,y:0.30,w:2.7,h:2.7},
-   {ty:'img',src:'brand/parts/rustic-bulb-black.png',glow:0.10,glowC:'#ffb45e',x:1.405,y:0.28,w:0.52,h:0.97},
-   {ty:'text',str:'{biz}',script:true,size:34,c:'#1b1512',glow:0.07,glowC:'#ff9a2e',x:1.665,y:1.52},
-   {ty:'text',str:'{tag}',fk:6,size:11,ls:5,bold:true,c:'#1b1512',glow:0.05,glowC:'#ff9a2e',x:1.665,y:2.02},
+   {ty:'shape',sh:'circle',c:'transparent',ol:{c:'#1b1512',w:0.020},glow:0.12,glowC:'#ff8400',x:0.315,y:0.30,w:2.7,h:2.7},
+   {ty:'img',src:'brand/parts/rustic-bulb-black.png',glow:0.14,glowC:'#ff9a2e',x:1.405,y:0.28,w:0.52,h:0.97},
+   {ty:'text',str:'{biz}',script:true,size:34,c:'#1b1512',glow:0.09,glowC:'#ff8400',x:1.665,y:1.52},
+   {ty:'text',str:'{tag}',fk:6,size:11,ls:5,bold:true,c:'#1b1512',glow:0.07,glowC:'#ff8400',x:1.665,y:2.02},
    {ty:'shape',sh:'rect',c:'#1b1512',glow:0.03,glowC:'#ff9a2e',x:0.72,y:1.975,w:0.42,h:0.016},
    {ty:'shape',sh:'rect',c:'#1b1512',glow:0.03,glowC:'#ff9a2e',x:2.19,y:1.975,w:0.42,h:0.016},
    {ty:'text',str:'Designed to Inspire',fk:11,ital:true,size:7.5,c:'#3a2f26',x:1.665,y:2.24},
    {ty:'shape',sh:'rect',c:'#1b1512',x:1.32,y:2.40,w:0.26,h:0.013},
    {ty:'text',str:'✦',fk:7,size:8.5,c:'#1b1512',x:1.665,y:2.45},
    {ty:'shape',sh:'rect',c:'#1b1512',x:1.75,y:2.40,w:0.26,h:0.013},
-   {ty:'img',src:'brand/parts/rustic-bel-1.png',filt:'saturate(0.1) brightness(0.4)',glow:0.06,glowC:'#ff9a2e',x:2.56,y:0.98,w:0.44,h:0.65,rot:-22} ] },
+   {ty:'img',src:'brand/parts/rustic-bel-1.png',filt:'saturate(0.1) brightness(0.4)',glow:0.08,glowC:'#ff8400',x:2.56,y:0.98,w:0.44,h:0.65,rot:-22} ] },
  royalwings:{ name:'🪔 पंख शाही', skin:'blank', prem:1, gen:1, bg:'#0c101e', accent:'#d4af37', els:[
    {ty:'img',src:'brand/parts/wings-diya.png',x:0.42,y:0.40,w:2.50,h:1.12},
    {ty:'text',x:1.667,y:1.92,str:'{biz}',size:30,grad:'gold',fk:15,bold:true},
@@ -1311,6 +1311,7 @@ function attachElDrag(cv){
         STU.elRs={i:STU.sel, w0:e0.w||e0.r||0.5, h0:e0.h||e0.r||0.5, sz0:e0.size||9, len0:e0.len||1, x0:p.x, y0:p.y};
         ev.preventDefault(); return; } }
     for(let i=els.length-1;i>=0;i--){ if(els[i].lock) continue; if(elHit(els[i],p.x,p.y,dm.w,dm.h)){
+      if(STU.sel!==i){ STU._rpShape=null; STU._rpPts=null; STU._rpDraw=null; }
       STU.sel=i; STU.txSel=null; STU.drag={dx:p.x-els[i].x,dy:p.y-els[i].y};
       renderStudio(); studioPreview(); ev.preventDefault(); return; } }
     /* 👆 text पर click? */
@@ -1318,7 +1319,7 @@ function attachElDrag(cv){
     Object.keys(th).forEach(rr=>{ const b=th[rr];
       if(p.x>=b.x0-pad2&&p.x<=b.x1+pad2&&p.y>=b.y0-pad2&&p.y<=b.y1+pad2) role=rr; });
     if(role){ if(STU.txSel!==role){ STU.txSel=role; STU.sel=null; renderStudio(); studioPreview(); } ev.preventDefault(); return; }
-    if(STU.sel!=null||STU.txSel){ STU.sel=null; STU.txSel=null; renderStudio(); studioPreview(); } };
+    if(STU.sel!=null||STU.txSel){ STU.sel=null; STU.txSel=null; STU._rpShape=null; STU._rpPts=null; STU._rpDraw=null; renderStudio(); studioPreview(); } };
   cv.addEventListener('mousedown',down);
   cv.addEventListener('touchstart',down,{passive:false});
   if(ELWIRED) return; ELWIRED=true;
@@ -1597,7 +1598,7 @@ function renderStudio(){
       b.onclick=()=>{ e.grad=v||null; renderStudio(); studioPreview(); };
       gr.querySelector('.stchips').appendChild(b); });
     st.appendChild(gr);
-    mkRange(T('elGlow'),0,0.15,0.005,()=>e.glow===true?0.022:(e.glow||0),v=>{ e.glow=v||null; if(v&&!e.glowC) e.glowC=null; });
+    mkRange(T('elGlow'),0,0.30,0.01,()=>e.glow===true?0.022:(e.glow||0),v=>{ e.glow=v||null; if(v&&!e.glowC) e.glowC=null; });
     /* 🎨 Phase 2 — Opacity / Outline / Shadow / Rotate / Spacing */
     mkRange(T('elOp'),15,100,5,()=>Math.round((e.op==null?1:e.op)*100),v=>e.op=(v>=100?null:v/100));
     if(e.ty==='shape'||e.ty==='text'){ const olr=H('<div class="clrrow"><label>'+T('elOut')+'</label><input type="color"></div>');
@@ -1867,7 +1868,7 @@ function openPartsPicker(){                    /* 🪔 Royal Parts picker — �
       const nm=document.createElement('span'); nm.textContent=p.n; nm.style.cssText='font-size:10px;color:#cbd5e1';
       cell.appendChild(nm);
       cell.onclick=()=>{ if(STU._pickMala){ STU._pickMala.src=p.src; const im3=logoImg(p.src); STU._pickMala=null; stuSnap(); renderStudio(); studioPreview(); document.body.removeChild(ov); return; }
-      const dm9=cardDims(); const w9=Math.min(p.w,dm9.w*0.9), h9=w9*p.a;
+      const dm9=cardDims(); const w9=Math.min(p.w,dm9.w*0.9), h9=w9/(p.a||1);
         c.els.push({ty:'img',src:p.src,x:(dm9.w-w9)/2,y:(dm9.h-h9)/2,w:w9,h:h9});
         STU.sel=c.els.length-1; stuSnap(); renderStudio(); studioPreview(); document.body.removeChild(ov); };
       grid.appendChild(cell);
