@@ -98,19 +98,21 @@ const SHOP={
   types:[['bw','⚫ B&W'],['color','🎨 Color']],
   sizes:[['a4','A4'],['a3','A3'],['photo','4x6 Photo']],
   sides:[['single','एक तरफ़'],['both','दोनों तरफ़']],
-  maxCopies:100, maxMB:50
+  maxCopies:100, maxMB:50,
+  /* ₹ rate per पेज (per printed side) — हर type+size का */
+  prices:{ bw:{a4:2,a3:5,photo:5}, color:{a4:10,a3:20,photo:30} }
 };
 const STR={
-hi:{fT:'अपनी File चुनिए',dzT:'PDF या Photo चुनने के लिए यहाँ दबाइए',dzS:'PDF • JPG • PNG',oT:'Print Options चुनिए',oType:'प्रिंट कैसा?',oSize:'कागज़ size?',oSide:'एक तरफ़ या दोनों?',oCop:'कितनी copies?',oCopH:'(1 से 100 तक)',sT:'आपका Order',sN:'भेजने के बाद दुकान पर price पता चल जाएगा',hT:'कैसे काम करता है?',bT:'📲 WhatsApp पर Order भेजिए',pw:'संस्कृति से बना',
-  how:'<b>1.</b> File चुनिए — पेज अपने-आप गिनेंगे<br><b>2.</b> Options चुनिए<br><b>3.</b> WhatsApp पर भेजिए<br><b>4.</b> दुकान price बताएगी → pay कीजिए → print तैयार! 🎉',
-  fName:'File',fPages:'पेज',fType:'प्रिंट',fSize:'कागज़',fSide:'तरफ़',fCop:'Copies',fOrd:'Order ID',fShop:'दुकान',
+hi:{fT:'अपनी File चुनिए',dzT:'PDF या Photo चुनने के लिए यहाँ दबाइए',dzS:'PDF • JPG • PNG',oT:'Print Options चुनिए',oType:'प्रिंट कैसा?',oSize:'कागज़ size?',oSide:'एक तरफ़ या दोनों?',oCop:'कितनी copies?',oCopH:'(1 से 100 तक)',sT:'आपका Order',sN:'आखिरी price दुकान approve करते समय confirm होगी',hT:'कैसे काम करता है?',bT:'📲 WhatsApp पर Order भेजिए',pw:'संस्कृति से बना',
+  how:'<b>1.</b> File चुनिए — पेज अपने-आप गिनेंगे<br><b>2.</b> Options चुनिए — <b>price तुरंत दिखेगा</b><br><b>3.</b> WhatsApp पर order भेजिए<br><b>4.</b> दुकान <b>approve</b> करेगी → WhatsApp पर सूचना → pay → print तैयार! 🎉<br><b>🔒 बिना दुकान की permission के print नहीं होगा</b>',
+  fName:'File',fPages:'पेज',fType:'प्रिंट',fSize:'कागज़',fSide:'तरफ़',fCop:'Copies',fOrd:'Order ID',fShop:'दुकान',fPrice:'अंदाज़ी Price',fWait:'⏳ दुकान की permission के बाद ही print होगा',
   eBig:'⚠️ File बहुत बड़ी है (50MB से कम चुनिए)',ePdf:'⚠️ PDF पढ़ी नहीं गई — फिर कोशिश कीजिए',pg:'पेज गिन रहे हैं…',img:'1 पेज (photo)',
-  wmsg:(o)=>`🖨️ नया Print Order ${o.id}\n📄 File: ${o.name} (${o.pages} पेज)\n⚙️ ${o.type} | ${o.size} | ${o.side} | ${o.copies} copies\n🙏 कृपया price बताइए`},
-en:{fT:'Choose your File',dzT:'Tap here to choose PDF or Photo',dzS:'PDF • JPG • PNG',oT:'Choose Print Options',oType:'Print type?',oSize:'Paper size?',oSide:'One side or both?',oCop:'How many copies?',oCopH:'(1 to 100)',sT:'Your Order',sN:'Shop will tell the price after you send',hT:'How does it work?',bT:'📲 Send Order on WhatsApp',pw:'Made by Sanskriti',
-  how:'<b>1.</b> Choose file — pages counted automatically<br><b>2.</b> Choose options<br><b>3.</b> Send on WhatsApp<br><b>4.</b> Shop tells price → pay → print ready! 🎉',
-  fName:'File',fPages:'Pages',fType:'Print',fSize:'Paper',fSide:'Side',fCop:'Copies',fOrd:'Order ID',fShop:'Shop',
+  wmsg:(o)=>`🖨️ नया Print Order ${o.id}\n📄 File: ${o.name} (${o.pages} पेज)\n⚙️ ${o.type} | ${o.size} | ${o.side} | ${o.copies} copies\n💰 अंदाज़ी Price: ₹${o.price}\n⏳ कृपया approve करें — आपकी सूचना का इंतज़ार रहेगा`},
+en:{fT:'Choose your File',dzT:'Tap here to choose PDF or Photo',dzS:'PDF • JPG • PNG',oT:'Choose Print Options',oType:'Print type?',oSize:'Paper size?',oSide:'One side or both?',oCop:'How many copies?',oCopH:'(1 to 100)',sT:'Your Order',sN:'Shop confirms the final price on approval',hT:'How does it work?',bT:'📲 Send Order on WhatsApp',pw:'Made by Sanskriti',
+  how:'<b>1.</b> Choose file — pages counted automatically<br><b>2.</b> Choose options — <b>price shows instantly</b><br><b>3.</b> Send order on WhatsApp<br><b>4.</b> Shop <b>approves</b> → WhatsApp message → pay → print ready! 🎉<br><b>🔒 No printing without shop permission</b>',
+  fName:'File',fPages:'Pages',fType:'Print',fSize:'Paper',fSide:'Side',fCop:'Copies',fOrd:'Order ID',fShop:'Shop',fPrice:'Est. Price',fWait:'⏳ Prints only after shop approval',
   eBig:'⚠️ File too big (choose under 50MB)',ePdf:'⚠️ Could not read PDF — try again',pg:'Counting pages…',img:'1 page (photo)',
-  wmsg:(o)=>`🖨️ New Print Order ${o.id}\n📄 File: ${o.name} (${o.pages} pages)\n⚙️ ${o.type} | ${o.size} | ${o.side} | ${o.copies} copies\n🙏 Please tell the price`}
+  wmsg:(o)=>`🖨️ New Print Order ${o.id}\n📄 File: ${o.name} (${o.pages} pages)\n⚙️ ${o.type} | ${o.size} | ${o.side} | ${o.copies} copies\n💰 Est. Price: ₹${o.price}\n⏳ Please approve — waiting for your message`}
 };
 /* ================= ENGINE ================= */
 let LANG='hi', FILE=null, PAGES=0;
@@ -155,6 +157,11 @@ function showFile(extra){
   const mb=(FILE.size/1048576).toFixed(1);
   $('finfo').innerHTML='📄 <b>'+FILE.name+'</b> &nbsp;•&nbsp; '+mb+' MB &nbsp;•&nbsp; <b>'+(PAGES||'—')+'</b> '+(extra||T('fPages').toLowerCase());
 }
+function calcPrice(){
+  if(!FILE||!PAGES) return 0;
+  const rate=(SHOP.prices[opt.type]||{})[opt.size]||0;
+  return rate*PAGES*opt.copies;
+}
 function renderSlip(){
   if(!FILE){ $('slipCard').style.display='none'; $('sendBtn').classList.add('off'); return; }
   $('slipCard').style.display='block'; $('sendBtn').classList.remove('off');
@@ -167,13 +174,15 @@ function renderSlip(){
     '<div class="row"><span>'+L.fType+'</span><span>'+lb(SHOP.types,opt.type)+'</span></div>'+
     '<div class="row"><span>'+L.fSize+'</span><span>'+lb(SHOP.sizes,opt.size)+'</span></div>'+
     '<div class="row"><span>'+L.fSide+'</span><span>'+lb(SHOP.sides,opt.side)+'</span></div>'+
-    '<div class="row"><span>'+L.fCop+'</span><span>'+opt.copies+'</span></div>';
+    '<div class="row"><span>'+L.fCop+'</span><span>'+opt.copies+'</span></div>'+
+    '<div class="row" style="border-top:1px dashed #d4af37;margin-top:4px;padding-top:6px"><span>'+L.fPrice+'</span><span style="color:#f6e27a;font-size:17px;font-weight:800">₹'+calcPrice()+'</span></div>'+
+    '<div style="font-size:11px;color:#fbbf24;margin-top:6px">'+L.fWait+'</div>';
 }
 $('sendBtn').onclick=()=>{
   if(!FILE) return;
   const msg=STR[LANG].wmsg({id:OID,name:FILE.name,pages:PAGES||1,
     type:SHOP.types.find(x=>x[0]===opt.type)[1],size:SHOP.sizes.find(x=>x[0]===opt.size)[1],
-    side:SHOP.sides.find(x=>x[0]===opt.side)[1],copies:opt.copies});
+    side:SHOP.sides.find(x=>x[0]===opt.side)[1],copies:opt.copies,price:calcPrice()});
   window.open('https://wa.me/'+SHOP.wa+'?text='+encodeURIComponent(msg),'_blank');
 };
 applyLang();
