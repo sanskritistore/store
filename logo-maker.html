@@ -1323,7 +1323,7 @@ function attachElDrag(cv){
     Object.keys(th).forEach(rr=>{ const b=th[rr];
       if(p.x>=b.x0-pad2&&p.x<=b.x1+pad2&&p.y>=b.y0-pad2&&p.y<=b.y1+pad2) role=rr; });
     if(role){ if(STU.txSel!==role){ STU.txSel=role; STU.sel=null; renderStudio(); studioPreview(); } ev.preventDefault(); return; }
-    if(STU.sel!=null||STU.txSel){ STU.sel=null; STU.txSel=null; STU._rpShape=null; STU._rpPts=null; STU._rpDraw=null; renderStudio(); studioPreview(); } };
+    if(STU.sel!=null||STU.txSel){ STU.sel=null; STU.txSel=null; renderStudio(); studioPreview(); } };
   cv.addEventListener('mousedown',down);
   cv.addEventListener('touchstart',down,{passive:false});
   if(ELWIRED) return; ELWIRED=true;
