@@ -305,6 +305,7 @@ const PARTS=[
  {src:'brand/parts/rustic-bel-2.png',n:'घुमाव बेल',w:0.72,a:0.883,g:'rustic'},
  {src:'brand/parts/rustic-bel-3.png',n:'झुल बेल',w:0.72,a:0.676,g:'rustic'},
  {src:'brand/parts/rustic-bel-4.png',n:'फूल बेल',w:0.72,a:0.696,g:'rustic'},
+ {src:'brand/parts/rustic-bulb-black.png',n:'काला बल्ब',w:0.72,a:0.537,g:'rustic'},
 ];
 const TEMPLATES={
  blank:{ name:'खाली (पारदर्शी)', skin:'blank', bg:null, accent:'#d4af37', els:[] },
@@ -315,7 +316,7 @@ const TEMPLATES={
    {ty:'img',src:'brand/parts/divider.png',x:1.065,y:1.58,w:1.20,h:0.155},
    {ty:'text',x:1.667,y:2.84,str:'{biz}',size:24,grad:'gold',fk:15,bold:true},
    {ty:'text',x:1.667,y:3.12,str:'{tag}',size:10.5,c:'#c9a227',fk:0} ] },
- rusticaura:{ name:'💡 Rustic लाइट्स', skin:'blank', prem:1, gen:1, bg:'#17110a', accent:'#e9c766', halo:{c:'rgba(255,145,55,0.32)',y:0.40,r:0.85}, els:[
+ rusticaura:{ name:'💡 Rustic Dark', skin:'blank', prem:1, gen:1, bg:'#17110a', accent:'#e9c766', halo:{c:'rgba(255,145,55,0.32)',y:0.40,r:0.85}, els:[
    {ty:'shape',sh:'circle',c:'transparent',ol:{c:'#d4af37',w:0.016},glow:0.05,glowC:'#ffb45e',x:0.165,y:0.42,w:3.0,h:3.0},
    {ty:'img',src:'brand/parts/rustic-bulb-2.png',glow:0.07,glowC:'#ffb45e',x:1.36,y:0.30,w:0.61,h:0.62},
    {ty:'text',str:'{biz}',script:true,size:31,grad:'gold',glow:0.05,glowC:'#ffb45e',x:1.665,y:1.60},
@@ -326,6 +327,19 @@ const TEMPLATES={
    {ty:'text',str:'✦',fk:7,size:9,c:'#e9c766',x:1.665,y:2.52},
    {ty:'shape',sh:'rect',c:'#c8a24a',x:1.75,y:2.47,w:0.28,h:0.012},
    {ty:'img',src:'brand/parts/rustic-bel-1.png',glow:0.04,glowC:'#ffb45e',x:2.62,y:0.95,w:0.42,h:0.62,rot:-28} ] },
+ rusticwall:{ name:'💡 Rustic Wall', skin:'blank', prem:1, gen:1, bg:'#d8c8ae', accent:'#1b1512',
+   halo:[{c:'rgba(255,244,222,0.75)',y:0.34,r:0.95},{c:'rgba(110,85,55,0.28)',y:1.02,r:0.75,c2:'rgba(110,85,55,0)'}], els:[
+   {ty:'shape',sh:'circle',c:'transparent',ol:{c:'#1b1512',w:0.020},glow:0.09,glowC:'#ff8c1a',x:0.315,y:0.30,w:2.7,h:2.7},
+   {ty:'img',src:'brand/parts/rustic-bulb-black.png',glow:0.10,glowC:'#ffb45e',x:1.405,y:0.28,w:0.52,h:0.97},
+   {ty:'text',str:'{biz}',script:true,size:34,c:'#1b1512',glow:0.07,glowC:'#ff9a2e',x:1.665,y:1.52},
+   {ty:'text',str:'{tag}',fk:6,size:11,ls:5,bold:true,c:'#1b1512',glow:0.05,glowC:'#ff9a2e',x:1.665,y:2.02},
+   {ty:'shape',sh:'rect',c:'#1b1512',glow:0.03,glowC:'#ff9a2e',x:0.72,y:1.975,w:0.42,h:0.016},
+   {ty:'shape',sh:'rect',c:'#1b1512',glow:0.03,glowC:'#ff9a2e',x:2.19,y:1.975,w:0.42,h:0.016},
+   {ty:'text',str:'Designed to Inspire',fk:11,ital:true,size:7.5,c:'#3a2f26',x:1.665,y:2.24},
+   {ty:'shape',sh:'rect',c:'#1b1512',x:1.32,y:2.40,w:0.26,h:0.013},
+   {ty:'text',str:'✦',fk:7,size:8.5,c:'#1b1512',x:1.665,y:2.45},
+   {ty:'shape',sh:'rect',c:'#1b1512',x:1.75,y:2.40,w:0.26,h:0.013},
+   {ty:'img',src:'brand/parts/rustic-bel-1.png',filt:'saturate(0.1) brightness(0.4)',glow:0.06,glowC:'#ff9a2e',x:2.56,y:0.98,w:0.44,h:0.65,rot:-22} ] },
  royalwings:{ name:'🪔 पंख शाही', skin:'blank', prem:1, gen:1, bg:'#0c101e', accent:'#d4af37', els:[
    {ty:'img',src:'brand/parts/wings-diya.png',x:0.42,y:0.40,w:2.50,h:1.12},
    {ty:'text',x:1.667,y:1.92,str:'{biz}',size:30,grad:'gold',fk:15,bold:true},
@@ -873,10 +887,10 @@ function drawCardInto(ctx,t,d,OX,OY){
   const X=v=>OX+v, Y=v=>OY+v, dm=cardDims(), W=dm.w, H=dm.h, C=t.align==='center';
   /* background */
   if(t.bg){ ctx.fillStyle=t.gradBg?metGrad(ctx,t.gradBg,X(0),Y(0),X(W),Y(H)):(t.bg2?linGrad(ctx,t.bg,t.bg2,t.bgDir||'v',X(0),Y(0),X(W),Y(H)):t.bg); ctx.fillRect(X(0),Y(0),W,H); }   /* 🌈 bg2 gradient — bg:null = पारदर्शी */
-  if(t.halo){ const hx=X(W*(t.halo.x==null?0.5:t.halo.x)), hy=Y(H*(t.halo.y==null?0.42:t.halo.y)), hr=W*(t.halo.r||0.78);
+  (Array.isArray(t.halo)?t.halo:(t.halo?[t.halo]:[])).forEach(hl=>{ const hx=X(W*(hl.x==null?0.5:hl.x)), hy=Y(H*(hl.y==null?0.42:hl.y)), hr=W*(hl.r||0.78);
     const hg=ctx.createRadialGradient(hx,hy,0,hx,hy,hr);
-    hg.addColorStop(0,t.halo.c||'rgba(255,150,60,0.30)'); hg.addColorStop(1,'rgba(255,150,60,0)');
-    ctx.fillStyle=hg; ctx.fillRect(X(0),Y(0),W,H); }   /* 🔆 warm light halo */
+    hg.addColorStop(0,hl.c||'rgba(255,150,60,0.30)'); hg.addColorStop(1,(hl.c2||'rgba(255,150,60,0)'));
+    ctx.fillStyle=hg; ctx.fillRect(X(0),Y(0),W,H); });   /* 🔆 warm light halo (array ok) */
   drawPattern(ctx,t.pat,X(0),Y(0),W,H);   /* 🧩 Corel-style wallpaper pattern */
   drawSparkle(ctx,t.sparkle,X(0),Y(0),W,H);   /* ✨ gold glitter */
   if(t.orbit) drawOrbit(ctx,X,Y,W,H,t);       /* 💫 comet swoosh */
