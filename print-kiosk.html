@@ -101,7 +101,8 @@ const SHOP={
   sides:[['single','एक तरफ़'],['both','दोनों तरफ़']],
   maxCopies:100, maxMB:50,
   /* ₹ rate per पेज (per printed side) — हर type+size का */
-  prices:{ bw:{a4:2,a3:5,photo:5}, color:{a4:10,a3:20,photo:30} },
+  prices:{ bw:{a4:{single:3,both:2},a3:{single:6,both:5},photo:{single:5,both:5}},
+           color:{a4:{single:10,both:10},a3:{single:20,both:20},photo:{single:30,both:30}} },
   /* दुकान की machines */
   printers:[['bw','⚫ Canon iR 3245 (B&W)'],['color','🎨 Canon iR C3326 (Color)'],['photo','📷 Epson L805 (Photo)'],['plot','📐 Canon T5350 (Maps/Poster)']],
   /* type+size → अपने-आप machine (customer बदल सकता है) */
@@ -163,10 +164,14 @@ function showFile(extra){
   const mb=(FILE.size/1048576).toFixed(1);
   $('finfo').innerHTML='📄 <b>'+FILE.name+'</b> &nbsp;•&nbsp; '+mb+' MB &nbsp;•&nbsp; <b>'+(PAGES||'—')+'</b> '+(extra||T('fPages').toLowerCase());
 }
+function calcRate(){
+  const t=(SHOP.prices[opt.type]||{})[opt.size];
+  if(!t) return 0;
+  return (typeof t==='object')? (t[opt.side]||0) : t;
+}
 function calcPrice(){
   if(!FILE||!PAGES) return 0;
-  const rate=(SHOP.prices[opt.type]||{})[opt.size]||0;
-  return rate*PAGES*opt.copies;
+  return calcRate()*PAGES*opt.copies;
 }
 function renderSlip(){
   if(!FILE){ $('slipCard').style.display='none'; $('sendBtn').classList.add('off'); return; }
@@ -183,6 +188,7 @@ function renderSlip(){
     '<div class="row"><span>'+L.fPr+'</span><span>'+lb(SHOP.printers,opt.printer)+'</span></div>'+
     '<div class="row"><span>'+L.fCop+'</span><span>'+opt.copies+'</span></div>'+
     '<div class="row" style="border-top:1px dashed #d4af37;margin-top:4px;padding-top:6px"><span>'+L.fPrice+'</span><span style="color:#f6e27a;font-size:17px;font-weight:800">₹'+calcPrice()+'</span></div>'+
+    '<div style="font-size:11px;color:#94a3b8;text-align:right">(₹'+calcRate()+' × '+(PAGES||1)+' sides × '+opt.copies+' copies)</div>'+
     '<div style="font-size:11px;color:#fbbf24;margin-top:6px">'+L.fWait+'</div>';
 }
 $('sendBtn').onclick=()=>{
