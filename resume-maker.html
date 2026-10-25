@@ -712,14 +712,22 @@ function persistCustomTpls(){ const o={};
   localStorage.setItem(STKEY, JSON.stringify(o)); }
 Object.assign(TEMPLATES, loadCustomTpls());
 
-const STU={ open:false, editId:null, cfg:null };
-function studioPreview(){ TEMPLATES._studio=STU.cfg; S.tpl='_studio'; draw(); }
+const STU={ open:false, editId:null, cfg:null, hist:[], hi:-1 };
+/* ↶↷ Template Studio undo — phone के लिए (keyboard शॉर्टकट नहीं होता phone पर) */
+function stuSnap(){ if(!STU.cfg) return; const j=JSON.stringify(STU.cfg);
+  if(STU.hi>=0&&STU.hist[STU.hi]===j) return;
+  STU.hist=STU.hist.slice(0,STU.hi+1); STU.hist.push(j); if(STU.hist.length>50) STU.hist.shift();
+  STU.hi=STU.hist.length-1; }
+function stuUndo(){ if(STU.hi>0){ STU.hi--; STU.cfg=JSON.parse(STU.hist[STU.hi]); renderStudio(); studioPreview(); toast('↩️ वापस'); } }
+function stuRedo(){ if(STU.hi<STU.hist.length-1){ STU.hi++; STU.cfg=JSON.parse(STU.hist[STU.hi]); renderStudio(); studioPreview(); toast('↪️ आगे'); } }
+function studioPreview(){ TEMPLATES._studio=STU.cfg; S.tpl='_studio';
+  if(STU._snapT) clearTimeout(STU._snapT); STU._snapT=setTimeout(()=>{ try{stuSnap();}catch(_){}} ,350); draw(); }
 function openStudio(baseId){
   const base=TEMPLATES[baseId||S.tpl]||TEMPLATES.simple;
   STU.cfg=JSON.parse(JSON.stringify(base));
   STU.cfg.name=(baseId&&TEMPLATES[baseId].custom)?base.name:'';
   STU.editId=(baseId&&TEMPLATES[baseId].custom)?baseId:null;
-  STU.open=true; renderStudio(); studioPreview();
+  STU.hist=[]; STU.hi=-1; STU.open=true; renderStudio(); studioPreview(); stuSnap();
   try{ if(window.matchMedia&&matchMedia('(max-width:768px)').matches){ document.body.classList.add('stumob');
     window.scrollTo(0,0); } }catch(_){ }
 }
@@ -733,6 +741,16 @@ function renderStudio(){
   const c=STU.cfg, en=S.ui==='en', sn=T('secNames');
   const H=(html)=>{ const d=document.createElement('div'); d.innerHTML=html; return d.firstElementChild; };
   st.appendChild(H('<h3>'+T('stTitle')+'<button class="x" id="stX">✖</button></h3>'));
+  /* 📱 phone: undo/redo buttons (सिर्फ़ छोटी screen पर) */
+  if(window.matchMedia&&matchMedia('(max-width:768px)').matches){
+    const ub=document.createElement('div');
+    ub.style.cssText='display:flex;gap:6px;background:#0f172a;border:1px solid #2c3a4f;border-radius:10px;padding:6px;margin:2px 0 8px';
+    [['↶ वापस',()=>stuUndo(),STU.hi<=0],['↷ आगे',()=>stuRedo(),STU.hi>=STU.hist.length-1]].forEach(([t,fn,dis])=>{
+      const b=document.createElement('button'); b.className='sbtn'; b.textContent=t;
+      b.style.cssText='flex:1;min-height:42px;font-size:15px'+(dis?';opacity:.32':''); b.disabled=!!dis;
+      if(!dis) b.onclick=fn; ub.appendChild(b); });
+    st.appendChild(ub);
+  }
   st.querySelector('#stX').onclick=closeStudio;
   /* नाम */
   const nm=H('<div class="strow"><label>'+T('stName')+'</label><input style="width:100%;background:#0f172a;border:1px solid #334155;color:#e2e8f0;padding:7px 9px;border-radius:7px;font-size:13px" placeholder="'+T('stNamePh')+'"></div>');
