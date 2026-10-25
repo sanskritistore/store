@@ -389,7 +389,9 @@ function fontPickBtn(cur,onPick,dis){
   sp.style.cssText='font-size:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
   if(FONTS[cur]) sp.style.fontFamily=FONTS[cur].css;
   b.appendChild(sp); b.appendChild(document.createTextNode('\u25BE'));
-  if(dis){ b.disabled=true; b.style.opacity=0.45; wrap.appendChild(b); return wrap; }
+  if(dis){ b.style.opacity=0.45; b.onclick=(ev)=>{ ev.stopPropagation(); ev.preventDefault();
+      try{ toast('☝️ पहले ऊपर से कोई text चुनो — फिर font की list खुलेगी'); }catch(_){ } };
+    wrap.appendChild(b); return wrap; }
   b.onclick=(ev)=>{ ev.stopPropagation(); ev.preventDefault();
     if(wrap.querySelector('.fmenu')){ closeFontMenus(); return; }
     closeFontMenus();
