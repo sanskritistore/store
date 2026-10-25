@@ -46,6 +46,7 @@ document.getElementById('copyBtn').onclick=()=>{
   document.getElementById('copyBtn').textContent='✅ Copy हो गया!';
   setTimeout(()=>document.getElementById('copyBtn').textContent='📋 UPI ID Copy करो',2000);
 };
-const doneMsg='💰 Payment कर दी! ₹'+AMT+(OID?' — Order #'+OID:'')+'\n(सूचना: payment screenshot भी भेज दूँगा/दूँगी)';
+let doneMsg='💰 Payment कर दी! ₹'+AMT+(OID?' — Order #'+OID:'')+'\n(सूचना: payment screenshot भी भेज दूँगा/दूँगी)';
+if(P.get('f')==='k') doneMsg='💰 Payment कर दी! ₹'+AMT+' — Order #'+OID+'\nFile दुकान को पहुँच चुकी है ✅ Print होकर ready का message आएगा 🖨️';
 document.getElementById('doneBtn').href='https://wa.me/'+PAY.wa+'?text='+encodeURIComponent(doneMsg);
 </script></body></html>

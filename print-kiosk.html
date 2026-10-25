@@ -40,6 +40,8 @@ h1{font-size:20px;font-weight:700}
 .sendbar{position:fixed;left:0;right:0;bottom:0;background:#0f172a;border-top:2px solid #d4af37;padding:10px 14px;z-index:10}
 .sendbtn{display:block;width:100%;max-width:520px;margin:0 auto;background:#25d366;color:#062b16;font-size:17px;font-weight:800;text-align:center;padding:14px;border-radius:12px;text-decoration:none;border:none;cursor:pointer}
 .sendbtn.off{background:#334155;color:#94a3b8;pointer-events:none}
+.paybtn{display:block;width:100%;max-width:520px;margin:0 auto 8px;background:linear-gradient(135deg,#f6e27a,#d4af37);color:#3a2c00;font-size:16px;font-weight:800;text-align:center;padding:13px;border-radius:12px;border:none;cursor:pointer}
+.paybtn.off{background:#334155;color:#94a3b8;pointer-events:none}
 .howto{font-size:12px;color:#94a3b8;line-height:1.9}
 .howto b{color:#cbd5e1}
 .langtog{position:absolute;right:12px;top:16px;background:#1a2542;border:1px solid #334155;color:#cbd5e1;padding:6px 10px;border-radius:8px;font-size:12px}
@@ -96,6 +98,7 @@ h1{font-size:20px;font-weight:700}
   <div class="note">संस्कृति Print Kiosk • <span data-t="pw">संस्कृति से बना</span> 🪔</div>
 </div>
 <div class="sendbar">
+  <button class="paybtn off" id="payBtn">💳 Pay करके Order भेजें</button>
   <button class="sendbtn off" id="sendBtn" data-t="bT">📲 WhatsApp पर Order भेजिए</button>
 </div>
 <script>
@@ -122,12 +125,12 @@ const SHOP={
 /* ===== Supabase (Phase 2) — anon key यहाँ paste करो ===== */
 const SUPA={url:'https://atgmukhdhdoceovkildb.supabase.co', key:'sb_publishable_cPQ0o3tEe-UvR7EgPDVJsA_p2JOzOqO', bucket:'kiosk-files'};
 const STR={
-hi:{fT:'अपनी File चुनिए',dzT:'PDF या Photo चुनने के लिए यहाँ दबाइए',dzS:'PDF • JPG • PNG',oT:'Print Options चुनिए',oType:'प्रिंट कैसा?',oSize:'कागज़ size?',oSide:'एक तरफ़ या दोनों?',oPr:'किस Machine से? (अपने-आप चुनी गई)',oCop:'कितनी copies?',oNm:'आपका नाम? (ज़रूरी नहीं)',oPh:'आपका WhatsApp number? (ज़रूरी नहीं)',oCopH:'(1 से 100 तक)',sT:'आपका Order',sN:'आखिरी price दुकान approve करते समय confirm होगी',hT:'कैसे काम करता है?',bT:'📲 WhatsApp पर Order भेजिए',pw:'संस्कृति से बना',
+hi:{fT:'अपनी File चुनिए',dzT:'PDF या Photo चुनने के लिए यहाँ दबाइए',dzS:'PDF • JPG • PNG',oT:'Print Options चुनिए',oType:'प्रिंट कैसा?',oSize:'कागज़ size?',oSide:'एक तरफ़ या दोनों?',oPr:'किस Machine से? (अपने-आप चुनी गई)',oCop:'कितनी copies?',bPay:(p)=>'💳 ₹'+p+' — Pay करके Order भेजें',payFail:'⚠️ Upload नहीं हुआ — कृपया नीचे हरे button से order भेजें, pay दुकान पर करें',oNm:'आपका नाम? (ज़रूरी नहीं)',oPh:'आपका WhatsApp number? (ज़रूरी नहीं)',oCopH:'(1 से 100 तक)',sT:'आपका Order',sN:'आखिरी price दुकान approve करते समय confirm होगी',hT:'कैसे काम करता है?',bT:'📲 WhatsApp पर Order भेजिए',pw:'संस्कृति से बना',
   how:'<b>1.</b> File चुनिए — पेज अपने-आप गिनेंगे<br><b>2.</b> Options चुनिए — <b>price तुरंत दिखेगा</b><br><b>3.</b> WhatsApp पर order भेजिए<br><b>4.</b> दुकान <b>approve</b> करेगी → WhatsApp पर सूचना → pay → print तैयार! 🎉<br><b>🔒 बिना दुकान की permission के print नहीं होगा</b>',
   fName:'File',fPages:'पेज',fType:'प्रिंट',fSize:'कागज़',fSide:'तरफ़',fPr:'Machine',fCop:'Copies',fOrd:'Order ID',fShop:'दुकान',fPrice:'अंदाज़ी Price',fBulk:'🎉 Bulk छूट लगी!',fWait:'⏳ दुकान की permission के बाद ही print होगा',
   eBig:'⚠️ File बहुत बड़ी है (50MB से कम चुनिए)',ePdf:'⚠️ PDF पढ़ी नहीं गई — फिर कोशिश कीजिए',pg:'पेज गिन रहे हैं…',img:'1 पेज (photo)',
   wmsg:(o)=>`🖨️ नया Print Order ${o.id}\n📄 File: ${o.name} (${o.pages} पेज)\n⚙️ ${o.type} | ${o.size} | ${o.side} | ${o.copies} copies\n🖨️ Machine: ${o.printer}\n💰 अंदाज़ी Price: ₹${o.price}\n⏳ कृपया approve करें — आपकी सूचना का इंतज़ार रहेगा`},
-en:{fT:'Choose your File',dzT:'Tap here to choose PDF or Photo',dzS:'PDF • JPG • PNG',oT:'Choose Print Options',oType:'Print type?',oSize:'Paper size?',oSide:'One side or both?',oPr:'Which machine? (auto-chosen)',oCop:'How many copies?',oNm:'Your name? (optional)',oPh:'Your WhatsApp number? (optional)',oCopH:'(1 to 100)',sT:'Your Order',sN:'Shop confirms the final price on approval',hT:'How does it work?',bT:'📲 Send Order on WhatsApp',pw:'Made by Sanskriti',
+en:{fT:'Choose your File',dzT:'Tap here to choose PDF or Photo',dzS:'PDF • JPG • PNG',oT:'Choose Print Options',oType:'Print type?',oSize:'Paper size?',oSide:'One side or both?',oPr:'Which machine? (auto-chosen)',oCop:'How many copies?',bPay:(p)=>'💳 Pay ₹'+p+' & Send Order',payFail:'⚠️ Upload failed — please use the green button below & pay at shop',oNm:'Your name? (optional)',oPh:'Your WhatsApp number? (optional)',oCopH:'(1 to 100)',sT:'Your Order',sN:'Shop confirms the final price on approval',hT:'How does it work?',bT:'📲 Send Order on WhatsApp',pw:'Made by Sanskriti',
   how:'<b>1.</b> Choose file — pages counted automatically<br><b>2.</b> Choose options — <b>price shows instantly</b><br><b>3.</b> Send order on WhatsApp<br><b>4.</b> Shop <b>approves</b> → WhatsApp message → pay → print ready! 🎉<br><b>🔒 No printing without shop permission</b>',
   fName:'File',fPages:'Pages',fType:'Print',fSize:'Paper',fSide:'Side',fPr:'Machine',fCop:'Copies',fOrd:'Order ID',fShop:'Shop',fPrice:'Est. Price',fBulk:'🎉 Bulk discount applied!',fWait:'⏳ Prints only after shop approval',
   eBig:'⚠️ File too big (choose under 50MB)',ePdf:'⚠️ Could not read PDF — try again',pg:'Counting pages…',img:'1 page (photo)',
@@ -194,8 +197,9 @@ function calcPrice(){
   return calcRate()*PAGES*opt.copies;
 }
 function renderSlip(){
-  if(!FILE){ $('slipCard').style.display='none'; $('sendBtn').classList.add('off'); return; }
+  if(!FILE){ $('slipCard').style.display='none'; $('sendBtn').classList.add('off'); $('payBtn').classList.add('off'); return; }
   $('slipCard').style.display='block'; $('sendBtn').classList.remove('off');
+  $('payBtn').classList.remove('off'); $('payBtn').textContent=STR[LANG].bPay(calcPrice());
   const L=STR[LANG], lb=(arr,v)=>arr.find(x=>x[0]===v)[1];
   $('slip').innerHTML=
     '<div class="oid">🖨️ '+L.fOrd+' '+OID+'</div>'+
@@ -242,6 +246,31 @@ $('sendBtn').onclick=async()=>{
   }
   window.open('https://wa.me/'+SHOP.wa+'?text='+encodeURIComponent(msg2),'_blank');
   btn.textContent=oldT; btn.disabled=false;
+};
+
+$('payBtn').onclick=async()=>{
+  if(!FILE) return;
+  const btn=$('payBtn'); const oldT=btn.textContent; btn.textContent='⏳ Upload हो रहा...'; btn.disabled=true;
+  let ok=false;
+  if(window.supabase){
+    try{
+      const sbc=supabase.createClient(SUPA.url,SUPA.key);
+      const oid=OID.replace('#','');
+      const path=oid+'/'+FILE.name;
+      const up=await sbc.storage.from(SUPA.bucket).upload(path,FILE);
+      if(!up.error){
+        const ph=(document.getElementById('phIn').value||'').replace(/[^0-9]/g,'');
+        const nm=(document.getElementById('nmIn').value||'').trim();
+        const ins=await sbc.from('orders').insert({id:oid,cust_name:nm,cust_phone:ph.length===10?ph:null,
+          file_path:path,file_name:FILE.name,pages:PAGES||1,ptype:opt.type,size:opt.size,side:opt.side,
+          copies:opt.copies,printer:opt.printer,price:calcPrice(),status:'paid'});
+        ok=!ins.error;
+      }
+    }catch(e){}
+  }
+  btn.textContent=oldT; btn.disabled=false;
+  if(ok) window.open('https://sanskritistore.github.io/store/kiosk-pay.html?amt='+calcPrice()+'&oid='+OID.replace('#','')+'&f=k','_blank');
+  else alert(STR[LANG].payFail);
 };
 applyLang();
 </script>

@@ -31,7 +31,7 @@ header button{background:#1e293b;border:1px solid #334155;color:#f6e27a;border-r
 .ord .file{display:flex;align-items:center;gap:8px;background:#0f172a;border:1px dashed #334155;border-radius:10px;padding:8px 10px;font-size:12.5px;margin-bottom:10px}
 .ord .file a{color:#7dd3fc;text-decoration:none;font-weight:700}
 .badge{display:inline-block;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:10px;margin-left:6px}
-.b-new{background:#052e16;color:#4ade80}.b-approved{background:#1e3a5f;color:#7dd3fc}.b-printed{background:#3b2f0b;color:#fbbf24}.b-rejected{background:#2d0a0a;color:#f87171}.b-done{background:#1a2e1a;color:#86efac}
+.b-new{background:#052e16;color:#4ade80}.b-paid{background:#08302e;color:#2dd4bf}.b-approved{background:#1e3a5f;color:#7dd3fc}.b-printed{background:#3b2f0b;color:#fbbf24}.b-rejected{background:#2d0a0a;color:#f87171}.b-done{background:#1a2e1a;color:#86efac}
 .row{display:flex;gap:8px;align-items:center}
 .row input{width:110px;background:#0f172a;border:1.5px solid #334155;border-radius:8px;color:#f6e27a;padding:8px;font-size:14px;text-align:center;outline:none}
 .btn{flex:1;padding:10px;border-radius:10px;border:none;font-weight:800;font-size:13px;cursor:pointer}
@@ -64,7 +64,7 @@ const SUPA={url:'https://atgmukhdhdoceovkildb.supabase.co', key:'sb_publishable_
 const sb=supabase.createClient(SUPA.url,SUPA.key);
 const $=id=>document.getElementById(id);
 let FILTER='new';
-const FILT=[['new','🆕 नए'],['approved','✅ Approved'],['printed','🖨️ Printed'],['done','✔️ Done'],['rejected','❌ रद्द'],['all','सब']];
+const FILT=[['new','🆕 नए'],['paid','💰 Paid'],['approved','✅ Approved'],['printed','🖨️ Printed'],['done','✔️ Done'],['rejected','❌ रद्द'],['all','सब']];
 function ago(ts){const s=(Date.now()-new Date(ts).getTime())/1000;
   if(s<60)return 'अभी-अभी'; if(s<3600)return Math.floor(s/60)+' मिनट पहले';
   if(s<86400)return Math.floor(s/3600)+' घंटे पहले'; return Math.floor(s/86400)+' दिन पहले';}
@@ -105,7 +105,7 @@ async function renderList(rows){
       +'<div class="meta">⚙️ '+(o.ptype||'')+' | '+(o.size||'')+' | '+(o.side||'')+' | '+(o.copies||1)+' copies • 📄 '+(o.pages||1)+' पेज • 🖨️ '+(o.printer||'')+'</div>'
       +'<div class="file">📄 '+(o.file_name||'—')+' <a href="#" data-path="'+o.file_path+'">⬇ Download</a></div>'
       +'<div class="row">₹<input type="number" value="'+(o.price||0)+'" data-price="'+o.id+'">'
-      +(o.status==='new'?'<button class="btn ok" data-ok="'+o.id+'">✅ Approve</button><button class="btn no" data-no="'+o.id+'">❌</button>':'')
+      +(o.status==='new'||o.status==='paid'?'<button class="btn ok" data-ok="'+o.id+'">'+(o.status==='paid'?'💰✅ Verify & Approve':'✅ Approve')+'</button><button class="btn no" data-no="'+o.id+'">❌</button>':'')
       +(o.status==='approved'?'<button class="btn pr" data-pr="'+o.id+'">🖨️ Printed</button>':'')
       +(o.status==='printed'?'<button class="btn dn" data-dn="'+o.id+'">✔️ Done (दे दिया)</button>':'')
       +'</div>';
@@ -124,11 +124,15 @@ async function renderList(rows){
 async function act(id,status){
   const inp=document.querySelector('input[data-price="'+id+'"]');
   const price=inp?parseFloat(inp.value)||0:0;
+  let was='';
+  if(status==='approved'){const {data:pre}=await sb.from('orders').select('status').eq('id',id).single();was=pre?pre.status:'';}
   await sb.from('orders').update({status:status,price:price}).eq('id',id);
   if(status==='approved'){
     const {data}=await sb.from('orders').select('cust_phone').eq('id',id).single();
     if(data&&data.cust_phone){
-      const msg='✅ आपका Order #'+id+' Approved! Price ₹'+price+'.\n👉 Pay करें (1-tap): https://sanskritistore.github.io/store/kiosk-pay.html?amt='+price+'&oid='+id+'\n(UPI: '+SUPA.upi+')';
+      const msg=was==='paid'
+        ?'✅ Payment confirm हो गई! Order #'+id+' print queue में है 🖨️ Ready होते ही message आएगा 🙏'
+        :'✅ आपका Order #'+id+' Approved! Price ₹'+price+'.\n👉 Pay करें (1-tap): https://sanskritistore.github.io/store/kiosk-pay.html?amt='+price+'&oid='+id+'\n(UPI: '+SUPA.upi+')';
       window.open('https://wa.me/91'+data.cust_phone+'?text='+encodeURIComponent(msg),'_blank');
     }
   }
