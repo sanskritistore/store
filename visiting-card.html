@@ -944,7 +944,8 @@ function buildForm(){
   if(S.data.logo){ const rb=document.createElement('button'); rb.className='sbtn'; rb.style.color='#fca5a5';
     rb.textContent=T('logoRm'); rb.onclick=()=>{ S.data.logo=null; buildForm(); draw(); }; side.appendChild(rb); }
   /* schema sections */
-  (S.side==='back'?SCHEMA_BACK:SCHEMA).forEach(sec=>{
+  /* 🪔 greeting card: message/note boxes Front पर भी दिखाओ */
+  (S.side==='back'?SCHEMA_BACK:SCHEMA.concat(S.tplFront==='greet'?SCHEMA_BACK:[])).forEach(sec=>{
     const h=document.createElement('h3'); h.textContent=(S.ui==='en'&&sec.titleEn)?sec.titleEn:sec.title; side.appendChild(h);
     sec.fields.forEach(f=>{
       const w=document.createElement('div'); w.className='fld';
