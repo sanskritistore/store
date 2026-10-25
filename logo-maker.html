@@ -1347,7 +1347,7 @@ function mAct(a){ if(!STU.cfg) return;
 }
 function mBar(){ if(!window.matchMedia||!matchMedia('(max-width:768px)').matches) return null;
   const w=document.createElement('div');
-  w.style.cssText='display:flex;gap:5px;align-items:center;background:#0f172a;border:1px solid #2c3a4f;border-radius:10px;padding:6px;margin:2px 0 8px';
+  w.style.cssText='display:flex;gap:5px;align-items:center;background:#0f172a;border:1px solid #2c3a4f;border-radius:10px;padding:6px;margin:2px 0 8px;overflow-x:auto;-webkit-overflow-scrolling:touch';
   const sep=()=>{ const sp=document.createElement('span'); sp.style.cssText='width:1px;height:22px;background:#2c3a4f;flex:0 0 auto'; w.appendChild(sp); };
   const mk=(t,act,dis,tip)=>{ const b=document.createElement('button'); b.className='sbtn';
     b.style.cssText='min-width:44px;min-height:42px;font-size:17px;padding:4px;flex:1'+(dis?';opacity:.32':'');
