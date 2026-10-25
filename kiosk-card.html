@@ -1,0 +1,72 @@
+<!DOCTYPE html><html lang="hi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>📇 Counter Card — CSC Print Cafe</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#334;display:flex;flex-direction:column;align-items:center;padding:18px;gap:14px}
+.card{width:105mm;min-height:148mm;background:#fff;border-radius:6mm;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.4)}
+.head{background:linear-gradient(135deg,#0f172a,#1e293b);color:#f6e27a;text-align:center;padding:5mm 4mm 4mm;border-bottom:1.2mm solid #d4af37}
+.head h1{font-size:6.2mm;letter-spacing:.3mm}
+.head p{color:#cbd5e1;font-size:3.2mm;margin-top:1mm}
+.tagline{text-align:center;font-size:3.6mm;font-weight:700;color:#7c2d12;background:#fef3c7;padding:2mm;border-bottom:.4mm dashed #d4af37}
+.sec{padding:3.5mm 4mm;text-align:center}
+.sec h2{font-size:4mm;color:#0f172a;margin-bottom:2mm}
+.sec h2 span{background:#0f172a;color:#f6e27a;border-radius:2mm;padding:.5mm 2mm;font-size:3.4mm;margin-right:1.5mm}
+.qr{display:inline-block;padding:2.5mm;background:#fff;border:.6mm solid #0f172a;border-radius:2.5mm}
+.qr img,.qr canvas{display:block}
+.url{font-size:2.8mm;color:#475569;margin-top:1.6mm;word-break:break-all}
+.steps{text-align:left;font-size:3.1mm;color:#334155;margin:2.5mm auto 0;display:inline-block;line-height:1.75}
+.pay{background:#f0fdf4;border-top:.5mm dashed #94a3b8}
+.pay h2 span{background:#166534}
+.paynote{font-size:2.9mm;color:#166534;margin-top:1.6mm;font-weight:600}
+.rates{background:#0f172a;color:#e2e8f0;padding:3mm 4mm}
+.rates table{width:100%;font-size:2.9mm;border-collapse:collapse}
+.rates th{color:#f6e27a;text-align:left;padding:1mm;border-bottom:.3mm solid #d4af37;font-size:3mm}
+.rates td{padding:.9mm 1mm;border-bottom:.2mm dotted #334155}
+.rates td:last-child,.rates th:last-child{text-align:right}
+.foot{background:#1e293b;color:#94a3b8;text-align:center;font-size:2.8mm;padding:2.2mm}
+.foot b{color:#f6e27a}
+@media print{body{background:#fff;padding:0}.card{box-shadow:none;border-radius:0;width:100%;min-height:auto} .noprint{display:none}}
+@page{size:A6 portrait;margin:0}
+.noprint{color:#e2e8f0;font-size:13px;text-align:center;max-width:400px}
+.noprint button{background:#d4af37;color:#0f172a;border:none;padding:10px 22px;border-radius:8px;font-weight:800;font-size:15px;cursor:pointer;margin-top:8px}
+</style></head><body>
+<div class="card">
+  <div class="head"><h1>🖨️ CSC Print Cafe</h1><p>सेल्फ प्रिंट — phone से order, दुकान से print</p></div>
+  <div class="tagline">⏱️ Line में मत लगिए — अपने phone से ही order कीजिए!</div>
+  <div class="sec">
+    <h2><span>1</span>ORDER — यहाँ Scan करें</h2>
+    <div class="qr" id="qrOrder"></div>
+    <div class="url" id="orderUrl"></div>
+    <div class="steps">
+      📄 File चुनें → पेज अपने-आप गिनेंगे<br>
+      ⚙️ Options चुनें → <b>price तुरंत दिखेगा</b><br>
+      📲 WhatsApp पर order भेजें<br>
+      ✅ दुकान approve करेगी → pay → print!
+    </div>
+  </div>
+  <div class="sec pay">
+    <h2><span>2</span>PAYMENT — approve के बाद</h2>
+    <div class="qr" id="qrPay"></div>
+    <div class="paynote">UPI: <span id="upiTxt"></span> • कोई भी UPI app चलेगा</div>
+  </div>
+  <div class="rates"><table id="rtab">
+    <tr><th>📄 A4 B&W</th><th>एक तरफ़</th><th>दोनों तरफ़</th></tr>
+  </table></div>
+  <div class="foot">🔒 बिना दुकान की <b>permission</b> के print नहीं होगा • WhatsApp: <b id="waTxt"></b><br>संस्कृति Print Kiosk 🤝</div>
+</div>
+<div class="noprint">ऊपर card का preview है (A6 size) — छपाई के लिए:<br><button onclick="window.print()">🖨️ Print करें (A6)</button></div>
+<script>
+const CARD={
+  shop:'CSC Print Cafe', wa:'91 98731 52325',
+  orderUrl:'https://sanskritistore.github.io/store/print-kiosk.html',
+  upi:'paytm.s261vka@pty',
+  rates:[['100 तक','₹3','₹2.50/side'],['100–500','₹2.50','₹2/side'],['500+','₹2','₹3/page']]
+};
+document.getElementById('orderUrl').textContent=CARD.orderUrl.replace('https://','');
+document.getElementById('upiTxt').textContent=CARD.upi;
+document.getElementById('waTxt').textContent='+'+CARD.wa;
+CARD.rates.forEach(r=>{const t=document.getElementById('rtab');const tr=t.insertRow();tr.innerHTML='<td>'+r[0]+'</td><td>'+r[1]+'</td><td style="text-align:right">'+r[2]+'</td>';});
+new QRCode(document.getElementById('qrOrder'),{text:CARD.orderUrl,width:300,height:300,correctLevel:QRCode.CorrectLevel.M});
+new QRCode(document.getElementById('qrPay'),{text:'upi://pay?pa='+CARD.upi+'&pn='+encodeURIComponent(CARD.shop)+'&cu=INR',width:230,height:230,correctLevel:QRCode.CorrectLevel.M});
+</script></body></html>
