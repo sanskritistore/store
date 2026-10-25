@@ -1,0 +1,142 @@
+<!DOCTYPE html><html lang="hi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>📒 हिसाब-किताब — CSC Print Cafe</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;padding-bottom:90px}
+.wrap{max-width:480px;margin:0 auto;padding:14px}
+header{text-align:center;padding:10px 0 14px;border-bottom:2px solid #d4af37;margin-bottom:14px}
+header h1{color:#f6e27a;font-size:22px}
+header p{color:#94a3b8;font-size:12px;margin-top:2px}
+.datebar{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:12px}
+.datebar button{background:#1e293b;border:1px solid #334155;color:#f6e27a;width:36px;height:36px;border-radius:10px;font-size:18px;cursor:pointer}
+.datebar .dt{font-weight:800;font-size:15px;color:#f6e27a;min-width:150px;text-align:center}
+.datebar .today{font-size:11px;background:#d4af37;color:#0f172a;border:none;border-radius:8px;padding:4px 8px;font-weight:800;width:auto;height:auto}
+.sum{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+.sum .box{background:#1e293b;border-radius:12px;padding:10px 6px;text-align:center;border-top:3px solid #334155}
+.sum .box.inc{border-top-color:#4ade80}.sum .box.exp{border-top-color:#f87171}.sum .box.net{border-top-color:#d4af37}
+.sum .box .l{font-size:11px;color:#94a3b8}
+.sum .box .v{font-size:17px;font-weight:800;margin-top:3px}
+.inc .v{color:#4ade80}.exp .v{color:#f87171}.net .v{color:#f6e27a}
+.month{text-align:center;font-size:12px;color:#94a3b8;margin-bottom:12px}
+.month b{color:#f6e27a}
+.card{background:#1e293b;border:1px solid #334155;border-radius:14px;padding:14px;margin-bottom:14px}
+.card h2{font-size:15px;color:#f6e27a;margin-bottom:10px}
+.tgl{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.tgl button{padding:10px;border-radius:10px;border:2px solid #334155;background:#0f172a;color:#94a3b8;font-weight:800;font-size:14px;cursor:pointer}
+.tgl button.onInc{border-color:#4ade80;color:#4ade80;background:#052e16}
+.tgl button.onExp{border-color:#f87171;color:#f87171;background:#2d0a0a}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.chip{padding:6px 12px;border-radius:20px;border:1.5px solid #334155;background:#0f172a;color:#cbd5e1;font-size:12.5px;cursor:pointer}
+.chip.on{border-color:#d4af37;color:#f6e27a;background:#29241a}
+.inrow{display:flex;gap:8px}
+.inrow input{background:#0f172a;border:1.5px solid #334155;border-radius:10px;color:#e2e8f0;padding:10px;font-size:14px;outline:none}
+.inrow input:focus{border-color:#d4af37}
+.inrow .nm{flex:1.6}.inrow .am{flex:1}
+.addbtn{width:100%;margin-top:10px;background:#d4af37;color:#0f172a;border:none;padding:12px;border-radius:10px;font-weight:800;font-size:15px;cursor:pointer}
+.empty{text-align:center;color:#64748b;font-size:13px;padding:16px 0}
+.ent{display:flex;align-items:center;gap:8px;padding:9px 4px;border-bottom:1px dashed #334155;font-size:13.5px}
+.ent:last-child{border-bottom:none}
+.ent .tm{color:#64748b;font-size:11px;width:46px}
+.ent .nm{flex:1}
+.ent .am{font-weight:800}
+.ent.inc .am{color:#4ade80}.ent.exp .am{color:#f87171}
+.ent .del{color:#64748b;background:none;border:none;font-size:15px;cursor:pointer;padding:2px 6px}
+.sendbar{position:fixed;left:0;right:0;bottom:0;background:#0f172a;border-top:2px solid #d4af37;padding:10px 14px;display:flex;justify-content:center}
+.sendbtn{background:#25d366;color:#062c16;border:none;padding:13px 22px;border-radius:12px;font-weight:800;font-size:15px;cursor:pointer;width:100%;max-width:480px}
+.note{text-align:center;color:#64748b;font-size:11px;margin-top:10px}
+</style></head><body><div class="wrap">
+<header><h1>📒 हिसाब-किताब</h1><p id="hShop">CSC Print Cafe — दिन का पूरा हिसाब</p></header>
+<div class="datebar">
+  <button id="dPrev">‹</button>
+  <div class="dt" id="dTxt"></div>
+  <button id="dNext">›</button>
+  <button class="today" id="dToday">आज</button>
+</div>
+<div class="sum">
+  <div class="box inc"><div class="l">💰 कमाई</div><div class="v" id="sInc">₹0</div></div>
+  <div class="box exp"><div class="l">🧾 खर्च</div><div class="v" id="sExp">₹0</div></div>
+  <div class="box net"><div class="l">✅ बचत</div><div class="v" id="sNet">₹0</div></div>
+</div>
+<div class="month" id="mTxt"></div>
+<div class="card">
+  <h2>➕ नई Entry</h2>
+  <div class="tgl"><button id="tInc" class="onInc">💰 कमाई</button><button id="tExp">🧾 खर्च</button></div>
+  <div class="chips" id="chips"></div>
+  <div class="inrow"><input class="nm" id="eName" placeholder="काम / चीज़ का नाम"><input class="am" id="eAmt" type="number" min="0" step="0.5" placeholder="₹"></div>
+  <button class="addbtn" id="eAdd">➕ जोड़ो</button>
+</div>
+<div class="card">
+  <h2>📋 आज की Entries <span id="eCnt" style="color:#64748b;font-size:12px"></span></h2>
+  <div id="elist"><div class="empty">अभी कोई entry नहीं — ऊपर से जोड़ो!</div></div>
+</div>
+<div class="note">संस्कृति Hisab • आपका data आपके phone में safe रहता है 🔒</div>
+</div>
+<div class="sendbar"><button class="sendbtn" id="waBtn">📲 दिन का हिसाब WhatsApp पर भेजो</button></div>
+<script>
+/* ===== CONFIG — अपनी दुकान के हिसाब से बदलो ===== */
+const HISAB={
+  shop:'CSC Print Cafe', wa:'919873152325',
+  inc:['🖨️ Print','📷 Photo / Passport','🪪 ID Card','✏️ और कमाई'],
+  exp:['📄 कागज़','🎨 स्याही / टोनर','🔌 बिजली / और','🧾 और खर्च']
+};
+/* ===== ENGINE ===== */
+const $=id=>document.getElementById(id);
+let cur=new Date(); let mode='inc';
+const dkey=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const dshow=d=>d.toLocaleDateString('hi-IN',{day:'numeric',month:'long',year:'numeric'});
+function load(){ try{return JSON.parse(localStorage.getItem('hisab:'+dkey(cur))||'[]')}catch(e){return[]} }
+function save(a){ localStorage.setItem('hisab:'+dkey(cur),JSON.stringify(a)); }
+function monthNet(){
+  const p='hisab:'+cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')+'-';
+  let inc=0,exp=0;
+  for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);
+    if(k&&k.indexOf(p)===0){try{JSON.parse(localStorage.getItem(k)).forEach(e=>{if(e.t==='inc')inc+=e.a;else exp+=e.a;});}catch(e){}}}
+  return inc-exp;
+}
+function render(){
+  const a=load();
+  $('dTxt').textContent=dshow(cur);
+  let inc=0,exp=0; a.forEach(e=>{if(e.t==='inc')inc+=e.a;else exp+=e.a;});
+  $('sInc').textContent='₹'+inc; $('sExp').textContent='₹'+exp; $('sNet').textContent='₹'+(inc-exp);
+  $('mTxt').innerHTML='🗓️ इस महीने की कुल बचत: <b>₹'+monthNet()+'</b>';
+  $('eCnt').textContent='('+a.length+')';
+  const el=$('elist');
+  if(!a.length){el.innerHTML='<div class="empty">अभी कोई entry नहीं — ऊपर से जोड़ो!</div>';}
+  else{el.innerHTML=''; a.slice().reverse().forEach((e,ri)=>{
+    const i=a.length-1-ri;
+    const d=document.createElement('div'); d.className='ent '+e.t;
+    const tm=new Date(e.ts); const hh=String(tm.getHours()).padStart(2,'0')+':'+String(tm.getMinutes()).padStart(2,'0');
+    d.innerHTML='<span class="tm">'+hh+'</span><span class="nm">'+e.n+'</span><span class="am">'+(e.t==='inc'?'+':'−')+'₹'+e.a+'</span><button class="del" data-i="'+i+'">✕</button>';
+    el.appendChild(d);
+  });
+  el.querySelectorAll('.del').forEach(b=>b.onclick=()=>{const arr=load();arr.splice(+b.dataset.i,1);save(arr);render();});
+  }
+  const list=mode==='inc'?HISAB.inc:HISAB.exp;
+  $('chips').innerHTML='';
+  list.forEach(c=>{const b=document.createElement('button');b.className='chip';b.textContent=c;
+    b.onclick=()=>{$('eName').value=c.replace(/^[^\s]+\s/,'');$('eAmt').focus();};
+    $('chips').appendChild(b);});
+}
+$('tInc').onclick=()=>{mode='inc';$('tInc').className='onInc';$('tExp').className='';render();};
+$('tExp').onclick=()=>{mode='exp';$('tExp').className='onExp';$('tInc').className='';render();};
+$('eAdd').onclick=()=>{
+  const n=$('eName').value.trim(), a=parseFloat($('eAmt').value);
+  if(!n||!(a>0)){$('eAmt').focus();return;}
+  const arr=load(); arr.push({t:mode,n:n,a:a,ts:Date.now()}); save(arr);
+  $('eName').value=''; $('eAmt').value=''; $('eName').focus(); render();
+};
+$('dPrev').onclick=()=>{cur.setDate(cur.getDate()-1);render();};
+$('dNext').onclick=()=>{cur.setDate(cur.getDate()+1);render();};
+$('dToday').onclick=()=>{cur=new Date();render();};
+$('waBtn').onclick=()=>{
+  const a=load(); let inc=0,exp=0,ni=0,ne=0;
+  a.forEach(e=>{if(e.t==='inc'){inc+=e.a;ni++;}else{exp+=e.a;ne++;}});
+  const msg='📒 '+HISAB.shop+' — हिसाब ('+cur.toLocaleDateString('hi-IN')+')\n'
+    +'💰 कमाई: ₹'+inc+' ('+ni+' काम)\n'
+    +'🧾 खर्च: ₹'+exp+' ('+ne+' entries)\n'
+    +'✅ बचत: ₹'+(inc-exp)+'\n'
+    +'🗓️ महीने की बचत: ₹'+monthNet()+'\n— संस्कृति Hisab 🤝';
+  window.open('https://wa.me/'+HISAB.wa+'?text='+encodeURIComponent(msg),'_blank');
+};
+render();
+</script></body></html>
