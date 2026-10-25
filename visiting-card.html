@@ -637,7 +637,7 @@ function drawCardInto(ctx,t,d,OX,OY){
     ctx.lineWidth=0.5/SC; ctx.strokeRect(X(0.1),Y(0.1),W-0.2,H-0.2); glowOff(); }
   /* ---- 🪔 GREETING card: gold band + calligraphic centered message (fields: services=message lines, note=closing, name=signature) ---- */
   if(t.skin==='greet'){
-    const bw2=Math.min(W,H)*0.058, mo=bw2*1.5;   /* band + margin (PNG-proportioned) */
+    const bw2=Math.min(W,H)*0.058, mo=bw2/2;   /* gold band card के किनारे तक (बाहर white नहीं) */
     ctx.strokeStyle=t.accent; ctx.lineWidth=bw2;
     ctx.strokeRect(X(mo),Y(mo),W-2*mo,H-2*mo);
     const QF=(pt,w)=>w+' '+(pt*PT*SC)+'px "Quintessential",'+FSCR;
