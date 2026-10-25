@@ -7,7 +7,7 @@
 <title>संस्कृति — 🪪 Visiting Card Maker</title>
 <script src="assets/js/admin-gate.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Quintessential&family=Great+Vibes&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Serif+Devanagari:wght@600;700&family=Poppins:wght@400;600;700;800&family=Mukta:wght@400;600;700;800&family=Playfair+Display:wght@500;700;800&family=Tiro+Devanagari+Hindi:ital@0;1&family=Cinzel:wght@500;700;800&family=Montserrat:wght@400;600;700;800&family=Raleway:ital,wght@0,400;0,600;0,700;1,400&family=Oswald:wght@400;600;700&family=Bebas+Neue&family=Dancing+Script:wght@500;700&family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Hind:wght@400;600;700&family=Kalam:wght@400;700&family=Rozha+One&family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Allura&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=Italianno&family=Marcellus&family=Pinyon+Script&family=Yatra+One&family=Quintessential&family=Great+Vibes&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Serif+Devanagari:wght@600;700&family=Poppins:wght@400;600;700;800&family=Mukta:wght@400;600;700;800&family=Playfair+Display:wght@500;700;800&family=Tiro+Devanagari+Hindi:ital@0;1&family=Cinzel:wght@500;700;800&family=Montserrat:wght@400;600;700;800&family=Raleway:ital,wght@0,400;0,600;0,700;1,400&family=Oswald:wght@400;600;700&family=Bebas+Neue&family=Dancing+Script:wght@500;700&family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Hind:wght@400;600;700&family=Kalam:wght@400;700&family=Rozha+One&family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f172a;color:#e2e8f0;display:flex;flex-direction:column;height:100vh;overflow:hidden}
@@ -362,7 +362,16 @@ const FONTS=[                                   /* 🔤 fontKey — नया fo
   { n:'Hind',       css:'"Hind",'+FDEV },              /* साफ़ हिंदी */
   { n:'Kalam',      css:'"Kalam",'+FDEV },             /* हिंदी लिखावट */
   { n:'Rozha शादी',  css:'"Rozha One",'+FSER },         /* शादी हिंदी display */
-  { n:'Baloo हिंदी', css:'"Baloo 2",'+FDEV }            /* मोटा हिंदी */
+  { n:'Baloo हिंदी', css:'"Baloo 2",'+FDEV }            /* मोटा हिंदी */,
+  { n:'Great Vibes', css:'"Great Vibes",'+FSCR },        /* शाही script */
+  { n:'Pinyon Script', css:'"Pinyon Script",'+FSCR },     /* royal शादी script */
+  { n:'Italianno',   css:'"Italianno",'+FSCR },          /* बहती calligraphy */
+  { n:'Alex Brush',  css:'"Alex Brush",'+FSCR },         /* मोटा साफ़ script */
+  { n:'Allura',      css:'"Allura",'+FSCR },             /* modern script */
+  { n:'Cormorant',   css:'"Cormorant Garamond",'+FSER }, /* luxury serif */
+  { n:'EB Garamond', css:'"EB Garamond",'+FSER },        /* classic किताबी serif */
+  { n:'Marcellus',   css:'"Marcellus",'+FSER },          /* royal रोमन caps */
+  { n:'Yatra हिंदी',  css:'"Yatra One",'+FDEV }            /* त्योहार हिंदी display */
 ];
 function fkOf(t,role){ if(role&&t.fonts&&t.fonts[role]!=null) return t.fonts[role];
   return (t.fontKey==null?(t.serif?1:0):t.fontKey); }
