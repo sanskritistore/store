@@ -7,7 +7,7 @@
 <title>संस्कृति — 🪪 Visiting Card Maker</title>
 <script src="assets/js/admin-gate.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Serif+Devanagari:wght@600;700&family=Poppins:wght@400;600;700;800&family=Mukta:wght@400;600;700;800&family=Playfair+Display:wght@500;700;800&family=Tiro+Devanagari+Hindi:ital@0;1&family=Cinzel:wght@500;700;800&family=Montserrat:wght@400;600;700;800&family=Raleway:ital,wght@0,400;0,600;0,700;1,400&family=Oswald:wght@400;600;700&family=Bebas+Neue&family=Dancing+Script:wght@500;700&family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Hind:wght@400;600;700&family=Kalam:wght@400;700&family=Rozha+One&family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Quintessential&family=Great+Vibes&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Serif+Devanagari:wght@600;700&family=Poppins:wght@400;600;700;800&family=Mukta:wght@400;600;700;800&family=Playfair+Display:wght@500;700;800&family=Tiro+Devanagari+Hindi:ital@0;1&family=Cinzel:wght@500;700;800&family=Montserrat:wght@400;600;700;800&family=Raleway:ital,wght@0,400;0,600;0,700;1,400&family=Oswald:wght@400;600;700&family=Bebas+Neue&family=Dancing+Script:wght@500;700&family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Hind:wght@400;600;700&family=Kalam:wght@400;700&family=Rozha+One&family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f172a;color:#e2e8f0;display:flex;flex-direction:column;height:100vh;overflow:hidden}
@@ -247,6 +247,7 @@ const TEMPLATES={
  corp:{ name:'कॉर्पोरेट', skin:'bandTop', bg:'#ffffff', accent:'#1e40af', tx:'#1f2937', sub:'#6b7280', serif:false, align:'left', frame:false },
  panel:{ name:'रंगीन पैनल', skin:'bandLeft', bg:'#ffffff', accent:'#c2410c', tx:'#1f2937', sub:'#6b7280', serif:false, align:'left', frame:false },
  minimal:{ name:'मिनिमल', skin:'plain', bg:'#ffffff', accent:'#374151', tx:'#111827', sub:'#9ca3af', serif:false, align:'center', frame:false }
+ ,greet:{ name:'🪔 Greeting card', skin:'greet', bg:'#ffffff', accent:'#a8895a', tx:'#2b2b2b', sub:'#2b2b2b', serif:true, align:'center', frame:false }
  /* ---- Back side designs (services/note fields इस्तेमाल करते हैं) ---- */
  ,bbrand:{ name:'बैक: Brand', skin:'bBrand', bg:'#0f172a', accent:'#f59e0b', tx:'#f1f5f9', sub:'#94a3b8', serif:false, align:'center', frame:false },
  bserv:{ name:'बैक: Services', skin:'bServices', bg:'#ffffff', accent:'#0e7490', tx:'#1f2937', sub:'#6b7280', serif:false, align:'left', frame:false },
@@ -357,6 +358,7 @@ const FONTS=[                                   /* 🔤 fontKey — नया fo
   { n:'Bebas',      css:'"Bebas Neue",'+FDEV },        /* banner display */
   { n:'Lora',       css:'"Lora",'+FSER },              /* letterhead */
   { n:'Dancing',    css:'"Dancing Script",'+FSCR },    /* शादी English */
+  { n:'Corsiva शादी', css:'"Quintessential",'+FSCR },   /* corsiva-style calligraphy */
   { n:'Hind',       css:'"Hind",'+FDEV },              /* साफ़ हिंदी */
   { n:'Kalam',      css:'"Kalam",'+FDEV },             /* हिंदी लिखावट */
   { n:'Rozha शादी',  css:'"Rozha One",'+FSER },         /* शादी हिंदी display */
@@ -633,6 +635,26 @@ function drawCardInto(ctx,t,d,OX,OY){
   const glowOff=()=>{ if(t.glow){ ctx.shadowColor='transparent'; ctx.shadowBlur=0; } };
   if(t.frame){ glowOn(0.02); ctx.strokeStyle=t.grad&&t.glow?goldTx():t.accent; ctx.lineWidth=1.4/SC; ctx.strokeRect(X(0.05),Y(0.05),W-0.1,H-0.1);
     ctx.lineWidth=0.5/SC; ctx.strokeRect(X(0.1),Y(0.1),W-0.2,H-0.2); glowOff(); }
+  /* ---- 🪔 GREETING card: gold band + calligraphic centered message (fields: services=message lines, note=closing, name=signature) ---- */
+  if(t.skin==='greet'){
+    const bw2=Math.min(W,H)*0.058, mo=bw2*1.5;   /* band + margin (PNG-proportioned) */
+    ctx.strokeStyle=t.accent; ctx.lineWidth=bw2;
+    ctx.strokeRect(X(mo),Y(mo),W-2*mo,H-2*mo);
+    const QF=(pt,w)=>w+' '+(pt*PT*SC)+'px "Quintessential",'+FSCR;
+    const maxW=W-2*(mo+bw2)-0.35;
+    const wrap=(txt,f)=>{ ctx.font=f; const out=[]; String(txt).split('\n').forEach(par=>{ let cur='';
+      par.split(/\s+/).filter(Boolean).forEach(wd=>{ const t2=cur?cur+' '+wd:wd;
+        if(ctx.measureText(t2).width<=maxW*SC||!cur) cur=t2; else { out.push(cur); cur=wd; } });
+      if(cur) out.push(cur); }); return out; };
+    const bF=QF(11,400), nF=QF(14.5,400), lh=13.4*PT, gb=6*PT;
+    const msgL=wrap(d.services||'',bF), noteL=wrap(d.note||'',bF), nmL=wrap(d.name||'',nF);
+    const blocks=[msgL,noteL,nmL].filter(b=>b.length);
+    let total=blocks.reduce((a2,b)=>a2+b.length*lh,0)+gb*(blocks.length-1);
+    let yy=(H-total)/2+11*PT; ctx.textAlign='center'; ctx.fillStyle=t.tx;
+    [msgL,noteL,nmL].forEach((blk,bi)=>{ blk.forEach(ln=>{ ctx.font=(bi===2)?nF:bF; TXT(ctx,ln,X(W/2),Y(yy)); yy+=lh; }); yy+=gb; });
+    if(!window._qfontW){ window._qfontW=1; try{ document.fonts.load('16px Quintessential').then(()=>{ try{ draw(); }catch(_){ } }); }catch(_){ } }   /* 🔤 corsiva font warm-up → आते ही redraw */
+    return;
+  }
   /* ---- 🔄 BACK skins ---- */
   if(t.skin==='bBrand'){
     const lg0=d.logo?logoImg(d.logo):null;
