@@ -101,8 +101,12 @@ const SHOP={
   sides:[['single','एक तरफ़'],['both','दोनों तरफ़']],
   maxCopies:100, maxMB:50,
   /* ₹ rate per पेज (per printed side) — हर type+size का */
-  prices:{ bw:{a4:{single:3,both:2},a3:{single:6,both:5},photo:{single:5,both:5}},
-           color:{a4:{single:10,both:10},a3:{single:20,both:20},photo:{single:30,both:30}} },
+  prices:{ bw:{a4:{tiers:[[100,3,2.5],[999999,2.5,2]]},
+               a3:{tiers:[[100,6,5],[999999,5,4.5]]},
+               photo:{tiers:[[999999,5,5]]}},
+           color:{a4:{tiers:[[999999,10,10]]},
+                  a3:{tiers:[[999999,20,20]]},
+                  photo:{tiers:[[999999,30,30]]}} },
   /* दुकान की machines */
   printers:[['bw','⚫ Canon iR 3245 (B&W)'],['color','🎨 Canon iR C3326 (Color)'],['photo','📷 Epson L805 (Photo)'],['plot','📐 Canon T5350 (Maps/Poster)']],
   /* type+size → अपने-आप machine (customer बदल सकता है) */
@@ -111,12 +115,12 @@ const SHOP={
 const STR={
 hi:{fT:'अपनी File चुनिए',dzT:'PDF या Photo चुनने के लिए यहाँ दबाइए',dzS:'PDF • JPG • PNG',oT:'Print Options चुनिए',oType:'प्रिंट कैसा?',oSize:'कागज़ size?',oSide:'एक तरफ़ या दोनों?',oPr:'किस Machine से? (अपने-आप चुनी गई)',oCop:'कितनी copies?',oCopH:'(1 से 100 तक)',sT:'आपका Order',sN:'आखिरी price दुकान approve करते समय confirm होगी',hT:'कैसे काम करता है?',bT:'📲 WhatsApp पर Order भेजिए',pw:'संस्कृति से बना',
   how:'<b>1.</b> File चुनिए — पेज अपने-आप गिनेंगे<br><b>2.</b> Options चुनिए — <b>price तुरंत दिखेगा</b><br><b>3.</b> WhatsApp पर order भेजिए<br><b>4.</b> दुकान <b>approve</b> करेगी → WhatsApp पर सूचना → pay → print तैयार! 🎉<br><b>🔒 बिना दुकान की permission के print नहीं होगा</b>',
-  fName:'File',fPages:'पेज',fType:'प्रिंट',fSize:'कागज़',fSide:'तरफ़',fPr:'Machine',fCop:'Copies',fOrd:'Order ID',fShop:'दुकान',fPrice:'अंदाज़ी Price',fWait:'⏳ दुकान की permission के बाद ही print होगा',
+  fName:'File',fPages:'पेज',fType:'प्रिंट',fSize:'कागज़',fSide:'तरफ़',fPr:'Machine',fCop:'Copies',fOrd:'Order ID',fShop:'दुकान',fPrice:'अंदाज़ी Price',fBulk:'🎉 100+ छूट लगी!',fWait:'⏳ दुकान की permission के बाद ही print होगा',
   eBig:'⚠️ File बहुत बड़ी है (50MB से कम चुनिए)',ePdf:'⚠️ PDF पढ़ी नहीं गई — फिर कोशिश कीजिए',pg:'पेज गिन रहे हैं…',img:'1 पेज (photo)',
   wmsg:(o)=>`🖨️ नया Print Order ${o.id}\n📄 File: ${o.name} (${o.pages} पेज)\n⚙️ ${o.type} | ${o.size} | ${o.side} | ${o.copies} copies\n🖨️ Machine: ${o.printer}\n💰 अंदाज़ी Price: ₹${o.price}\n⏳ कृपया approve करें — आपकी सूचना का इंतज़ार रहेगा`},
 en:{fT:'Choose your File',dzT:'Tap here to choose PDF or Photo',dzS:'PDF • JPG • PNG',oT:'Choose Print Options',oType:'Print type?',oSize:'Paper size?',oSide:'One side or both?',oPr:'Which machine? (auto-chosen)',oCop:'How many copies?',oCopH:'(1 to 100)',sT:'Your Order',sN:'Shop confirms the final price on approval',hT:'How does it work?',bT:'📲 Send Order on WhatsApp',pw:'Made by Sanskriti',
   how:'<b>1.</b> Choose file — pages counted automatically<br><b>2.</b> Choose options — <b>price shows instantly</b><br><b>3.</b> Send order on WhatsApp<br><b>4.</b> Shop <b>approves</b> → WhatsApp message → pay → print ready! 🎉<br><b>🔒 No printing without shop permission</b>',
-  fName:'File',fPages:'Pages',fType:'Print',fSize:'Paper',fSide:'Side',fPr:'Machine',fCop:'Copies',fOrd:'Order ID',fShop:'Shop',fPrice:'Est. Price',fWait:'⏳ Prints only after shop approval',
+  fName:'File',fPages:'Pages',fType:'Print',fSize:'Paper',fSide:'Side',fPr:'Machine',fCop:'Copies',fOrd:'Order ID',fShop:'Shop',fPrice:'Est. Price',fBulk:'🎉 100+ discount applied!',fWait:'⏳ Prints only after shop approval',
   eBig:'⚠️ File too big (choose under 50MB)',ePdf:'⚠️ Could not read PDF — try again',pg:'Counting pages…',img:'1 page (photo)',
   wmsg:(o)=>`🖨️ New Print Order ${o.id}\n📄 File: ${o.name} (${o.pages} pages)\n⚙️ ${o.type} | ${o.size} | ${o.side} | ${o.copies} copies\n🖨️ Machine: ${o.printer}\n💰 Est. Price: ₹${o.price}\n⏳ Please approve — waiting for your message`}
 };
@@ -164,10 +168,17 @@ function showFile(extra){
   const mb=(FILE.size/1048576).toFixed(1);
   $('finfo').innerHTML='📄 <b>'+FILE.name+'</b> &nbsp;•&nbsp; '+mb+' MB &nbsp;•&nbsp; <b>'+(PAGES||'—')+'</b> '+(extra||T('fPages').toLowerCase());
 }
-function calcRate(){
+function calcTier(){
   const t=(SHOP.prices[opt.type]||{})[opt.size];
-  if(!t) return 0;
-  return (typeof t==='object')? (t[opt.side]||0) : t;
+  if(!t) return null;
+  const total=(PAGES||1)*opt.copies;
+  const tiers=t.tiers||[[999999,t.single||0,t.both||0]];
+  for(let i=0;i<tiers.length;i++){ if(total<=tiers[i][0]) return {single:tiers[i][1],both:tiers[i][2]===undefined?tiers[i][1]:tiers[i][2],idx:i}; }
+  return {single:tiers[tiers.length-1][1],both:tiers[tiers.length-1][2],idx:tiers.length-1};
+}
+function calcRate(){
+  const t=calcTier();
+  return t? (opt.side==='both'? t.both : t.single) : 0;
 }
 function calcPrice(){
   if(!FILE||!PAGES) return 0;
@@ -188,7 +199,7 @@ function renderSlip(){
     '<div class="row"><span>'+L.fPr+'</span><span>'+lb(SHOP.printers,opt.printer)+'</span></div>'+
     '<div class="row"><span>'+L.fCop+'</span><span>'+opt.copies+'</span></div>'+
     '<div class="row" style="border-top:1px dashed #d4af37;margin-top:4px;padding-top:6px"><span>'+L.fPrice+'</span><span style="color:#f6e27a;font-size:17px;font-weight:800">₹'+calcPrice()+'</span></div>'+
-    '<div style="font-size:11px;color:#94a3b8;text-align:right">(₹'+calcRate()+' × '+(PAGES||1)+' sides × '+opt.copies+' copies)</div>'+
+    '<div style="font-size:11px;color:#94a3b8;text-align:right">(₹'+calcRate()+' × '+(PAGES||1)+' sides × '+opt.copies+' copies)'+((calcTier()&&calcTier().idx>0)?' <span style="color:#4ade80;font-weight:700">'+L.fBulk+'</span>':'')+'</div>'+
     '<div style="font-size:11px;color:#fbbf24;margin-top:6px">'+L.fWait+'</div>';
 }
 $('sendBtn').onclick=()=>{
