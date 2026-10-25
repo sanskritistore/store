@@ -1281,9 +1281,13 @@ function renderStudio(){
     b.onclick=()=>{ STU.txSel=(STU.txSel===k)?null:k; STU.sel=null; renderStudio(); studioPreview(); };
     rch.appendChild(b); });
   txp.appendChild(rch);
-  const fsel=fontPickBtn(tsel?fkOf(c,tsel):0, (fk)=>{ c.fonts=c.fonts||{}; c.fonts[tsel]=fk;
+  /* 👆 card पर छुए text element से भी font button खुले */
+  const _selTx=(STU.sel!=null&&c.els&&c.els[STU.sel]&&c.els[STU.sel].ty==='text')?c.els[STU.sel]:null;
+  const fsel=fontPickBtn(tsel?fkOf(c,tsel):(_selTx?(_selTx.fk==null?fkOf(c,null):_selTx.fk):0),
+    (fk)=>{ if(tsel){ c.fonts=c.fonts||{}; c.fonts[tsel]=fk; }
+      else if(_selTx){ _selTx.fk=fk; _selTx.script=0; }
       stuSnap(); renderStudio(); studioPreview();
-      try{ document.fonts.ready.then(()=>studioPreview()); }catch(_){ } }, !tsel);
+      try{ document.fonts.ready.then(()=>studioPreview()); }catch(_){ } }, (!tsel&&!_selTx));
   txp.appendChild(fsel);
   if(tsel){ const k=tsel;
     const sr=H('<div style="display:flex;gap:6px;align-items:center;margin-top:4px"><input type="range" style="flex:1"><button class="sbtn" style="font-weight:800">B</button><button class="sbtn" style="font-style:italic">I</button></div>');
