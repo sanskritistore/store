@@ -1333,6 +1333,30 @@ function stuUndo(){ if(STU.hi>0){ STU.hi--; STU.cfg=JSON.parse(STU.hist[STU.hi])
   renderStudio(); studioPreview(); toast('↩️ वापस'); } }
 function stuRedo(){ if(STU.hi<STU.hist.length-1){ STU.hi++; STU.cfg=JSON.parse(STU.hist[STU.hi]); STU.sel=null;
   renderStudio(); studioPreview(); toast('↪️ आगे'); } }
+/* 📱 PHONE TOUCH BAR — PC shortcuts (Ctrl+Z/C/V/Delete/Arrows) के buttons, सिर्फ़ phone पर */
+function mAct(a){ if(!STU.cfg) return;
+  const e=STU.sel!=null?STU.cfg.els[STU.sel]:null;
+  if(a==='undo'){ stuUndo(); }
+  else if(a==='redo'){ stuRedo(); }
+  else if(a==='copy'&&e){ STU.clip=JSON.parse(JSON.stringify(e)); toast('\u{1F4CB} नकल'); renderStudio(); }
+  else if(a==='paste'&&STU.clip){ const n=JSON.parse(JSON.stringify(STU.clip)); n.x+=0.09; n.y+=0.09; delete n.grp;
+    STU.cfg.els.push(n); stuSnap(); STU.sel=STU.cfg.els.length-1; renderStudio(); studioPreview(); toast('\u{1F4C4} चिपकाया'); }
+  else if(a==='del'&&e){ STU.cfg.els.splice(STU.sel,1); STU.sel=null; stuSnap(); renderStudio(); studioPreview(); toast('\u{1F5D1}️ हटाया'); }
+  else if(a[0]==='n'&&e){ const d={nl:[-0.01,0],nr:[0.01,0],nu:[0,-0.01],nd:[0,0.01]}[a];
+    e.x+=d[0]; e.y+=d[1]; if(STU._nkT) clearTimeout(STU._nkT); STU._nkT=setTimeout(()=>stuSnap(),700); studioPreview(); }
+}
+function mBar(){ if(!window.matchMedia||!matchMedia('(max-width:768px)').matches) return null;
+  const w=document.createElement('div');
+  w.style.cssText='display:flex;gap:5px;align-items:center;background:#0f172a;border:1px solid #2c3a4f;border-radius:10px;padding:6px;margin:2px 0 8px';
+  const sep=()=>{ const sp=document.createElement('span'); sp.style.cssText='width:1px;height:22px;background:#2c3a4f;flex:0 0 auto'; w.appendChild(sp); };
+  const mk=(t,act,dis,tip)=>{ const b=document.createElement('button'); b.className='sbtn';
+    b.style.cssText='min-width:44px;min-height:42px;font-size:17px;padding:4px;flex:1'+(dis?';opacity:.32':'');
+    b.textContent=t; b.title=tip||''; b.disabled=!!dis; if(!dis) b.onclick=()=>mAct(act); w.appendChild(b); };
+  mk('\u21B6','undo',STU.hi<=0,'वापस (Ctrl+Z)'); mk('\u21B7','redo',STU.hi>=STU.hist.length-1,'आगे (Ctrl+Y)'); sep();
+  const has=STU.sel!=null;
+  mk('\u{1F4CB}','copy',!has,'नकल (Ctrl+C)'); mk('\u{1F4C4}','paste',!STU.clip,'चिपकाओ (Ctrl+V)'); mk('\u{1F5D1}️','del',!has,'हटाओ (Delete)'); sep();
+  mk('\u25C0','nl',!has,'बाएँ खिसकाओ'); mk('\u25B2','nu',!has,'ऊपर खिसकाओ'); mk('\u25BC','nd',!has,'नीचे खिसकाओ'); mk('\u25B6','nr',!has,'दाएँ खिसकाओ');
+  return w; }
 /* ⌨️ Photoshop-style shortcuts (studio खुला हो तब) */
 if(!window._KBW){ window._KBW=1; document.addEventListener('keydown',(ev)=>{
   if(!STU.open||!STU.cfg) return;
@@ -1537,6 +1561,7 @@ function renderStudio(){
   const c=STU.cfg;
   const H=(html)=>{ const d=document.createElement('div'); d.innerHTML=html; return d.firstElementChild; };
   st.appendChild(H('<h3>'+T('stTitle')+'<button class="x" id="stX">✖</button></h3>'));
+  const _mb=(typeof mBar==='function')?mBar():null; if(_mb) st.appendChild(_mb);   /* 📱 phone shortcut bar */
   st.querySelector('#stX').onclick=closeStudio;
   /* नाम */
   const nm=H('<div class="strow"><label>'+T('stName')+'</label><input placeholder="'+T('stNamePh')+'"></div>');
