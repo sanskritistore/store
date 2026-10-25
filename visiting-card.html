@@ -155,7 +155,7 @@ const STR={
    patD:'╱ तिरछी', patD2:'✕ क्रॉस', patGrid:'▦ खाना', patDots:'• बिंदु',
    patC:'Pattern का रंग', patGap:'गैप (mm)',
    stFont:'🔤 Font चुनो', stSans:'सादा', stSerif:'सीरिफ़ (शाही)',
-   fBiz:'दुकान का नाम', fTag:'Tagline', fName:'आपका नाम', fDesig:'पद', fDet:'संपर्क lines',
+   fBiz:'दुकान का नाम', fTag:'Tagline', fName:'आपका नाम', fDesig:'पद', fDet:'संपर्क lines', fMsg:'Message (संदेश)',
    stAlign:'जमाव (Align)', stAL:'बायाँ', stAC:'बीच',
    stFrame:'फ़्रेम (border)', stOn:'लगाओ', stOff:'नहीं', stPrem:'✨ प्रीमियम असर', stGlow:'✨ Glow', stGold:'🪙 Gold अक्षर', stSpark:'💫 Sparkle',
    elAdd:'🧩 Elements — खुद बनाओ', elNew:'नया जोड़ो', elList:'चुनें', elLine:'📏 Line', elCurve:'🌊 Curve',
@@ -192,7 +192,7 @@ const STR={
    patD:'╱ Diagonal', patD2:'✕ Cross', patGrid:'▦ Grid', patDots:'• Dots',
    patC:'Pattern color', patGap:'Gap (mm)',
    stFont:'🔤 Choose font', stSans:'Simple', stSerif:'Serif (royal)',
-   fBiz:'Business name', fTag:'Tagline', fName:'Your name', fDesig:'Designation', fDet:'Contact lines',
+   fBiz:'Business name', fTag:'Tagline', fName:'Your name', fDesig:'Designation', fDet:'Contact lines', fMsg:'Message',
    stAlign:'Alignment', stAL:'Left', stAC:'Center',
    stFrame:'Frame (border)', stOn:'Show', stOff:'Hide', stPrem:'✨ Premium effects', stGlow:'✨ Glow', stGold:'🪙 Gold letters', stSpark:'💫 Sparkle',
    elAdd:'🧩 Elements — build your own', elNew:'Add new', elList:'Select', elLine:'📏 Line', elCurve:'🌊 Curve',
@@ -377,6 +377,35 @@ function fkOf(t,role){ if(role&&t.fonts&&t.fonts[role]!=null) return t.fonts[rol
   return (t.fontKey==null?(t.serif?1:0):t.fontKey); }
 function font(t,px,w,st,role){ return (st||'')+' '+(w||400)+' '+px+'px '+((FONTS[fkOf(t,role)]||FONTS[0]).css); }
 function szOf(t,k){ return (t.sz&&t.sz[k])||1; }            /* text size गुणक */
+
+/* ================= 🔤 PHOTOSHOP-STYLE FONT PICKER (हर नाम अपने font में दिखता है) ================= */
+function closeFontMenus(){ document.querySelectorAll('.fmenu').forEach(x=>x.remove()); }
+document.addEventListener('click',closeFontMenus);
+function fontPickBtn(cur,onPick,dis){
+  const wrap=document.createElement('div'); wrap.style.cssText='position:relative;margin:2px 0;flex:1;min-width:0';
+  const b=document.createElement('button'); b.className='sbtn';
+  b.style.cssText='width:100%;padding:7px 9px;display:flex;justify-content:space-between;align-items:center;gap:6px';
+  const sp=document.createElement('span'); sp.textContent=FONTS[cur]?FONTS[cur].n:'—';
+  sp.style.cssText='font-size:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+  if(FONTS[cur]) sp.style.fontFamily=FONTS[cur].css;
+  b.appendChild(sp); b.appendChild(document.createTextNode('\u25BE'));
+  if(dis){ b.disabled=true; b.style.opacity=0.45; wrap.appendChild(b); return wrap; }
+  b.onclick=(ev)=>{ ev.stopPropagation(); ev.preventDefault();
+    if(wrap.querySelector('.fmenu')){ closeFontMenus(); return; }
+    closeFontMenus();
+    const m=document.createElement('div'); m.className='fmenu';
+    m.style.cssText='position:absolute;left:0;right:0;top:calc(100% + 3px);z-index:999;max-height:300px;overflow-y:auto;background:#0f1622;border:1px solid #2c3a4f;border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.55)';
+    FONTS.forEach((f,i)=>{ const r=document.createElement('button');
+      r.style.cssText='display:block;width:100%;text-align:left;padding:7px 10px;background:'+(i===cur?'#1c2a3d':'transparent')+';border:0;border-bottom:1px solid #16202e;color:#e8eef5;font-size:18px;cursor:pointer;line-height:1.25';
+      const t2=document.createElement('span'); t2.textContent=(i===cur?'\u2605 ':'')+f.n; t2.style.fontFamily=f.css; r.appendChild(t2);
+      try{ document.fonts.load('18px '+f.css.split(',')[0]); }catch(_){ }
+      r.onmouseenter=()=>{ r.style.background='#22344d'; };
+      r.onmouseleave=()=>{ r.style.background=(i===cur?'#1c2a3d':'transparent'); };
+      r.onclick=(e2)=>{ e2.stopPropagation(); e2.preventDefault(); closeFontMenus(); onPick(i); };
+      m.appendChild(r); });
+    wrap.appendChild(m); };
+  wrap.appendChild(b); return wrap;
+}
 function wOf(t,k,defw,bw){ return (t.bold&&t.bold[k])?(bw||800):defw; }   /* Bold */
 function iOf(t,k){ return (t.ital&&t.ital[k])?'italic':undefined; }        /* Italic */
 function setF(ctx,t,pt,w,st,role){ ctx.font=font(t,pt*PT*SC,w,st,role); }
@@ -649,19 +678,23 @@ function drawCardInto(ctx,t,d,OX,OY){
     const bw2=Math.min(W,H)*0.058, mo=bw2/2;   /* gold band card के किनारे तक (बाहर white नहीं) */
     ctx.strokeStyle=t.accent; ctx.lineWidth=bw2;
     ctx.strokeRect(X(mo),Y(mo),W-2*mo,H-2*mo);
-    const QF=(pt,w)=>w+' '+(pt*PT*SC)+'px "Quintessential",'+FSCR;
+    const _defQ='"Quintessential",'+FSCR;
+    const _of=r2=>{ const fk=(t.fonts&&t.fonts[r2]!=null)?t.fonts[r2]:null; return (fk!=null&&FONTS[fk])?FONTS[fk].css:null; };
+    const _bFam=_of('msg')||_defQ, _nFam=_of('name')||_defQ;   /* 🎛️ Studio: Message/Name font बदलो */
+    const QF=(pt,w,fam)=>w+' '+(pt*PT*SC)+'px '+(fam||_defQ);
     const maxW=W-2*(mo+bw2)-0.35;
     const wrap=(txt,f)=>{ ctx.font=f; const out=[]; String(txt).split('\n').forEach(par=>{ let cur='';
       par.split(/\s+/).filter(Boolean).forEach(wd=>{ const t2=cur?cur+' '+wd:wd;
         if(ctx.measureText(t2).width<=maxW*SC||!cur) cur=t2; else { out.push(cur); cur=wd; } });
       if(cur) out.push(cur); }); return out; };
-    const bF=QF(11,400), nF=QF(14.5,400), lh=13.4*PT, gb=6*PT;
+    const bF=QF(11,400,_bFam), nF=QF(14.5,400,_nFam), lh=13.4*PT, gb=6*PT;
     const msgL=wrap(d.services||'',bF), noteL=wrap(d.note||'',bF), nmL=wrap(d.name||'',nF);
     const blocks=[msgL,noteL,nmL].filter(b=>b.length);
     let total=blocks.reduce((a2,b)=>a2+b.length*lh,0)+gb*(blocks.length-1);
     let yy=(H-total)/2+11*PT; ctx.textAlign='center'; ctx.fillStyle=t.tx;
     [msgL,noteL,nmL].forEach((blk,bi)=>{ blk.forEach(ln=>{ ctx.font=(bi===2)?nF:bF; TXT(ctx,ln,X(W/2),Y(yy)); yy+=lh; }); yy+=gb; });
-    if(!window._qfontW){ window._qfontW=1; try{ document.fonts.load('16px Quintessential').then(()=>{ try{ draw(); }catch(_){ } }); }catch(_){ } }   /* 🔤 corsiva font warm-up → आते ही redraw */
+    window._qfw=window._qfw||{}; const _wk=bF+'|'+nF;
+    if(!window._qfw[_wk]){ window._qfw[_wk]=1; try{ Promise.all([document.fonts.load(bF),document.fonts.load(nF)]).then(()=>{ try{ draw(); }catch(_){ } }); }catch(_){ } }   /* 🔤 font warm-up → आते ही redraw */
     return;
   }
   /* ---- 🔄 BACK skins ---- */
@@ -1234,25 +1267,21 @@ function renderStudio(){
   /* 🔤 TEXT PANEL — सिर्फ़ चुने text पर काम (कोई global mode नहीं) */
   if(!c.sz) c.sz={}; if(!c.bold) c.bold={}; if(!c.ital) c.ital={};
   const _roles=[['biz','fBiz'],['tag','fTag'],['name','fName'],['desig','fDesig'],['det','fDet']];
+  if(c.skin==='greet') _roles.splice(0,_roles.length,['msg','fMsg'],['name','fName']);   /* 🪔 greeting: सिर्फ़ Message+Name fonts */
+  if(STU.txSel&&!_roles.some(r=>r[0]===STU.txSel)) STU.txSel=null;
   const txp=H('<div style="background:#141d2b;border:1px solid #2c3a4f;border-radius:10px;padding:9px;margin:4px 0"></div>');
   const tsel=STU.txSel;
   txp.appendChild(H('<div style="font-size:12px;font-weight:700;color:'+(tsel?'#fbbf24':'#9db2c9')+';margin-bottom:2px">'
-    +(tsel?('✏️ '+T(_roles.find(r=>r[0]===tsel)[1])):T('txPick'))+'</div>'));
+    +(tsel?('✏️ '+T(((_roles.find(r=>r[0]===tsel)||[])[1]||'txPick'))):T('txPick'))+'</div>'));
   const rch=H('<div class="stchips" style="margin-bottom:2px"></div>');
   _roles.forEach(([k,lb])=>{ const b=document.createElement('button');
     b.className='sbtn'+(STU.txSel===k?' on':''); b.textContent=T(lb); b.style.fontSize='11px';
     b.onclick=()=>{ STU.txSel=(STU.txSel===k)?null:k; STU.sel=null; renderStudio(); studioPreview(); };
     rch.appendChild(b); });
   txp.appendChild(rch);
-  const fsel=document.createElement('select'); fsel.className='finp';
-  fsel.style.cssText='width:100%;font-size:14px;padding:7px;margin:2px 0';
-  FONTS.forEach((f,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=f.n; o.style.fontFamily=f.css; fsel.appendChild(o); });
-  if(tsel){ fsel.value=fkOf(c,tsel);
-    fsel.onchange=()=>{ const fk=parseInt(fsel.value);
-      c.fonts=c.fonts||{}; c.fonts[tsel]=fk;
+  const fsel=fontPickBtn(tsel?fkOf(c,tsel):0, (fk)=>{ c.fonts=c.fonts||{}; c.fonts[tsel]=fk;
       stuSnap(); renderStudio(); studioPreview();
-      try{ document.fonts.ready.then(()=>studioPreview()); }catch(_){ } };
-  } else { fsel.disabled=true; fsel.style.opacity=0.45; }
+      try{ document.fonts.ready.then(()=>studioPreview()); }catch(_){ } }, !tsel);
   txp.appendChild(fsel);
   if(tsel){ const k=tsel;
     const sr=H('<div style="display:flex;gap:6px;align-items:center;margin-top:4px"><input type="range" style="flex:1"><button class="sbtn" style="font-weight:800">B</button><button class="sbtn" style="font-style:italic">I</button></div>');
@@ -1414,10 +1443,7 @@ function renderStudio(){
       ti.oninput=()=>{ e.str=ti.value; studioPreview(); }; st.appendChild(tr);
       mkRange(T('elSize'),4,28,0.5,()=>e.size,v=>e.size=v);
       const fr2=H('<div class="strow"><label>Font</label></div>');
-      const fd2=document.createElement('select'); fd2.className='finp'; fd2.style.cssText='flex:1;font-size:13px;padding:5px';
-      FONTS.forEach((f,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=f.n; o.style.fontFamily=f.css; fd2.appendChild(o); });
-      fd2.value=(e.fk==null?fkOf(c,null):e.fk);
-      fd2.onchange=()=>{ e.fk=parseInt(fd2.value); e.script=0; stuSnap(); renderStudio(); studioPreview(); try{ document.fonts.ready.then(()=>studioPreview()); }catch(_){ } };
+      const fd2=fontPickBtn((e.fk==null?fkOf(c,null):e.fk), (fk)=>{ e.fk=fk; e.script=0; stuSnap(); renderStudio(); studioPreview(); try{ document.fonts.ready.then(()=>studioPreview()); }catch(_){ } }, false);
       fr2.appendChild(fd2); st.appendChild(fr2);
       const ft=H('<div class="strow"><label>Style</label><div class="stchips"></div></div>');
       const sc=document.createElement('button'); sc.className='sbtn'+(e.script?' on':''); sc.textContent=T('elScript');
