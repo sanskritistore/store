@@ -43,6 +43,18 @@ input[type=color]{padding:2px;height:30px}
 .note{font-size:11px;color:#64748b;margin-top:3px}
 /* ---- 🎨 Template Studio drawer ---- */
 #studio{position:fixed;top:0;right:0;bottom:0;width:302px;background:#1e293b;border-left:2px solid #f59e0b;z-index:60;display:none;overflow-y:auto;padding:12px;box-shadow:-6px 0 30px #000a}
+/* 📱 phone: form ऊपर, preview नीचे; Studio = bottom sheet — PC same */
+@media(max-width:768px){
+  body{height:auto;overflow:auto}
+  main{flex-direction:column;overflow:visible}
+  #side{width:auto;min-width:0;border-right:0;border-bottom:1px solid #334155}
+  #stage{min-height:62vh;overflow:visible}
+  #studio{top:auto;left:0;right:0;bottom:0;width:auto;height:56vh;border-left:0;border-top:2px solid #f59e0b;border-radius:16px 16px 0 0;box-shadow:0 -10px 34px #000c}
+  body.stumob>header{display:none}
+  body.stumob #side{display:none}
+  body.stumob main{overflow:hidden}
+  .clrrow label{flex:0 0 auto;min-width:0}
+}
 #studio h3{font-size:14px;color:#fbbf24;margin:10px 0 6px;border-bottom:1px solid #334155;padding-bottom:4px}
 #studio h3:first-child{margin-top:0;display:flex;justify-content:space-between;align-items:center}
 #studio .x{background:none;border:none;color:#94a3b8;font-size:16px;cursor:pointer;padding:2px 6px}
@@ -708,8 +720,11 @@ function openStudio(baseId){
   STU.cfg.name=(baseId&&TEMPLATES[baseId].custom)?base.name:'';
   STU.editId=(baseId&&TEMPLATES[baseId].custom)?baseId:null;
   STU.open=true; renderStudio(); studioPreview();
+  try{ if(window.matchMedia&&matchMedia('(max-width:768px)').matches){ document.body.classList.add('stumob');
+    window.scrollTo(0,0); } }catch(_){ }
 }
 function closeStudio(){ STU.open=false; $('studio').style.display='none';
+  try{ document.body.classList.remove('stumob'); }catch(_){ }
   delete TEMPLATES._studio; if(S.tpl==='_studio') S.tpl=STU.editId||'simple';
   buildChips(); draw(); }
 
