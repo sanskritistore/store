@@ -69,6 +69,13 @@ main{display:flex;flex:1;overflow:hidden}
 .stbtns{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px}
 .stbtns .sbtn{flex:1;text-align:center;min-width:45%}
 @media(max-width:760px){ #side{width:44vw;min-width:44vw} }
+/* 📱 phone: Studio नीचे sheet, card ऊपर दिखे — PC बिल्कुल same */
+@media(max-width:768px){
+  #studio{top:auto;left:0;right:0;bottom:0;width:auto;height:52vh;border-left:0;border-top:2px solid #f59e0b;border-radius:16px 16px 0 0;box-shadow:0 -10px 34px #000c}
+  body.stumob>header{display:none}
+  body.stumob #side{display:none}
+  body.stumob #stage{padding:8px;justify-content:flex-start}
+}
 /* 🖨️ direct print — screen पर app, paper पर सिर्फ़ sheet */
 #printArea{ display:none; }
 @media print{
@@ -1229,8 +1236,12 @@ function openStudio(baseId){
   STU.editId=(baseId&&TEMPLATES[baseId].custom)?baseId:null;
   STU.sel=null; STU.drag=null; STU.txSel=null; STU.txDrag=null; STU.elRs=null; STU.hist=[]; STU.hi=-1;
   STU.open=true; renderStudio(); stuSnap(); studioPreview();
+  try{ if(window.matchMedia&&matchMedia('(max-width:768px)').matches){ document.body.classList.add('stumob');
+    const st=$('stage'); if(st) st.scrollTop=0; window.scrollTo(0,0);
+    setTimeout(()=>{ try{ draw(); const st2=$('stage'); if(st2) st2.scrollTop=0; }catch(_){ } },80); } }catch(_){ }
 }
 function closeStudio(){ window._studioOv=null; STU._guides=null; STU.grpPick=null; STU.open=false; $('studio').style.display='none';
+  try{ document.body.classList.remove('stumob'); setTimeout(()=>{ try{ draw(); }catch(_){ } },80); }catch(_){ }
   delete TEMPLATES._studio; if(S.tplFront==='_studio') S.tplFront=STU.editId||STU.from||'simple'; STU.from=null;
   STU.txSel=null; STU.txDrag=null; STU.elRs=null; window._recHits=false; window._txSel=null; window._txHits={};
   buildForm(); draw(); }
