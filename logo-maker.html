@@ -7,7 +7,7 @@
 <title>संस्कृति — 🎨 Logo Maker</title>
 <script src="assets/js/admin-gate.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Serif+Devanagari:wght@600;700&family=Poppins:wght@400;600;700;800&family=Mukta:wght@400;600;700;800&family=Playfair+Display:wght@500;700;800&family=Tiro+Devanagari+Hindi:ital@0;1&family=Cinzel:wght@500;700;800&family=Montserrat:wght@400;600;700;800&family=Raleway:ital,wght@0,400;0,600;0,700;1,400&family=Oswald:wght@400;600;700&family=Bebas+Neue&family=Dancing+Script:wght@500;700&family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Hind:wght@400;600;700&family=Kalam:wght@400;700&family=Rozha+One&family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Serif+Devanagari:wght@600;700&family=Poppins:wght@400;600;700;800&family=Mukta:wght@400;600;700;800&family=Playfair+Display:wght@500;700;800&family=Tiro+Devanagari+Hindi:ital@0;1&family=Cinzel:wght@500;700;800&family=Montserrat:wght@400;600;700;800&family=Raleway:ital,wght@0,400;0,600;0,700;1,400&family=Oswald:wght@400;600;700&family=Bebas+Neue&family=Dancing+Script:wght@500;700&family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Hind:wght@400;600;700&family=Kalam:wght@400;700&family=Rozha+One&family=Baloo+2:wght@500;700;800&family=Quintessential&family=Pinyon+Script&family=Italianno&family=Alex+Brush&family=Allura&family=Cormorant+Garamond:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=Marcellus&family=Yatra+One&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f172a;color:#e2e8f0;display:flex;flex-direction:column;height:100vh;overflow:hidden}
@@ -70,6 +70,15 @@ main{display:flex;flex:1;overflow:hidden}
 .stbtns{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px}
 .stbtns .sbtn{flex:1;text-align:center;min-width:45%}
 @media(max-width:760px){ #side{width:44vw;min-width:44vw} }
+/* 📱 phone: Studio नीचे sheet, logo ऊपर दिखे — PC बिल्कुल same */
+@media(max-width:768px){
+  #studio{top:auto;left:0;right:0;bottom:0;width:auto;height:52vh;border-left:0;border-top:2px solid #f59e0b;border-radius:16px 16px 0 0;box-shadow:0 -10px 34px #000c}
+  body.stumob>header{display:none}
+  body.stumob #side{display:none}
+  body.stumob #stage{padding:8px;justify-content:flex-start}
+  .clrrow label{flex:0 0 auto;min-width:0}
+  .clrrow input[type=range]{min-width:60px;width:80px;flex:1}
+}
 /* 🖨️ direct print — screen पर app, paper पर सिर्फ़ sheet */
 #printArea{ display:none; }
 @media print{
@@ -162,7 +171,7 @@ const STR={
    elRot:'घुमाओ (Rotate)', elOut:'✏️ किनारा', elOutW:'किनारे की मोटाई', elShd:'💧 परछाई', elShdD:'परछाई दूरी', elShdB:'धुंधलापन', elOp:'🌫️ पारदर्शिता', stGrad2:'🌈 रंग-मिश्रण', elLs:'🔤 अक्षर दूरी', elLh:'📏 लाइन दूरी', elQR:'🔳 QR कोड', elQrTxt:'लिंक/नंबर (wa.me...)', elQrD:'गहरा रंग', elQrL:'हल्का रंग', elCL:'⬅️ बाएँ से काटो', elCR:'दाएँ से काटो ➡️', elCT:'⬆️ ऊपर से काटो', elCB:'नीचे से काटो ⬇️', elIcon:'⭐ Icon', icTitle:'⭐ Icon चुनो — सब original',
    elPCol:'🎨 पार्ट रंग', pfGold:'सोना', pfSilver:'चाँदी', pfRose:'गुलाबी', pfCopper:'ताँबा', pfRed:'लाल', pfGreen:'हरा', pfBlue:'नीला', pfPurple:'बैंगनी', pfBlack:'काला', ptAll:'सभी', ptRoyal:'👑 शाही', ptAmmbi:'🌿 आम्बी', ptDeep:'🪔 दीपक', ptS:'Ⓢ S लोगो', pt3d:'✨ 3D', ptRus:'💡 Rustic', elRep:'🔁 दोहराओ (माला/घेरा)', rpCircle:'⭕ गोल', rpLine:'➖ लाइन', rpSquare:'▦ चौखट', rpN:'कितने', rpR:'दायरा / लंबाई', rpTang:'घुमाते हुए', rpGo:'✓ बनाओ', rpGo2:'अलग pieces', rpPW:'टुकड़ा size', rpChg:'🪔 Part बदलो', rpCust:'✏️ खुद बनाओ', eyeTip:'💧 कहीं से भी रंग उठाओ (screen पर किसी भी चीज़ से)', eyeCanvas:'अब design पर click — वही रंग उठेगा', rpA0:'शुरू कोण', rpReady:'✓ रास्ता तैयार — अब ✓ बनाओ दबाइए', rpHint:'🖱️ Canvas पर दबाकर रास्ता खींचिए — छोड़ते ही तैयार!',
    elSize:'Size', elTh:'मोटाई', elAng:'कोण', elLen:'लंबाई', elCnt:'मात्रा', elDel:'🗑️ हटाओ',
-   elDragHint:'👆 card पर text छूकर चुनो • 🖱️ खींचकर हिलाओ • ⌨️ Del=हटाओ • Ctrl+Z=वापस • Ctrl+C/V=नकल • Arrows=हिलाओ', txPick:'👆 पहले card पर text छूकर चुनो', txGate:'Text चुनोगे तभी font / size / B / I खुलेंगे — बिना चुने कुछ नहीं बदलेगा ✓', txHandle:'🖱️ Box के कोने के ⚪ गोले को खींचो = बड़ा / छोटा', elScript:'✍️ Script', elBold:'B', elW:'चौड़ाई', elH:'ऊँचाई',
+   elDragHint:'👆 card पर text छूकर चुनो • 🖱️ खींचकर हिलाओ • ⌨️ Del=हटाओ • Ctrl+Z=वापस • Ctrl+C/V=नकल • Arrows=हिलाओ', txPick:'👆 पहले card पर text छूकर चुनो', fpk:'Font चुनो', txGate:'Text चुनोगे तभी font / size / B / I खुलेंगे — बिना चुने कुछ नहीं बदलेगा ✓', txHandle:'🖱️ Box के कोने के ⚪ गोले को खींचो = बड़ा / छोटा', elScript:'✍️ Script', elBold:'B', elW:'चौड़ाई', elH:'ऊँचाई',
    stSave:'💾 सहेजो', stExport:'📤 Export', stImport:'📥 Import', stDel:'🗑️ हटाओ',
    tTplSaved:'🎨 आपका Design सहेज गया ✓ — chips में दिख रहा है', tTplDel:'🗑️ Design हटा दिया',
    tTplBad:'❌ यह Design file नहीं है', tTplImp:'📥 Design आ गया ✓', tNeedName:'❗ पहले Design का नाम लिखो',
@@ -201,7 +210,7 @@ const STR={
    elRot:'Rotate', elOut:'✏️ Outline', elOutW:'Outline width', elShd:'💧 Shadow', elShdD:'Shadow distance', elShdB:'Softness', elOp:'🌫️ Opacity', stGrad2:'🌈 Gradient bg', elLs:'🔤 Letter spacing', elLh:'📏 Line gap', elQR:'🔳 QR Code', elQrTxt:'Link/number (wa.me...)', elQrD:'Dark color', elQrL:'Light color', elCL:'Crop left ⬅️', elCR:'Crop right ➡️', elCT:'Crop top ⬆️', elCB:'Crop bottom ⬇️', elIcon:'⭐ Icon', icTitle:'⭐ Pick an icon — all original',
    elPCol:'🎨 Part colour', pfGold:'Gold', pfSilver:'Silver', pfRose:'Rose', pfCopper:'Copper', pfRed:'Red', pfGreen:'Green', pfBlue:'Blue', pfPurple:'Purple', pfBlack:'Black', ptAll:'All', ptRoyal:'👑 Royal', ptAmmbi:'🌿 Paisley', ptDeep:'🪔 Diya', ptS:'Ⓢ S logos', pt3d:'✨ 3D', ptRus:'💡 Rustic', elRep:'🔁 Repeat (garland/ring)', rpCircle:'⭕ Circle', rpLine:'➖ Line', rpSquare:'▦ Square', rpN:'How many', rpR:'Radius / length', rpTang:'Rotate along', rpGo:'✓ Make', rpGo2:'Loose pieces', rpPW:'Piece size', rpChg:'🪔 Change part', rpCust:'✏️ Draw path', eyeTip:'💧 Pick colour from anywhere on screen', eyeCanvas:'Now click the design to pick its colour', rpA0:'Start angle', rpReady:'✓ Path ready — now press ✓ Make', rpHint:'🖱️ Press & draw the path on canvas — release to finish!',
    elSize:'Size', elTh:'Thickness', elAng:'Angle', elLen:'Length', elCnt:'Count', elDel:'🗑️ Delete',
-   elDragHint:'🖱️ Drag to move • ⌨️ Del=remove • Ctrl+Z=undo • Ctrl+C/V=copy-paste • Arrows=nudge', txPick:'👆 First tap a text on the card', txGate:'Select a text first — nothing changes until you do ✓', txHandle:'🖱️ Drag the ⚪ dot at box corner = bigger / smaller', elScript:'✍️ Script', elBold:'B', elW:'Width', elH:'Height',
+   elDragHint:'🖱️ Drag to move • ⌨️ Del=remove • Ctrl+Z=undo • Ctrl+C/V=copy-paste • Arrows=nudge', txPick:'👆 First tap a text on the card', fpk:'Pick a font', txGate:'Select a text first — nothing changes until you do ✓', txHandle:'🖱️ Drag the ⚪ dot at box corner = bigger / smaller', elScript:'✍️ Script', elBold:'B', elW:'Width', elH:'Height',
    stSave:'💾 Save', stExport:'📤 Export', stImport:'📥 Import', stDel:'🗑️ Delete',
    tTplSaved:'🎨 Your Design saved ✓ — see it in the chips', tTplDel:'🗑️ Design deleted',
    tTplBad:'❌ Not a Design file', tTplImp:'📥 Design imported ✓', tNeedName:'❗ Please write a Design name first',
@@ -519,10 +528,70 @@ const FONTS=[                                   /* 🔤 fontKey — नया fo
   { n:'Hind',       css:'"Hind",'+FDEV },              /* साफ़ हिंदी */
   { n:'Kalam',      css:'"Kalam",'+FDEV },             /* हिंदी लिखावट */
   { n:'Rozha शादी',  css:'"Rozha One",'+FSER },         /* शादी हिंदी display */
-  { n:'Baloo हिंदी', css:'"Baloo 2",'+FDEV }            /* मोटा हिंदी */
+  { n:'Baloo हिंदी', css:'"Baloo 2",'+FDEV },            /* मोटा हिंदी */
+  { n:'Quintessential', css:'"Quintessential",'+FSCR },   /* Corsiva जैसा — शादी */
+  { n:'Great Vibes', css:'"Great Vibes",'+FSCR },         /* शाही script */
+  { n:'Pinyon',      css:'"Pinyon Script",'+FSCR },       /* नाज़ुक script */
+  { n:'Italianno',   css:'"Italianno",'+FSCR },           /* Italian script */
+  { n:'Alex Brush',  css:'"Alex Brush",'+FSCR },          /* brush script */
+  { n:'Allura',      css:'"Allura",'+FSCR },              /* साफ़ script */
+  { n:'Cormorant',   css:'"Cormorant Garamond",'+FSER },  /* premium serif */
+  { n:'EB Garamond', css:'"EB Garamond",'+FSER },         /* classic serif */
+  { n:'Marcellus',   css:'"Marcellus",'+FSER },           /* royal caps */
+  { n:'Yatra हिंदी',  css:'"Yatra One",'+FDEV }            /* हिंदी display */
 ];
 function fkOf(t,role){ if(role&&t.fonts&&t.fonts[role]!=null) return t.fonts[role];
   return (t.fontKey==null?(t.serif?1:0):t.fontKey); }
+
+/* ================= 🔤 PHOTOSHOP-STYLE FONT PICKER (हर नाम अपने font में दिखता है) ================= */
+function closeFontMenus(){ document.querySelectorAll('.fmenu,.fmenu-bg').forEach(x=>x.remove()); }
+document.addEventListener('click',closeFontMenus);
+function fontPickBtn(cur,onPick,dis){
+  const wrap=document.createElement('div'); wrap.style.cssText='position:relative;margin:2px 0;flex:1;min-width:0';
+  const b=document.createElement('button'); b.className='sbtn';
+  b.style.cssText='width:100%;padding:7px 9px;display:flex;justify-content:space-between;align-items:center;gap:6px';
+  const sp=document.createElement('span'); sp.textContent=FONTS[cur]?FONTS[cur].n:'—';
+  sp.style.cssText='font-size:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+  if(FONTS[cur]) sp.style.fontFamily=FONTS[cur].css;
+  b.appendChild(sp); b.appendChild(document.createTextNode('\u25BE'));
+  if(dis){ b.style.opacity=0.45; b.onclick=(ev)=>{ ev.stopPropagation(); ev.preventDefault();
+      try{ toast('☝️ पहले ऊपर से कोई text चुनो — फिर font की list खुलेगी'); }catch(_){ } };
+    wrap.appendChild(b); return wrap; }
+  b.onclick=(ev)=>{ ev.stopPropagation(); ev.preventDefault();
+    if(document.querySelector('.fmenu')){ closeFontMenus(); return; }
+    closeFontMenus();
+    /* 📱 phone पर bottom-sheet (YouTube जैसी), PC पर dropdown — PC untouched */
+    const isMob=(window.matchMedia&&matchMedia('(max-width:768px)').matches);
+    const m=document.createElement('div'); m.className='fmenu';
+    if(isMob){
+      m.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:99999;max-height:62vh;overflow-y:auto;background:#0f1622;border-top:2px solid #f59e0b;border-radius:16px 16px 0 0;box-shadow:0 -12px 40px rgba(0,0,0,.65);-webkit-overflow-scrolling:touch';
+      m.onclick=(e4)=>{ e4.stopPropagation(); };
+      const hd=document.createElement('div');
+      hd.style.cssText='position:sticky;top:0;background:#0f1622;padding:11px 12px;font-weight:800;color:#fbbf24;border-bottom:1px solid #2c3a4f;display:flex;justify-content:space-between;align-items:center;z-index:2';
+      const ht=document.createElement('span'); ht.textContent='🔤 '+(typeof T==='function'?T('fpk'):'Font चुनो'); hd.appendChild(ht);
+      const xb=document.createElement('button'); xb.textContent='\u2715';
+      xb.style.cssText='background:#22344d;border:0;color:#fff;border-radius:8px;padding:5px 12px;font-size:15px';
+      xb.onclick=(e5)=>{ e5.stopPropagation(); closeFontMenus(); };
+      hd.appendChild(xb); m.appendChild(hd);
+      const bg=document.createElement('div'); bg.className='fmenu-bg';
+      bg.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99998';
+      bg.onclick=()=>closeFontMenus();
+      document.body.appendChild(bg);
+    } else {
+      m.style.cssText='position:absolute;left:0;right:0;top:calc(100% + 3px);z-index:999;max-height:300px;overflow-y:auto;background:#0f1622;border:1px solid #2c3a4f;border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.55)';
+    }
+    FONTS.forEach((f,i)=>{ const r=document.createElement('button');
+      r.style.cssText='display:block;width:100%;text-align:left;padding:'+(isMob?'12px 14px':'7px 10px')+';background:'+(i===cur?'#1c2a3d':'transparent')+';border:0;border-bottom:1px solid #16202e;color:#e8eef5;font-size:'+(isMob?'21px':'18px')+';cursor:pointer;line-height:1.25';
+      const t2=document.createElement('span'); t2.textContent=(i===cur?'\u2605 ':'')+f.n; t2.style.fontFamily=f.css; r.appendChild(t2);
+      try{ document.fonts.load('18px '+f.css.split(',')[0]); }catch(_){ }
+      r.onmouseenter=()=>{ r.style.background='#22344d'; };
+      r.onmouseleave=()=>{ r.style.background=(i===cur?'#1c2a3d':'transparent'); };
+      r.onclick=(e2)=>{ e2.stopPropagation(); e2.preventDefault(); closeFontMenus(); onPick(i); };
+      m.appendChild(r); });
+    (isMob?document.body:wrap).appendChild(m); };
+  wrap.appendChild(b); return wrap;
+}
+
 function font(t,px,w,st,role){ return (st||'')+' '+(w||400)+' '+px+'px '+((FONTS[fkOf(t,role)]||FONTS[0]).css); }
 function szOf(t,k){ return (t.sz&&t.sz[k])||1; }            /* text size गुणक */
 function wOf(t,k,defw,bw){ return (t.bold&&t.bold[k])?(bw||800):defw; }   /* Bold */
@@ -1454,8 +1523,12 @@ function openStudio(baseId){
   STU.editId=(baseId&&TEMPLATES[baseId].custom)?baseId:null;
   STU.sel=null; STU.drag=null; STU.txSel=null; STU.txDrag=null; STU.elRs=null; STU.hist=[]; STU.hi=-1;
   STU.open=true; renderStudio(); stuSnap(); studioPreview();
+  try{ if(window.matchMedia&&matchMedia('(max-width:768px)').matches){ document.body.classList.add('stumob');
+    const st=$('stage'); if(st) st.scrollTop=0; window.scrollTo(0,0);
+    setTimeout(()=>{ try{ draw(); const st2=$('stage'); if(st2) st2.scrollTop=0; }catch(_){ } },80); } }catch(_){ }
 }
 function closeStudio(){ window._studioOv=null; STU._guides=null; STU.grpPick=null; STU.open=false; $('studio').style.display='none';
+  try{ document.body.classList.remove('stumob'); setTimeout(()=>{ try{ draw(); }catch(_){ } },80); }catch(_){ }
   delete TEMPLATES._studio; if(S.tplFront==='_studio') S.tplFront=STU.editId||STU.from||'simple'; STU.from=null;
   STU.txSel=null; STU.txDrag=null; STU.elRs=null; window._recHits=false; window._txSel=null; window._txHits={};
   buildForm(); draw(); }
@@ -1512,10 +1585,10 @@ function renderStudio(){
       gd.querySelector('.stchips').appendChild(b4); });
     st.appendChild(gd); }
   /* 🧩 Background pattern (Corel-जैसा) */
-  if(c.skin!=='blank'){
+  {
   /* 🔤 TEXT PANEL — सिर्फ़ चुने text पर काम (कोई global mode नहीं) */
   if(!c.sz) c.sz={}; if(!c.bold) c.bold={}; if(!c.ital) c.ital={};
-  const _roles=[['biz','fBiz'],['tag','fTag'],['name','fName'],['desig','fDesig'],['det','fDet']];
+  const _roles=(c.skin==='blank')?[['biz','fBiz'],['tag','fTag']]:[['biz','fBiz'],['tag','fTag'],['name','fName'],['desig','fDesig'],['det','fDet']];
   const txp=H('<div style="background:#141d2b;border:1px solid #2c3a4f;border-radius:10px;padding:9px;margin:4px 0"></div>');
   const tsel=STU.txSel;
   txp.appendChild(H('<div style="font-size:12px;font-weight:700;color:'+(tsel?'#fbbf24':'#9db2c9')+';margin-bottom:2px">'
@@ -1526,15 +1599,12 @@ function renderStudio(){
     b.onclick=()=>{ STU.txSel=(STU.txSel===k)?null:k; STU.sel=null; renderStudio(); studioPreview(); };
     rch.appendChild(b); });
   txp.appendChild(rch);
-  const fsel=document.createElement('select'); fsel.className='finp';
-  fsel.style.cssText='width:100%;font-size:14px;padding:7px;margin:2px 0';
-  FONTS.forEach((f,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=f.n; o.style.fontFamily=f.css; fsel.appendChild(o); });
-  if(tsel){ fsel.value=fkOf(c,tsel);
-    fsel.onchange=()=>{ const fk=parseInt(fsel.value);
-      c.fonts=c.fonts||{}; c.fonts[tsel]=fk;
+  const _selTx=(STU.sel!=null&&c.els&&c.els[STU.sel]&&c.els[STU.sel].ty==='text')?c.els[STU.sel]:null;
+  const fsel=fontPickBtn(tsel?fkOf(c,tsel):(_selTx?(_selTx.fk==null?fkOf(c,null):_selTx.fk):0),
+    (fk)=>{ if(tsel){ c.fonts=c.fonts||{}; c.fonts[tsel]=fk; }
+      else if(_selTx){ _selTx.fk=fk; _selTx.script=0; }
       stuSnap(); renderStudio(); studioPreview();
-      try{ document.fonts.ready.then(()=>studioPreview()); }catch(_){ } };
-  } else { fsel.disabled=true; fsel.style.opacity=0.45; }
+      try{ document.fonts.ready.then(()=>studioPreview()); }catch(_){ } }, (!tsel&&!_selTx));
   txp.appendChild(fsel);
   if(tsel){ const k=tsel;
     const sr=H('<div style="display:flex;gap:6px;align-items:center;margin-top:4px"><input type="range" style="flex:1"><button class="sbtn" style="font-weight:800">B</button><button class="sbtn" style="font-style:italic">I</button></div>');
@@ -1718,10 +1788,8 @@ function renderStudio(){
       ti.oninput=()=>{ e.str=ti.value; studioPreview(); }; st.appendChild(tr);
       mkRange(T('elSize'),4,28,0.5,()=>e.size,v=>e.size=v);
       const fr2=H('<div class="strow"><label>Font</label></div>');
-      const fd2=document.createElement('select'); fd2.className='finp'; fd2.style.cssText='flex:1;font-size:13px;padding:5px';
-      FONTS.forEach((f,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=f.n; o.style.fontFamily=f.css; fd2.appendChild(o); });
-      fd2.value=(e.fk==null?fkOf(c,null):e.fk);
-      fd2.onchange=()=>{ e.fk=parseInt(fd2.value); e.script=0; stuSnap(); renderStudio(); studioPreview(); try{ document.fonts.ready.then(()=>studioPreview()); }catch(_){ } };
+      const fd2=fontPickBtn((e.fk==null?fkOf(c,null):e.fk), (fk)=>{ e.fk=fk; e.script=0;
+        stuSnap(); renderStudio(); studioPreview(); try{ document.fonts.ready.then(()=>studioPreview()); }catch(_){ } }, false);
       fr2.appendChild(fd2); st.appendChild(fr2);
       const ft=H('<div class="strow"><label>Style</label><div class="stchips"></div></div>');
       const sc=document.createElement('button'); sc.className='sbtn'+(e.script?' on':''); sc.textContent=T('elScript');
