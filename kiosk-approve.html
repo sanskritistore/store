@@ -40,10 +40,10 @@ document.getElementById('amtIn').value=AMT;
 document.getElementById('amtIn').oninput=e=>{document.getElementById('amt').textContent='₹'+(parseFloat(e.target.value)||0);};
 function go(txt){
   const amt=parseFloat(document.getElementById('amtIn').value)||0;
-  const msg=txt.replace('{OID}',OID).replace('{AMT}',amt).replace('{UPI}',APP.upi);
+  const msg=txt.replace('{OID}',OID).replace('{AMT}',amt).replace('{UPI}',APP.upi).replace('{PAYLINK}','https://sanskritistore.github.io/store/kiosk-pay.html?amt='+amt+'&oid='+OID);
   if(!TO){alert('Customer number नहीं मिला — WhatsApp में हाथ से जवाब दें');return;}
   window.open('https://wa.me/'+TO+'?text='+encodeURIComponent(msg),'_blank');
 }
-document.getElementById('btnOk').onclick=()=>go('✅ आपका Order #{OID} Approved! Price ₹{AMT}. UPI: {UPI} — pay करते ही print शुरू! 🖨️');
+document.getElementById('btnOk').onclick=()=>go('✅ आपका Order #{OID} Approved! Price ₹{AMT}.\n👉 Pay करें (1-tap): {PAYLINK}\n(UPI: {UPI})');
 document.getElementById('btnNo').onclick=()=>go('❌ माफ़ कीजिए — आपका Order #{OID} अभी print नहीं हो पाएगा। कृपया दुकान पर पूछें। 🙏');
 </script></body></html>

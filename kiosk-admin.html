@@ -128,7 +128,7 @@ async function act(id,status){
   if(status==='approved'){
     const {data}=await sb.from('orders').select('cust_phone').eq('id',id).single();
     if(data&&data.cust_phone){
-      const msg='✅ आपका Order #'+id+' Approved! Price ₹'+price+'. UPI: '+SUPA.upi+' — pay करते ही print शुरू! 🖨️';
+      const msg='✅ आपका Order #'+id+' Approved! Price ₹'+price+'.\n👉 Pay करें (1-tap): https://sanskritistore.github.io/store/kiosk-pay.html?amt='+price+'&oid='+id+'\n(UPI: '+SUPA.upi+')';
       window.open('https://wa.me/91'+data.cust_phone+'?text='+encodeURIComponent(msg),'_blank');
     }
   }
