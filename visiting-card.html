@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <link rel="icon" type="image/png" href="brand/favicon-64.png">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,interactive-widget=resizes-content">
 <title>संस्कृति — 🪪 Visiting Card Maker</title>
 <script src="assets/js/admin-gate.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1274,6 +1274,11 @@ function closeStudio(){ window._studioOv=null; STU._guides=null; STU.grpPick=nul
   STU.txSel=null; STU.txDrag=null; STU.elRs=null; window._recHits=false; window._txSel=null; window._txHits={};
   buildForm(); draw(); }
 function renderStudio(){
+  const _st0=document.getElementById('studio'); const _sc0=_st0?_st0.scrollTop:0;   /* 📱 scroll याद */
+  _renderStudioReal.apply(this,arguments);
+  const _st1=document.getElementById('studio'); if(_st1&&_sc0>4) _st1.scrollTop=_sc0;   /* 📱 scroll वापस — setting अपनी जगह रहे */
+}
+function _renderStudioReal(){
   const st=$('studio'); st.style.display='block'; st.innerHTML='';
   const c=STU.cfg;
   const H=(html)=>{ const d=document.createElement('div'); d.innerHTML=html; return d.firstElementChild; };
