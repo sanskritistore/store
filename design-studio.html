@@ -10,6 +10,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;700&family=Poppins:wght@400;600&family=Oswald:wght@400;700&family=Anton&family=Playfair+Display:wght@400;700&family=Rozha+One&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0f1115;--panel:#171a21;--panel2:#1d212b;--line:#2a2f3a;--txt:#e8e6df;--mut:#8a8f9a;--acc:#ff9933;--grn:#2ea36b;--blu:#3b82f6;--red:#ef4444;}
 *{box-sizing:border-box; margin:0; padding:0;}
@@ -112,6 +113,15 @@ button.tool.warn{color:#f88;}
     <textarea id="edText" rows="2" placeholder="नया text यहाँ लिखो…"></textarea>
     <div class="edRow"><label>Size</label><input type="range" id="edFs" min="4" max="80" value="22"><b id="edFsV" style="font-size:12px;">22</b></div>
     <div class="edRow">
+      <select id="edFont" title="Font चुनो" style="background:var(--bg3,#1e293b);color:var(--txt,#e2e8f0);border:1px solid var(--line,#334155);border-radius:10px;padding:8px 6px;font-size:13px;max-width:132px;">
+        <option value="">मूल Font</option>
+        <option value="'Mukta',sans-serif" style="font-family:Mukta">Mukta हिंदी</option>
+        <option value="'Poppins',sans-serif" style="font-family:Poppins">Poppins</option>
+        <option value="'Oswald',sans-serif" style="font-family:Oswald">Oswald</option>
+        <option value="'Anton',sans-serif" style="font-family:Anton">Anton Poster</option>
+        <option value="'Playfair Display',serif" style="font-family:'Playfair Display'">Playfair Fancy</option>
+        <option value="'Rozha One',serif" style="font-family:'Rozha One'">Rozha शाही</option>
+      </select>
       <button class="tool" id="edBold">B</button>
       <input type="color" id="edColor" value="#111111" title="Text रंग">
       <button class="tool" id="edAlL">◀</button><button class="tool on" id="edAlC">▬</button><button class="tool" id="edAlR">▶</button>
@@ -303,7 +313,7 @@ function boxDiv(b){
   }
   if(show&&b.text){
     const t=document.createElement('div');t.className='txt';
-    t.style.cssText=`font-size:${b.fs*sc}px;font-weight:${b.bold?800:400};color:${b.color};line-height:1.25;white-space:pre;`;
+    t.style.cssText=`font-size:${b.fs*sc}px;font-weight:${b.bold?800:400};color:${b.color};line-height:1.25;white-space:pre;font-family:${b.font||"'Segoe UI',system-ui,sans-serif"};`;
     t.style.justifyContent=b.align==='left'?'flex-start':b.align==='right'?'flex-end':'center';
     t.style.alignItems='flex-start';
     t.textContent=b.text;
@@ -364,6 +374,7 @@ function syncEd(){
   if(document.activeElement!==$('edText'))$('edText').value=b.text;
   $('edFs').value=Math.round(b.fs/S.CH*1000);$('edFsV').textContent=$('edFs').value;
   $('edColor').value=b.color;$('edBold').classList.toggle('on',b.bold);
+  $('edFont').value=b.font||'';
   $('edFill').classList.toggle('on',b.fillOn);$('edFill').textContent=b.fillOn?'🩹 पट्टी ON':'🩹 पट्टी OFF';
   $('edFillC').value=b.fillColor||'#ffffff';
   ['edAlL','edAlC','edAlR'].forEach(i=>$(i).classList.remove('on'));
@@ -386,6 +397,7 @@ $('edFs').addEventListener('input',()=>{
 });
 $('edFs').addEventListener('change',()=>pushHist());
 $('edBold').onclick=()=>{const b=selBox();if(!b)return;pushHist();b.bold=!b.bold;b.armed=true;render();syncEd();};
+$('edFont').addEventListener('change',()=>{const b=selBox();if(!b)return;pushHist();b.font=$('edFont').value||null;b.armed=true;render();syncEd();toast('🔤 Font बदला');});
 $('edColor').addEventListener('input',()=>{const b=selBox();if(!b)return;b.color=$('edColor').value;b.armed=true;render();});
 $('edColor').addEventListener('change',()=>pushHist());
 const setAl=a=>{const b=selBox();if(!b)return;pushHist();b.align=a;b.armed=true;render();syncEd();};
@@ -593,7 +605,7 @@ function exportCanvas(){
   S.boxes.forEach(b=>{
     const show=b.armed||!b.orig||b.text!==b.orig;
     if(!show)return;
-    ctx.font=`${b.bold?'800':'400'} ${b.fs}px 'Segoe UI',system-ui,sans-serif`;
+    ctx.font=`${b.bold?'800':'400'} ${b.fs}px ${b.font||"'Segoe UI',system-ui,sans-serif"}`;
     ctx.fillStyle=b.color;
     ctx.textAlign=b.align==='left'?'left':b.align==='right'?'right':'center';
     const tx=b.align==='left'?b.x:b.align==='right'?b.x+b.w:b.x+b.w/2;
@@ -617,7 +629,8 @@ function autoFillFrom(ctx,b){
   const mid=cols[Math.floor(cols.length/2)];
   return `rgb(${Math.round(mid[0])},${Math.round(mid[1])},${Math.round(mid[2])})`;
 }
-$('btnPng').onclick=()=>{
+$('btnPng').onclick=async()=>{
+  await document.fonts.ready;
   const cv=exportCanvas();
   cv.toBlob(bl=>{
     const a=document.createElement('a');a.href=URL.createObjectURL(bl);
@@ -627,10 +640,11 @@ $('btnPng').onclick=()=>{
   },'image/png');
 };
 /* 📄 PDF export — असली साइज़ (mm) की page, 300 DPI quality, सीधे printer पर चल जाए */
-$('btnPdf').onclick=()=>{
+$('btnPdf').onclick=async()=>{
   if(!window.jspdf){toast('⚠️ PDF engine load नहीं हुआ — internet चेक करो');return;}
   try{
     toast('📄 PDF बन रही है…');
+    await document.fonts.ready;
     const cv=exportCanvas();
     const {jsPDF}=window.jspdf;
     const wmm=S.W,hmm=S.H,L=wmm>hmm;
@@ -641,7 +655,8 @@ $('btnPdf').onclick=()=>{
     toast('📄 PDF तैयार — असली साइज़ '+fmtSize()+' @'+S.dpi+' DPI');
   }catch(e){console.error(e);toast('⚠️ PDF नहीं बनी');}
 };
-function doPrint(){
+async function doPrint(){
+  await document.fonts.ready;
   const cv=exportCanvas();
   const img=new Image();
   img.onload=()=>{
