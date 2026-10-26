@@ -79,7 +79,10 @@ input[type=range]{accent-color:var(--acc);}
     </div>
     <div style="font-size:10px;opacity:.7;margin:3px 2px 0;">दिशा पहले से चुनो — photo उसी में रहेगी, अपने-आप नहीं घूमेगी</div>
     <button id="btnAutoCropTog" style="width:100%;margin-top:8px;padding:9px;border-radius:10px;border:2px solid var(--line);background:var(--panel);color:var(--txt);font-weight:800;cursor:pointer;font-size:12px;">✂️ Auto-कटाई: ON</button>
-    <button id="btnAdd" style="margin-top:8px;">📁 फ़ोटो चुनें<br><span style="font-size:11px;color:var(--mut)">(एक साथ कई)</span></button>
+    <div style="display:flex;gap:6px;margin-top:8px;">
+      <button id="btnAdd" style="flex:1;margin-top:0;">📁 फ़ोटो चुनें<br><span style="font-size:11px;color:var(--mut)">(गैलरी/Files से)</span></button>
+      <button id="btnCam" style="flex:1;margin-top:0;padding:11px 4px;border-radius:10px;border:2px solid var(--acc);background:#f59e0b22;color:var(--acc);font-weight:800;cursor:pointer;font-size:13px;line-height:1.35;">📷 Camera खींचो<br><span style="font-weight:500;font-size:10px;">सीधे app में आएगी</span></button>
+    </div>
     <button id="btnAutoAll" style="width:100%;margin-top:8px;padding:10px;border-radius:10px;border:1px solid var(--line);background:#f59e0b22;color:var(--acc);font-weight:800;cursor:pointer;">⚡ सब AUTO करो</button>
     <div style="margin-top:8px;padding:8px;border:1px dashed var(--line);border-radius:10px;">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
@@ -142,6 +145,7 @@ input[type=range]{accent-color:var(--acc);}
 </main>
 <div id="toast"></div>
 <input type="file" id="fileInp" accept="image/*,application/pdf" multiple style="display:none">
+<input type="file" id="camInp" accept="image/*" capture="environment" style="display:none"> <!-- 📷 camera सीधे -->
 <div id="printArea"></div>
 <style id="pageStyle">@page{size:210mm 297mm; margin:0;}</style>
 
@@ -156,6 +160,7 @@ function uid(){ return 'd'+Date.now().toString(36)+Math.random().toString(36).sl
 
 /* ================= IMAGE LOAD ================= */
 $('btnAdd').addEventListener('click',()=>$('fileInp').click());
+$('btnCam').addEventListener('click',()=>$('camInp').click());   // 📷 सीधे camera
 /* दो बड़े buttons: चुनी (या सब) photos का type एक click में */
 /* ================= 🔗 PAIR ENGINE + 📚 SAMPLE LIBRARY ================= */
 function _mkPairSig(src){
@@ -368,7 +373,7 @@ function addDoc(cv, name, fromPdf){
   S.docs.push(doc);
   S._autoQ.push(doc);
 }
-$('fileInp').addEventListener('change',async e=>{
+async function _onFiles(e){
   const files=[...e.target.files]; e.target.value='';
   if(!files.length) return;
   for(const f of files){
@@ -408,7 +413,9 @@ $('fileInp').addEventListener('change',async e=>{
   if(S.cur<0&&S.docs.length) S.cur=0;
   renderAll();
   runAutoQueue();
-});
+}
+$('fileInp').addEventListener('change',_onFiles);
+$('camInp').addEventListener('change',_onFiles);   // 📷 camera से भी वही रास्ता
 /* AUTO queue — एक-एक करके पूरा processing (UI जिंदा रहे) */
 S._autoQ=[];
 let _autoBusy=false;
