@@ -86,6 +86,8 @@ button.tool.warn{color:#f88;}
 #bgPop button:hover{border-color:var(--acc);}
 #bgPop input[type=range]{accent-color:var(--acc);}
 #bgPop input[type=color]{width:42px; height:28px; border:1px solid var(--line); border-radius:6px; background:none; padding:0; cursor:pointer;}
+/* 📂 drag & drop overlay */
+body.drag::after{content:'📂 यहीं छोड़ दो — design खुल जाएगी'; position:fixed; inset:10px; display:flex; align-items:center; justify-content:center; background:#000c; color:#fff; font-size:22px; font-weight:700; z-index:999; pointer-events:none; border:4px dashed var(--acc); border-radius:16px;}
 #lpEmpty{padding:20px 14px; text-align:center; color:var(--mut); font-size:13px; line-height:1.8;}
 #btnLayers{position:relative;}
 #btnLayers .cnt{position:absolute; top:-6px; right:-6px; background:var(--acc); color:#000; border-radius:10px; font-size:10px; font-weight:900; padding:1px 6px; display:none;}
@@ -122,7 +124,7 @@ button.tool.warn{color:#f88;}
     <div id="wrap">
       <canvas id="cv"></canvas>
       <div id="boxes"></div>
-      <div id="hint">📐 साइज़ चुनो → 🖼️ design डालो (photo या <b>PDF</b>) → 🔍 <b>Text खोजो</b><br>सारे text खुद numbered layers बनेंगे — छूकर बदलो — Print!</div>
+      <div id="hint">📐 साइज़ चुनो → 🖼️ design डालो (photo या <b>PDF</b>) → 🔍 <b>Text खोजो</b><br>सारे text खुद numbered layers बनेंगे — छूकर बदलो — Print!<br>💡 <b>या file को किसी folder से इस page पर खींचकर छोड़ दो</b></div>
     </div>
   </div>
   <div id="edPanel">
@@ -286,6 +288,14 @@ $('btnBg').onclick=()=>$('bgInp').click();
 $('btnCam').onclick=()=>$('camInp').click();
 $('bgInp').onchange=e=>{if(e.target.files[0])loadBgFile(e.target.files[0]);e.target.value='';};
 $('camInp').onchange=e=>{if(e.target.files[0])loadBgFile(e.target.files[0]);e.target.value='';};
+/* 📂 drag & drop — file को page पर खींचकर छोड़ो, dialog की ज़रूरत नहीं */
+let _dragN=0;
+document.addEventListener('dragenter',e=>{e.preventDefault();_dragN++;document.body.classList.add('drag');});
+document.addEventListener('dragover',e=>e.preventDefault());
+document.addEventListener('dragleave',e=>{e.preventDefault();if(--_dragN<=0){_dragN=0;document.body.classList.remove('drag');}});
+document.addEventListener('drop',e=>{e.preventDefault();_dragN=0;document.body.classList.remove('drag');
+  const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];if(f)loadBgFile(f);});
+
 function loadBgFile(f){
   if(f.type==='application/pdf'||/\.pdf$/i.test(f.name)){loadPdfFile(f);return;}
   if(!/^image\//.test(f.type)){toast('⚠️ यह file नहीं चलेगी — JPG, PNG या PDF डालो (Word/PSD/CDR पहले PDF/JPG बनाओ)');return;}
