@@ -315,10 +315,10 @@ function placeBg(img,name,silent){
 let _bid=1;
 function addBox(){
   pushHist();
-  const b={id:_bid++,x:S.CW*0.18,y:S.CH*0.42,w:S.CW*0.64,h:S.CH*0.07,text:'',armed:true,fs:S.CH*0.035,color:'#111111',bold:false,align:'center',fillOn:true,fillColor:''};
+  const b={id:_bid++,x:S.CW*0.18,y:S.CH*0.42,w:S.CW*0.64,h:S.CH*0.07,text:'',armed:true,fs:S.CH*0.035,color:'#111111',bold:false,align:'center',fillOn:false,fillColor:''};
   S.boxes.push(b);S.sel=b.id;render();syncEd();
   $('edText').focus();
-  toast('✏️ Box आ गया — पुराने text पर खींचकर रखो, नया text नीचे लिखो');
+  toast('✏️ Box आ गया — नया text नीचे लिखो (पुराना text ढकना हो तो 🩹 पट्टी ON करो)');
 }
 $('btnAdd').onclick=addBox;
 function selBox(){return S.boxes.find(b=>b.id===S.sel)||null;}
