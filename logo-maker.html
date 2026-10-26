@@ -12,6 +12,17 @@
 /* 📱 phone touch fixes: page zoom बंद, design छूने पर screen न हिले (PC पर कोई असर नहीं) */
 body{touch-action:manipulation}
 body.stumob #cvF{touch-action:none}
+/* 📱 दो अलग screens: Design में sheet छिपी, Settings में canvas छिपा */
+#stuTog{display:none;position:fixed;right:12px;bottom:12px;z-index:70;border:0;border-radius:30px;background:#f59e0b;color:#1e293b;font-size:15px;font-weight:700;padding:13px 17px;box-shadow:0 4px 16px rgba(0,0,0,.6);cursor:pointer}
+#stuDesign{display:none}
+@media(max-width:768px){
+  body.stumob:not(.stuset) #studio{display:none!important}
+  body.stumob.stuset #studio{display:block!important;top:0;height:100vh;height:100dvh;border-radius:0;border-top:0}
+  body.stumob.stuset #stage{display:none}
+  body.stumob:not(.stuset) #stuTog{display:block}
+  body.stumob.stuset #stuDesign{display:inline-block;margin-right:8px}
+  body.stumob #stage{justify-content:center;padding-top:14px}
+}
 
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f172a;color:#e2e8f0;display:flex;flex-direction:column;height:100vh;overflow:hidden}
@@ -1551,12 +1562,14 @@ function openStudio(baseId){
   STU.editId=(baseId&&TEMPLATES[baseId].custom)?baseId:null;
   STU.sel=null; STU.drag=null; STU.txSel=null; STU.txDrag=null; STU.elRs=null; STU.hist=[]; STU.hi=-1;
   STU.open=true; renderStudio(); stuSnap(); studioPreview();
-  try{ if(window.matchMedia&&matchMedia('(max-width:768px)').matches){ document.body.classList.add('stumob');
+  try{ if(window.matchMedia&&matchMedia('(max-width:768px)').matches){ document.body.classList.add('stumob','stuset');
+    /* 📱 दो screens toggle: 🎨 Design ↔ ⚙️ Settings */
+    if(!$('stuTog')){ const tb=document.createElement('button'); tb.id='stuTog'; tb.textContent='⚙️ Settings'; tb.onclick=()=>{ document.body.classList.add('stuset'); }; document.body.appendChild(tb); }
     const st=$('stage'); if(st) st.scrollTop=0; window.scrollTo(0,0);
     setTimeout(()=>{ try{ draw(); const st2=$('stage'); if(st2) st2.scrollTop=0; }catch(_){ } },80); } }catch(_){ }
 }
 function closeStudio(){ window._studioOv=null; STU._guides=null; STU.grpPick=null; STU.open=false; $('studio').style.display='none';
-  try{ document.body.classList.remove('stumob'); setTimeout(()=>{ try{ draw(); }catch(_){ } },80); }catch(_){ }
+  try{ document.body.classList.remove('stumob','stuset'); setTimeout(()=>{ try{ draw(); }catch(_){ } },80); }catch(_){ }
   delete TEMPLATES._studio; if(S.tplFront==='_studio') S.tplFront=STU.editId||STU.from||'simple'; STU.from=null;
   STU.txSel=null; STU.txDrag=null; STU.elRs=null; window._recHits=false; window._txSel=null; window._txHits={};
   buildForm(); draw(); }
@@ -1569,9 +1582,10 @@ function _renderStudioReal(){
   const st=$('studio'); st.style.display='block'; st.innerHTML='';
   const c=STU.cfg;
   const H=(html)=>{ const d=document.createElement('div'); d.innerHTML=html; return d.firstElementChild; };
-  st.appendChild(H('<h3>'+T('stTitle')+'<button class="x" id="stX">✖</button></h3>'));
+  st.appendChild(H('<h3>'+T('stTitle')+'<button class=\"x\" id=\"stuDesign\">🎨</button><button class="x" id="stX">✖</button></h3>'));
   const _mb=(typeof mBar==='function')?mBar():null; if(_mb) st.appendChild(_mb);   /* 📱 phone shortcut bar */
   st.querySelector('#stX').onclick=closeStudio;
+  const _sd=st.querySelector('#stuDesign'); if(_sd) _sd.onclick=()=>{ document.body.classList.remove('stuset'); };
   /* नाम */
   const nm=H('<div class="strow"><label>'+T('stName')+'</label><input placeholder="'+T('stNamePh')+'"></div>');
   const nmi=nm.querySelector('input'); nmi.value=c.name||'';
