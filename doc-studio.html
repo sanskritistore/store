@@ -73,6 +73,12 @@ input[type=range]{accent-color:var(--acc);}
       <button id="btnPan" class="modeBtn" data-kind="pan" style="flex:1;padding:11px 4px;border-radius:10px;border:2px solid var(--line);background:var(--panel);color:var(--txt);font-weight:800;cursor:pointer;font-size:12px;line-height:1.35;">🟦 PAN<br><span style="font-weight:500;font-size:10px;">single card</span></button>
     </div>
     <div id="modeHint" style="font-size:10px;opacity:.7;margin:4px 2px 0;">कोई type नहीं चुनी — software खुद अंदाज़ा लगाएगा</div>
+    <div style="display:flex;gap:6px;margin-top:8px;">
+      <button id="btnPortrait" style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid var(--line);background:var(--panel);color:var(--txt);font-weight:800;cursor:pointer;font-size:12px;">📄 खड़ा</button>
+      <button id="btnLandscape" style="flex:1;padding:9px 4px;border-radius:10px;border:2px solid var(--line);background:var(--panel);color:var(--txt);font-weight:800;cursor:pointer;font-size:12px;">📄 आड़ा</button>
+    </div>
+    <div style="font-size:10px;opacity:.7;margin:3px 2px 0;">दिशा पहले से चुनो — photo उसी में रहेगी, अपने-आप नहीं घूमेगी</div>
+    <button id="btnAutoCropTog" style="width:100%;margin-top:8px;padding:9px;border-radius:10px;border:2px solid var(--line);background:var(--panel);color:var(--txt);font-weight:800;cursor:pointer;font-size:12px;">✂️ Auto-कटाई: ON</button>
     <button id="btnAdd" style="margin-top:8px;">📁 फ़ोटो चुनें<br><span style="font-size:11px;color:var(--mut)">(एक साथ कई)</span></button>
     <button id="btnAutoAll" style="width:100%;margin-top:8px;padding:10px;border-radius:10px;border:1px solid var(--line);background:#f59e0b22;color:var(--acc);font-weight:800;cursor:pointer;">⚡ सब AUTO करो</button>
     <div style="margin-top:8px;padding:8px;border:1px dashed var(--line);border-radius:10px;">
@@ -261,6 +267,8 @@ function applyType(kind){
 }
 /* ---- Mode: पहले type, फिर photo ---- */
 S.mode=null;
+S.orient='portrait'; S._orientSet=false;      // 🧭 दिशा: खड़ा/आड़ा (Dev चुनता है, पहले से)
+S.autoCropOn=true;                            // ✂️ Auto-कटाई ON/OFF (Dev का button)
 function setMode(kind){
   S.mode=(S.mode===kind)?null:kind;   // दोबारा दबाओ तो हट जाए
   document.querySelectorAll('.modeBtn').forEach(b=>{
@@ -272,6 +280,7 @@ function setMode(kind){
   const nm={doc:'📄 A4 Document',card:'🔗 Card PAIR',pan:'🟦 PAN'};
   $('modeHint').innerHTML=S.mode?('<b style="color:var(--acc)">'+nm[S.mode]+' mode ON</b> — अब photo डालो, सब उसी तरह set होंगे'):'कोई type नहीं चुनी — software खुद अंदाज़ा लगाएगा';
   if(S.mode&&S.docs.length) applyType(S.mode);       // पहले से photos हों तो उन पर भी लागू
+  if(!S._orientSet){ S.orient=(S.mode==='card'||S.mode==='pan')?'landscape':'portrait'; paintOrient(); }   // card→आड़ा, doc→खड़ा
 }
 $('btnCards').addEventListener('click',()=>setMode('card'));
 $('btnPan').addEventListener('click',()=>setMode('pan'));
@@ -306,6 +315,31 @@ $('btnSmpAdd').addEventListener('click',()=>{
 });
 renderSamples();
 $('btnDocs').addEventListener('click',()=>setMode('doc'));
+
+/* 🧭 दिशा toggle (खड़ा/आड़ा) + ✂️ Auto-कटाई ON/OFF — Dev के controls, localStorage में याद */
+function paintOrient(){
+  const p=$('btnPortrait'), l=$('btnLandscape');
+  p.style.borderColor=S.orient==='portrait'?'var(--acc)':'var(--line)';
+  p.style.background=S.orient==='portrait'?'#f59e0b22':'var(--panel)';
+  l.style.borderColor=S.orient==='landscape'?'var(--acc)':'var(--line)';
+  l.style.background=S.orient==='landscape'?'#f59e0b22':'var(--panel)';
+}
+function setOrient(o){ S.orient=o; S._orientSet=true;
+  try{localStorage.setItem('sc_ds_orient',o);}catch(e){}
+  paintOrient(); toast(o==='portrait'?'📄 खड़ा दिशा चुनी — आड़ी photo 90° घूम जाएगी':'📄 आड़ा दिशा चुनी — खड़ी photo 90° घूम जाएगी'); }
+$('btnPortrait').addEventListener('click',()=>setOrient('portrait'));
+$('btnLandscape').addEventListener('click',()=>setOrient('landscape'));
+function paintAutoCrop(){ const b=$('btnAutoCropTog');
+  b.textContent='✂️ Auto-कटाई: '+(S.autoCropOn?'ON':'OFF');
+  b.style.borderColor=S.autoCropOn?'var(--acc)':'var(--line)';
+  b.style.background=S.autoCropOn?'#f59e0b22':'var(--panel)'; }
+$('btnAutoCropTog').addEventListener('click',()=>{ S.autoCropOn=!S.autoCropOn;
+  try{localStorage.setItem('sc_ds_autocrop',S.autoCropOn?'1':'0');}catch(e){}
+  paintAutoCrop();
+  toast(S.autoCropOn?'✂️ Auto-कटाई ON — photo खुद कटेगी (सुरक्षित नियमों से)':'✂️ Auto-कटाई OFF — पूरा page आएगा, खुद box खींचो'); });
+try{ const o=localStorage.getItem('sc_ds_orient'); if(o==='landscape'||o==='portrait'){ S.orient=o; S._orientSet=true; }
+     if(localStorage.getItem('sc_ds_autocrop')==='0') S.autoCropOn=false; }catch(e){}
+paintOrient(); paintAutoCrop();
 $('btnAutoAll').addEventListener('click',()=>{
   if(!S.docs.length){ toast('पहले फ़ोटो चुनें'); return; }
   S._autoQ.push(...S.docs);
@@ -392,7 +426,7 @@ function runAutoQueue(){
   const idx=S.docs.indexOf(doc)+1;
   toast('⚡ AUTO '+idx+'/'+S.docs.length+' — '+doc.name.slice(0,18)+'…');
   setTimeout(()=>{
-    try{ if(!doc._fromPdf) autoProcess(doc); }catch(e){ console.error(e); doc.crop={x:0,y:0,w:1,h:1}; }
+    try{ if(doc._fromPdf) applyOrient(doc); else autoProcess(doc); }catch(e){ console.error(e); doc.crop={x:0,y:0,w:1,h:1}; }
     try{ renderAll(); }catch(e){ console.error(e); }
     _autoBusy=false;
     runAutoQueue();
@@ -1194,9 +1228,23 @@ function _docQuad(src){
   return q;   // [TL,TR,BR,BL] src px में
 }
 
+/* 🧭 Dev की चुनी दिशा लागू करो — आकार से (content-अंदाज़ा बिल्कुल नहीं):
+   खड़ा चुना + photo आड़ी → 90° घुमाओ; आड़ा चुना + photo खड़ी → 90° घुमाओ. बस। */
+function applyOrient(doc){
+  const W=doc.src.width, H=doc.src.height;
+  const wantLand=(S.orient==='landscape');
+  if((W>H)===wantLand) return;                       // पहले से सही दिशा
+  const cv=document.createElement('canvas'); cv.width=H; cv.height=W;
+  const x=cv.getContext('2d'); x.translate(H/2,W/2); x.rotate(Math.PI/2); x.drawImage(doc.src,-W/2,-H/2);
+  doc._orig=doc._orig||doc.src; doc.src=cv;
+  doc.rot=0; doc.crop={x:0,y:0,w:1,h:1}; doc._rc=null; doc._rcKey=null; doc._proc=null;
+}
+
 /* ================= FULL AUTO — photo डालो → print-ready ================= */
 function autoProcess(doc){
   /* A4 mode: पहले खुद 4 कोने पहचानो → एक warp में rotation+perspective+crop पूरा */
+  if(!S.autoCropOn){ doc.rot=0; doc.crop={x:0,y:0,w:1,h:1}; doc.tag=''; doc._proc=null; return 'manual'; }   // ✂️ OFF = कुछ अपने-आप नहीं
+  applyOrient(doc);                                    // 🧭 चुनी दिशा सबसे पहले
   if(S.mode==='doc'){
     try{
       const q=_docQuad(doc.src);
@@ -1206,15 +1254,15 @@ function autoProcess(doc){
         doc.rot=0; doc._rc=null; doc._rcKey=null;
         doc.crop={x:0.012,y:0.012,w:0.976,h:0.976};
         edgeSnap(doc); clampCrop(doc);
-        _docPortrait(doc);       // आड़ा निकले तो खड़ा
-        _finalUpright(doc);      // margin+text से उल्टा हो तो सीधा
+        // 🧭 auto-portrait बंद (Dev नियम: दिशा पहले से चुनते हैं)
+        // 🧭 auto-upright बंद
         doc.tag=''; doc._proc=null;
         return 'warp';
       }
     }catch(e){ console.warn('docQuad',e); }
     // कोने न मिले तो नीचे भरोसेमंद bbox flow — और 📐/⬠ manual tool हमेशा है
   }
-  doc.rot=autoStraighten(doc);                 // 1) दिशा
+  doc.rot=0;                                     // 🧭 अपने-आप दिशा-अंदाज़ा बंद (Dev नियम)
   const RC=rotCanvas(doc);
   let det=autoCrop(RC);                         // 2) document ढूंढो (mask सहित)
   if(det){ // बहुत छोटा box = QR/कोने पर अटक गया — भरोसा नहीं
@@ -1240,7 +1288,7 @@ function autoProcess(doc){
         doc.src=out; doc.rot=0; doc._rc=null; doc._rcKey=null;
         doc.crop={x:0.012,y:0.012,w:0.976,h:0.976};  // किनार की गंदगी बाहर
         edgeSnap(doc); clampCrop(doc);
-        _finalUpright(doc);                         // warp के बाद भी सीधाई ज़रूरी
+        // 🧭 auto-upright बंद
         doc.tag=''; doc._proc=null;
         return 'warp';
       }
@@ -1251,8 +1299,8 @@ function autoProcess(doc){
     doc.crop={x:0,y:0,w:1,h:1};
   }
   edgeSnap(doc); clampCrop(doc);                // 3) किनार पर snap
-  _finalUpright(doc);                            // 4) FINAL सीधाई
-  if(S.mode==='doc') _docPortrait(doc);          // 5) A4 हमेशा खड़ा — sideways आए तो 90° सुधारो
+  // 🧭 FINAL auto-upright बंद
+  // 🧭 auto-portrait बंद
   doc.tag=''; doc._proc=null; doc._rc=null;
   return 'crop';
 }
