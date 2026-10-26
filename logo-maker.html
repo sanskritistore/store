@@ -3,12 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <link rel="icon" type="image/png" href="brand/favicon-64.png">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>संस्कृति — 🎨 Logo Maker</title>
 <script src="assets/js/admin-gate.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Serif+Devanagari:wght@600;700&family=Poppins:wght@400;600;700;800&family=Mukta:wght@400;600;700;800&family=Playfair+Display:wght@500;700;800&family=Tiro+Devanagari+Hindi:ital@0;1&family=Cinzel:wght@500;700;800&family=Montserrat:wght@400;600;700;800&family=Raleway:ital,wght@0,400;0,600;0,700;1,400&family=Oswald:wght@400;600;700&family=Bebas+Neue&family=Dancing+Script:wght@500;700&family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Hind:wght@400;600;700&family=Kalam:wght@400;700&family=Rozha+One&family=Baloo+2:wght@500;700;800&family=Quintessential&family=Pinyon+Script&family=Italianno&family=Alex+Brush&family=Allura&family=Cormorant+Garamond:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=Marcellus&family=Yatra+One&display=swap" rel="stylesheet">
 <style>
+/* 📱 phone touch fixes: page zoom बंद, design छूने पर screen न हिले (PC पर कोई असर नहीं) */
+body{touch-action:manipulation}
+body.stumob #cvF{touch-action:none}
+
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f172a;color:#e2e8f0;display:flex;flex-direction:column;height:100vh;overflow:hidden}
 header{display:flex;align-items:center;gap:10px;padding:8px 14px;background:#1e293b;border-bottom:2px solid #f59e0b;flex-wrap:wrap}
