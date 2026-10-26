@@ -9,6 +9,7 @@
 <link rel="canonical" href="https://sanskritistore.github.io/store/design-studio.html">
 <script defer src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <style>
 :root{--bg:#0f1115;--panel:#171a21;--panel2:#1d212b;--line:#2a2f3a;--txt:#e8e6df;--mut:#8a8f9a;--acc:#ff9933;--grn:#2ea36b;--blu:#3b82f6;--red:#ef4444;}
 *{box-sizing:border-box; margin:0; padding:0;}
@@ -130,6 +131,7 @@ button.tool.warn{color:#f88;}
     <button class="tool" id="btnLayers">🧩 Layers<span class="cnt" id="lyrCnt">0</span></button>
     <button class="tool" id="btnUndo">↶</button>
     <button class="tool" id="btnPng">⬇️ PNG</button>
+    <button class="tool" id="btnPdf" title="Print-ready PDF — असली साइज़ (mm) में, सीधे printer/customer को भेजो">📄 PDF</button>
     <button class="tool" id="btnPrint">🖨️ Print</button>
   </div>
 </main>
@@ -620,6 +622,21 @@ $('btnPng').onclick=()=>{
     a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
     toast('⬇️ PNG सेव हुआ ('+S.dpi+' DPI, '+fmtSize()+')');
   },'image/png');
+};
+/* 📄 PDF export — असली साइज़ (mm) की page, 300 DPI quality, सीधे printer पर चल जाए */
+$('btnPdf').onclick=()=>{
+  if(!window.jspdf){toast('⚠️ PDF engine load नहीं हुआ — internet चेक करो');return;}
+  try{
+    toast('📄 PDF बन रही है…');
+    const cv=exportCanvas();
+    const {jsPDF}=window.jspdf;
+    const wmm=S.W,hmm=S.H,L=wmm>hmm;
+    const pdf=new jsPDF({orientation:L?'landscape':'portrait',unit:'mm',format:L?[hmm,wmm]:[wmm,hmm],compress:true});
+    const W=pdf.internal.pageSize.getWidth(),H=pdf.internal.pageSize.getHeight();
+    pdf.addImage(cv.toDataURL('image/jpeg',0.95),'JPEG',0,0,W,H);
+    pdf.save('sanskriti-design-'+S.presetName.replace(/[^\w]+/g,'-')+'.pdf');
+    toast('📄 PDF तैयार — असली साइज़ '+fmtSize()+' @'+S.dpi+' DPI');
+  }catch(e){console.error(e);toast('⚠️ PDF नहीं बनी');}
 };
 function doPrint(){
   const cv=exportCanvas();
