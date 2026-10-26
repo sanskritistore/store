@@ -7,6 +7,7 @@
 <title>🎨 संस्कृति डिज़ाइन स्टूडियो — Design same, text बदलो</title>
 <meta name="description" content="Customer का design same रहे, सिर्फ़ text बदलो — menu card, marriage card, visiting card, banner। Free, बिना signup, सब कुछ आपके device पर।">
 <link rel="canonical" href="https://sanskritistore.github.io/store/design-studio.html">
+<script defer src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
 :root{--bg:#0f1115;--panel:#171a21;--panel2:#1d212b;--line:#2a2f3a;--txt:#e8e6df;--mut:#8a8f9a;--acc:#ff9933;--grn:#2ea36b;--blu:#3b82f6;--red:#ef4444;}
 *{box-sizing:border-box; margin:0; padding:0;}
@@ -56,6 +57,20 @@ button.tool.warn{color:#f88;}
 .custRow input[type=number]{background:var(--panel2); border:1px solid var(--line); color:var(--txt); border-radius:8px; padding:8px; width:84px; font-size:15px;}
 .custRow select{background:var(--panel2); border:1px solid var(--line); color:var(--txt); border-radius:8px; padding:8px; font-size:14px;}
 #toast{position:fixed; bottom:86px; left:50%; transform:translateX(-50%); background:#123524; color:#7df0b5; border:1px solid var(--grn); padding:11px 22px; border-radius:12px; font-size:14px; font-weight:700; opacity:0; transition:opacity .3s; pointer-events:none; z-index:99; max-width:90vw; text-align:center;}
+/* 🧩 layers panel (Photoshop जैसी list) */
+#lyrPanel{position:fixed; top:0; right:0; bottom:0; width:min(300px,86vw); background:var(--panel); border-left:1px solid var(--line); z-index:40; transform:translateX(105%); transition:transform .25s; display:flex; flex-direction:column; box-shadow:-6px 0 24px #0008;}
+#lyrPanel.open{transform:none;}
+#lyrPanel .lp-head{padding:10px 12px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:8px;}
+#lyrPanel .lp-head b{flex:1; font-size:14px;}
+#lyrList{flex:1; overflow-y:auto; padding:8px; display:flex; flex-direction:column; gap:6px;}
+.lyr{display:flex; align-items:center; gap:8px; background:var(--panel2); border:1.5px solid var(--line); border-radius:10px; padding:8px 10px; cursor:pointer; text-align:left;}
+.lyr.on{border-color:var(--acc); background:#241a0d;}
+.lyr .num{min-width:26px; height:26px; border-radius:8px; background:var(--acc); color:#000; font-weight:900; font-size:13px; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+.lyr .ltxt{font-size:13px; color:var(--txt); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.lyr .del{color:#f88; background:none; border:0; font-size:15px; cursor:pointer; padding:4px 2px;}
+#lpEmpty{padding:20px 14px; text-align:center; color:var(--mut); font-size:13px; line-height:1.8;}
+#btnLayers{position:relative;}
+#btnLayers .cnt{position:absolute; top:-6px; right:-6px; background:var(--acc); color:#000; border-radius:10px; font-size:10px; font-weight:900; padding:1px 6px; display:none;}
 #printArea{display:none;}
 @media print{
   body>*{display:none !important;}
@@ -88,7 +103,7 @@ button.tool.warn{color:#f88;}
     <div id="wrap">
       <canvas id="cv"></canvas>
       <div id="boxes"></div>
-      <div id="hint">📐 साइज़ चुनो → 🖼️ customer का design डालो → ➕ Text box डालो<br>पुराने text पर box — नया text लिखो — Print!</div>
+      <div id="hint">📐 साइज़ चुनो → 🖼️ customer का design डालो → 🔍 <b>Text खोजो</b><br>सारे text खुद numbered layers बनेंगे — छूकर बदलो — Print!</div>
     </div>
   </div>
   <div id="edPanel">
@@ -110,6 +125,8 @@ button.tool.warn{color:#f88;}
     <button class="tool" id="btnBg">🖼️ Design डालो</button>
     <button class="tool" id="btnCam">📷 Camera</button>
     <button class="tool" id="btnAdd">➕ Text box</button>
+    <button class="tool" id="btnScan" title="Design के सारे text खुद ढूँढकर numbered layers बनाओ">🔍 Text खोजो</button>
+    <button class="tool" id="btnLayers">🧩 Layers<span class="cnt" id="lyrCnt">0</span></button>
     <button class="tool" id="btnUndo">↶</button>
     <button class="tool" id="btnPng">⬇️ PNG</button>
     <button class="tool" id="btnPrint">🖨️ Print</button>
@@ -117,6 +134,16 @@ button.tool.warn{color:#f88;}
 </main>
 <input type="file" id="bgInp" accept="image/*" hidden>
 <input type="file" id="camInp" accept="image/*" capture="environment" hidden>
+
+<div id="lyrPanel">
+  <div class="lp-head">
+    <b>🧩 Text Layers</b>
+    <label style="font-size:11px;color:var(--mut);display:flex;align-items:center;gap:4px;font-weight:700;cursor:pointer;" title="हिंदी text भी पढ़ो (पहली बार थोड़ा download होगा)"><input type="checkbox" id="ckHin"> हिंदी भी</label>
+    <button class="tool" id="btnScan2" title="दुबारा खोजो">🔍</button>
+    <button class="tool" id="btnLyrClose">✕</button>
+  </div>
+  <div id="lyrList"></div>
+</div>
 
 <div id="sizeModal">
   <div class="card">
@@ -226,14 +253,14 @@ function placeBg(img,name,silent){
   if(!silent)pushHist();
   S.bg={img,name};
   render();
-  if(!silent)toast('🖼️ Design लग गया — अब ➕ Text box डालो');
+  if(!silent)toast('🖼️ Design लग गया — अब 🔍 Text खोजो दबाओ');
 }
 
 /* ---------- Boxes ---------- */
 let _bid=1;
 function addBox(){
   pushHist();
-  const b={id:_bid++,x:S.CW*0.18,y:S.CH*0.42,w:S.CW*0.64,h:S.CH*0.07,text:'',fs:S.CH*0.035,color:'#111111',bold:false,align:'center',fillOn:true,fillColor:''};
+  const b={id:_bid++,x:S.CW*0.18,y:S.CH*0.42,w:S.CW*0.64,h:S.CH*0.07,text:'',armed:true,fs:S.CH*0.035,color:'#111111',bold:false,align:'center',fillOn:true,fillColor:''};
   S.boxes.push(b);S.sel=b.id;render();syncEd();
   $('edText').focus();
   toast('✏️ Box आ गया — पुराने text पर खींचकर रखो, नया text नीचे लिखो');
@@ -257,20 +284,24 @@ function render(){
   layer.style.width=cv.style.width;layer.style.height=cv.style.height;
   $('hint').style.display=(S.bg||S.boxes.length)?'none':'flex';
   S.boxes.forEach(b=>layer.appendChild(boxDiv(b)));
+  refreshLyr();
 }
 function boxDiv(b){
   const d=document.createElement('div');d.className='box'+(b.id===S.sel?' sel':'');d.dataset.id=b.id;
   d.style.left=(b.x*sc)+'px';d.style.top=(b.y*sc)+'px';d.style.width=(b.w*sc)+'px';d.style.height=(b.h*sc)+'px';
-  if(b.fillOn){
+  const show=b.armed||!b.orig||b.text!==b.orig;  // OCR layer: edit होने तक original design untouched
+  if(show&&b.fillOn){
     if(b.fillColor)d.style.background=b.fillColor;
     else{const c=autoFill(b);if(c)d.style.background=c;}
   }
-  const t=document.createElement('div');t.className='txt';
-  t.style.cssText=`font-size:${b.fs*sc}px;font-weight:${b.bold?800:400};color:${b.color};line-height:1.25;white-space:pre;`;
-  t.style.justifyContent=b.align==='left'?'flex-start':b.align==='right'?'flex-end':'center';
-  t.style.alignItems='flex-start';
-  t.textContent=b.text;
-  d.appendChild(t);
+  if(show&&b.text){
+    const t=document.createElement('div');t.className='txt';
+    t.style.cssText=`font-size:${b.fs*sc}px;font-weight:${b.bold?800:400};color:${b.color};line-height:1.25;white-space:pre;`;
+    t.style.justifyContent=b.align==='left'?'flex-start':b.align==='right'?'flex-end':'center';
+    t.style.alignItems='flex-start';
+    t.textContent=b.text;
+    d.appendChild(t);
+  }
   const h=document.createElement('div');h.className='hd';h.textContent='◢';d.appendChild(h);
   d.addEventListener('pointerdown',ev=>startDrag(ev,b,'move'));
   h.addEventListener('pointerdown',ev=>startDrag(ev,b,'resize'));
@@ -335,40 +366,157 @@ let _histTxt=false;
 $('edText').addEventListener('input',()=>{
   const b=selBox();if(!b)return;
   if(!_histTxt){pushHist();_histTxt=true;setTimeout(()=>_histTxt=false,900);}
-  b.text=$('edText').value;
+  b.text=$('edText').value;b.armed=true;
   const lines=b.text.split('\n').length;
   b.h=Math.max(S.CH*0.02,lines*b.fs*1.3);
   render();
 });
 $('edFs').addEventListener('input',()=>{
   const b=selBox();if(!b)return;
-  b.fs=S.CH*(+$('edFs').value)/1000;$('edFsV').textContent=$('edFs').value;
+  b.fs=S.CH*(+$('edFs').value)/1000;$('edFsV').textContent=$('edFs').value;b.armed=true;
   const lines=b.text.split('\n').length;b.h=Math.max(S.CH*0.02,lines*b.fs*1.3);
   render();
 });
 $('edFs').addEventListener('change',()=>pushHist());
-$('edBold').onclick=()=>{const b=selBox();if(!b)return;pushHist();b.bold=!b.bold;render();syncEd();};
-$('edColor').addEventListener('input',()=>{const b=selBox();if(!b)return;b.color=$('edColor').value;render();});
+$('edBold').onclick=()=>{const b=selBox();if(!b)return;pushHist();b.bold=!b.bold;b.armed=true;render();syncEd();};
+$('edColor').addEventListener('input',()=>{const b=selBox();if(!b)return;b.color=$('edColor').value;b.armed=true;render();});
 $('edColor').addEventListener('change',()=>pushHist());
-const setAl=a=>{const b=selBox();if(!b)return;pushHist();b.align=a;render();syncEd();};
+const setAl=a=>{const b=selBox();if(!b)return;pushHist();b.align=a;b.armed=true;render();syncEd();};
 $('edAlL').onclick=()=>setAl('left');$('edAlC').onclick=()=>setAl('center');$('edAlR').onclick=()=>setAl('right');
-$('edFill').onclick=()=>{const b=selBox();if(!b)return;pushHist();b.fillOn=!b.fillOn;render();syncEd();};
+$('edFill').onclick=()=>{const b=selBox();if(!b)return;pushHist();b.fillOn=!b.fillOn;b.armed=true;render();syncEd();};
 $('edFillC').addEventListener('input',()=>{const b=selBox();if(!b)return;b.fillColor=$('edFillC').value;render();});
 $('edFillC').addEventListener('change',()=>pushHist());
 $('edDel').onclick=()=>{const b=selBox();if(!b)return;pushHist();S.boxes=S.boxes.filter(x=>x.id!==b.id);S.sel=null;render();syncEd();toast('🗑️ Box हट गया');};
 $('btnUndo').onclick=undo;
 
 /* ---------- Export: PNG + Print ---------- */
+/* ---------- 🧩 Auto Text Layers (OCR) — मंज़िल 2, 26 Oct ---------- */
+let _scanning=false;
+$('btnScan').onclick=scanText;$('btnScan2').onclick=scanText;
+function cleanOcr(t){return (t||'').replace(/_{2,}/g,' ').replace(/^[\s"'“”‘’_.|•·\-–—]+|[\s"'“”‘’_|•·]+$/g,'').trim();}
+$('btnLayers').onclick=()=>$('lyrPanel').classList.toggle('open');
+$('btnLyrClose').onclick=()=>$('lyrPanel').classList.remove('open');
+$('ckHin').checked=localStorage.getItem('sc_dsg_hin')==='1';
+$('ckHin').onchange=()=>{try{localStorage.setItem('sc_dsg_hin',$('ckHin').checked?'1':'0');}catch(e){}};
+
+async function scanText(){
+  if(!S.bg){toast('⚠️ पहले 🖼️ Design डालो');return;}
+  if(_scanning){toast('⏳ पढ़ रहा हूँ… थोड़ा रुको');return;}
+  if(typeof Tesseract==='undefined'){toast('⚠️ OCR engine लोड नहीं हुआ — internet चेक करके दुबारा खोलो');return;}
+  _scanning=true;$('btnScan').style.opacity=.5;$('btnScan2').style.opacity=.5;
+  try{
+    const img=S.bg.img;
+    const k=Math.min(1,2000/(img.naturalWidth||img.width));
+    const oc=document.createElement('canvas');
+    oc.width=Math.max(2,Math.round((img.naturalWidth||img.width)*k));
+    oc.height=Math.max(2,Math.round((img.naturalHeight||img.height)*k));
+    oc.getContext('2d').drawImage(img,0,0,oc.width,oc.height);
+    const lang=$('ckHin').checked?'eng+hin':'eng';
+    toast('⏳ OCR engine तैयार हो रहा… (पहली बार थोड़ा download)');
+    const res=await Tesseract.recognize(oc,lang,{logger:m=>{
+      if(m.status==='recognizing text')toast('🔍 Text पढ़ रहा हूँ… '+Math.round((m.progress||0)*100)+'%');
+    }});
+    /* words को gap से जोड़ो: पास के words = एक layer, दूर gap = अलग layer (item | price अलग-अलग) */
+    const groups=[];
+    (res.data.lines||[]).forEach(l=>{
+      const ws=(l.words||[]).filter(w=>cleanOcr(w.text)&&w.confidence>9);
+      ws.sort((a,b)=>a.bbox.x0-b.bbox.x0);
+      let cur=null;
+      ws.forEach(w=>{
+        if(cur){
+          const prev=cur[cur.length-1];
+          const lh=Math.max(prev.bbox.y1-prev.bbox.y0,w.bbox.y1-w.bbox.y0);
+          if(w.bbox.x0-prev.bbox.x1>Math.max(lh*0.9,16)){groups.push(cur);cur=null;}
+        }
+        if(!cur)cur=[];cur.push(w);
+      });
+      if(cur&&cur.length)groups.push(cur);
+    });
+    const yc=g=>(g[0].bbox.y0+g[0].bbox.y1)/2;
+    const avgH=groups.reduce((s,g)=>s+(g[0].bbox.y1-g[0].bbox.y0),0)/Math.max(1,groups.length);
+    groups.sort((a,b)=>{
+      const dy=yc(a)-yc(b);
+      if(Math.abs(dy)>avgH*0.5)return dy;            // अलग पंक्ति
+      return a[0].bbox.x0-b[0].bbox.x0;              // एक ही पंक्ति — बाएँ से दाएँ
+    });
+    const lines=groups.map(ws=>{
+      const x0=Math.min.apply(0,ws.map(w=>w.bbox.x0)),y0=Math.min.apply(0,ws.map(w=>w.bbox.y0));
+      const x1=Math.max.apply(0,ws.map(w=>w.bbox.x1)),y1=Math.max.apply(0,ws.map(w=>w.bbox.y1));
+      return {bbox:{x0,y0,x1,y1},text:ws.map(w=>cleanOcr(w.text)).join(' ')};
+    }).filter(l=>(l.bbox.x1-l.bbox.x0)>6&&(l.bbox.y1-l.bbox.y0)>6&&l.text);
+    if(!lines.length){toast('😕 कोई text नहीं मिला — ज़्यादा साफ़/बड़ी photo डालो');return;}
+    pushHist();
+    const kx=S.CW/oc.width,ky=S.CH/oc.height;
+    lines.forEach(l=>{
+      const x=l.bbox.x0*kx,y=l.bbox.y0*ky,w=(l.bbox.x1-l.bbox.x0)*kx,h=(l.bbox.y1-l.bbox.y0)*ky;
+      S.boxes.push({id:_bid++,x:x-w*0.02,y:y-h*0.08,w:w*1.04,h:h*1.16,text:l.text.trim(),orig:l.text.trim(),armed:false,fs:h*1.12,color:estTextColor(x,y,w,h),bold:false,align:'center',fillOn:true,fillColor:''});
+    });
+    render();syncEd();
+    $('lyrPanel').classList.add('open');
+    toast('🧩 '+lines.length+' layers तैयार! List से छुओ और text बदलो — design तब तक untouched रहेगा');
+  }catch(e){console.error(e);toast('⚠️ OCR में दिक्कत — दुबारा कोशिश करो');}
+  finally{_scanning=false;$('btnScan').style.opacity=1;$('btnScan2').style.opacity=1;}
+}
+
+/* text का रंग: box के अंदर वो pixels जो auto-पट्टी bg से सबसे अलग हैं (ऊपर के 20%) */
+function estTextColor(x,y,w,h){
+  try{
+    const ctx=$('cv').getContext('2d');
+    x=Math.max(0,Math.round(x));y=Math.max(0,Math.round(y));
+    w=Math.min(Math.round(w),S.CW-x);h=Math.min(Math.round(h),S.CH-y);
+    if(w<2||h<2)return '#111111';
+    const m=(autoFill({x,y,w,h})||'rgb(255,255,255)').match(/\d+/g);
+    const br=+m[0],bgc=+m[1],bb=+m[2];
+    const d=ctx.getImageData(x,y,w,h).data;
+    const px=[];
+    for(let i=0;i<d.length;i+=12){
+      const r=d[i],g=d[i+1],b=d[i+2];
+      px.push([Math.abs(r-br)+Math.abs(g-bgc)+Math.abs(b-bb),r,g,b]);
+    }
+    if(!px.length)return '#111111';
+    px.sort((a,b)=>b[0]-a[0]);
+    const top=px.slice(0,Math.max(4,Math.floor(px.length*0.2)));
+    let r=0,g=0,b=0;top.forEach(p=>{r+=p[1];g+=p[2];b+=p[3];});
+    return `rgb(${Math.round(r/top.length)},${Math.round(g/top.length)},${Math.round(b/top.length)})`;
+  }catch(e){return '#111111';}
+}
+
+/* numbered layer list (Photoshop जैसी) */
+function refreshLyr(){
+  const list=$('lyrList');if(!list)return;
+  const n=S.boxes.length;
+  $('lyrCnt').textContent=n;$('lyrCnt').style.display=n?'inline-block':'none';
+  list.innerHTML='';
+  if(!n){
+    list.innerHTML='<div id="lpEmpty">अभी कोई layer नहीं<br><br>🔍 <b>Text खोजो</b> दबाओ — design के सारे text खुद numbered layers बन जाएँगे<br><br>या ➕ <b>Text box</b> से खुद जोड़ो</div>';
+    return;
+  }
+  S.boxes.forEach((b,i)=>{
+    const d=document.createElement('div');d.className='lyr'+(b.id===S.sel?' on':'');
+    const tx=(b.text||'(खाली box)').slice(0,26).replace(/</g,'&lt;');
+    d.innerHTML=`<span class="num">${i+1}</span><div style="flex:1;min-width:0;"><div class="ltxt">${tx}</div></div><button class="del" title="यह layer हटाओ">🗑️</button>`;
+    d.onclick=()=>{S.sel=b.id;render();syncEd();
+      const el=document.querySelector(`.box[data-id="${b.id}"]`);
+      if(el&&el.scrollIntoView)el.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});};
+    d.querySelector('.del').onclick=e=>{e.stopPropagation();pushHist();
+      S.boxes=S.boxes.filter(x=>x.id!==b.id);if(S.sel===b.id)S.sel=null;render();syncEd();toast('🗑️ Layer '+(i+1)+' हट गई');};
+    list.appendChild(d);
+  });
+}
+
 function exportCanvas(){
   const cv=document.createElement('canvas');cv.width=S.CW;cv.height=S.CH;
   const ctx=cv.getContext('2d');
   ctx.fillStyle='#fff';ctx.fillRect(0,0,S.CW,S.CH);
   if(S.bg)ctx.drawImage(S.bg.img,0,0,S.CW,S.CH);
   S.boxes.forEach(b=>{
-    if(b.fillOn){ctx.fillStyle=b.fillColor||autoFillFrom(ctx,b);ctx.fillRect(b.x,b.y,b.w,b.h);}
+    const show=b.armed||!b.orig||b.text!==b.orig;
+    if(show&&b.fillOn){ctx.fillStyle=b.fillColor||autoFillFrom(ctx,b);ctx.fillRect(b.x,b.y,b.w,b.h);}
   });
   ctx.textBaseline='top';
   S.boxes.forEach(b=>{
+    const show=b.armed||!b.orig||b.text!==b.orig;
+    if(!show)return;
     ctx.font=`${b.bold?'800':'400'} ${b.fs}px 'Segoe UI',system-ui,sans-serif`;
     ctx.fillStyle=b.color;
     ctx.textAlign=b.align==='left'?'left':b.align==='right'?'right':'center';
