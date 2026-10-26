@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="brand/favicon-64.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎨 संस्कृति डिज़ाइन स्टूडियो — Design same, text बदलो</title>
+<meta name="description" content="Customer का design same रहे, सिर्फ़ text बदलो — menu card, marriage card, visiting card, banner। Free, बिना signup, सब कुछ आपके device पर।">
+<link rel="canonical" href="https://sanskritistore.github.io/store/design-studio.html">
+<style>
+:root{--bg:#0f1115;--panel:#171a21;--panel2:#1d212b;--line:#2a2f3a;--txt:#e8e6df;--mut:#8a8f9a;--acc:#ff9933;--grn:#2ea36b;--blu:#3b82f6;--red:#ef4444;}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--txt); height:100vh; display:flex; flex-direction:column; overflow:hidden;}
+header{padding:8px 14px; background:var(--panel); border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; gap:10px;}
+header h1{font-size:17px; font-weight:800; line-height:1.25;}
+header .sub{font-size:11px; color:var(--mut); margin-top:1px;}
+#sizeChip{background:var(--panel2); border:1px solid var(--line); border-radius:20px; padding:4px 12px; font-size:12px; font-weight:700; color:var(--acc); white-space:nowrap;}
+#btnPrintTop{background:linear-gradient(135deg,#22c55e,#16a34a); color:#fff; border:0; padding:9px 18px; border-radius:10px; font-size:15px; font-weight:800; cursor:pointer; white-space:nowrap;}
+main{flex:1; display:flex; flex-direction:column; overflow:hidden;}
+#stage{flex:1; overflow:auto; display:flex; position:relative; background:#0a0c10; padding:10px; -webkit-user-select:none; user-select:none;}
+#wrap{position:relative; box-shadow:0 4px 30px #000a; margin:auto;}
+#cv{display:block; background:#fff;}
+#boxes{position:absolute; inset:0; pointer-events:none;}
+#boxes .box{pointer-events:auto;}
+.box{position:absolute; cursor:move; touch-action:none; outline:1.5px dashed rgba(255,153,51,.0); }
+.box.sel{outline:2px solid var(--acc);}
+.box .txt{width:100%; height:100%; overflow:hidden; white-space:pre; display:flex; pointer-events:none;}
+.box .hd{position:absolute; right:-3px; bottom:-3px; width:20px; height:20px; background:var(--acc); border-radius:4px; cursor:nwse-resize; touch-action:none; display:none; align-items:center; justify-content:center; font-size:11px; color:#000; font-weight:900;}
+.box.sel .hd{display:flex;}
+#hint{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; color:var(--mut); text-align:center; font-size:15px; line-height:1.8; pointer-events:none; padding:20px;}
+/* editor panel */
+#edPanel{background:var(--panel); border-top:1px solid var(--line); padding:8px 10px; display:none; gap:10px; align-items:center; flex-wrap:wrap; max-height:34vh; overflow-y:auto;}
+#edPanel.open{display:flex;}
+#edPanel textarea{flex:1 1 160px; min-width:140px; background:var(--panel2); border:1px solid var(--line); color:var(--txt); border-radius:8px; padding:8px; font-size:14px; font-family:inherit; resize:vertical;}
+.edRow{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+.edRow label{font-size:11px; color:var(--mut); font-weight:700;}
+input[type=range]{accent-color:var(--acc); width:110px;}
+input[type=color]{width:34px; height:30px; border:1px solid var(--line); border-radius:6px; background:var(--panel2); padding:2px; cursor:pointer;}
+button.tool{background:var(--panel2); border:1px solid var(--line); color:var(--txt); border-radius:8px; padding:7px 11px; cursor:pointer; font-size:13px; font-weight:700;}
+button.tool.on{background:#123524; border-color:var(--grn); color:#7df0b5;}
+button.tool.warn{color:#f88;}
+/* toolbar */
+#toolbar{background:var(--panel); border-top:1px solid var(--line); padding:8px 10px; display:flex; gap:8px; overflow-x:auto; align-items:center;}
+#toolbar button.tool{white-space:nowrap; font-size:14px; padding:9px 14px;}
+/* size modal */
+#sizeModal{position:fixed; inset:0; background:#000c; display:none; align-items:center; justify-content:center; z-index:50; padding:14px;}
+#sizeModal.open{display:flex;}
+#sizeModal .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px; width:min(480px,96vw); max-height:88vh; overflow-y:auto;}
+#sizeModal h2{font-size:16px; margin-bottom:10px;}
+.presets{display:grid; grid-template-columns:repeat(auto-fill,minmax(128px,1fr)); gap:8px; margin-bottom:12px;}
+.preset{background:var(--panel2); border:1.5px solid var(--line); border-radius:10px; padding:10px 8px; cursor:pointer; text-align:center;}
+.preset b{display:block; font-size:13px;}
+.preset span{font-size:11px; color:var(--mut);}
+.preset.on{border-color:var(--acc); background:#241a0d;}
+.custRow{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:6px 0 12px;}
+.custRow input[type=number]{background:var(--panel2); border:1px solid var(--line); color:var(--txt); border-radius:8px; padding:8px; width:84px; font-size:15px;}
+.custRow select{background:var(--panel2); border:1px solid var(--line); color:var(--txt); border-radius:8px; padding:8px; font-size:14px;}
+#toast{position:fixed; bottom:86px; left:50%; transform:translateX(-50%); background:#123524; color:#7df0b5; border:1px solid var(--grn); padding:11px 22px; border-radius:12px; font-size:14px; font-weight:700; opacity:0; transition:opacity .3s; pointer-events:none; z-index:99; max-width:90vw; text-align:center;}
+#printArea{display:none;}
+@media print{
+  body>*{display:none !important;}
+  #printArea{display:block !important;}
+  #printArea img{display:block; page-break-after:always;}
+  body{height:auto; overflow:visible; background:#fff;}
+}
+@media (max-width:760px){
+  header h1{font-size:14px;}
+  header .sub{display:none;}
+  #btnPrintTop{padding:8px 12px; font-size:13px;}
+}
+</style>
+<style id="pageStyle">@page{size:210mm 297mm; margin:0;}</style>
+</head>
+<body>
+<script src="assets/js/cyber-gate.js?v=2"></script><script>SC.guard("design-studio")</script>
+<header>
+  <div>
+    <h1>🎨 संस्कृति डिज़ाइन स्टूडियो</h1>
+    <div class="sub">Design same रहे — सिर्फ़ text बदलो · सब कुछ आपके device पर</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <span id="sizeChip">A4</span>
+    <button id="btnPrintTop">🖨️ Print</button>
+  </div>
+</header>
+<main>
+  <div id="stage">
+    <div id="wrap">
+      <canvas id="cv"></canvas>
+      <div id="boxes"></div>
+      <div id="hint">📐 साइज़ चुनो → 🖼️ customer का design डालो → ➕ Text box डालो<br>पुराने text पर box — नया text लिखो — Print!</div>
+    </div>
+  </div>
+  <div id="edPanel">
+    <textarea id="edText" rows="2" placeholder="नया text यहाँ लिखो…"></textarea>
+    <div class="edRow"><label>Size</label><input type="range" id="edFs" min="4" max="80" value="22"><b id="edFsV" style="font-size:12px;">22</b></div>
+    <div class="edRow">
+      <button class="tool" id="edBold">B</button>
+      <input type="color" id="edColor" value="#111111" title="Text रंग">
+      <button class="tool" id="edAlL">◀</button><button class="tool on" id="edAlC">▬</button><button class="tool" id="edAlR">▶</button>
+    </div>
+    <div class="edRow">
+      <button class="tool on" id="edFill">🩹 पट्टी ON</button>
+      <label style="font-size:11px;color:var(--mut);font-weight:700">अपना रंग</label><input type="color" id="edFillC" value="#ffffff" title="पट्टी का रंग (खाली = auto)">
+      <button class="tool warn" id="edDel">🗑️</button>
+    </div>
+  </div>
+  <div id="toolbar">
+    <button class="tool" id="btnSize">📐 साइज़</button>
+    <button class="tool" id="btnBg">🖼️ Design डालो</button>
+    <button class="tool" id="btnCam">📷 Camera</button>
+    <button class="tool" id="btnAdd">➕ Text box</button>
+    <button class="tool" id="btnUndo">↶</button>
+    <button class="tool" id="btnPng">⬇️ PNG</button>
+    <button class="tool" id="btnPrint">🖨️ Print</button>
+  </div>
+</main>
+<input type="file" id="bgInp" accept="image/*" hidden>
+<input type="file" id="camInp" accept="image/*" capture="environment" hidden>
+
+<div id="sizeModal">
+  <div class="card">
+    <h2>📐 कागज़/Design का साइज़ चुनो</h2>
+    <div class="presets" id="presetGrid"></div>
+    <h2 style="font-size:14px;">✏️ या खुद लिखो (Custom)</h2>
+    <div class="custRow">
+      <input type="number" id="cwIn" placeholder="चौड़ाई" min="20" max="3000" step="0.5"> ×
+      <input type="number" id="chIn" placeholder="ऊँचाई" min="20" max="3000" step="0.5">
+      <select id="unitSel"><option value="mm">mm</option><option value="in">inch</option><option value="ft">feet</option></select>
+      <button class="tool" id="btnFlip">🔄 घुमाओ</button>
+      <button class="tool" id="btnCustOk" style="background:var(--acc);color:#000;">✓ लगाओ</button>
+    </div>
+    <p style="font-size:12px;color:var(--mut);line-height:1.7;">छोटा काम = 300 DPI (बारीक़) · बड़ा banner = कम DPI (दूर से देखते हैं) — machine खुद चुनती है, print हमेशा सही साइज़ में आता है।</p>
+    <div style="text-align:right;margin-top:10px;"><button class="tool" id="btnSizeClose">बंद करो</button></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div id="printArea"></div>
+<script>
+/* === 🎨 Design Studio — Design same, text बदलो (मंज़िल 1, 26 Oct) ===
+   नियम: सब कुछ device पर · कोई upload नहीं · config-driven (कोई hardcode नहीं) */
+const $=id=>document.getElementById(id);
+const PRESETS=[
+  {n:'A4',w:210,h:297,u:'mm',d:'Resume / Menu'},
+  {n:'A5',w:148,h:210,u:'mm',d:'छोटा Menu'},
+  {n:'Visiting Card',w:89,h:51,u:'mm',d:'3.5×2 inch'},
+  {n:'ID Card',w:86,h:54,u:'mm',d:'PVC card'},
+  {n:'Photo 4×6"',w:102,h:152,u:'mm',d:'Photo print'},
+  {n:'Banner 3×6 ft',w:914,h:1829,u:'mm',d:'Flex banner'},
+  {n:'Banner 2×4 ft',w:610,h:1219,u:'mm',d:'छोटा flex'},
+  {n:'Letter 8.5×11"',w:216,h:279,u:'mm',d:'US Letter'},
+];
+const S={W:210,H:297,unit:'mm',dpi:300,CW:0,CH:0,bg:null,boxes:[],sel:null,hist:[],presetName:'A4'};
+let sc=1; // display scale (canvas px -> screen px)
+
+function toast(m){const t=$('toast');t.textContent=m;t.style.opacity=1;clearTimeout(t._h);t._h=setTimeout(()=>t.style.opacity=0,2200);}
+function pushHist(){S.hist.push(JSON.stringify({W:S.W,H:S.H,unit:S.unit,presetName:S.presetName,boxes:S.boxes}));if(S.hist.length>30)S.hist.shift();}
+function undo(){if(!S.hist.length){toast('पहले वाला कुछ नहीं बचा');return;}
+  const st=JSON.parse(S.hist.pop());
+  const oldCW=S.CW,oldCH=S.CH;
+  S.W=st.W;S.H=st.H;S.unit=st.unit;S.presetName=st.presetName;S.boxes=st.boxes;S.sel=null;
+  calcCanvas(); if(S.bg&&S.CW!==oldCW) placeBg(S.bg.img,S.bg.name,true);
+  render(); syncEd(); toast('↶ वापस');}
+
+/* ---------- साइज़ ---------- */
+function calcCanvas(){
+  const areaFt=(S.W/304.8)*(S.H/304.8);
+  let dpi=areaFt<=1.2?300:areaFt<=8?150:100;
+  S.dpi=dpi;
+  let w=Math.round(S.W/25.4*dpi),h=Math.round(S.H/25.4*dpi);
+  while(w*h>24e6&&dpi>72){dpi=Math.max(72,dpi-10);w=Math.round(S.W/25.4*dpi);h=Math.round(S.H/25.4*dpi);}
+  S.dpi=dpi;S.CW=w;S.CH=h;
+  $('pageStyle').textContent=`@page{size:${S.W}mm ${S.H}mm; margin:0;}`;
+  $('sizeChip').textContent=S.presetName+' · '+fmtSize();
+  try{localStorage.setItem('sc_dsg_size',JSON.stringify({W:S.W,H:S.H,unit:S.unit,presetName:S.presetName}));}catch(e){}
+}
+function fmtSize(){const k=S.unit==='in'?1/25.4:S.unit==='ft'?1/304.8:1;const f=v=>{const r=Math.round(v*10)/10;return r%1?r.toFixed(1):''+r;};return f(S.W*k)+'×'+f(S.H*k)+' '+S.unit;}
+function applySize(w,h,unit,name){
+  pushHist();
+  const oldCW=S.CW,oldCH=S.CH;
+  S.W=w;S.H=h;S.unit=unit;S.presetName=name||'Custom '+fmtSize();
+  calcCanvas();
+  if(S.bg&&S.bg.img&&(S.CW!==oldCW||S.CH!==oldCH)) placeBg(S.bg.img,S.bg.name,true);
+  // boxes को नए canvas में scale करो (design के साथ रहें)
+  if(oldCW&&oldCH){const kx=S.CW/oldCW,ky=S.CH/oldCH;S.boxes.forEach(b=>{b.x*=kx;b.y*=ky;b.w*=kx;b.h*=ky;b.fs*=ky;});}
+  render();syncEd();
+}
+function openSize(){
+  const g=$('presetGrid');g.innerHTML='';
+  PRESETS.forEach(p=>{
+    const d=document.createElement('div');d.className='preset'+(S.presetName===p.n?' on':'');
+    d.innerHTML=`<b>${p.n}</b><span>${p.d}</span>`;
+    d.onclick=()=>{applySize(p.w,p.h,'mm',p.n);$('sizeModal').classList.remove('open');toast('📐 '+p.n+' — '+p.w+'×'+p.h+'mm');};
+    g.appendChild(d);
+  });
+  const u=S.unit==='in'?'in':S.unit==='ft'?'ft':'mm';
+  $('unitSel').value=u;
+  $('cwIn').value=+(u==='mm'?S.W:u==='in'?S.W/25.4:S.W/304.8).toFixed(1);
+  $('chIn').value=+(u==='mm'?S.H:u==='in'?S.H/25.4:S.H/304.8).toFixed(1);
+  $('sizeModal').classList.add('open');
+}
+$('btnSize').onclick=openSize;
+$('btnSizeClose').onclick=()=>$('sizeModal').classList.remove('open');
+$('sizeModal').onclick=e=>{if(e.target.id==='sizeModal')$('sizeModal').classList.remove('open');};
+$('btnFlip').onclick=()=>{const a=$('cwIn').value,b=$('chIn').value;$('cwIn').value=b;$('chIn').value=a;};
+$('btnCustOk').onclick=()=>{
+  const u=$('unitSel').value,k=u==='mm'?1:u==='in'?25.4:304.8;
+  const w=parseFloat($('cwIn').value)*k,h=parseFloat($('chIn').value)*k;
+  if(!(w>=20&&h>=20&&w<=3000&&h<=3000)){toast('⚠️ साइज़ 20mm से 3000mm (≈10ft) के बीच रखो');return;}
+  applySize(w,h,u,'Custom');$('sizeModal').classList.remove('open');toast('📐 '+fmtSize()+' · '+S.dpi+' DPI');
+};
+
+/* ---------- Background (customer का design) ---------- */
+$('btnBg').onclick=()=>$('bgInp').click();
+$('btnCam').onclick=()=>$('camInp').click();
+$('bgInp').onchange=e=>{if(e.target.files[0])loadBgFile(e.target.files[0]);e.target.value='';};
+$('camInp').onchange=e=>{if(e.target.files[0])loadBgFile(e.target.files[0]);e.target.value='';};
+function loadBgFile(f){
+  if(!/^image\//.test(f.type)){toast('⚠️ सिर्फ़ image चलेगी (JPG/PNG)');return;}
+  const r=new FileReader();
+  r.onload=()=>{const img=new Image();img.onload=()=>placeBg(img,f.name);img.onerror=()=>toast('⚠️ image नहीं खुली');img.src=r.result;};
+  r.readAsDataURL(f);
+}
+function placeBg(img,name,silent){
+  if(!silent)pushHist();
+  S.bg={img,name};
+  render();
+  if(!silent)toast('🖼️ Design लग गया — अब ➕ Text box डालो');
+}
+
+/* ---------- Boxes ---------- */
+let _bid=1;
+function addBox(){
+  pushHist();
+  const b={id:_bid++,x:S.CW*0.18,y:S.CH*0.42,w:S.CW*0.64,h:S.CH*0.07,text:'',fs:S.CH*0.035,color:'#111111',bold:false,align:'center',fillOn:true,fillColor:''};
+  S.boxes.push(b);S.sel=b.id;render();syncEd();
+  $('edText').focus();
+  toast('✏️ Box आ गया — पुराने text पर खींचकर रखो, नया text नीचे लिखो');
+}
+$('btnAdd').onclick=addBox;
+function selBox(){return S.boxes.find(b=>b.id===S.sel)||null;}
+
+/* ---------- Render (display) ---------- */
+function fitScale(){
+  const st=$('stage');const aw=st.clientWidth-20,ah=st.clientHeight-20;
+  return Math.min(aw/S.CW,ah/S.CH,1.5);
+}
+function render(){
+  sc=fitScale();
+  const cv=$('cv');cv.width=S.CW;cv.height=S.CH;
+  cv.style.width=(S.CW*sc)+'px';cv.style.height=(S.CH*sc)+'px';
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,S.CW,S.CH);
+  if(S.bg)ctx.drawImage(S.bg.img,0,0,S.CW,S.CH);
+  const layer=$('boxes');layer.innerHTML='';
+  layer.style.width=cv.style.width;layer.style.height=cv.style.height;
+  $('hint').style.display=(S.bg||S.boxes.length)?'none':'flex';
+  S.boxes.forEach(b=>layer.appendChild(boxDiv(b)));
+}
+function boxDiv(b){
+  const d=document.createElement('div');d.className='box'+(b.id===S.sel?' sel':'');d.dataset.id=b.id;
+  d.style.left=(b.x*sc)+'px';d.style.top=(b.y*sc)+'px';d.style.width=(b.w*sc)+'px';d.style.height=(b.h*sc)+'px';
+  if(b.fillOn){
+    if(b.fillColor)d.style.background=b.fillColor;
+    else{const c=autoFill(b);if(c)d.style.background=c;}
+  }
+  const t=document.createElement('div');t.className='txt';
+  t.style.cssText=`font-size:${b.fs*sc}px;font-weight:${b.bold?800:400};color:${b.color};line-height:1.25;white-space:pre;`;
+  t.style.justifyContent=b.align==='left'?'flex-start':b.align==='right'?'flex-end':'center';
+  t.style.alignItems='flex-start';
+  t.textContent=b.text;
+  d.appendChild(t);
+  const h=document.createElement('div');h.className='hd';h.textContent='◢';d.appendChild(h);
+  d.addEventListener('pointerdown',ev=>startDrag(ev,b,'move'));
+  h.addEventListener('pointerdown',ev=>startDrag(ev,b,'resize'));
+  d.addEventListener('click',ev=>{ev.stopPropagation();if(S.sel!==b.id){S.sel=b.id;render();syncEd();}});
+  return d;
+}
+/* auto पट्टी रंग: box के बाहर किनारों का median */
+function autoFill(b){
+  try{
+    const cv=$('cv'),ctx=cv.getContext('2d');
+    const m=Math.max(2,Math.round(S.CW*0.004));
+    const strips=[[b.x,b.y-m,b.w,m],[b.x,b.y+b.h,b.w,m],[b.x-m,b.y,m,b.h],[b.x+b.w,b.y,m,b.h]];
+    const cols=[];
+    strips.forEach(([x,y,w,h])=>{
+      x=Math.max(0,Math.round(x));y=Math.max(0,Math.round(y));w=Math.max(1,Math.round(w));h=Math.max(1,Math.round(h));
+      if(x>=cv.width||y>=cv.height)return;
+      w=Math.min(w,cv.width-x);h=Math.min(h,cv.height-y);if(w<1||h<1)return;
+      const d=ctx.getImageData(x,y,w,h).data;
+      let r=0,g=0,bl=0,n=0;
+      for(let i=0;i<d.length;i+=16){r+=d[i];g+=d[i+1];bl+=d[i+2];n++;}
+      if(n)cols.push([r/n,g/n,bl/n]);
+    });
+    if(!cols.length)return '#ffffff';
+    cols.sort((a,b2)=>(a[0]+a[1]+a[2])-(b2[0]+b2[1]+b2[2]));
+    const mid=cols[Math.floor(cols.length/2)];
+    return `rgb(${Math.round(mid[0])},${Math.round(mid[1])},${Math.round(mid[2])})`;
+  }catch(e){return '#ffffff';}
+}
+
+/* ---------- Drag / Resize ---------- */
+function startDrag(ev,b,mode){
+  ev.preventDefault();ev.stopPropagation();
+  if(S.sel!==b.id){S.sel=b.id;render();syncEd();}
+  const dpr=ev.currentTarget.closest('.box');
+  const sx=ev.clientX,sy=ev.clientY,ox=b.x,oy=b.y,ow=b.w,oh=b.h;
+  const moved=e=>{
+    const dx=(e.clientX-sx)/sc,dy=(e.clientY-sy)/sc;
+    if(mode==='move'){b.x=Math.max(-b.w*0.5,Math.min(S.CW-b.w*0.5,ox+dx));b.y=Math.max(-b.h*0.5,Math.min(S.CH-b.h*0.5,oy+dy));}
+    else{b.w=Math.max(S.CW*0.03,ow+dx);b.h=Math.max(S.CH*0.02,oh+dy);}
+    const el=dpr||document.querySelector(`.box[data-id="${b.id}"]`);
+    if(el){el.style.left=(b.x*sc)+'px';el.style.top=(b.y*sc)+'px';el.style.width=(b.w*sc)+'px';el.style.height=(b.h*sc)+'px';}
+  };
+  const up=()=>{document.removeEventListener('pointermove',moved);document.removeEventListener('pointerup',up);pushHist();render();};
+  document.addEventListener('pointermove',moved);document.addEventListener('pointerup',up);
+}
+$('stage').addEventListener('click',()=>{if(S.sel){S.sel=null;render();syncEd();}});
+
+/* ---------- Editor panel ---------- */
+function syncEd(){
+  const b=selBox(),p=$('edPanel');
+  if(!b){p.classList.remove('open');return;}
+  p.classList.add('open');
+  if(document.activeElement!==$('edText'))$('edText').value=b.text;
+  $('edFs').value=Math.round(b.fs/S.CH*1000);$('edFsV').textContent=$('edFs').value;
+  $('edColor').value=b.color;$('edBold').classList.toggle('on',b.bold);
+  $('edFill').classList.toggle('on',b.fillOn);$('edFill').textContent=b.fillOn?'🩹 पट्टी ON':'🩹 पट्टी OFF';
+  $('edFillC').value=b.fillColor||'#ffffff';
+  ['edAlL','edAlC','edAlR'].forEach(i=>$(i).classList.remove('on'));
+  $(b.align==='left'?'edAlL':b.align==='right'?'edAlR':'edAlC').classList.add('on');
+}
+let _histTxt=false;
+$('edText').addEventListener('input',()=>{
+  const b=selBox();if(!b)return;
+  if(!_histTxt){pushHist();_histTxt=true;setTimeout(()=>_histTxt=false,900);}
+  b.text=$('edText').value;
+  const lines=b.text.split('\n').length;
+  b.h=Math.max(S.CH*0.02,lines*b.fs*1.3);
+  render();
+});
+$('edFs').addEventListener('input',()=>{
+  const b=selBox();if(!b)return;
+  b.fs=S.CH*(+$('edFs').value)/1000;$('edFsV').textContent=$('edFs').value;
+  const lines=b.text.split('\n').length;b.h=Math.max(S.CH*0.02,lines*b.fs*1.3);
+  render();
+});
+$('edFs').addEventListener('change',()=>pushHist());
+$('edBold').onclick=()=>{const b=selBox();if(!b)return;pushHist();b.bold=!b.bold;render();syncEd();};
+$('edColor').addEventListener('input',()=>{const b=selBox();if(!b)return;b.color=$('edColor').value;render();});
+$('edColor').addEventListener('change',()=>pushHist());
+const setAl=a=>{const b=selBox();if(!b)return;pushHist();b.align=a;render();syncEd();};
+$('edAlL').onclick=()=>setAl('left');$('edAlC').onclick=()=>setAl('center');$('edAlR').onclick=()=>setAl('right');
+$('edFill').onclick=()=>{const b=selBox();if(!b)return;pushHist();b.fillOn=!b.fillOn;render();syncEd();};
+$('edFillC').addEventListener('input',()=>{const b=selBox();if(!b)return;b.fillColor=$('edFillC').value;render();});
+$('edFillC').addEventListener('change',()=>pushHist());
+$('edDel').onclick=()=>{const b=selBox();if(!b)return;pushHist();S.boxes=S.boxes.filter(x=>x.id!==b.id);S.sel=null;render();syncEd();toast('🗑️ Box हट गया');};
+$('btnUndo').onclick=undo;
+
+/* ---------- Export: PNG + Print ---------- */
+function exportCanvas(){
+  const cv=document.createElement('canvas');cv.width=S.CW;cv.height=S.CH;
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,S.CW,S.CH);
+  if(S.bg)ctx.drawImage(S.bg.img,0,0,S.CW,S.CH);
+  S.boxes.forEach(b=>{
+    if(b.fillOn){ctx.fillStyle=b.fillColor||autoFillFrom(ctx,b);ctx.fillRect(b.x,b.y,b.w,b.h);}
+  });
+  ctx.textBaseline='top';
+  S.boxes.forEach(b=>{
+    ctx.font=`${b.bold?'800':'400'} ${b.fs}px 'Segoe UI',system-ui,sans-serif`;
+    ctx.fillStyle=b.color;
+    ctx.textAlign=b.align==='left'?'left':b.align==='right'?'right':'center';
+    const tx=b.align==='left'?b.x:b.align==='right'?b.x+b.w:b.x+b.w/2;
+    b.text.split('\n').forEach((ln,i)=>ctx.fillText(ln,tx,b.y+i*b.fs*1.25+b.fs*0.12));
+  });
+  return cv;
+}
+function autoFillFrom(ctx,b){
+  const m=Math.max(2,Math.round(S.CW*0.004));
+  const strips=[[b.x,b.y-m,b.w,m],[b.x,b.y+b.h,b.w,m],[b.x-m,b.y,m,b.h],[b.x+b.w,b.y,m,b.h]];
+  const cols=[];
+  strips.forEach(([x,y,w,h])=>{
+    x=Math.max(0,Math.round(x));y=Math.max(0,Math.round(y));w=Math.max(1,Math.round(w));h=Math.max(1,Math.round(h));
+    if(x>=S.CW||y>=S.CH)return;w=Math.min(w,S.CW-x);h=Math.min(h,S.CH-y);if(w<1||h<1)return;
+    const d=ctx.getImageData(x,y,w,h).data;let r=0,g=0,bl=0,n=0;
+    for(let i=0;i<d.length;i+=16){r+=d[i];g+=d[i+1];bl+=d[i+2];n++;}
+    if(n)cols.push([r/n,g/n,bl/n]);
+  });
+  if(!cols.length)return '#ffffff';
+  cols.sort((a,b2)=>(a[0]+a[1]+a[2])-(b2[0]+b2[1]+b2[2]));
+  const mid=cols[Math.floor(cols.length/2)];
+  return `rgb(${Math.round(mid[0])},${Math.round(mid[1])},${Math.round(mid[2])})`;
+}
+$('btnPng').onclick=()=>{
+  const cv=exportCanvas();
+  cv.toBlob(bl=>{
+    const a=document.createElement('a');a.href=URL.createObjectURL(bl);
+    a.download='sanskriti-design-'+S.presetName.replace(/[^\w]+/g,'-')+'.png';
+    a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+    toast('⬇️ PNG सेव हुआ ('+S.dpi+' DPI, '+fmtSize()+')');
+  },'image/png');
+};
+function doPrint(){
+  const cv=exportCanvas();
+  const img=new Image();
+  img.onload=()=>{
+    const pa=$('printArea');pa.innerHTML='';pa.appendChild(img);
+    img.style.width=S.W+'mm';img.style.height=S.H+'mm';
+    setTimeout(()=>window.print(),60);
+  };
+  img.src=cv.toDataURL('image/png');
+}
+$('btnPrint').onclick=doPrint;$('btnPrintTop').onclick=doPrint;
+
+/* ---------- Init ---------- */
+let _rszH=false;
+new ResizeObserver(()=>{if(_rszH)return;_rszH=true;requestAnimationFrame(()=>{_rszH=false;render();});}).observe($('stage'));
+(function init(){
+  try{
+    const sv=JSON.parse(localStorage.getItem('sc_dsg_size')||'null');
+    if(sv&&sv.W>=20&&sv.H>=20){S.W=sv.W;S.H=sv.H;S.unit=sv.unit||'mm';S.presetName=sv.presetName||'Custom';}
+  }catch(e){}
+  calcCanvas();render();
+})();
+</script>
+</body>
+</html>
