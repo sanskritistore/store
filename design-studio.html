@@ -164,7 +164,7 @@ button.tool.warn{color:#f88;}
     <button class="tool" id="btnPrint">🖨️ Print</button>
   </div>
 </main>
-<input type="file" id="bgInp" accept="image/*,application/pdf,.pdf" hidden>
+<input type="file" id="bgInp" hidden>
 <input type="file" id="camInp" accept="image/*" capture="environment" hidden>
 <input type="file" id="prjInp" accept=".json,application/json" hidden>
 <div id="bgPop">
@@ -288,7 +288,7 @@ $('bgInp').onchange=e=>{if(e.target.files[0])loadBgFile(e.target.files[0]);e.tar
 $('camInp').onchange=e=>{if(e.target.files[0])loadBgFile(e.target.files[0]);e.target.value='';};
 function loadBgFile(f){
   if(f.type==='application/pdf'||/\.pdf$/i.test(f.name)){loadPdfFile(f);return;}
-  if(!/^image\//.test(f.type)){toast('⚠️ सिर्फ़ image या PDF चलेगी (JPG/PNG/PDF)');return;}
+  if(!/^image\//.test(f.type)){toast('⚠️ यह file नहीं चलेगी — JPG, PNG या PDF डालो (Word/PSD/CDR पहले PDF/JPG बनाओ)');return;}
   _pdf=null;showPgBar();
   const r=new FileReader();
   r.onload=()=>{const img=new Image();img.onload=()=>placeBg(img,f.name);img.onerror=()=>toast('⚠️ image नहीं खुली');img.src=r.result;};
