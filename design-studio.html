@@ -32,6 +32,8 @@ main{flex:1; display:flex; flex-direction:column; overflow:hidden;}
 .box .hd{position:absolute; right:-3px; bottom:-3px; width:20px; height:20px; background:var(--acc); border-radius:4px; cursor:nwse-resize; touch-action:none; display:none; align-items:center; justify-content:center; font-size:11px; color:#000; font-weight:900;}
 .box.sel .hd{display:flex;}
 #hint{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; color:var(--mut); text-align:center; font-size:15px; line-height:1.8; pointer-events:none; padding:20px;}
+#pgBar{position:absolute; top:10px; left:50%; transform:translateX(-50%); display:none; align-items:center; gap:10px; background:rgba(15,23,42,.92); border:1px solid var(--line,#334155); padding:6px 12px; border-radius:99px; z-index:5; box-shadow:0 4px 14px rgba(0,0,0,.4);}
+#pgBar b{color:var(--acc,#f97316); font-size:14px; min-width:44px; text-align:center;}
 /* editor panel */
 #edPanel{background:var(--panel); border-top:1px solid var(--line); padding:8px 10px; display:none; gap:10px; align-items:center; flex-wrap:wrap; max-height:34vh; overflow-y:auto;}
 #edPanel.open{display:flex;}
@@ -103,6 +105,7 @@ button.tool.warn{color:#f88;}
 </header>
 <main>
   <div id="stage">
+    <div id="pgBar"><button class="tool" id="pgPrev">◀</button><b id="pgInfo">1/1</b><button class="tool" id="pgNext">▶</button></div>
     <div id="wrap">
       <canvas id="cv"></canvas>
       <div id="boxes"></div>
@@ -198,12 +201,17 @@ const S={W:210,H:297,unit:'mm',dpi:300,CW:0,CH:0,bg:null,boxes:[],sel:null,hist:
 let sc=1; // display scale (canvas px -> screen px)
 
 function toast(m){const t=$('toast');t.textContent=m;t.style.opacity=1;clearTimeout(t._h);t._h=setTimeout(()=>t.style.opacity=0,2200);}
-function pushHist(){S.hist.push(JSON.stringify({W:S.W,H:S.H,unit:S.unit,presetName:S.presetName,boxes:S.boxes}));if(S.hist.length>30)S.hist.shift();}
+function pushHist(extra){S.hist.push(JSON.stringify(Object.assign({W:S.W,H:S.H,unit:S.unit,presetName:S.presetName,boxes:S.boxes},extra||{})));if(S.hist.length>30)S.hist.shift();}
 function undo(){if(!S.hist.length){toast('पहले वाला कुछ नहीं बचा');return;}
   const st=JSON.parse(S.hist.pop());
   const oldCW=S.CW,oldCH=S.CH;
   S.W=st.W;S.H=st.H;S.unit=st.unit;S.presetName=st.presetName;S.boxes=st.boxes;S.sel=null;
   calcCanvas(); if(S.bg&&S.CW!==oldCW) placeBg(S.bg.img,S.bg.name,true);
+  /* PDF page switch का undo — उस page की bg भी वापस (text re-extract नहीं, layers तो st.boxes से आ गईं) */
+  if(st.pdfPage&&_pdf&&st.pdfPage!==_pdf.pageNo){
+    _pdf.pageNo=st.pdfPage;showPgBar();
+    renderPdfPageCanvas(_pdf.doc,st.pdfPage).then(({cv})=>{const img=new Image();img.onload=()=>{placeBg(img,_pdf.fname,true);render();};img.src=cv.toDataURL('image/png');});
+  }
   render(); syncEd(); toast('↶ वापस');}
 
 /* ---------- साइज़ ---------- */
@@ -262,6 +270,7 @@ $('camInp').onchange=e=>{if(e.target.files[0])loadBgFile(e.target.files[0]);e.ta
 function loadBgFile(f){
   if(f.type==='application/pdf'||/\.pdf$/i.test(f.name)){loadPdfFile(f);return;}
   if(!/^image\//.test(f.type)){toast('⚠️ सिर्फ़ image या PDF चलेगी (JPG/PNG/PDF)');return;}
+  _pdf=null;showPgBar();
   const r=new FileReader();
   r.onload=()=>{const img=new Image();img.onload=()=>placeBg(img,f.name);img.onerror=()=>toast('⚠️ image नहीं खुली');img.src=r.result;};
   r.readAsDataURL(f);
@@ -473,7 +482,7 @@ function buildLayersFromGroups(groups,kx,ky){
     return {bbox:{x0,y0,x1,y1},text:ws.map(w=>w.text).join(' ').trim()};
   }).filter(l=>(l.bbox.x1-l.bbox.x0)>6&&(l.bbox.y1-l.bbox.y0)>6&&l.text);
   if(!lines.length)return 0;
-  pushHist();
+  if(!_pdfSwitching)pushHist();
   lines.forEach(l=>{
     const x=l.bbox.x0*kx,y=l.bbox.y0*ky,w=(l.bbox.x1-l.bbox.x0)*kx,h=(l.bbox.y1-l.bbox.y0)*ky;
     S.boxes.push({id:_bid++,x:x-w*0.02,y:y-h*0.08,w:w*1.04,h:h*1.16,text:l.text,orig:l.text,armed:false,fs:h*1.12,color:estTextColor(x,y,w,h),bold:false,align:'center',fillOn:true,fillColor:''});
@@ -491,19 +500,48 @@ async function loadPdfFile(f){
     toast('📄 PDF खुल रही है…');
     const buf=await f.arrayBuffer();
     const pdf=await pdfjsLib.getDocument({data:buf}).promise;
-    const page=await pdf.getPage(1);
+    _pdf={doc:pdf,numPages:pdf.numPages,pageNo:1,fname:f.name};
+    await loadPdfDocPage(pdf,1,f.name);
+    showPgBar();
+    if(pdf.numPages>1)toast('📑 PDF में '+pdf.numPages+' pages — ऊपर ◀ ▶ से page बदलो');
+  }catch(e){console.error(e);toast('⚠️ PDF नहीं खुली — शायद password वाली है');}
+}
+/* 📑 multi-page: कोई भी page खोलो (bg + उस page की असली text layers) */
+let _pdf=null;
+let _pdfSwitching=false;   /* page switch के दौरान layers खुद hist न भरें — pdfPage का एक ही undo entry रहे */
+async function renderPdfPageCanvas(pdf,n){
+    const page=await pdf.getPage(n);
     const vp1=page.getViewport({scale:1});
     const scale=Math.min(3,Math.max(1.5,S.CW/vp1.width));
     const vp=page.getViewport({scale});
     const cv=document.createElement('canvas');
     cv.width=Math.floor(vp.width);cv.height=Math.floor(vp.height);
     await page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;
-    const img=new Image();
-    img.onload=()=>{placeBg(img,f.name);tryPdfText(page,vp,cv,pdf.numPages);};
-    img.onerror=()=>toast('⚠️ PDF page render नहीं हुआ');
-    img.src=cv.toDataURL('image/png');
-  }catch(e){console.error(e);toast('⚠️ PDF नहीं खुली — शायद password वाली है');}
+    return {page,vp,cv};
 }
+async function loadPdfDocPage(pdf,n,fname,silent){
+    const {page,vp,cv}=await renderPdfPageCanvas(pdf,n);
+    await new Promise(res=>{const img=new Image();img.onload=()=>{placeBg(img,fname,silent);res();};img.onerror=()=>{toast('⚠️ PDF page render नहीं हुआ');res();};img.src=cv.toDataURL('image/png');});
+    await tryPdfText(page,vp,cv,pdf.numPages);
+}
+function showPgBar(){
+  const on=_pdf&&_pdf.numPages>1;
+  $('pgBar').style.display=on?'flex':'none';
+  if(_pdf)$('pgInfo').textContent=_pdf.pageNo+'/'+_pdf.numPages;
+}
+async function pdfPage(d){
+  if(!_pdf)return;
+  const n=_pdf.pageNo+d;
+  if(n<1||n>_pdf.numPages){toast(d<0?'यह पहला page है':'यह आखिरी page है');return;}
+  pushHist({pdfPage:_pdf.pageNo});  // ↶ से पुराना page + layers + bg वापस
+  _pdf.pageNo=n;S.boxes=[];S.sel=null;
+  toast('📑 Page '+n+' खुल रहा…');
+  _pdfSwitching=true;
+  await loadPdfDocPage(_pdf.doc,n,_pdf.fname,true);
+  _pdfSwitching=false;
+  showPgBar();render();
+}
+$('pgPrev').onclick=()=>pdfPage(-1);$('pgNext').onclick=()=>pdfPage(1);
 async function tryPdfText(page,vp,cv,numPages){
   try{
     const tc=await page.getTextContent();
