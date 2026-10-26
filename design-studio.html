@@ -173,6 +173,7 @@ body.drag::after{content:'📂 यहीं छोड़ दो — design ख�
   <div class="brow"><span>🔆 चमक</span><input type="range" id="bgBriR" min="30" max="160" value="100" style="flex:1"><b id="bgBriV">100%</b></div>
   <div class="brow"><span>🎨 पीछे का रंग</span><input type="color" id="bgColInp" value="#ffffff"><button id="bgColOff" title="रंग हटाओ — सफ़ेद">✕</button></div>
   <div class="brow"><button id="bgReset" style="width:100%">♻️ मूल हालत में लाओ</button></div>
+  <div class="brow" style="border-top:1px solid var(--line); padding-top:10px;"><label style="display:flex; gap:7px; align-items:center; cursor:pointer; font-size:12px; color:var(--txt);"><input type="checkbox" id="pngAlpha" style="accent-color:var(--acc); width:16px; height:16px;"> <span><b>Transparent PNG</b> — download में सिर्फ़ text, बिना background (Photoshop में किसी भी bg पर रखो)</span></label></div>
 </div>
 
 <div id="lyrPanel">
@@ -667,14 +668,14 @@ function refreshLyr(){
   });
 }
 
-function exportCanvas(){
+function exportCanvas(alpha){
   const cv=document.createElement('canvas');cv.width=S.CW;cv.height=S.CH;
   const ctx=cv.getContext('2d');
-  ctx.fillStyle=S.bgColor||'#fff';ctx.fillRect(0,0,S.CW,S.CH);
-  if(S.bg){ctx.save();if(S.bgBri!==1)ctx.filter=`brightness(${S.bgBri})`;ctx.drawImage(S.bg.img,0,0,S.CW,S.CH);ctx.restore();}
+  if(!alpha){ctx.fillStyle=S.bgColor||'#fff';ctx.fillRect(0,0,S.CW,S.CH);}
+  if(S.bg&&!alpha){ctx.save();if(S.bgBri!==1)ctx.filter=`brightness(${S.bgBri})`;ctx.drawImage(S.bg.img,0,0,S.CW,S.CH);ctx.restore();}
   S.boxes.forEach(b=>{
     const show=b.armed||!b.orig||b.text!==b.orig;
-    if(show&&!b.hidden&&b.fillOn){ctx.fillStyle=b.fillColor||autoFillFrom(ctx,b);ctx.fillRect(b.x,b.y,b.w,b.h);}
+    if(show&&!b.hidden&&b.fillOn){ctx.fillStyle=b.fillColor||(alpha?'#fff':autoFillFrom(ctx,b));ctx.fillRect(b.x,b.y,b.w,b.h);}
   });
   ctx.textBaseline='top';
   S.boxes.forEach(b=>{
@@ -710,12 +711,13 @@ function autoFillFrom(ctx,b){
 }
 $('btnPng').onclick=async()=>{
   await document.fonts.ready;
-  const cv=exportCanvas();
+  const alpha=$('pngAlpha')&&$('pngAlpha').checked;
+  const cv=exportCanvas(alpha);
   cv.toBlob(bl=>{
     const a=document.createElement('a');a.href=URL.createObjectURL(bl);
-    a.download='sanskriti-design-'+S.presetName.replace(/[^\w]+/g,'-')+'.png';
+    a.download='sanskriti-'+(alpha?'text-alpha-':'design-')+S.presetName.replace(/[^\w]+/g,'-')+'.png';
     a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
-    toast('⬇️ PNG सेव हुआ ('+S.dpi+' DPI, '+fmtSize()+')');
+    toast(alpha?'⬇️ Transparent PNG सेव हुआ — अब किसी भी bg पर रखो':'⬇️ PNG सेव हुआ ('+S.dpi+' DPI, '+fmtSize()+')');
   },'image/png');
 };
 /* 📄 PDF export — असली साइज़ (mm) की page, 300 DPI quality, सीधे printer पर चल जाए */
@@ -755,6 +757,9 @@ $('bgBriR').addEventListener('input',e=>{S.bgBri=e.target.value/100;$('bgBriV').
 $('bgColInp').addEventListener('input',e=>{S.bgColor=e.target.value;render();});
 $('bgColOff').onclick=()=>{S.bgColor=null;render();toast('पीछे का रंग हटाया — सफ़ेद');};
 $('bgReset').onclick=()=>{S.bgBri=1;S.bgColor=null;$('bgBriR').value=100;$('bgBriV').textContent='100%';render();toast('♻️ BG मूल हालत में');};
+/* transparent PNG checkbox — याद रखे */
+try{$('pngAlpha').checked=localStorage.getItem('sc_dsg_pngalpha')==='1';}catch(e){}
+$('pngAlpha').addEventListener('change',e=>{try{localStorage.setItem('sc_dsg_pngalpha',e.target.checked?'1':'0')}catch(_){};toast(e.target.checked?'⬇️ PNG अब transparent आएगा (सिर्फ़ text)':'⬇️ PNG अब पूरे design के साथ आएगा');});
 
 $('btnSaveP').onclick=()=>{
   try{
