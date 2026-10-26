@@ -130,6 +130,8 @@ button.tool.warn{color:#f88;}
     <button class="tool" id="btnScan" title="Design के सारे text खुद ढूँढकर numbered layers बनाओ">🔍 Text खोजो</button>
     <button class="tool" id="btnLayers">🧩 Layers<span class="cnt" id="lyrCnt">0</span></button>
     <button class="tool" id="btnUndo">↶</button>
+    <button class="tool" id="btnSaveP" title="पूरा काम file में save करो — कल फिर खोलकर वहीं से बदलो (layers समेत)">💾 Save</button>
+    <button class="tool" id="btnLoadP" title="पुराना save किया काम खोलो">📂 खोलो</button>
     <button class="tool" id="btnPng">⬇️ PNG</button>
     <button class="tool" id="btnPdf" title="Print-ready PDF — असली साइज़ (mm) में, सीधे printer/customer को भेजो">📄 PDF</button>
     <button class="tool" id="btnPrint">🖨️ Print</button>
@@ -137,6 +139,7 @@ button.tool.warn{color:#f88;}
 </main>
 <input type="file" id="bgInp" accept="image/*,application/pdf,.pdf" hidden>
 <input type="file" id="camInp" accept="image/*" capture="environment" hidden>
+<input type="file" id="prjInp" accept=".json,application/json" hidden>
 
 <div id="lyrPanel">
   <div class="lp-head">
@@ -649,6 +652,44 @@ function doPrint(){
   img.src=cv.toDataURL('image/png');
 }
 $('btnPrint').onclick=doPrint;$('btnPrintTop').onclick=doPrint;
+
+/* ---------- 💾 Project Save/Load — काम आधा हो या पूरा, कल वहीं से चालू ---------- */
+$('btnSaveP').onclick=()=>{
+  try{
+    const st={v:1,app:'sanskriti-design-studio',W:S.W,H:S.H,unit:S.unit,dpi:S.dpi,presetName:S.presetName,boxes:S.boxes,bg:null,savedAt:Date.now()};
+    if(S.bg&&S.bg.img){
+      const c=document.createElement('canvas');c.width=S.bg.img.naturalWidth||S.bg.img.width;c.height=S.bg.img.naturalHeight||S.bg.img.height;
+      c.getContext('2d').drawImage(S.bg.img,0,0);
+      st.bg={name:S.bg.name,data:c.toDataURL('image/jpeg',0.9)};
+    }
+    const bl=new Blob([JSON.stringify(st)],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(bl);
+    a.download='sanskriti-project-'+S.presetName.replace(/[^\w]+/g,'-')+'.json';
+    a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+    toast('💾 Project save हुआ — कल 📂 खोलो से वहीं से चालू करना');
+  }catch(e){console.error(e);toast('⚠️ Save नहीं हुआ');}
+};
+$('btnLoadP').onclick=()=>$('prjInp').click();
+$('prjInp').addEventListener('change',e=>{
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const st=JSON.parse(r.result);
+      if(!st||st.app!=='sanskriti-design-studio'||!st.W||!st.H)throw 0;
+      pushHist();
+      S.boxes=[];S.sel=null;
+      applySize(st.W,st.H,st.unit||'mm',st.presetName||'Project');
+      if(st.dpi&&st.dpi!==S.dpi){ /* dpi अलग हो तो boxes scale हो जाएँगे नीचे ratio से */ }
+      const kx=S.CW/(st.dpi?st.W/25.4*st.dpi:S.CW),ky=S.CH/(st.dpi?st.H/25.4*st.dpi:S.CH);
+      S.boxes=(st.boxes||[]).map(b=>({...b,x:b.x*kx,y:b.y*ky,w:b.w*kx,h:b.h*ky,fs:b.fs*ky}));
+      if(st.bg&&st.bg.data){const img=new Image();img.onload=()=>{placeBg(img,st.bg.name||'design',true);render();};img.src=st.bg.data;}
+      render();syncEd();
+      toast('📂 Project खुल गया — '+S.boxes.length+' layers वापस आ गईं!');
+    }catch(err){console.error(err);toast('⚠️ File नहीं खुली — Sanskriti project file डालो');}
+  };
+  r.readAsText(f);
+});
 
 /* ---------- Init ---------- */
 let _rszH=false;
