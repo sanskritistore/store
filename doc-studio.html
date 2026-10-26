@@ -343,18 +343,22 @@ $('fileInp').addEventListener('change',async e=>{
         toast('📄 PDF पढ़ी जा रही है…');
         const lib=await loadPdfJs();
         const pdf=await lib.getDocument({data:await f.arrayBuffer()}).promise;
-        const maxP=Math.min(pdf.numPages,20);   // सुरक्षा: 20 पृष्ठ तक
+        const maxP=Math.min(pdf.numPages,100);   // सुरक्षा: 100 पृष्ठ तक
+        /* 📄 पृष्ठ ज़्यादा → size थोड़ी कम (phone memory बचे, print फिर भी साफ़) */
+        const target=pdf.numPages<=20?2200:pdf.numPages<=50?1500:1100;
+        if(target<2200) toast('📄 '+pdf.numPages+' पृष्ठ — सब आएँगे, size थोड़ी कम (memory बचाव)');
         for(let p=1;p<=maxP;p++){
           const page=await pdf.getPage(p);
           const vp0=page.getViewport({scale:1});
-          const sc2=Math.min(3, 2200/Math.max(vp0.width,vp0.height));   // print गुणवत्ता ~2200px
+          const sc2=Math.min(3, target/Math.max(vp0.width,vp0.height));   // print गुणवत्ता
           const vp=page.getViewport({scale:sc2});
           const cv=document.createElement('canvas');
           cv.width=Math.round(vp.width); cv.height=Math.round(vp.height);
           await page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;
           addDoc(cv, f.name.replace(/\.pdf$/i,'')+' (पृष्ठ '+p+')');
+          if(p%10===0) toast('📄 पृष्ठ '+p+'/'+maxP+' तैयार…');
         }
-        if(pdf.numPages>20) toast('⚠️ बड़ी PDF — पहले 20 पृष्ठ ही लिए');
+        if(pdf.numPages>100) toast('⚠️ बहुत बड़ी PDF — पहले 100 पृष्ठ ही लिए');
       } else {
         const bmp=await createImageBitmap(f);
         // बहुत बड़ी photo को 2400px तक सीमित (speed)
