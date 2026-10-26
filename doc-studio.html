@@ -456,6 +456,9 @@ function autoCrop(src){
   // A: corner-bg color diff
   const corners=[[0,0],[W-1,0],[0,H-1],[W-1,H-1]];
   const samples=corners.map(([x,y])=>{ const i=(y*W+x)*4; return [d[i],d[i+1],d[i+2]]; });
+  /* 🛡️ नियम 1: 3+ कोने paper जैसे (उज्ज्वल/बे-rंग) = document पहले से पूरा frame भरा है → कुछ मत काटो */
+  const _isPaper=(r2,g2,b2)=>{ const mx=Math.max(r2,g2,b2), mn=Math.min(r2,g2,b2); return mx>140&&(mx-mn)<mx*0.35; };
+  if(samples.filter(sm2=>_isPaper(sm2[0],sm2[1],sm2[2])).length>=3) return null;
   const bg=[0,1,2].map(k=>samples.map(s2=>s2[k]).sort((a,b)=>a-b)[2]);
   const mA=new Uint8Array(W*H);
   for(let i=0;i<W*H;i++){
@@ -499,10 +502,19 @@ function autoCrop(src){
   const win=cands[0];
   const pr=_paperFallback(src);   // paper-mask: रंगीन/फूलदार bg पर card की exact सीमा
   if(win.sc<2||!win.r.box) return pr||null;
+  /* 🛡️ सुरक्षा-नियम (Dev): किसी का document कटे नहीं — कम से कम 2 detectors सहमत हों तभी काटो;
+     अकेला detector = गलत कट का खतरा → पूरा page (manual crop) */
+  const _iou=(b1,b2)=>{ const x0=Math.max(b1.minX,b2.minX), y0=Math.max(b1.minY,b2.minY),
+    x1=Math.min(b1.maxX,b2.maxX), y1=Math.min(b1.maxY,b2.maxY);
+    if(x1<=x0||y1<=y0) return 0;
+    const ia=(x1-x0)*(y1-y0), a1=(b1.maxX-b1.minX)*(b1.maxY-b1.minY), a2=(b2.maxX-b2.minX)*(b2.maxY-b2.minY);
+    return ia/Math.min(a1,a2); };
+  const others=[rA,rB,rC].filter(r=>r&&r.box&&r!==win.r);
+  if(others.filter(r=>_iou(win.r.box,r.box)>0.55).length<1) return pr||null;
   const b=win.r.box, bw=b.maxX-b.minX, bh=b.maxY-b.minY;
   const total=W*H;
   if(win.r.area<total*0.04||win.r.area>total*0.985) return pr||null;
-  const padX=bw*0.03, padY=bh*0.03;
+  const padX=bw*0.06, padY=bh*0.06;   // 🛡️ डबल safety किनार — content कभी न कटे
   const winObj={ minX:Math.max(0,(b.minX-padX)/sc), minY:Math.max(0,(b.minY-padY)/sc),
            maxX:(b.maxX+padX)/sc, maxY:(b.maxY+padY)/sc, _sc:win.sc,
            _comp:win.r, _boxPx:{minX:b.minX,minY:b.minY,maxX:b.maxX,maxY:b.maxY}, _W:W, _H:H, _scl:sc };
@@ -613,7 +625,7 @@ function cropFor(doc){
   if(!box) return {x:0,y:0,w:1,h:1};
   const W=doc.src.width, H=doc.src.height;
   if(!doc.rot){
-    const px=(box.maxX-box.minX)*0.02, py=(box.maxY-box.minY)*0.02;
+    const px=(box.maxX-box.minX)*0.05, py=(box.maxY-box.minY)*0.05;   // 🛡️ safety किनार
     const x=Math.max(0,box.minX-px), y=Math.max(0,box.minY-py);
     const x2=Math.min(W,box.maxX+px), y2=Math.min(H,box.maxY+py);
     return {x:x/W, y:y/H, w:(x2-x)/W, h:(y2-y)/H};
