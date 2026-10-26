@@ -73,6 +73,19 @@ button.tool.warn{color:#f88;}
 .lyr .num{min-width:26px; height:26px; border-radius:8px; background:var(--acc); color:#000; font-weight:900; font-size:13px; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
 .lyr .ltxt{font-size:13px; color:var(--txt); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .lyr .del{color:#f88; background:none; border:0; font-size:15px; cursor:pointer; padding:4px 2px;}
+.lyr.hid{opacity:.45;}
+.lyr .ctl{color:#9aa; background:none; border:0; font-size:12px; cursor:pointer; padding:3px 1px; line-height:1;}
+.lyr .ctl:hover{color:var(--acc);}
+.lyr .ctl:disabled{opacity:.25; cursor:default;}
+/* 🎨 BG popover */
+#bgPop{position:fixed; bottom:64px; left:12px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 14px; z-index:45; display:none; min-width:240px; box-shadow:0 8px 30px #000a;}
+#bgPop.open{display:block;}
+#bgPop .brow{display:flex; align-items:center; gap:8px; margin:10px 0; font-size:13px; color:var(--txt);}
+#bgPop .brow span{min-width:96px; font-size:12px; color:var(--mut);}
+#bgPop button{background:var(--panel2); color:var(--txt); border:1px solid var(--line); border-radius:8px; padding:6px 10px; font-size:12px; cursor:pointer;}
+#bgPop button:hover{border-color:var(--acc);}
+#bgPop input[type=range]{accent-color:var(--acc);}
+#bgPop input[type=color]{width:42px; height:28px; border:1px solid var(--line); border-radius:6px; background:none; padding:0; cursor:pointer;}
 #lpEmpty{padding:20px 14px; text-align:center; color:var(--mut); font-size:13px; line-height:1.8;}
 #btnLayers{position:relative;}
 #btnLayers .cnt{position:absolute; top:-6px; right:-6px; background:var(--acc); color:#000; border-radius:10px; font-size:10px; font-weight:900; padding:1px 6px; display:none;}
@@ -139,6 +152,7 @@ button.tool.warn{color:#f88;}
     <button class="tool" id="btnSize">📐 साइज़</button>
     <button class="tool" id="btnBg">🖼️ Design डालो</button>
     <button class="tool" id="btnCam">📷 Camera</button>
+    <button class="tool" id="btnBg" title="Design की चमक घटाओ-बढ़ाओ, पीछे का रंग बदलो">🎨 BG</button>
     <button class="tool" id="btnAdd">➕ Text box</button>
     <button class="tool" id="btnScan" title="Design के सारे text खुद ढूँढकर numbered layers बनाओ">🔍 Text खोजो</button>
     <button class="tool" id="btnLayers">🧩 Layers<span class="cnt" id="lyrCnt">0</span></button>
@@ -153,6 +167,11 @@ button.tool.warn{color:#f88;}
 <input type="file" id="bgInp" accept="image/*,application/pdf,.pdf" hidden>
 <input type="file" id="camInp" accept="image/*" capture="environment" hidden>
 <input type="file" id="prjInp" accept=".json,application/json" hidden>
+<div id="bgPop">
+  <div class="brow"><span>🔆 चमक</span><input type="range" id="bgBriR" min="30" max="160" value="100" style="flex:1"><b id="bgBriV">100%</b></div>
+  <div class="brow"><span>🎨 पीछे का रंग</span><input type="color" id="bgColInp" value="#ffffff"><button id="bgColOff" title="रंग हटाओ — सफ़ेद">✕</button></div>
+  <div class="brow"><button id="bgReset" style="width:100%">♻️ मूल हालत में लाओ</button></div>
+</div>
 
 <div id="lyrPanel">
   <div class="lp-head">
@@ -197,7 +216,7 @@ const PRESETS=[
   {n:'Banner 2×4 ft',w:610,h:1219,u:'mm',d:'छोटा flex'},
   {n:'Letter 8.5×11"',w:216,h:279,u:'mm',d:'US Letter'},
 ];
-const S={W:210,H:297,unit:'mm',dpi:300,CW:0,CH:0,bg:null,boxes:[],sel:null,hist:[],presetName:'A4'};
+const S={W:210,H:297,unit:'mm',dpi:300,CW:0,CH:0,bg:null,boxes:[],sel:null,hist:[],presetName:'A4',bgBri:1,bgColor:null};
 let sc=1; // display scale (canvas px -> screen px)
 
 function toast(m){const t=$('toast');t.textContent=m;t.style.opacity=1;clearTimeout(t._h);t._h=setTimeout(()=>t.style.opacity=0,2200);}
@@ -304,12 +323,12 @@ function render(){
   const cv=$('cv');cv.width=S.CW;cv.height=S.CH;
   cv.style.width=(S.CW*sc)+'px';cv.style.height=(S.CH*sc)+'px';
   const ctx=cv.getContext('2d');
-  ctx.fillStyle='#fff';ctx.fillRect(0,0,S.CW,S.CH);
-  if(S.bg)ctx.drawImage(S.bg.img,0,0,S.CW,S.CH);
+  ctx.fillStyle=S.bgColor||'#fff';ctx.fillRect(0,0,S.CW,S.CH);
+  if(S.bg){ctx.save();if(S.bgBri!==1)ctx.filter=`brightness(${S.bgBri})`;ctx.drawImage(S.bg.img,0,0,S.CW,S.CH);ctx.restore();}
   const layer=$('boxes');layer.innerHTML='';
   layer.style.width=cv.style.width;layer.style.height=cv.style.height;
   $('hint').style.display=(S.bg||S.boxes.length)?'none':'flex';
-  S.boxes.forEach(b=>layer.appendChild(boxDiv(b)));
+  S.boxes.forEach(b=>{if(!b.hidden)layer.appendChild(boxDiv(b));});
   refreshLyr();
 }
 function boxDiv(b){
@@ -618,12 +637,20 @@ function refreshLyr(){
     return;
   }
   S.boxes.forEach((b,i)=>{
-    const d=document.createElement('div');d.className='lyr'+(b.id===S.sel?' on':'');
+    const d=document.createElement('div');d.className='lyr'+(b.id===S.sel?' on':'')+(b.hidden?' hid':'');
     const tx=(b.text||'(खाली box)').slice(0,26).replace(/</g,'&lt;');
-    d.innerHTML=`<span class="num">${i+1}</span><div style="flex:1;min-width:0;"><div class="ltxt">${tx}</div></div><button class="del" title="यह layer हटाओ">🗑️</button>`;
+    d.innerHTML=`<span class="num">${i+1}</span><div style="flex:1;min-width:0;"><div class="ltxt">${tx}</div></div>`
+      +`<button class="ctl eye" title="${b.hidden?'दिखाओ':'छुपाओ — export/print से भी गायब'}">${b.hidden?'🚫':'👁️'}</button>`
+      +`<button class="ctl" title="ऊपर लाओ (दूसरी layer के ऊपर दिखे)" ${i===S.boxes.length-1?'disabled':''}>▲</button>`
+      +`<button class="ctl" title="नीचे भेजो (दूसरी layer के पीछे)" ${i===0?'disabled':''}>▼</button>`
+      +`<button class="del" title="यह layer हटाओ">🗑️</button>`;
     d.onclick=()=>{S.sel=b.id;render();syncEd();
       const el=document.querySelector(`.box[data-id="${b.id}"]`);
       if(el&&el.scrollIntoView)el.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});};
+    const ctls=d.querySelectorAll('.ctl');
+    ctls[0].onclick=e=>{e.stopPropagation();pushHist();b.hidden=!b.hidden;render();syncEd();toast(b.hidden?'🚫 Layer छुपा दी':'👁️ Layer फिर दिखी');};
+    ctls[1].onclick=e=>{e.stopPropagation();if(i>=S.boxes.length-1)return;pushHist();S.boxes.splice(i,1);S.boxes.splice(i+1,0,b);render();syncEd();};
+    ctls[2].onclick=e=>{e.stopPropagation();if(i<=0)return;pushHist();S.boxes.splice(i,1);S.boxes.splice(i-1,0,b);render();syncEd();};
     d.querySelector('.del').onclick=e=>{e.stopPropagation();pushHist();
       S.boxes=S.boxes.filter(x=>x.id!==b.id);if(S.sel===b.id)S.sel=null;render();syncEd();toast('🗑️ Layer '+(i+1)+' हट गई');};
     list.appendChild(d);
@@ -633,16 +660,16 @@ function refreshLyr(){
 function exportCanvas(){
   const cv=document.createElement('canvas');cv.width=S.CW;cv.height=S.CH;
   const ctx=cv.getContext('2d');
-  ctx.fillStyle='#fff';ctx.fillRect(0,0,S.CW,S.CH);
-  if(S.bg)ctx.drawImage(S.bg.img,0,0,S.CW,S.CH);
+  ctx.fillStyle=S.bgColor||'#fff';ctx.fillRect(0,0,S.CW,S.CH);
+  if(S.bg){ctx.save();if(S.bgBri!==1)ctx.filter=`brightness(${S.bgBri})`;ctx.drawImage(S.bg.img,0,0,S.CW,S.CH);ctx.restore();}
   S.boxes.forEach(b=>{
     const show=b.armed||!b.orig||b.text!==b.orig;
-    if(show&&b.fillOn){ctx.fillStyle=b.fillColor||autoFillFrom(ctx,b);ctx.fillRect(b.x,b.y,b.w,b.h);}
+    if(show&&!b.hidden&&b.fillOn){ctx.fillStyle=b.fillColor||autoFillFrom(ctx,b);ctx.fillRect(b.x,b.y,b.w,b.h);}
   });
   ctx.textBaseline='top';
   S.boxes.forEach(b=>{
     const show=b.armed||!b.orig||b.text!==b.orig;
-    if(!show)return;
+    if(!show||b.hidden)return;
     ctx.font=`${b.bold?'800':'400'} ${b.fs}px ${b.font||"'Segoe UI',system-ui,sans-serif"}`;
     ctx.fillStyle=b.color;
     ctx.textAlign=b.align==='left'?'left':b.align==='right'?'right':'center';
@@ -707,9 +734,16 @@ async function doPrint(){
 $('btnPrint').onclick=doPrint;$('btnPrintTop').onclick=doPrint;
 
 /* ---------- 💾 Project Save/Load — काम आधा हो या पूरा, कल वहीं से चालू ---------- */
+/* 🎨 BG popover — चमक + पीछे का रंग (export/print में भी लागू) */
+$('btnBg').onclick=()=>$('bgPop').classList.toggle('open');
+$('bgBriR').addEventListener('input',e=>{S.bgBri=e.target.value/100;$('bgBriV').textContent=e.target.value+'%';render();});
+$('bgColInp').addEventListener('input',e=>{S.bgColor=e.target.value;render();});
+$('bgColOff').onclick=()=>{S.bgColor=null;render();toast('पीछे का रंग हटाया — सफ़ेद');};
+$('bgReset').onclick=()=>{S.bgBri=1;S.bgColor=null;$('bgBriR').value=100;$('bgBriV').textContent='100%';render();toast('♻️ BG मूल हालत में');};
+
 $('btnSaveP').onclick=()=>{
   try{
-    const st={v:1,app:'sanskriti-design-studio',W:S.W,H:S.H,unit:S.unit,dpi:S.dpi,presetName:S.presetName,boxes:S.boxes,bg:null,savedAt:Date.now()};
+    const st={v:1,app:'sanskriti-design-studio',W:S.W,H:S.H,unit:S.unit,dpi:S.dpi,presetName:S.presetName,boxes:S.boxes,bg:null,bgBri:S.bgBri,bgColor:S.bgColor,savedAt:Date.now()};
     if(S.bg&&S.bg.img){
       const c=document.createElement('canvas');c.width=S.bg.img.naturalWidth||S.bg.img.width;c.height=S.bg.img.naturalHeight||S.bg.img.height;
       c.getContext('2d').drawImage(S.bg.img,0,0);
@@ -736,6 +770,8 @@ $('prjInp').addEventListener('change',e=>{
       if(st.dpi&&st.dpi!==S.dpi){ /* dpi अलग हो तो boxes scale हो जाएँगे नीचे ratio से */ }
       const kx=S.CW/(st.dpi?st.W/25.4*st.dpi:S.CW),ky=S.CH/(st.dpi?st.H/25.4*st.dpi:S.CH);
       S.boxes=(st.boxes||[]).map(b=>({...b,x:b.x*kx,y:b.y*ky,w:b.w*kx,h:b.h*ky,fs:b.fs*ky}));
+      S.bgBri=st.bgBri||1;S.bgColor=st.bgColor||null;
+      $('bgBriR').value=Math.round(S.bgBri*100);$('bgBriV').textContent=Math.round(S.bgBri*100)+'%';
       if(st.bg&&st.bg.data){const img=new Image();img.onload=()=>{placeBg(img,st.bg.name||'design',true);render();};img.src=st.bg.data;}
       render();syncEd();
       toast('📂 Project खुल गया — '+S.boxes.length+' layers वापस आ गईं!');
