@@ -154,7 +154,7 @@ body.drag::after{content:'📂 यहीं छोड़ दो — design ख�
     <button class="tool" id="btnSize">📐 साइज़</button>
     <button class="tool" id="btnBg">🖼️ Design डालो</button>
     <button class="tool" id="btnCam">📷 Camera</button>
-    <button class="tool" id="btnBg" title="Design की चमक घटाओ-बढ़ाओ, पीछे का रंग बदलो">🎨 BG</button>
+    <button class="tool" id="btnBgFx" title="Design की चमक घटाओ-बढ़ाओ, पीछे का रंग बदलो">🎨 BG</button>
     <button class="tool" id="btnAdd">➕ Text box</button>
     <button class="tool" id="btnScan" title="Design के सारे text खुद ढूँढकर numbered layers बनाओ">🔍 Text खोजो</button>
     <button class="tool" id="btnLayers">🧩 Layers<span class="cnt" id="lyrCnt">0</span></button>
@@ -745,7 +745,8 @@ $('btnPrint').onclick=doPrint;$('btnPrintTop').onclick=doPrint;
 
 /* ---------- 💾 Project Save/Load — काम आधा हो या पूरा, कल वहीं से चालू ---------- */
 /* 🎨 BG popover — चमक + पीछे का रंग (export/print में भी लागू) */
-$('btnBg').onclick=()=>$('bgPop').classList.toggle('open');
+$('btnBgFx').onclick=()=>$('bgPop').classList.toggle('open');
+document.addEventListener('click',e=>{const p=$('bgPop');if(p.classList.contains('open')&&!p.contains(e.target)&&!e.target.closest('#btnBgFx'))p.classList.remove('open');});
 $('bgBriR').addEventListener('input',e=>{S.bgBri=e.target.value/100;$('bgBriV').textContent=e.target.value+'%';render();});
 $('bgColInp').addEventListener('input',e=>{S.bgColor=e.target.value;render();});
 $('bgColOff').onclick=()=>{S.bgColor=null;render();toast('पीछे का रंग हटाया — सफ़ेद');};
