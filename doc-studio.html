@@ -326,9 +326,10 @@ function loadPdfJs(){
   return _pdfjsP;
 }
 /* 📄➕🖼️ दोनों के लिए एक रास्ता — canvas से document बनाओ */
-function addDoc(cv, name){
+function addDoc(cv, name, fromPdf){
   const doc={id:uid(), name:name, src:cv, rot:0, crop:{x:0,y:0,w:1,h:1}, mode:'clean', _proc:null,
              tag:(S.mode==='doc'?'doc':S.mode==='pan'?'pan':''), _autoTag:!!S.mode&&S.mode!=='card'};
+  if(fromPdf) doc._fromPdf=true;   // 📄 PDF पृष्ठ = पहले से perfect — auto-crop/warp नहीं (manual crop ही)
   doc._pairSig=_mkPairSig(cv);   // मूल photo की पहचान-निशानी (मेज़ रंग + आकार)
   S.docs.push(doc);
   S._autoQ.push(doc);
@@ -355,7 +356,7 @@ $('fileInp').addEventListener('change',async e=>{
           const cv=document.createElement('canvas');
           cv.width=Math.round(vp.width); cv.height=Math.round(vp.height);
           await page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;
-          addDoc(cv, f.name.replace(/\.pdf$/i,'')+' (पृष्ठ '+p+')');
+          addDoc(cv, f.name.replace(/\.pdf$/i,'')+' (पृष्ठ '+p+')', true);
           if(p%10===0) toast('📄 पृष्ठ '+p+'/'+maxP+' तैयार…');
         }
         if(pdf.numPages>100) toast('⚠️ बहुत बड़ी PDF — पहले 100 पृष्ठ ही लिए');
@@ -391,7 +392,7 @@ function runAutoQueue(){
   const idx=S.docs.indexOf(doc)+1;
   toast('⚡ AUTO '+idx+'/'+S.docs.length+' — '+doc.name.slice(0,18)+'…');
   setTimeout(()=>{
-    try{ autoProcess(doc); }catch(e){ console.error(e); doc.crop={x:0,y:0,w:1,h:1}; }
+    try{ if(!doc._fromPdf) autoProcess(doc); }catch(e){ console.error(e); doc.crop={x:0,y:0,w:1,h:1}; }
     try{ renderAll(); }catch(e){ console.error(e); }
     _autoBusy=false;
     runAutoQueue();
