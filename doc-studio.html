@@ -135,7 +135,7 @@ input[type=range]{accent-color:var(--acc);}
   </div>
 </main>
 <div id="toast"></div>
-<input type="file" id="fileInp" accept="image/*" multiple style="display:none">
+<input type="file" id="fileInp" accept="image/*,application/pdf" multiple style="display:none">
 <div id="printArea"></div>
 <style id="pageStyle">@page{size:210mm 297mm; margin:0;}</style>
 
@@ -311,22 +311,59 @@ $('btnAutoAll').addEventListener('click',()=>{
   S._autoQ.push(...S.docs);
   runAutoQueue();
 });
+/* 📄 pdf.js — सिर्फ़ PDF चुनने पर load (JPG flow पर कोई असर नहीं) */
+let _pdfjsP=null;
+function loadPdfJs(){
+  if(window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  if(_pdfjsP) return _pdfjsP;
+  _pdfjsP=new Promise((res,rej)=>{
+    const sc=document.createElement('script');
+    sc.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    sc.onload=()=>{ try{ pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; res(pdfjsLib); }catch(e){ rej(e); } };
+    sc.onerror=()=>{ _pdfjsP=null; rej(new Error('pdf.js नहीं खुली — internet देखो')); };
+    document.head.appendChild(sc);
+  });
+  return _pdfjsP;
+}
+/* 📄➕🖼️ दोनों के लिए एक रास्ता — canvas से document बनाओ */
+function addDoc(cv, name){
+  const doc={id:uid(), name:name, src:cv, rot:0, crop:{x:0,y:0,w:1,h:1}, mode:'clean', _proc:null,
+             tag:(S.mode==='doc'?'doc':S.mode==='pan'?'pan':''), _autoTag:!!S.mode&&S.mode!=='card'};
+  doc._pairSig=_mkPairSig(cv);   // मूल photo की पहचान-निशानी (मेज़ रंग + आकार)
+  S.docs.push(doc);
+  S._autoQ.push(doc);
+}
 $('fileInp').addEventListener('change',async e=>{
   const files=[...e.target.files]; e.target.value='';
   if(!files.length) return;
   for(const f of files){
     try{
-      const bmp=await createImageBitmap(f);
-      // बहुत बड़ी photo को 2400px तक सीमित (speed)
-      const sc=Math.min(1, 2400/Math.max(bmp.width,bmp.height));
-      const cv=document.createElement('canvas');
-      cv.width=Math.round(bmp.width*sc); cv.height=Math.round(bmp.height*sc);
-      cv.getContext('2d').drawImage(bmp,0,0,cv.width,cv.height);
-      const doc={id:uid(), name:f.name, src:cv, rot:0, crop:{x:0,y:0,w:1,h:1}, mode:'clean', _proc:null,
-                 tag:(S.mode==='doc'?'doc':S.mode==='pan'?'pan':''), _autoTag:!!S.mode&&S.mode!=='card'};
-      doc._pairSig=_mkPairSig(cv);   // मूल photo की पहचान-निशानी (मेज़ रंग + आकार)
-      S.docs.push(doc);
-      S._autoQ.push(doc);
+      if(f.type==='application/pdf'||/\.pdf$/i.test(f.name)){
+        /* 📄 PDF — हर पृष्ठ को अलग document बनाओ */
+        toast('📄 PDF पढ़ी जा रही है…');
+        const lib=await loadPdfJs();
+        const pdf=await lib.getDocument({data:await f.arrayBuffer()}).promise;
+        const maxP=Math.min(pdf.numPages,20);   // सुरक्षा: 20 पृष्ठ तक
+        for(let p=1;p<=maxP;p++){
+          const page=await pdf.getPage(p);
+          const vp0=page.getViewport({scale:1});
+          const sc2=Math.min(3, 2200/Math.max(vp0.width,vp0.height));   // print गुणवत्ता ~2200px
+          const vp=page.getViewport({scale:sc2});
+          const cv=document.createElement('canvas');
+          cv.width=Math.round(vp.width); cv.height=Math.round(vp.height);
+          await page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;
+          addDoc(cv, f.name.replace(/\.pdf$/i,'')+' (पृष्ठ '+p+')');
+        }
+        if(pdf.numPages>20) toast('⚠️ बड़ी PDF — पहले 20 पृष्ठ ही लिए');
+      } else {
+        const bmp=await createImageBitmap(f);
+        // बहुत बड़ी photo को 2400px तक सीमित (speed)
+        const sc=Math.min(1, 2400/Math.max(bmp.width,bmp.height));
+        const cv=document.createElement('canvas');
+        cv.width=Math.round(bmp.width*sc); cv.height=Math.round(bmp.height*sc);
+        cv.getContext('2d').drawImage(bmp,0,0,cv.width,cv.height);
+        addDoc(cv, f.name);
+      }
     }catch(err){ console.error(err); toast('⚠️ '+f.name+' नहीं खुली'); }
   }
   if(S.cur<0&&S.docs.length) S.cur=0;
