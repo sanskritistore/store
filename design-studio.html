@@ -700,9 +700,13 @@ function autoFillFrom(ctx,b){
     if(n)cols.push([r/n,g/n,bl/n]);
   });
   if(!cols.length)return '#ffffff';
-  cols.sort((a,b2)=>(a[0]+a[1]+a[2])-(b2[0]+b2[1]+b2[2]));
-  const mid=cols[Math.floor(cols.length/2)];
-  return `rgb(${Math.round(mid[0])},${Math.round(mid[1])},${Math.round(mid[2])})`;
+  /* text रंग से सबसे दूर वाला strip चुनो — ornament का रंग पट्टी में न घुसे (bron पट्टी fix) */
+  const h=(b.color||'#111111').replace('#','');
+  const tc=[parseInt(h.substr(0,2),16)||0,parseInt(h.substr(2,2),16)||0,parseInt(h.substr(4,2),16)||0];
+  const dist=c=>Math.abs(c[0]-tc[0])+Math.abs(c[1]-tc[1])+Math.abs(c[2]-tc[2]);
+  cols.sort((a,c)=>dist(c)-dist(a));
+  const best=cols[0];
+  return `rgb(${Math.round(best[0])},${Math.round(best[1])},${Math.round(best[2])})`;
 }
 $('btnPng').onclick=async()=>{
   await document.fonts.ready;
