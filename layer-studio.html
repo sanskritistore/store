@@ -2,6 +2,7 @@
 <html lang="hi">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Layer Studio — PDF की असली परतें</title>
 <style>
   body{font-family:sans-serif;background:#181818;color:#eee;margin:0;display:flex;height:100vh;overflow:hidden}
@@ -24,6 +25,14 @@
   #tools{display:none;background:#1a1a1a;border:1px solid #444;border-radius:6px;padding:8px;margin-bottom:8px}
   #tools input[type=color]{width:34px;height:26px;border:none;background:none;cursor:pointer}
   #tools input[type=text]{width:96%;background:#111;color:#eee;border:1px solid #555;border-radius:4px;padding:5px;margin-top:5px}
+  /* 📱 फ़ोन: panel नीचे, canvas स्क्रीन में fit */
+  @media (max-width:768px){
+    body{flex-direction:column}
+    #stage{flex:1;min-height:0;padding:6px;align-items:flex-start}
+    canvas#cv{max-width:97vw;height:auto}
+    #panel{width:auto;height:38vh;border-left:none;border-top:2px solid #444}
+    .lrow img{width:52px;height:38px}
+  }
 </style>
 </head>
 <body>
@@ -510,6 +519,27 @@ $('cv').addEventListener('mousedown',e=>{
   drag=L?{L,sx:px,sy:py,dx:L.dx,dy:L.dy}:null;
   buildPanel();if(L)showTools(L);composite();
 });
+/* 📱 touch = mouse जैसा ही (layer खींचने पर page scroll रोको) */
+$('cv').addEventListener('touchstart',e=>{
+  const t=e.touches[0];
+  const r=$('cv').getBoundingClientRect();
+  const px=(t.clientX-r.left)*($('cv').width/r.width),py=(t.clientY-r.top)*($('cv').height/r.height);
+  const L=hitAt(px,py);
+  selId=L?L.id:-1;
+  drag=L?{L,sx:px,sy:py,dx:L.dx,dy:L.dy}:null;
+  if(L)e.preventDefault();
+  buildPanel();if(L)showTools(L);composite();
+},{passive:false});
+window.addEventListener('touchmove',e=>{
+  if(!drag)return;
+  e.preventDefault();
+  const t=e.touches[0];
+  const r=$('cv').getBoundingClientRect();
+  const px=(t.clientX-r.left)*($('cv').width/r.width),py=(t.clientY-r.top)*($('cv').height/r.height);
+  drag.L.dx=drag.dx+px-drag.sx;drag.L.dy=drag.dy+py-drag.sy;
+  composite();
+},{passive:false});
+window.addEventListener('touchend',()=>drag=null);
 window.addEventListener('mousemove',e=>{
   if(!drag)return;
   const r=$('cv').getBoundingClientRect();
