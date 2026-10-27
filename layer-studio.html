@@ -582,11 +582,12 @@ let _lastH=0;
 function throttleHist(){const n=Date.now();if(n-_lastH>700){pushHist();_lastH=n;}}
 function commitDrag(){if(drag&&drag.snap&&snap()!==drag.snap){hist.push(drag.snap);if(hist.length>50)hist.shift();redoSt=[];}drag=null;}
 function applySnap(s){
-  const d=JSON.parse(s),fm=new Map(d.f);
+  const d=JSON.parse(s),fm=new Map(d.f.map(r=>[r[0],r])); // पूरी row value में (Map [k,v] जोड़े खाता है!)
   layers=d.ord.map(id=>pool.get(id)).filter(Boolean);
   layers.forEach(L=>{const f=fm.get(L.id);if(!f)return;L.hidden=f[1];L.dx=f[2];L.dy=f[3];
     if(L.type==='text'){L.txt=f[4];L.col=f[5];L.sizeMul=f[6];}});
   if(selId>=0&&!layers.find(l=>l.id===selId))selId=-1;
+  window._L=layers; // debug handle ताज़ा रखो
   buildPanel();composite();
 }
 function undo(){if(!hist.length)return;redoSt.push(snap());applySnap(hist.pop());}
