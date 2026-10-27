@@ -50,6 +50,8 @@
   <div>
     <button id="bPng">⬇️ PNG 300 DPI</button>
     <button id="bScan" style="display:none">🔍 AI: Text खोजो</button>
+    <button id="bCut" style="display:none">🪄 AI: सब अलग करो</button>
+    <button id="bTap" style="display:none">👆 Tap-काटो: बंद</button>
     <button id="bReset">♻️ सब reset</button>
   </div>
   <div id="items"></div>
@@ -445,8 +447,250 @@ async function loadImage(bytes,fname){
   const inchW=(W/300).toFixed(1),inchH=(H/300).toFixed(1);
   $('stat').textContent=`🖼 ${W}×${H}px = ${inchW}×${inchH} inch @300DPI\n👆 "AI: Text खोजो" दबाओ — photo के अंदर का text editable बन जाएगा`;
   $('bScan').style.display='inline-block';
+  $('bCut').style.display='inline-block';
+  $('bTap').style.display='inline-block';
   window._DONE=true;window._L=layers;
 }
+
+/* ============ 🪄 SAM: photo की चीज़ें अलग-अलग परतों में (Meta Segment Anything) ============ */
+const SAM_WORKER_SRC = `
+import { SamModel, AutoProcessor, RawImage, Tensor } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3';
+let model=null,processor=null,imageInputs=null,imageEmbeddings=null;
+const MODEL_ID='Xenova/slimsam-77-uniform';
+async function getInstance(){
+  if(!model){
+    try{ model=await SamModel.from_pretrained(MODEL_ID,{dtype:'fp16',device:'webgpu'}); }
+    catch(e){ model=await SamModel.from_pretrained(MODEL_ID,{dtype:'q8',device:'wasm'}); }
+    processor=await AutoProcessor.from_pretrained(MODEL_ID);
+  }
+  return [model,processor];
+}
+self.onmessage=async(e)=>{
+  const {type,data}=e.data||{};
+  try{
+    if(type==='load'){ await getInstance(); self.postMessage({type:'ready'}); }
+    else if(type==='segment'){
+      const [m,p]=await getInstance();
+      const image=await RawImage.read(data);
+      imageInputs=await p(image);
+      imageEmbeddings=await m.get_image_embeddings(imageInputs);
+      self.postMessage({type:'segment_done'});
+    }
+    else if(type==='decode'){
+      const [m,p]=await getInstance();
+      const reshaped=imageInputs.reshaped_input_sizes[0];
+      const pts=data.points.map(pt=>[pt[0]*reshaped[1],pt[1]*reshaped[0]]);
+      const input_points=new Tensor('float32',pts.flat(Infinity),[1,pts.length,1,2]);
+      const input_labels=new Tensor('int64',pts.map(()=>1n).flat(),[1,pts.length,1]);
+      const {pred_masks,iou_scores}=await m({...imageEmbeddings,input_points,input_labels});
+      // memory बचत: आधे resolution पर masks (bits वैसे भी ≤256px में जाते हैं)
+      const [oH,oW]=imageInputs.original_sizes[0];
+      const DS=2;
+      const masks=await p.post_process_masks(pred_masks,[[Math.round(oH/DS),Math.round(oW/DS)]],imageInputs.reshaped_input_sizes);
+      const out=[];
+      for(let i=0;i<pts.length;i++){
+        const ri=RawImage.fromTensor(masks[0][i]); // [3,H,W]
+        const W=ri.width,H=ri.height,CH=ri.channels,d=ri.data;
+        // best candidate
+        let bi=0;for(let j=1;j<CH;j++){if(iou_scores.data[i*CH+j]>iou_scores.data[i*CH+bi])bi=j;}
+        // bbox + area
+        let minx=W,miny=H,maxx=-1,maxy=-1,count=0;
+        for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+          if(d[CH*(y*W+x)+bi]){count++;
+            if(x<minx)minx=x;if(x>maxx)maxx=x;if(y<miny)miny=y;if(y>maxy)maxy=y;}
+        }
+        if(!count){out.push(null);continue;}
+        // असली (full-res) नाप वापस
+        minx*=DS;miny*=DS;maxx=(maxx+1)*DS-1;maxy=(maxy+1)*DS-1;count*=DS*DS;
+        if(maxx>=oW)maxx=oW-1;if(maxy>=oH)maxy=oH-1;
+        // छोटा mask भेजो (data बचत + हल्के किनारे)
+        const bw=maxx-minx+1,bh=maxy-miny+1;
+        const scale=Math.min(1,256/Math.max(bw,bh));
+        const sw=Math.max(1,Math.round(bw*scale)),sh=Math.max(1,Math.round(bh*scale));
+        const full=new OffscreenCanvas(bw,bh);const fx=full.getContext('2d');
+        const id=fx.createImageData(bw,bh);
+        for(let y=0;y<bh;y++)for(let x=0;x<bw;x++){
+          const on=d[CH*((y+miny)*W+(x+minx))+bi]?255:0;
+          const o=4*(y*bw+x);id.data[o]=id.data[o+1]=id.data[o+2]=on;id.data[o+3]=255;
+        }
+        fx.putImageData(id,0,0);
+        const small=new OffscreenCanvas(sw,sh);const sx=small.getContext('2d');
+        sx.imageSmoothingEnabled=true;sx.imageSmoothingQuality='high';
+        sx.drawImage(full,0,0,sw,sh);
+        const sd=sx.getImageData(0,0,sw,sh).data;
+        const bits=new Uint8Array(sw*sh);
+        for(let k=0;k<sw*sh;k++)bits[k]=sd[k*4];
+        out.push({bbox:[minx,miny,bw,bh],area:count,sw,sh,bits,score:iou_scores.data[i*CH+bi]});
+      }
+      self.postMessage({type:'decode_done',data:out});
+    }
+  }catch(err){ self.postMessage({type:'error',data:String(err&&err.message||err)}); }
+};
+`;
+let samWorker=null,samReady=false,samSegDone=false,tapMode=false;
+function getSamWorker(){
+  if(!samWorker){
+    samWorker=new Worker(URL.createObjectURL(new Blob([SAM_WORKER_SRC],{type:'text/javascript'})),{type:'module'});
+    samWorker.onmessage=e=>{
+      const {type,data}=e.data;
+      if(type==='ready'){samReady=true;$('stat').textContent='✅ AI model तैयार! अब photo पढ़ी जा रही है...';}
+      else if(type==='segment_done'){samSegDone=true;if(window._onSegDone)window._onSegDone();}
+      else if(type==='decode_done'){if(window._onDecode)window._onDecode(data);}
+      else if(type==='error'){$('stat').textContent='❌ AI error: '+data;$('bCut').disabled=false;$('bTap').disabled=false;}
+    };
+  }
+  return samWorker;
+}
+async function samPrepare(srcCanvas){
+  const w=getSamWorker();
+  if(!samReady){$('stat').textContent='⏳ AI model download हो रहा है (एक बार, ~14MB)...';w.postMessage({type:'load'});
+    await new Promise(r=>{const t=setInterval(()=>{if(samReady){clearInterval(t);r();}},300);});}
+  if(!samSegDone){$('stat').textContent='⏳ AI photo को समझ रहा है... (पहली बार 10-60 सेकंड)';
+    w.postMessage({type:'segment',data:srcCanvas.toDataURL('image/png')});
+    await new Promise(r=>{window._onSegDone=r;});}
+}
+function samDecode(points){
+  return new Promise(res=>{window._onDecode=res;getSamWorker().postMessage({type:'decode',data:{points}});});
+}
+function bitsToMaskCanvas(m,srcCanvas){
+  const [bx,by,bw,bh]=m.bbox;
+  const mc=document.createElement('canvas');mc.width=m.sw;mc.height=m.sh;
+  const mx=mc.getContext('2d');const id=mx.createImageData(m.sw,m.sh);
+  for(let k=0;k<m.sw*m.sh;k++){id.data[k*4]=id.data[k*4+1]=id.data[k*4+2]=m.bits[k];id.data[k*4+3]=255;}
+  mx.putImageData(id,0,0);
+  const full=document.createElement('canvas');full.width=bw;full.height=bh;
+  const fx=full.getContext('2d');fx.imageSmoothingEnabled=true;fx.imageSmoothingQuality='high';
+  fx.drawImage(mc,0,0,bw,bh);
+  const md=fx.getImageData(0,0,bw,bh).data;
+  const src=srcCanvas.getContext('2d').getImageData(bx,by,bw,bh);
+  const out=fx.createImageData(bw,bh);
+  for(let k=0;k<bw*bh;k++){
+    const a=md[k*4];out.data[k*4]=src.data[k*4];out.data[k*4+1]=src.data[k*4+1];
+    out.data[k*4+2]=src.data[k*4+2];out.data[k*4+3]=a>110?src.data[k*4+3]:0;
+  }
+  const c=document.createElement('canvas');c.width=bw;c.height=bh;
+  c.getContext('2d').putImageData(out,0,0);
+  return c;
+}
+function maskKey(m){ // dedupe के लिए छोटा निशान
+  let s=0;for(let k=0;k<m.bits.length;k+=7)s=(s+m.bits[k]*(k+1))%1000003;return s+'_'+m.area;
+}
+function iouBits(a,b){ // दोनों same sw/sh नहीं — approx: bbox overlap ratio
+  const [ax,ay,aw,ah]=a.bbox,[bx2,by2,bw2,bh2]=b.bbox;
+  const ix=Math.max(0,Math.min(ax+aw,bx2+bw2)-Math.max(ax,bx2));
+  const iy=Math.max(0,Math.min(ay+ah,by2+bh2)-Math.max(ay,by2));
+  const inter=ix*iy,uni=aw*ah+bw2*bh2-inter;
+  return uni?inter/uni:0;
+}
+$('bCut').onclick=async()=>{
+  const src=layers.find(l=>l.type==='img'&&l.canvas);
+  if(!src)return;
+  const btn=$('bCut');btn.disabled=true;
+  try{
+    await samPrepare(src.canvas);
+    const W=src.canvas.width,H=src.canvas.height;
+    // grid points — photo पर महीन जाल (छोटी चीज़ें भी पकड़े)
+    const GX=12,GY=7,pts=[];
+    for(let gy=0;gy<GY;gy++)for(let gx=0;gx<GX;gx++)pts.push([(gx+0.5)/GX,(gy+0.5)/GY]);
+    $('stat').textContent=`🪄 AI ${pts.length} जगह देख रहा है... (0/${Math.ceil(pts.length/8)})`;
+    const all=[];
+    const BATCH=8;
+    for(let i=0;i<pts.length;i+=BATCH){
+      const chunk=await samDecode(pts.slice(i,i+BATCH));
+      all.push(...chunk);
+      $('stat').textContent=`🪄 AI ${pts.length} जगह देख रहा है... (${Math.ceil((i+BATCH)/BATCH)}/${Math.ceil(pts.length/BATCH)})`;
+    }
+    // filter: score + area
+    const cand=all.filter(m=>m&&m.score>=0.82&&m.area>W*H*0.002&&m.area<W*H*0.92);
+    // dedupe: bbox overlap ज़्यादा → बड़ा score रखो
+    cand.sort((a,b)=>b.score-a.score);
+    const kept=[];
+    for(const m of cand){
+      if(kept.some(k=>iouBits(k,m)>0.72))continue;
+      kept.push(m);
+    }
+    kept.sort((a,b)=>b.area-a.area); // बड़ा पहले
+    pushHist();
+    let added=0;
+    // coverage कम resolution पर (memory बचत) — छोटे bits से सीधे
+    const CQ=4,CW=Math.ceil(W/CQ),CHH=Math.ceil(H/CQ);
+    const covered=new Uint8Array(CW*CHH);
+    for(const m of kept){
+      const cnv=bitsToMaskCanvas(m,src.canvas);
+      const nid=Math.max(...[...pool.keys()])+1;
+      const L={type:'img',sam:true,id:nid,z:layers.length+1,seq:800+nid,
+        rect:{x:m.bbox[0],y:m.bbox[1],w:m.bbox[2],h:m.bbox[3]},
+        canvas:cnv,hidden:false,dx:0,dy:0,
+        name:'🧩 टुकड़ा '+(added+1)+' ('+Math.round(m.bbox[2])+'×'+Math.round(m.bbox[3])+')'};
+      pool.set(nid,L);layers.push(L);added++;
+      const [bx,by,bw,bh]=m.bbox;
+      for(let sy=0;sy<m.sh;sy++){
+        const gy=((by+(sy+0.5)*bh/m.sh)/CQ)|0;
+        for(let sx=0;sx<m.sw;sx++){
+          if(m.bits[sy*m.sw+sx]>110)covered[gy*CW+(((bx+(sx+0.5)*bw/m.sw)/CQ)|0)]=1;
+        }
+      }
+    }
+    // 🖼 बाक़ी बचा हिस्सा — base photo छिपाओ तो भी पूरी तस्वीर बने
+    if(added){
+      const sctx=src.canvas.getContext('2d');
+      const sData=sctx.getImageData(0,0,W,H);
+      const rc=document.createElement('canvas');rc.width=W;rc.height=H;
+      const rctx=rc.getContext('2d');const rid=rctx.createImageData(W,H);
+      for(let y=0;y<H;y++){
+        const crow=(y/CQ)|0;
+        for(let x=0;x<W;x++){
+          const k=y*W+x;
+          rid.data[k*4]=sData.data[k*4];rid.data[k*4+1]=sData.data[k*4+1];rid.data[k*4+2]=sData.data[k*4+2];
+          rid.data[k*4+3]=covered[crow*CW+((x/CQ)|0)]?0:255;
+        }
+      }
+      rctx.putImageData(rid,0,0);
+      const nid=Math.max(...[...pool.keys()])+1;
+      const RL={type:'img',sam:true,id:nid,z:src.z+1,seq:700+nid,
+        rect:{x:0,y:0,w:W,h:H},canvas:rc,hidden:false,dx:0,dy:0,
+        name:'🖼 बाक़ी बचा हिस्सा (background)'};
+      pool.set(nid,RL);
+      // base image के ठीक ऊपर रखो
+      const bi=layers.indexOf(src);layers.splice(bi+1,0,RL);
+    }
+    window._L=layers;
+    buildPanel();composite();
+    $('stat').textContent=added?`✅ AI ने ${added} चीज़ें अलग कीं + background! मूल photo छिपाकर देखो — पूरी तस्वीर परतों में!`:'🤷 कोई साफ़ चीज़ नहीं मिली';
+  }catch(e){$('stat').textContent='❌ '+e.message;}
+  btn.disabled=false;
+};
+$('bTap').onclick=()=>{
+  tapMode=!tapMode;
+  $('bTap').textContent=tapMode?'👆 Tap-काटो: चालू (photo पर tap करो)':'👆 Tap-काटो: बंद';
+  $('bTap').style.background=tapMode?'#1a7a3a':'';
+};
+/* tap-to-cut: mousedown hook — cut mode में drag की जगह कटाव */
+window.addEventListener('mousedown',async e=>{
+  if(!tapMode||e.target.id!=='cv')return;
+  e.stopPropagation();e.preventDefault();
+  const src=layers.find(l=>l.type==='img'&&l.canvas);
+  if(!src)return;
+  const r=$('cv').getBoundingClientRect();
+  const px=(e.clientX-r.left)*($('cv').width/r.width),py=(e.clientY-r.top)*($('cv').height/r.height);
+  $('stat').textContent='👆 AI काट रहा है...';
+  try{
+    await samPrepare(src.canvas);
+    const [m]=await samDecode([[px/$('cv').width,py/$('cv').height]]);
+    if(!m||m.area<100){$('stat').textContent='🤷 यहाँ कुछ नहीं मिला — दूसरी जगह tap करो';return;}
+    const cnv=bitsToMaskCanvas(m,src.canvas);
+    pushHist();
+    const nid=Math.max(...[...pool.keys()])+1;
+    const L={type:'img',sam:true,id:nid,z:layers.length+1,seq:800+nid,
+      rect:{x:m.bbox[0],y:m.bbox[1],w:m.bbox[2],h:m.bbox[3]},
+      canvas:cnv,hidden:false,dx:0,dy:0,
+      name:'✂️ कटाव ('+Math.round(m.bbox[2])+'×'+Math.round(m.bbox[3])+')'};
+    pool.set(nid,L);layers.push(L);selId=nid;
+    window._L=layers;
+    buildPanel();showTools(L);composite();
+    $('stat').textContent='✅ कटाव तैयार! अब हिलाओ/छिपाओ/हटाओ — और tap करते रहो';
+  }catch(err){$('stat').textContent='❌ '+err.message;}
+},true);
 
 /* ============ 🔍 AI text पकड़ो (OCR) — photo → editable text layers ============ */
 function sampleInk(ictx,x0,y0,x1,y1){
