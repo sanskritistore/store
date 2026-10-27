@@ -173,7 +173,8 @@ function _mkPairSig(src){
   const ring=(x,y)=>{const i=(y*W+x)*4;r+=d[i];g+=d[i+1];b+=d[i+2];n++;};
   for(let x=0;x<W;x++){ring(x,0);ring(x,H-1);}
   for(let y=1;y<H-1;y++){ring(0,y);ring(W-1,y);}
-  return {br:r/n,bg:g/n,bb:b/n, aspect:src.width/src.height, area:src.width*src.height};
+  const _asp=src.width/src.height;
+  return {br:r/n,bg:g/n,bb:b/n, aspect:Math.max(_asp,1/_asp), area:src.width*src.height};   // 🔄 घुमाव-भुलक्कड़: खड़ी/आड़ी photo — card वही
 }
 function _ahash(src){
   const cv=document.createElement('canvas'); cv.width=8; cv.height=8;
@@ -219,7 +220,7 @@ function pairMatch(targets){
   const content=(A,B)=>{
     const ca=cls.get(A.id), cb=cls.get(B.id);
     if(ca&&cb){
-      if(ca.name===cb.name) return ca.side!==cb.side? -0.35 : 0.60;  // same card F+B खिंचो, F+F दूर
+      if(ca.name===cb.name) return ca.side!==cb.side? -0.35 : 0.40;  // same card F+B खिंचो; same-side संदेह = धक्का (वीटो नहीं — geo perfect हो तो जुड़े)
       return 0.60;                                                   // अलग card type कभी न जोड़ो
     }
     return 0;
