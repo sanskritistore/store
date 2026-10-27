@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<title>Layer Studio — PDF की असली परतें</title>
+<style>
+  body{font-family:sans-serif;background:#181818;color:#eee;margin:0;display:flex;height:100vh;overflow:hidden}
+  #stage{flex:1;overflow:auto;display:flex;justify-content:center;padding:16px}
+  #wrap{position:relative;height:fit-content}
+  canvas#cv{border:1px solid #444;background:#fff;cursor:default}
+  #panel{width:300px;background:#222;border-left:1px solid #444;overflow-y:auto;padding:10px;font-size:13px}
+  #panel h3{margin:4px 0 8px;font-size:15px}
+  .lrow{display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:6px;cursor:pointer;border:1px solid transparent}
+  .lrow:hover{background:#2c2c2c}
+  .lrow.sel{background:#0b3d91;border-color:#4a9eff}
+  .lrow.off{opacity:.45}
+  .lrow img{width:44px;height:32px;object-fit:contain;background:repeating-conic-gradient(#888 0% 25%,#555 0% 50%) 50%/12px 12px;border:1px solid #555;border-radius:3px}
+  .lrow .tt{width:44px;height:32px;display:flex;align-items:center;justify-content:center;font-size:9px;border:1px solid #555;border-radius:3px;background:#fff;overflow:hidden;text-align:center;line-height:1.1}
+  .lrow .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lrow .eye{cursor:pointer;font-size:14px}
+  #stat{background:#111;padding:8px;border-radius:6px;margin-bottom:8px;white-space:pre-wrap;font-size:12px}
+  button{background:#333;color:#eee;border:1px solid #555;border-radius:5px;padding:6px 10px;cursor:pointer;margin:2px}
+  button:hover{background:#444}
+  #tools{display:none;background:#1a1a1a;border:1px solid #444;border-radius:6px;padding:8px;margin-bottom:8px}
+  #tools input[type=color]{width:34px;height:26px;border:none;background:none;cursor:pointer}
+  #tools input[type=text]{width:96%;background:#111;color:#eee;border:1px solid #555;border-radius:4px;padding:5px;margin-top:5px}
+</style>
+</head>
+<body>
+<div id="stage"><div id="wrap"><canvas id="cv"></canvas></div></div>
+<div id="panel">
+  <h3>🧅 Layer Studio</h3>
+  <input type="file" id="pdfInp" accept=".pdf,.png,.jpg,.jpeg,.webp" style="font-size:11px;width:100%">
+  <div id="stat">PDF खोलो…</div>
+  <div id="tools">
+    <div>🎨 <input type="color" id="tCol">
+      <button id="tMinus">A−</button><button id="tPlus">A+</button>
+      <button id="tReset">♻️</button></div>
+    <input type="text" id="tTxt">
+  </div>
+  <div>
+    <button id="bPng">⬇️ PNG 300 DPI</button>
+    <button id="bReset">♻️ सब reset</button>
+  </div>
+  <div id="items"></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+const {PDFDocument,PDFName,PDFArray}=PDFLib;
+const $=id=>document.getElementById(id);
+const SCALE=2, LSCALE=300/72; // display 2x, layers 300dpi
+let pdfBytes=null, layers=[], selId=-1, view=null, BLOCKS=[];
+
+/* ============ tokenizer ============ */
+function* chunks(s){
+  let i=0;const n=s.length;
+  const isWS=c=>c===0||c===9||c===10||c===12||c===13||c===32;
+  const isDelim=c=>c===40||c===41||c===60||c===62||c===91||c===93||c===123||c===125||c===47||c===37;
+  while(i<n){
+    const c=s[i];
+    if(isWS(c)){i++;continue;}
+    if(c===37){while(i<n&&s[i]!==10&&s[i]!==13)i++;continue;}
+    if(c===47){let j=i+1;while(j<n&&!isWS(s[j])&&!isDelim(s[j]))j++;yield{t:'name',a:i,b:j};i=j;continue;}
+    if(c===40){let j=i+1,d=1;while(j<n&&d>0){if(s[j]===92)j+=2;else{if(s[j]===40)d++;else if(s[j]===41)d--;j++;}}yield{t:'str',a:i,b:j};i=j;continue;}
+    if(c===91){let j=i+1,d=1;
+      while(j<n&&d>0){const cc=s[j];
+        if(cc===40){let dd=1;j++;while(j<n&&dd>0){if(s[j]===92)j+=2;else{if(s[j]===40)dd++;else if(s[j]===41)dd--;j++;}}}
+        else if(cc===60&&s[j+1]!==60){j++;while(j<n&&s[j]!==62)j++;j++;}
+        else if(cc===91){d++;j++;}
+        else if(cc===93){d--;j++;}
+        else j++;}
+      yield{t:'arr',a:i,b:j};i=j;continue;}
+    if(c===60){if(s[i+1]===60){yield{t:'dict',a:i,b:i+2};i+=2;continue;}let j=i+1;while(j<n&&s[j]!==62)j++;yield{t:'hex',a:i,b:j+1};i=j+1;continue;}
+    if(c===62){yield{t:'dict',a:i,b:i+2};i+=2;continue;}
+    let j=i;while(j<n&&!isWS(s[j])&&!isDelim(s[j]))j++;
+    yield{t:'word',a:i,b:j,v:String.fromCharCode.apply(null,Array.from(s.subarray(i,j)))};i=j;
+  }
+}
+const PATH_PAINT=new Set(['f','F','f*','B','B*','b','b*','S','s','sh']);
+/* ============ q/Q tree parser — universal layer blocks ============
+   हर paint op (image/vector/text) का अपना self-balanced block:
+   ancestors के open + clip/state tokens + अपना group + सारे close. */
+function parseTree(streamBytes){
+  const toks=[...chunks(streamBytes)];
+  const root={open:null,items:[],close:null,parent:null};
+  let cur=root,inBT=false;
+  for(const t of toks){
+    const isW=t.t==='word';
+    if(isW&&t.v==='BT'){cur.items.push(t);inBT=true;continue;}
+    if(isW&&t.v==='ET'){cur.items.push(t);inBT=false;continue;}
+    if(!inBT&&isW&&t.v==='q'){const n={open:t,items:[],close:null,parent:cur};cur.items.push(n);cur=n;continue;}
+    if(!inBT&&isW&&t.v==='Q'){if(cur.parent){cur.close=t;cur=cur.parent;}else cur.items.push(t);continue;}
+    cur.items.push(t);
+  }
+  return root;
+}
+const isNode=it=>!!(it&&it.items);
+const isPaintTok=t=>t.t==='word'&&(t.v==='Do'||PATH_PAINT.has(t.v));
+function paintCount(node){
+  let c=0;
+  for(const it of node.items){
+    if(isNode(it))c+=paintCount(it);
+    else if(isPaintTok(it)||(it.t==='word'&&it.v==='BT'))c++;
+  }
+  return c;
+}
+function serToks(node,out){ // node के सभी tokens (q..Q समेत) क्रम से
+  if(node.open)out.push(node.open);
+  for(const it of node.items){if(isNode(it))serToks(it,out);else out.push(it);}
+  if(node.close)out.push(node.close);
+  return out;
+}
+function blockForNode(N){
+  /* N = layer node; ancestors का open + pre-items (सिर्फ़ non-paint), फिर N, फिर closes */
+  const chain=[];let p=N.parent,c=N;
+  while(p&&p.open!==undefined){chain.unshift([p,c]);c=p;p=p.parent;}
+  const out=[];
+  for(const [A,child] of chain){
+    if(A.open)out.push(A.open);
+    for(const it of A.items){
+      if(it===child)break;
+      if(isNode(it)){if(paintCount(it)===0)serToks(it,out);}
+      else out.push(it);
+    }
+  }
+  serToks(N,out);
+  for(let i=chain.length-1;i>=0;i--){const A=chain[i][0];if(A.close)out.push(A.close);}
+  return out;
+}
+function collectLayers(node,list){
+  const pc=paintCount(node);
+  if(pc===0)return;
+  if(pc===1){list.push(blockForNode(node));return;}
+  /* multi-paint node: बीच के direct-token paints = inline layers, children recurse */
+  let seg=[];
+  const wrapInline=sg=>{
+    const fake={open:node.open,items:sg.slice(),close:node.close,parent:node.parent};
+    /* ancestor chain node तक, फिर सिर्फ़ seg */
+    const chain=[];let p=node.parent,c=node;
+    while(p&&p.open!==undefined){chain.unshift([p,c]);c=p;p=p.parent;}
+    const out=[];
+    for(const [A,child] of chain){
+      if(A.open)out.push(A.open);
+      for(const it of A.items){if(it===child)break;if(isNode(it)){if(paintCount(it)===0)serToks(it,out);}else out.push(it);}
+    }
+    if(node.open)out.push(node.open);
+    out.push(...sg);
+    if(node.close)out.push(node.close);
+    for(let i=chain.length-1;i>=0;i--){const A=chain[i][0];if(A.close)out.push(A.close);}
+    list.push(out);
+  };
+  for(const it of node.items){
+    if(isNode(it)){
+      if(seg.length){if(seg.some(t=>isPaintTok(t)||(t.t==='word'&&t.v==='BT')))wrapInline(seg);seg=[];}
+      collectLayers(it,list);
+    }else{
+      seg.push(it);
+      if(isPaintTok(it)||(it.t==='word'&&it.v==='ET')){
+        if(seg.some(t=>isPaintTok(t)||(t.t==='word'&&t.v==='BT')))wrapInline(seg);
+        seg=[];
+      }
+    }
+  }
+  if(seg.length&&seg.some(t=>isPaintTok(t)||(t.t==='word'&&t.v==='BT')))wrapInline(seg);
+}
+function treeBlocks(streamBytes){
+  const root=parseTree(streamBytes);
+  const list=[];
+  collectLayers(root,list);
+  return list;
+}
+function splitBlocks(streamBytes){
+  /* q/Q depth-aware: हर block एक self-balanced top-level q..Q group.
+     ऐसे blocks को अलग-अलग रखने/हटाने से graphics state कभी corrupt नहीं होती. */
+  const toks=[...chunks(streamBytes)];
+  const blocks=[];let cur=[],depth=0,inBT=false;
+  const flush=()=>{if(cur.length){blocks.push(cur);cur=[];}};
+  for(const t of toks){
+    const isWord=t.t==='word';
+    if(isWord&&t.v==='q'&&!inBT){
+      if(depth===0&&cur.length)flush(); // नया top-level group → पुराना block बंद
+      cur.push(t);depth++;continue;
+    }
+    if(isWord&&t.v==='Q'&&!inBT){
+      cur.push(t);if(depth>0)depth--;
+      if(depth===0)flush(); // group पूरा → block तैयार
+      continue;
+    }
+    cur.push(t);
+    if(!isWord)continue;
+    if(t.v==='BT')inBT=true;
+    else if(t.v==='ET')inBT=false;
+    else if(!inBT&&depth===0&&(t.v==='Do'||PATH_PAINT.has(t.v)))flush(); // बिना-लिपटा paint
+  }
+  flush();
+  return blocks;
+}
+function classifyBlock(block){
+  let hasDo=false,hasBT=false,hasPaint=false;
+  for(const t of block){
+    if(t.t!=='word')continue;
+    if(t.v==='Do')hasDo=true;
+    else if(t.v==='BT')hasBT=true;
+    else if(PATH_PAINT.has(t.v))hasPaint=true;
+  }
+  if(hasBT)return'text';
+  if(hasDo)return'do';
+  if(hasPaint)return'vec';
+  return'other';
+}
+function serializeBlocks(blocks,streamBytes){
+  let total=0;blocks.forEach(bl=>bl.forEach(t=>total+=t.b-t.a+1));
+  const res=new Uint8Array(total);let p=0;
+  blocks.forEach(bl=>bl.forEach(t=>{res.set(streamBytes.subarray(t.a,t.b),p);p+=t.b-t.a;res[p++]=32;}));
+  return res;
+}
+const nmStr=o=>{
+  if(!o)return'';
+  let s='';
+  if(typeof o==='string')s=o;
+  else if(typeof o.encodedName==='string')s=o.encodedName;
+  else if(typeof o.asString==='function')s=o.asString();
+  else if(o.decodedName)s=o.decodedName;
+  else s=''+o;
+  return s.replace(/^\//,'');
+};
+async function pageContentBytes(pdfDoc,pageNode,ctx){
+  const ref=pageNode.get(PDFName.of('Contents'));
+  const obj=ctx.lookup(ref);
+  const streams=[];
+  if(obj instanceof PDFLib.PDFRawStream)streams.push(obj);
+  else if(obj instanceof PDFArray){
+    for(let i=0;i<obj.size();i++){const r=ctx.lookup(obj.get(i));if(r instanceof PDFLib.PDFRawStream)streams.push(r);}
+  }
+  const parts=streams.map(st=>PDFLib.decodePDFRawStream(st).decode());
+  let total=0;parts.forEach(p=>total+=p.length+1);
+  const all=new Uint8Array(total);let p=0;
+  parts.forEach(b=>{all.set(b,p);p+=b.length;all[p++]=10;});
+  return all;
+}
+
+/* ============ block-level filter engine ============
+   हर block को global seq; keepSeq/dropSeq/dropText से filter; forms में recursion */
+async function filterDoc(srcBytes,{dropText=true,keepSeq=null,dropSeq=null,collect=null}={}){
+  const doc=await PDFDocument.load(srcBytes);
+  const pg=doc.getPages()[0];
+  let seq=0;
+  const xoOf=dict=>{
+    if(!dict||!dict.get)return null;
+    const res=dict.get(PDFName.of('Resources'));
+    if(!res)return null;
+    const resObj=doc.context.lookup(res);
+    if(!resObj||!resObj.get)return null;
+    const xo=resObj.get(PDFName.of('XObject'));
+    return xo?doc.context.lookup(xo):null;
+  };
+  const blockKeep=(kind,mySeq)=>{
+    if(collect)return true; // collect mode: कुछ मत हटाओ
+    if(kind==='text'&&dropText)return false;
+    if(keepSeq&&!keepSeq.has(mySeq))return false;
+    if(dropSeq&&dropSeq.has(mySeq))return false;
+    return true;
+  };
+  const processForm=raw=>{
+    const inner=PDFLib.decodePDFRawStream(raw).decode();
+    const innerXo=xoOf(raw.dict);
+    const outBlocks=filterBlocks(treeBlocks(inner),inner,innerXo);
+    if(keepSeq&&outBlocks.length===0)return false;
+    const copy={};
+    raw.dict.entries().forEach(([k,v])=>{const ks=nmStr(k);if(ks!=='Length'&&ks!=='Filter')copy[ks]=v;});
+    copy['Type']=PDFName.of('XObject');copy['Subtype']=PDFName.of('Form');
+    return doc.context.register(doc.context.flateStream(serializeBlocks(outBlocks,inner),copy));
+  };
+  const filterBlocks=(blocks,streamBytes,xoDict)=>{
+    const out=[];
+    for(const bl of blocks){
+      let kind=classifyBlock(bl);
+      const mySeq=seq++;
+      if(kind==='do'){
+        // name ढूँढो
+        let nm=null;
+        for(let i=0;i<bl.length;i++){
+          if(bl[i].t==='name')nm=String.fromCharCode.apply(null,Array.from(streamBytes.subarray(bl[i].a+1,bl[i].b)));
+          if(bl[i].t==='word'&&bl[i].v==='Do')break;
+        }
+        const ref=xoDict&&xoDict.get?xoDict.get(PDFName.of(nm)):null;
+        const obj=ref?doc.context.lookup(ref):null;
+        const sub=(obj instanceof PDFLib.PDFRawStream)?nmStr(obj.dict.get(PDFName.of('Subtype'))):'?';
+        if(sub==='Image'){
+          kind='img';
+          if(collect)collect.push({seq:mySeq,kind:'img'});
+          if(blockKeep(kind,mySeq))out.push(bl);
+        }else if(sub==='Form'){
+          if(collect)collect.push({seq:mySeq,kind:'form-start'});
+          const nref=processForm(obj);
+          if(nref!==false){
+            if(xoDict.set)xoDict.set(PDFName.of(nm),nref);
+            if(!keepSeq||keepSeq.has(mySeq)||true)out.push(bl); // form का Do रखो (अंदर filter हो चुका)
+          }
+        }else{
+          if(blockKeep('other',mySeq))out.push(bl);
+        }
+      }else{
+        if(collect&&kind!=='other')collect.push({seq:mySeq,kind});
+        if(blockKeep(kind,mySeq))out.push(bl);
+      }
+    }
+    return out;
+  };
+  const pageXo=xoOf(pg.node);
+  const content=await pageContentBytes(doc,pg.node,doc.context);
+  const outBlocks=filterBlocks(treeBlocks(content),content,pageXo);
+  if(collect)return{blocks:collect,totalSeq:seq};
+  const ref=doc.context.register(doc.context.flateStream(serializeBlocks(outBlocks,content)));
+  pg.node.set(PDFName.of('Contents'),ref);
+  return doc.save();
+}
+async function renderFiltered(bytes,opts,scale){
+  const out=await filterDoc(bytes,opts);
+  const pdf=await pdfjsLib.getDocument({data:out}).promise;
+  const page=await pdf.getPage(1);
+  const vp=page.getViewport({scale});
+  const cv=document.createElement('canvas');cv.width=vp.width;cv.height=vp.height;
+  await page.render({canvasContext:cv.getContext('2d'),viewport:vp,background:'rgba(255,255,255,0)'}).promise;
+  pdf.destroy();
+  return cv;
+}
+/* alpha bbox crop — layer की असली position + छोटा canvas */
+function cropAlpha(cv,k){ // k = LSCALE/SCALE → viewport SCALE coords में लौटाओ
+  const w=cv.width,h=cv.height,d=cv.getContext('2d').getImageData(0,0,w,h).data;
+  let x0=w,y0=h,x1=0,y1=0,found=false;
+  for(let y=0;y<h;y+=2)for(let x=0;x<w;x+=2){
+    if(d[(y*w+x)*4+3]>8){found=true;if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
+  }
+  if(!found)return null;
+  x0=Math.max(0,x0-2);y0=Math.max(0,y0-2);x1=Math.min(w,x1+3);y1=Math.min(h,y1+3);
+  const c=document.createElement('canvas');c.width=x1-x0;c.height=y1-y0;
+  c.getContext('2d').drawImage(cv,x0,y0,x1-x0,y1-y0,0,0,x1-x0,y1-y0);
+  return {canvas:c,rect:{x:x0/k,y:y0/k,w:(x1-x0)/k,h:(y1-y0)/k}};
+}
+
+/* ============ load ============ */
+async function loadPdf(bytes){
+  $('stat').textContent='📖 PDF पढ़ रहे…';
+  pdfBytes=bytes.slice(0);
+  // 1) block scan
+  const scan=await filterDoc(pdfBytes,{collect:[]});
+  BLOCKS=scan.blocks;
+  const nonText=BLOCKS.filter(b=>b.kind==='img'||b.kind==='vec');
+  // 2) viewport
+  const pdf=await pdfjsLib.getDocument({data:bytes.slice(0)}).promise;
+  const page=await pdf.getPage(1);
+  view=page.getViewport({scale:SCALE});
+  const cv=$('cv');cv.width=view.width;cv.height=view.height;
+  // 3) text lines + colors + कौन-से text block में (z के लिए)
+  const ol=await page.getOperatorList();
+  const OPS=pdfjsLib.OPS;
+  const tc=await page.getTextContent();
+  const cols=new Array(tc.items.length).fill('#000000');
+  const textBlockSeqs=BLOCKS.filter(b=>b.kind==='text').map(b=>b.seq);
+  const itemBlockSeq=new Array(tc.items.length).fill(0);
+  {let cur='#000000',ti=0,btIdx=-1;let inBT=false;
+   const rgb=(r,g,b)=>{if(r<=1&&g<=1&&b<=1){r*=255;g*=255;b*=255}return '#'+[r,g,b].map(v=>Math.round(Math.max(0,Math.min(255,v))).toString(16).padStart(2,'0')).join('')};
+   for(let i=0;i<ol.fnArray.length&&ti<cols.length;i++){const fn=ol.fnArray[i],a=ol.argsArray[i]||[];
+     if(fn===OPS.beginText){btIdx++;inBT=true;}
+     if(fn===OPS.endText)inBT=false;
+     if(fn===OPS.setFillRGBColor)cur=rgb(a[0]||0,a[1]||0,a[2]||0);
+     else if(fn===OPS.setFillGray)cur=rgb(a[0]||0,a[0]||0,a[0]||0);
+     else if(fn===OPS.setFillCMYKColor)cur=rgb((1-(a[0]||0))*(1-(a[3]||0)),(1-(a[1]||0))*(1-(a[3]||0)),(1-(a[2]||0))*(1-(a[3]||0)));
+     else if((fn===OPS.showText||fn===OPS.showSpacedText)&&inBT){cols[ti]=cur;itemBlockSeq[ti]=textBlockSeqs[btIdx]??0;ti++;}}}
+  const rows=tc.items.map((it,i)=>({it,col:cols[i],z:itemBlockSeq[i]})).filter(r=>r.it.str.trim());
+  rows.forEach(r=>{r.tx=pdfjsLib.Util.transform(view.transform,r.it.transform);r.size=Math.hypot(r.tx[2],r.tx[3]);r.x=r.tx[4];r.y=r.tx[5];r.w=r.it.width*SCALE;});
+  rows.sort((a,b)=>Math.abs(a.y-b.y)>3?a.y-b.y:a.x-b.x);
+  const textLayers=[];
+  rows.forEach(r=>{
+    const G=textLayers[textLayers.length-1];
+    if(G&&Math.abs(r.y-G.y)<3&&Math.abs(r.size-G.size)<G.size*0.12&&r.col===G.col&&G.z===r.z){
+      const gap=r.x-(G.x+G.w);
+      if(gap>=-2&&gap<G.size*1.6){G.txt=(G.txt+' '+r.it.str.trim()).replace(/\s+/g,' ').trim();G.w=r.x+r.w-G.x;return;}
+    }
+    textLayers.push({type:'text',txt:r.it.str.trim(),orig:r.it.str.trim(),col:r.col,origCol:r.col,
+      sizeMul:1,dx:0,dy:0,hidden:false,z:r.z,tx:r.tx,size:r.size,x:r.x,y:r.y,w:r.w});
+  });
+  pdf.destroy();
+  // 4) हर non-text block की isolated render
+  layers=[];
+  for(let i=0;i<nonText.length;i++){
+    const b=nonText[i];
+    $('stat').textContent=`🧅 layers ${i+1}/${nonText.length}…`;
+    const full=await renderFiltered(pdfBytes,{dropText:true,keepSeq:new Set([b.seq])},LSCALE);
+    const crop=cropAlpha(full,LSCALE/SCALE);
+    if(!crop)continue; // खाली block
+    layers.push({type:b.kind,seq:b.seq,z:b.seq,rect:crop.rect,canvas:crop.canvas,hidden:false,dx:0,dy:0});
+  }
+  layers.push(...textLayers);
+  layers.sort((a,b)=>a.z-b.z);
+  layers.forEach((L,i)=>L.id=i);
+  // नाम
+  const pw=view.width,ph=view.height;
+  layers.forEach(L=>{
+    if(L.type==='img')L.name=`🖼 image ${Math.round(L.rect.w)}×${Math.round(L.rect.h)}`;
+    else if(L.type==='vec'){
+      const cov=L.rect.w*L.rect.h/(pw*ph);
+      L.name=cov>0.7?'⬜ पृष्ठभूमि':(L.rect.h<40&&L.rect.w>200?`▬ पट्टी ${Math.round(L.rect.w)}×${Math.round(L.rect.h)}`:`▬ आकार ${Math.round(L.rect.w)}×${Math.round(L.rect.h)}`);
+    }
+    else L.name='📝 '+L.txt.slice(0,26);
+  });
+  buildPanel();composite();
+  $('stat').textContent=`✅ ${layers.filter(l=>l.type!=='text').length} visual + ${textLayers.length} text layers (z-order ✅)\nखींचो = हिलेगी • 👁 = छिपेगी • text click = बदलो`;
+  window._DONE=true;window._L=layers;
+}
+
+/* ============ image load (flat photo/poster — 1 layer) ============ */
+let imgNatural=null; // image doc का natural resolution (export के लिए)
+async function loadImage(bytes,fname){
+  $('stat').textContent='🖼 image खोल रहे…';
+  pdfBytes=null; // इस doc में PDF surgery नहीं
+  const bmp=await createImageBitmap(new Blob([bytes]));
+  const W=bmp.width,H=bmp.height;
+  imgNatural={w:W,h:H};
+  view={width:W,height:H}; // viewport = natural px
+  const cv=$('cv');cv.width=W;cv.height=H;
+  const c=document.createElement('canvas');c.width=W;c.height=H;
+  c.getContext('2d').drawImage(bmp,0,0);
+  layers=[{type:'img',seq:0,z:0,id:0,rect:{x:0,y:0,w:W,h:H},canvas:c,hidden:false,dx:0,dy:0,
+    name:'🖼 '+(fname||'image')+' (flat — 1 layer)'}];
+  BLOCKS=[];
+  selId=-1;$('tools').style.display='none';
+  buildPanel();composite();
+  const inchW=(W/300).toFixed(1),inchH=(H/300).toFixed(1);
+  $('stat').textContent=`🖼 ${W}×${H}px = ${inchW}×${inchH} inch @300DPI — flat image है (perतें नहीं टूटतीं)\n300 DPI export दबाकर print size देखो`;
+  window._DONE=true;window._L=layers;
+}
+
+/* ============ composite ============ */
+function drawLayer(ctx,L,k){
+  if(L.hidden)return;
+  if(L.type==='text'){
+    ctx.fillStyle=L.col;
+    ctx.font=`${L.size*L.sizeMul*k}px sans-serif`;
+    ctx.fillText(L.txt,(L.tx[4]+L.dx)*k,(L.tx[5]+L.dy)*k);
+  }else{
+    ctx.drawImage(L.canvas,(L.rect.x+L.dx)*k,(L.rect.y+L.dy)*k,L.rect.w*k,L.rect.h*k);
+  }
+}
+function composite(){
+  const cv=$('cv'),ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,cv.width,cv.height);
+  layers.forEach(L=>drawLayer(ctx,L,1));
+  const S=layers.find(l=>l.id===selId);
+  if(S&&!S.hidden){
+    ctx.strokeStyle='#4a9eff';ctx.lineWidth=2;ctx.setLineDash([6,4]);
+    if(S.type==='text')ctx.strokeRect(S.tx[4]+S.dx-2,S.tx[5]+S.dy-S.size*S.sizeMul,S.w*S.sizeMul+4,S.size*S.sizeMul*1.3);
+    else ctx.strokeRect(S.rect.x+S.dx,S.rect.y+S.dy,S.rect.w,S.rect.h);
+    ctx.setLineDash([]);
+  }
+}
+
+/* ============ panel ============ */
+function buildPanel(){
+  const el=$('items');el.innerHTML='';
+  [...layers].reverse().forEach(L=>{
+    const d=document.createElement('div');
+    d.className='lrow'+(L.hidden?' off':'')+(L.id===selId?' sel':'');
+    const eye=document.createElement('span');eye.className='eye';eye.textContent=L.hidden?'🚫':'👁';
+    eye.onclick=e=>{e.stopPropagation();L.hidden=!L.hidden;buildPanel();composite();};
+    d.appendChild(eye);
+    if(L.type==='text'){
+      const t=document.createElement('div');t.className='tt';t.style.color=L.col;t.textContent=L.txt.slice(0,10);d.appendChild(t);
+    }else{
+      const im=document.createElement('img');im.src=L.canvas.toDataURL();d.appendChild(im);
+    }
+    const nm=document.createElement('span');nm.className='nm';nm.textContent=L.name;d.appendChild(nm);
+    d.onclick=()=>{selId=L.id;buildPanel();showTools(L);composite();};
+    el.appendChild(d);
+  });
+}
+function showTools(L){
+  const T=$('tools');T.style.display='block';
+  if(L.type==='text'){$('tCol').value=L.col;$('tTxt').value=L.txt;$('tTxt').style.display='block';}
+  else $('tTxt').style.display='none';
+}
+$('tCol').oninput=e=>{const L=layers.find(l=>l.id===selId);if(L&&L.type==='text'){L.col=e.target.value;buildPanel();composite();}};
+$('tTxt').oninput=e=>{const L=layers.find(l=>l.id===selId);if(L&&L.type==='text'){L.txt=e.target.value;buildPanel();composite();}};
+$('tPlus').onclick=()=>{const L=layers.find(l=>l.id===selId);if(L&&L.type==='text'){L.sizeMul*=1.08;composite();}};
+$('tMinus').onclick=()=>{const L=layers.find(l=>l.id===selId);if(L&&L.type==='text'){L.sizeMul/=1.08;composite();}};
+$('tReset').onclick=()=>{const L=layers.find(l=>l.id===selId);if(L&&L.type==='text'){L.txt=L.orig;L.col=L.origCol;L.sizeMul=1;L.dx=L.dy=0;buildPanel();composite();}};
+
+/* ============ drag/select ============ */
+let drag=null;
+function hitAt(px,py){
+  for(let i=layers.length-1;i>=0;i--){
+    const L=layers[i];if(L.hidden)continue;
+    if(L.type==='text'){
+      const bx=L.tx[4]+L.dx,by=L.tx[5]+L.dy-L.size*L.sizeMul,bw=L.w*L.sizeMul,bh=L.size*L.sizeMul*1.3;
+      if(px>=bx&&px<=bx+bw&&py>=by&&py<=by+bh)return L;
+    }else{
+      if(px>=L.rect.x+L.dx&&px<=L.rect.x+L.dx+L.rect.w&&py>=L.rect.y+L.dy&&py<=L.rect.y+L.dy+L.rect.h)return L;
+    }
+  }
+  return null;
+}
+$('cv').addEventListener('mousedown',e=>{
+  const r=$('cv').getBoundingClientRect();
+  const px=(e.clientX-r.left)*($('cv').width/r.width),py=(e.clientY-r.top)*($('cv').height/r.height);
+  const L=hitAt(px,py);
+  selId=L?L.id:-1;
+  drag=L?{L,sx:px,sy:py,dx:L.dx,dy:L.dy}:null;
+  buildPanel();if(L)showTools(L);composite();
+});
+window.addEventListener('mousemove',e=>{
+  if(!drag)return;
+  const r=$('cv').getBoundingClientRect();
+  const px=(e.clientX-r.left)*($('cv').width/r.width),py=(e.clientY-r.top)*($('cv').height/r.height);
+  drag.L.dx=drag.dx+px-drag.sx;drag.L.dy=drag.dy+py-drag.sy;
+  composite();
+});
+window.addEventListener('mouseup',()=>drag=null);
+
+/* ============ export 300 DPI ============ */
+function buildExport(){
+  const k=pdfBytes?LSCALE/SCALE:1; // image doc = natural resolution
+  const cv=document.createElement('canvas');
+  cv.width=Math.round(view.width*k);cv.height=Math.round(view.height*k);
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,cv.width,cv.height); // print सुरक्षा: सफ़ेद bg
+  layers.forEach(L=>drawLayer(ctx,L,k));
+  return cv;
+}
+$('bPng').onclick=async()=>{
+  if(!layers.length)return;
+  $('stat').textContent='⬇️ 300 DPI export…';
+  const cv=buildExport();
+  const a=document.createElement('a');
+  a.download='layer-studio-300dpi.png';a.href=cv.toDataURL('image/png');a.click();
+  $('stat').textContent='✅ 300 DPI PNG download!';
+};
+$('bReset').onclick=()=>{layers.forEach(L=>{L.hidden=false;L.dx=L.dy=0;if(L.type==='text'){L.txt=L.orig;L.col=L.origCol;L.sizeMul=1;}});selId=-1;$('tools').style.display='none';buildPanel();composite();};
+$('pdfInp').onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;
+  const buf=await f.arrayBuffer();
+  loadAny(buf,f.name).catch(err=>{$('stat').textContent='❌ '+err.message;window._ERR=''+err;});
+};
+async function loadAny(buf,fname){
+  const head=new Uint8Array(buf.slice(0,5));
+  const isPdf=head[0]===0x25&&head[1]===0x50; // "%P"
+  if(isPdf)return loadPdf(buf);
+  return loadImage(buf,fname);
+}
+(async()=>{
+  if(location.search.includes('auto')){
+    const buf=await (await fetch('pawan.pdf')).arrayBuffer();
+    loadPdf(buf).catch(err=>{$('stat').textContent='❌ '+err.message;window._ERR=''+err;});
+  }else{
+    const m=location.search.match(/img=([^&]+)/);
+    if(m){
+      const buf=await (await fetch(m[1])).arrayBuffer();
+      loadAny(buf,decodeURIComponent(m[1])).catch(err=>{$('stat').textContent='❌ '+err.message;window._ERR=''+err;});
+    }else window._DONE=true;
+  }
+})();
+</script>
+</body>
+</html>
