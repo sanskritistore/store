@@ -59,7 +59,7 @@ input[type=range]{accent-color:var(--acc);}
 <script src="assets/js/cyber-gate.js?v=2"></script><script>SC.guard("doc-studio")</script>
 <header>
   <div>
-    <h1>🌸 संस्कृति डॉक स्टूडियो <span class="badge">FREE v2.0 ✨</span></h1>
+    <h1>🌸 संस्कृति डॉक स्टूडियो <span class="badge">FREE v2.1 🔗 ✨</span></h1>
     <div class="sub">फ़ोन से खींची document फ़ोटो → अपने आप कटाई • सीधी • साफ़ → A4 प्रिंट</div>
   </div>
   <button id="btnPrintTop" disabled>🖨️ PRINT — A4</button>
@@ -213,9 +213,9 @@ function _classifySide(doc){
 }
 function pairMatch(targets){
   // GLOBAL best-match: सब possible जोड़ों को score से sort — सबसे मिलती जोड़ी पहले
-  const geo=(A,B)=> Math.abs(Math.log(A.aspect/B.aspect))*2.0
-    + (Math.abs(A.br-B.br)+Math.abs(A.bg-B.bg)+Math.abs(A.bb-B.bb))/255
-    + Math.abs(Math.log(A.area/B.area))*1.2;
+  const geo=(A,B)=> Math.abs(Math.log(A.aspect/B.aspect))*0.6          // नाप = कमज़ोर संकेत (WhatsApp अलग नाप भेजता है)
+    + (Math.abs(A.br-B.br)+Math.abs(A.bg-B.bg)+Math.abs(A.bb-B.bb))/255  // मेज़ रंग = मुख्य गवाह
+    + Math.abs(Math.log(A.area/B.area))*0.4;                             // area = कमज़ोर संकेत
   const cls=new Map(targets.map(d=>[d.id,_classifySide(d)]));
   const content=(A,B)=>{
     const ca=cls.get(A.id), cb=cls.get(B.id);
@@ -238,7 +238,9 @@ function pairMatch(targets){
     used.add(e.a.id); used.add(e.b.id);
     pairs.push([e.a,e.b]);
   }
-  targets.forEach(d=>{ if(!used.has(d.id)) pairs.push([d]); });
+  const _sing=targets.filter(d=>!used.has(d.id));
+  if(_sing.length===2){ pairs.push([_sing[0],_sing[1]]); used.add(_sing[0].id); used.add(_sing[1].id); }  // 🤝 आखिरी सहारा: 2 बचे = 1 ही card के दो पहलू
+  else _sing.forEach(d=>pairs.push([d]));
   let auto=0;
   pairs.forEach(p=>{
     if(p.length===1){ p[0].tag='af'; p[0]._autoTag=false; p[0]._pid=null; return; }
@@ -1740,7 +1742,7 @@ function drawSheet(ctx,PW,PH,pageIdx){
   // version footer — printout से पता चले कौनसा version छपा
   const _fk=PW/(210*MM);
   ctx.fillStyle='#bbb'; ctx.font=(11*_fk)+'px sans-serif'; ctx.textAlign='left';
-  ctx.fillText('🌸 संस्कृति Doc Studio v1.7 — FREE', 8*MM*_fk*0.9, PH-4*MM*_fk);
+  ctx.fillText('🌸 संस्कृति Doc Studio v2.1 — FREE', 8*MM*_fk*0.9, PH-4*MM*_fk);
   const pages=buildPages(); const pg=pages[pageIdx]; if(!pg) return;
   const k=PW/(210*MM);                       // preview भी इसी से — mm हमेशा सही
   const mm=v=>v*MM*k;
