@@ -406,6 +406,7 @@ async function loadPdf(bytes){
   layers.push(...textLayers);
   layers.sort((a,b)=>a.z-b.z);
   layers.forEach((L,i)=>L.id=i);
+  pool.clear();layers.forEach(L=>pool.set(L.id,L));hist=[];redoSt=[];
   // नाम
   const pw=view.width,ph=view.height;
   layers.forEach(L=>{
@@ -435,6 +436,7 @@ async function loadImage(bytes,fname){
   c.getContext('2d').drawImage(bmp,0,0);
   layers=[{type:'img',seq:0,z:0,id:0,rect:{x:0,y:0,w:W,h:H},canvas:c,hidden:false,dx:0,dy:0,
     name:'🖼 '+(fname||'image')+' (flat — 1 layer)'}];
+  pool.clear();pool.set(0,layers[0]);hist=[];redoSt=[];
   BLOCKS=[];
   selId=-1;$('tools').style.display='none';
   buildPanel();composite();
@@ -474,7 +476,7 @@ function buildPanel(){
     const d=document.createElement('div');
     d.className='lrow'+(L.hidden?' off':'')+(L.id===selId?' sel':'');
     const eye=document.createElement('span');eye.className='eye';eye.textContent=L.hidden?'🚫':'👁';
-    eye.onclick=e=>{e.stopPropagation();L.hidden=!L.hidden;buildPanel();composite();};
+    eye.onclick=e=>{e.stopPropagation();pushHist();L.hidden=!L.hidden;buildPanel();composite();};
     d.appendChild(eye);
     if(L.type==='text'){
       const t=document.createElement('div');t.className='tt';t.style.color=L.col;t.textContent=L.txt.slice(0,10);d.appendChild(t);
@@ -491,11 +493,11 @@ function showTools(L){
   if(L.type==='text'){$('tCol').value=L.col;$('tTxt').value=L.txt;$('tTxt').style.display='block';}
   else $('tTxt').style.display='none';
 }
-$('tCol').oninput=e=>{const L=layers.find(l=>l.id===selId);if(L&&L.type==='text'){L.col=e.target.value;buildPanel();composite();}};
-$('tTxt').oninput=e=>{const L=layers.find(l=>l.id===selId);if(L&&L.type==='text'){L.txt=e.target.value;buildPanel();composite();}};
-$('tPlus').onclick=()=>{const L=layers.find(l=>l.id===selId);if(L&&L.type==='text'){L.sizeMul*=1.08;composite();}};
-$('tMinus').onclick=()=>{const L=layers.find(l=>l.id===selId);if(L&&L.type==='text'){L.sizeMul/=1.08;composite();}};
-$('tReset').onclick=()=>{const L=layers.find(l=>l.id===selId);if(L&&L.type==='text'){L.txt=L.orig;L.col=L.origCol;L.sizeMul=1;L.dx=L.dy=0;buildPanel();composite();}};
+$('tCol').oninput=e=>{const L=layers.find(l=>l.id===selId);if(L&&L.type==='text'){throttleHist();L.col=e.target.value;buildPanel();composite();}};
+$('tTxt').oninput=e=>{const L=layers.find(l=>l.id===selId);if(L&&L.type==='text'){throttleHist();L.txt=e.target.value;buildPanel();composite();}};
+$('tPlus').onclick=()=>{const L=layers.find(l=>l.id===selId);if(L&&L.type==='text'){pushHist();L.sizeMul*=1.08;composite();}};
+$('tMinus').onclick=()=>{const L=layers.find(l=>l.id===selId);if(L&&L.type==='text'){pushHist();L.sizeMul/=1.08;composite();}};
+$('tReset').onclick=()=>{const L=layers.find(l=>l.id===selId);if(L&&L.type==='text'){pushHist();L.txt=L.orig;L.col=L.origCol;L.sizeMul=1;L.dx=L.dy=0;buildPanel();composite();}};
 
 /* ============ drag/select ============ */
 let drag=null;
@@ -517,6 +519,7 @@ $('cv').addEventListener('mousedown',e=>{
   const L=hitAt(px,py);
   selId=L?L.id:-1;
   drag=L?{L,sx:px,sy:py,dx:L.dx,dy:L.dy}:null;
+  if(drag)drag.snap=snap();
   buildPanel();if(L)showTools(L);composite();
 });
 /* 📱 touch = mouse जैसा ही (layer खींचने पर page scroll रोको) */
@@ -527,6 +530,7 @@ $('cv').addEventListener('touchstart',e=>{
   const L=hitAt(px,py);
   selId=L?L.id:-1;
   drag=L?{L,sx:px,sy:py,dx:L.dx,dy:L.dy}:null;
+  if(drag)drag.snap=snap();
   if(L)e.preventDefault();
   buildPanel();if(L)showTools(L);composite();
 },{passive:false});
@@ -539,7 +543,7 @@ window.addEventListener('touchmove',e=>{
   drag.L.dx=drag.dx+px-drag.sx;drag.L.dy=drag.dy+py-drag.sy;
   composite();
 },{passive:false});
-window.addEventListener('touchend',()=>drag=null);
+window.addEventListener('touchend',()=>{commitDrag();});
 window.addEventListener('mousemove',e=>{
   if(!drag)return;
   const r=$('cv').getBoundingClientRect();
@@ -547,7 +551,7 @@ window.addEventListener('mousemove',e=>{
   drag.L.dx=drag.dx+px-drag.sx;drag.L.dy=drag.dy+py-drag.sy;
   composite();
 });
-window.addEventListener('mouseup',()=>drag=null);
+window.addEventListener('mouseup',()=>{commitDrag();});
 
 /* ============ export 300 DPI ============ */
 function buildExport(){
@@ -567,7 +571,71 @@ $('bPng').onclick=async()=>{
   a.download='layer-studio-300dpi.png';a.href=cv.toDataURL('image/png');a.click();
   $('stat').textContent='✅ 300 DPI PNG download!';
 };
-$('bReset').onclick=()=>{layers.forEach(L=>{L.hidden=false;L.dx=L.dy=0;if(L.type==='text'){L.txt=L.orig;L.col=L.origCol;L.sizeMul=1;}});selId=-1;$('tools').style.display='none';buildPanel();composite();};
+$('bReset').onclick=()=>{pushHist();layers.forEach(L=>{L.hidden=false;L.dx=L.dy=0;if(L.type==='text'){L.txt=L.orig;L.col=L.origCol;L.sizeMul=1;}});selId=-1;$('tools').style.display='none';buildPanel();composite();};
+
+/* ============ ⌨️ undo/redo + shortcuts (Photoshop आदतें) ============ */
+const pool=new Map();       // id → layer object (undo के बाद भी duplicate जीवित)
+let hist=[],redoSt=[];
+function snap(){return JSON.stringify({ord:layers.map(l=>l.id),f:layers.map(l=>[l.id,l.hidden,l.dx,l.dy,l.txt??'',l.col??'',l.sizeMul??1])});}
+function pushHist(){hist.push(snap());if(hist.length>50)hist.shift();redoSt=[];}
+let _lastH=0;
+function throttleHist(){const n=Date.now();if(n-_lastH>700){pushHist();_lastH=n;}}
+function commitDrag(){if(drag&&drag.snap&&snap()!==drag.snap){hist.push(drag.snap);if(hist.length>50)hist.shift();redoSt=[];}drag=null;}
+function applySnap(s){
+  const d=JSON.parse(s),fm=new Map(d.f);
+  layers=d.ord.map(id=>pool.get(id)).filter(Boolean);
+  layers.forEach(L=>{const f=fm.get(L.id);if(!f)return;L.hidden=f[1];L.dx=f[2];L.dy=f[3];
+    if(L.type==='text'){L.txt=f[4];L.col=f[5];L.sizeMul=f[6];}});
+  if(selId>=0&&!layers.find(l=>l.id===selId))selId=-1;
+  buildPanel();composite();
+}
+function undo(){if(!hist.length)return;redoSt.push(snap());applySnap(hist.pop());}
+function redo(){if(!redoSt.length)return;hist.push(snap());applySnap(redoSt.pop());}
+let clipLayer=null;
+function duplicateLayer(L){
+  if(!L)return;
+  pushHist();
+  const nid=Math.max(...[...pool.keys()])+1;
+  const c=Object.assign({},L,{id:nid,dx:L.dx+14,dy:L.dy+14,hidden:false});
+  if(c.type==='text'){c.orig=c.txt;c.origCol=c.col;}
+  pool.set(nid,c);
+  layers.splice(layers.indexOf(L)+1,0,c); // ठीक ऊपर
+  selId=nid;buildPanel();showTools(c);composite();
+}
+function selLayer(){return layers.find(l=>l.id===selId)||null;}
+window.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'&&e.target.type==='text')return; // typing न रोको
+  const L=selLayer(),ctl=e.ctrlKey||e.metaKey;
+  if(ctl&&e.key.toLowerCase()==='z'&&!e.shiftKey){e.preventDefault();undo();return;}
+  if(ctl&&(e.key.toLowerCase()==='y'||(e.key.toLowerCase()==='z'&&e.shiftKey))){e.preventDefault();redo();return;}
+  if(ctl&&e.key.toLowerCase()==='j'){e.preventDefault();duplicateLayer(L);return;}
+  if(ctl&&e.key.toLowerCase()==='c'&&L){e.preventDefault();clipLayer=L;return;}
+  if(ctl&&e.key.toLowerCase()==='v'){e.preventDefault();duplicateLayer(clipLayer||L);return;}
+  if(ctl&&(e.key==='['||e.key===']')&&L){
+    e.preventDefault();pushHist();
+    const i=layers.indexOf(L),j=e.key===']'?Math.min(i+1,layers.length-1):Math.max(i-1,0);
+    layers.splice(i,1);layers.splice(j,0,L);
+    buildPanel();composite();return;
+  }
+  if((e.key==='Delete'||e.key==='Backspace')&&L){e.preventDefault();pushHist();L.hidden=!L.hidden;buildPanel();composite();return;}
+  if(e.key.startsWith('Arrow')&&L){
+    e.preventDefault();throttleHist();
+    const st=e.shiftKey?10:1;
+    if(e.key==='ArrowLeft')L.dx-=st;if(e.key==='ArrowRight')L.dx+=st;
+    if(e.key==='ArrowUp')L.dy-=st;if(e.key==='ArrowDown')L.dy+=st;
+    composite();return;
+  }
+});
+/* 🔍 Ctrl+scroll = zoom (सिर्फ़ देखने के लिए, export पर असर नहीं) */
+let zoom=1;
+window.addEventListener('wheel',e=>{
+  if(!(e.ctrlKey||e.metaKey))return;
+  e.preventDefault();
+  zoom=Math.min(5,Math.max(0.2,zoom*(e.deltaY<0?1.15:1/1.15)));
+  const cv=$('cv');
+  cv.style.transform=`scale(${zoom})`;cv.style.transformOrigin='0 0';
+  $('wrap').style.width=cv.width*zoom+'px';$('wrap').style.height=cv.height*zoom+'px';
+},{passive:false});
 $('pdfInp').onchange=async e=>{
   const f=e.target.files[0];if(!f)return;
   const buf=await f.arrayBuffer();
