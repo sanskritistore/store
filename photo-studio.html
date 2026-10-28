@@ -123,7 +123,7 @@ canvas.pv{width:100%;border-radius:8px;background:#fff;display:block}
 <body>
 <script src="assets/js/cyber-gate.js?v=2"></script><script>SC.guard("photo-studio")</script>
 <div class="topbar">
-  <h1>🌸 संस्कृति फोटो स्टूडियो</h1><span class="freebadge">FREE v5.0 🖌</span>
+  <h1>🌸 संस्कृति फोटो स्टूडियो</h1><span class="freebadge">FREE v5.1 ✨</span>
   <span style="color:var(--mut);font-size:12.5px">Batch Print • Retouch Pro • Passport/Stamp/Custom — सब एक जगह</span>
   <div class="sp"></div>
   <button id="btnQueue" class="btn btn-sec btn-sm">🗂️ Batch Queue <span class="badge" id="qBadge">0</span></button>
@@ -3305,9 +3305,8 @@ $('aiGo').addEventListener('click',async()=>{
     catch(pe){ console.warn('Pro engine fail — पुराना engine',pe); msg('पुराने engine से किनारा…');
       cc=await aiCutout(p,msg); }
     rawCutout=cc; origImg=p.img;
-    $('aiProg').style.display='none';
-    if(window.selEnter){ window.selEnter(cc); } // ✂️ Selection Mode — पहले selection देखो-सुधारो, फिर काटो
-    else { refineAndApply(); $('aiDone').style.display='inline-flex'; }
+    refineAndApply();
+    $('aiProg').style.display='none'; $('aiDone').style.display='inline-flex';
   }catch(e){
     console.error(e);
     msg('❌ नहीं हो पाया — photo बदलकर फिर कोशिश करें');
