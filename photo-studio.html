@@ -123,7 +123,7 @@ canvas.pv{width:100%;border-radius:8px;background:#fff;display:block}
 <body>
 <script src="assets/js/cyber-gate.js?v=2"></script><script>SC.guard("photo-studio")</script>
 <div class="topbar">
-  <h1>🌸 संस्कृति फोटो स्टूडियो</h1><span class="freebadge">FREE v4.6 ⚡</span>
+  <h1>🌸 संस्कृति फोटो स्टूडियो</h1><span class="freebadge">FREE v5.0 🖌</span>
   <span style="color:var(--mut);font-size:12.5px">Batch Print • Retouch Pro • Passport/Stamp/Custom — सब एक जगह</span>
   <div class="sp"></div>
   <button id="btnQueue" class="btn btn-sec btn-sm">🗂️ Batch Queue <span class="badge" id="qBadge">0</span></button>
@@ -3305,8 +3305,9 @@ $('aiGo').addEventListener('click',async()=>{
     catch(pe){ console.warn('Pro engine fail — पुराना engine',pe); msg('पुराने engine से किनारा…');
       cc=await aiCutout(p,msg); }
     rawCutout=cc; origImg=p.img;
-    refineAndApply();
-    $('aiProg').style.display='none'; $('aiDone').style.display='inline-flex';
+    $('aiProg').style.display='none';
+    if(window.selEnter){ window.selEnter(cc); } // ✂️ Selection Mode — पहले selection देखो-सुधारो, फिर काटो
+    else { refineAndApply(); $('aiDone').style.display='inline-flex'; }
   }catch(e){
     console.error(e);
     msg('❌ नहीं हो पाया — photo बदलकर फिर कोशिश करें');
@@ -3785,6 +3786,197 @@ window.addEventListener('keydown',e=>{
   renderSheet();
 })();
 window.addEventListener('resize',()=>{ if(curPhoto()){ renderBox(); processPhoto(); }});
+</script>
+<script>
+/* ================= ✂️ SELECTION MODE — AI selection देखो, brush से सुधारो, Ctrl+D से काटो ================= */
+(function(){
+const SEL={on:false, mask:null, MW:0, MH:0, r:36, mode:-1, undo:[], stroke:null, phase:0, timer:0, preview:false, ptr:{x:-1,y:-1,down:false}, ldirty:true};
+let cv=null,cx=null,selBar=null,tintCv=null,antsA=null,antsB=null,prevCv=null,photoSm=null;
+const $i=id=>document.getElementById(id);
+function ensureCv(){
+  if(cv) return;
+  cv=document.createElement('canvas'); cv.id='selCv';
+  cv.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;z-index:7;cursor:none;touch-action:none;display:none';
+  $i('stage').appendChild(cv);
+  cv.addEventListener('pointerdown',pDown); cv.addEventListener('pointermove',pMove);
+  cv.addEventListener('pointerup',pUp); cv.addEventListener('pointercancel',pUp); cv.addEventListener('pointerleave',pLeave);
+}
+function ensureBar(){
+  if(selBar) return;
+  selBar=document.createElement('span'); selBar.id='selBar';
+  selBar.style.cssText='display:none;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center';
+  selBar.innerHTML=
+    '<span style="color:#ffd76a;font-size:13px;font-weight:700;white-space:nowrap">🖌 ब्रश <b id="selRv">36</b></span>'+
+    '<input type="range" id="selR" min="4" max="240" style="width:90px">'+
+    '<button id="selModeB" class="btn btn-sec" style="padding:8px 12px;font-size:13px;font-weight:800">➖ हटाएँ (X)</button>'+
+    '<button id="selPrevB" class="btn btn-sec" style="padding:8px 12px;font-size:13px;font-weight:800">👁 झलक</button>'+
+    '<button id="selOkB" class="btn btn-ok" style="padding:9px 15px;font-size:15px;font-weight:800">✓ BG हटाओ (Ctrl+D)</button>'+
+    '<button id="selNoB" class="btn btn-dg" style="padding:9px 12px;font-size:14px">✕ वापस (Esc)</button>'+
+    '<span style="color:#8fa3c8;font-size:11px;font-weight:600;flex-basis:100%;text-align:center">लाल हिस्सा कट जाएगा • ➖ ब्रश से बची हुई जगह मिटाएँ • ग़लती से कटे हिस्से ➕ से जोड़ें • [ ] = ब्रश size • X = mode</span>';
+  $i('aiBar').appendChild(selBar);
+  $i('selR').addEventListener('input',e=>{ SEL.r=+e.target.value; $i('selRv').textContent=SEL.r; draw(); });
+  $i('selModeB').addEventListener('click',()=>{ SEL.mode=-SEL.mode; syncMode(); draw(); });
+  $i('selPrevB').addEventListener('click',()=>{ SEL.preview=!SEL.preview; $i('selPrevB').classList.toggle('on',SEL.preview); draw(); });
+  $i('selOkB').addEventListener('click',()=>commit());
+  $i('selNoB').addEventListener('click',()=>cancel());
+}
+function syncMode(){ const b=$i('selModeB'); b.textContent=SEL.mode>0?'➕ जोड़ें (X)':'➖ हटाएँ (X)';
+  b.style.background=SEL.mode>0?'#14532d':'#4a1d22'; }
+function buildLayers(){
+  const W=SEL.MW,H=SEL.MH,m=SEL.mask;
+  const p=curPhoto();
+  if(!photoSm){ photoSm=document.createElement('canvas'); photoSm.width=W; photoSm.height=H;
+    photoSm.getContext('2d').drawImage(p.img,0,0,W,H); }
+  const td=new ImageData(W,H), pd=new ImageData(W,H);
+  const aA=new ImageData(W,H), aB=new ImageData(W,H);
+  const tD=td.data,pD=pd.data,aAD=aA.data,aBD=aB.data;
+  for(let i=0;i<W*H;i++){
+    const mi=m[i], out=1-mi;
+    td[i*4]=220; td[i*4+1]=40; td[i*4+2]=60; td[i*4+3]=Math.round(out*108); // लाल tint = कटेगा
+    const w=Math.round(255*(1-out)); // preview alpha = mask
+    pD[i*4]=255; pD[i*4+1]=255; pD[i*4+2]=255; pD[i*4+3]=255;
+  }
+  // preview: photo over white
+  const src=photoSm.getContext('2d').getImageData(0,0,W,H).data;
+  for(let i=0;i<W*H;i++){ const a=m[i];
+    pD[i*4]  =Math.round(src[i*4]  *a+255*(1-a));
+    pD[i*4+1]=Math.round(src[i*4+1]*a+255*(1-a));
+    pD[i*4+2]=Math.round(src[i*4+2]*a+255*(1-a));
+    pD[i*4+3]=255;
+  }
+  // marching ants — boundary band, diagonal dash 2 phases
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const i=y*W+x, s=m[i]>0.5;
+    let bnd=false;
+    if(x<W-1&&(m[i+1]>0.5)!==s) bnd=true;
+    else if(y<H-1&&(m[i+W]>0.5)!==s) bnd=true;
+    else if(x>0&&(m[i-1]>0.5)!==s) bnd=true;
+    else if(y>0&&(m[i-W]>0.5)!==s) bnd=true;
+    if(!bnd) continue;
+    const d=((x-y)&7)<4;
+    const j=i*4;
+    aAD[j]=aAD[j+1]=aAD[j+2]=d?255:0; aAD[j+3]=235;
+    aBD[j]=aBD[j+1]=aBD[j+2]=d?0:255; aBD[j+3]=235;
+  }
+  tintCv=tintCv||document.createElement('canvas'); tintCv.width=W; tintCv.height=H; tintCv.getContext('2d').putImageData(td,0,0);
+  prevCv=prevCv||document.createElement('canvas'); prevCv.width=W; prevCv.height=H; prevCv.getContext('2d').putImageData(pd,0,0);
+  antsA=antsA||document.createElement('canvas'); antsA.width=W; antsA.height=H; antsA.getContext('2d').putImageData(aA,0,0);
+  antsB=antsB||document.createElement('canvas'); antsB.width=W; antsB.height=H; antsB.getContext('2d').putImageData(aB,0,0);
+  SEL.ldirty=false;
+}
+function draw(){
+  if(!SEL.on||!cv) return;
+  if(cv.width!==SEL.MW){ cv.width=SEL.MW; cv.height=SEL.MH; }
+  if(SEL.ldirty) buildLayers();
+  cx=cv.getContext('2d');
+  cx.clearRect(0,0,cv.width,cv.height);
+  if(SEL.preview){ cx.drawImage(prevCv,0,0); }
+  else { cx.drawImage(tintCv,0,0); cx.drawImage(SEL.phase?antsB:antsA,0,0); }
+  if(SEL.ptr.x>=0){ // brush ring
+    cx.lineWidth=Math.max(1.5,SEL.MW/700);
+    cx.strokeStyle='rgba(0,0,0,.85)'; cx.beginPath(); cx.arc(SEL.ptr.x,SEL.ptr.y,SEL.r,0,7); cx.stroke();
+    cx.strokeStyle=SEL.mode>0?'rgba(120,255,150,.95)':'rgba(255,120,120,.95)';
+    cx.beginPath(); cx.arc(SEL.ptr.x,SEL.ptr.y,SEL.r-Math.max(1.5,SEL.MW/700),0,7); cx.stroke();
+  }
+}
+let rbT=0;
+function scheduleBuild(){ if(rbT) return; rbT=setTimeout(()=>{ rbT=0; SEL.ldirty=true; draw(); },90); }
+function toMask(e){ const rct=cv.getBoundingClientRect();
+  return [ (e.clientX-rct.left)*SEL.MW/rct.width, (e.clientY-rct.top)*SEL.MH/rct.height ]; }
+function paintAt(x,y){
+  const W=SEL.MW,H=SEL.MH,r=SEL.r,m=SEL.mask,st=SEL.stroke;
+  const x0=Math.max(0,Math.floor(x-r)),x1=Math.min(W-1,Math.ceil(x+r));
+  const y0=Math.max(0,Math.floor(y-r)),y1=Math.min(H-1,Math.ceil(y+r));
+  for(let yy=y0;yy<=y1;yy++)for(let xx=x0;xx<=x1;xx++){
+    const d=Math.hypot(xx-x,yy-y)/r; if(d>1) continue;
+    const w=d<0.65?1:(1-d)/0.35;
+    const i=yy*W+xx, old=m[i];
+    const nv=SEL.mode>0?Math.max(old,w):Math.min(old,1-w);
+    if(nv!==old){ if(st&&!st.has(i)) st.set(i,old); m[i]=nv; }
+  }
+}
+function pDown(e){ if(!SEL.on) return; e.preventDefault(); e.stopPropagation();
+  try{ cv.setPointerCapture(e.pointerId); }catch(_){ }
+  SEL.ptr.down=true;
+  SEL.stroke=new Map(); const [x,y]=toMask(e); SEL.ptr.x=x; SEL.ptr.y=y; SEL.lastX=x; SEL.lastY=y;
+  paintAt(x,y); scheduleBuild(); draw(); }
+function pMove(e){ if(!SEL.on) return; const [x,y]=toMask(e); SEL.ptr.x=x; SEL.ptr.y=y;
+  if(SEL.ptr.down){ const dx=x-SEL.lastX,dy=y-SEL.lastY,dist=Math.hypot(dx,dy),step=Math.max(1,SEL.r/3);
+    if(dist>=step){ const n=Math.ceil(dist/step);
+      for(let k=1;k<=n;k++) paintAt(SEL.lastX+dx*k/n,SEL.lastY+dy*k/n);
+      SEL.lastX=x; SEL.lastY=y; scheduleBuild(); } }
+  draw(); }
+function pUp(e){ if(!SEL.on||!SEL.ptr.down) return; SEL.ptr.down=false;
+  if(SEL.stroke&&SEL.stroke.size){ SEL.undo.push(SEL.stroke); if(SEL.undo.length>25) SEL.undo.shift(); }
+  SEL.stroke=null; SEL.ldirty=true; draw(); }
+function pLeave(){ SEL.ptr.x=-1; if(SEL.on) draw(); }
+function undoStroke(){ const st=SEL.undo.pop(); if(!st) return;
+  for(const [i,v] of st) SEL.mask[i]=v; SEL.ldirty=true; draw(); }
+function cleanup(){
+  SEL.on=false; if(SEL.timer){ clearInterval(SEL.timer); SEL.timer=0; }
+  if(cv) cv.style.display='none'; if(selBar) selBar.style.display='none';
+  $i('aiDone').style.display='none';
+}
+function commit(){
+  const p=curPhoto(); const FW=p.img.naturalWidth||p.img.width, FH=p.img.naturalHeight||p.img.height;
+  const fc=document.createElement('canvas'); fc.width=FW; fc.height=FH;
+  const fx=fc.getContext('2d'); fx.drawImage(p.img,0,0,FW,FH);
+  // mask को full-res पर upscale
+  const mc=document.createElement('canvas'); mc.width=SEL.MW; mc.height=SEL.MH;
+  const mid=new ImageData(SEL.MW,SEL.MH);
+  for(let i=0;i<SEL.MW*SEL.MH;i++){ const v=Math.round(SEL.mask[i]*255);
+    mid.data[i*4]=mid.data[i*4+1]=mid.data[i*4+2]=v; mid.data[i*4+3]=255; }
+  mc.getContext('2d').putImageData(mid,0,0);
+  const big=document.createElement('canvas'); big.width=FW; big.height=FH;
+  const bc=big.getContext('2d'); bc.imageSmoothingEnabled=true; bc.imageSmoothingQuality='high';
+  bc.drawImage(mc,0,0,FW,FH);
+  const bd=bc.getImageData(0,0,FW,FH).data;
+  const id=fx.getImageData(0,0,FW,FH), dd=id.data;
+  for(let i=0;i<FW*FH;i++) dd[i*4+3]=bd[i*4];
+  fx.putImageData(id,0,0);
+  cleanup();
+  rawCutout=fc; refineAndApply();
+  $i('aiDone').style.display='inline-flex';
+}
+function cancel(){ cleanup(); rawCutout=null; origImg=null; $i('aiGo').style.display=''; }
+window.selEnter=function(cutout){
+  const p=curPhoto(); if(!p) return;
+  const FW=p.img.naturalWidth||p.img.width, FH=p.img.naturalHeight||p.img.height;
+  const sc=Math.min(1,1600/Math.max(FW,FH));
+  SEL.MW=Math.max(8,Math.round(FW*sc)); SEL.MH=Math.max(8,Math.round(FH*sc));
+  const t=document.createElement('canvas'); t.width=SEL.MW; t.height=SEL.MH;
+  const tc=t.getContext('2d'); tc.drawImage(cutout,0,0,SEL.MW,SEL.MH);
+  const ad=tc.getImageData(0,0,SEL.MW,SEL.MH).data;
+  SEL.mask=new Float32Array(SEL.MW*SEL.MH);
+  for(let i=0;i<SEL.MW*SEL.MH;i++) SEL.mask[i]=ad[i*4+3]/255;
+  SEL.r=Math.max(8,Math.round(SEL.MW/38)); SEL.mode=-1; SEL.undo=[]; SEL.preview=false; SEL.phase=0;
+  photoSm=null; SEL.ldirty=true;
+  ensureCv(); ensureBar();
+  cv.style.display='block'; selBar.style.display='inline-flex';
+  $i('selR').value=SEL.r; $i('selRv').textContent=SEL.r;
+  $i('selPrevB').classList.remove('on'); syncMode();
+  $i('aiDone').style.display='none';
+  SEL.on=true; SEL.ptr={x:-1,y:-1,down:false};
+  buildLayers(); draw();
+  SEL.timer=setInterval(()=>{ SEL.phase^=1; if(SEL.on&&!SEL.preview) draw(); },260);
+};
+window.addEventListener('keydown',e=>{
+  if(!SEL.on) return;
+  const k=e.key.toLowerCase();
+  if((e.ctrlKey||e.metaKey)&&k==='d'){ e.preventDefault(); e.stopPropagation(); commit(); return; }
+  if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); cancel(); return; }
+  if(e.key==='Enter'){ e.preventDefault(); e.stopPropagation(); commit(); return; }
+  if((e.ctrlKey||e.metaKey)&&k==='z'&&!e.shiftKey){ e.preventDefault(); e.stopPropagation(); undoStroke(); return; }
+  if(/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) return;
+  if(e.key==='['){ SEL.r=Math.max(4,Math.round(SEL.r*0.8)); $i('selR').value=SEL.r; $i('selRv').textContent=SEL.r; draw(); }
+  else if(e.key===']'){ SEL.r=Math.min(240,Math.round(SEL.r*1.25)); $i('selR').value=SEL.r; $i('selRv').textContent=SEL.r; draw(); }
+  else if(k==='x'&&!e.ctrlKey&&!e.metaKey){ SEL.mode=-SEL.mode; syncMode(); draw(); }
+},true);
+// photo बदली/घुमी तो selection mode समाप्त
+$i('thumbs').addEventListener('click',()=>{ if(SEL.on) cancel(); },true);
+$i('btnRot90').addEventListener('click',()=>{ if(SEL.on) cancel(); },true);
+})();
+
 </script>
 <script src="assets/js/help-box.js?v=1"></script><script>addEventListener("load",()=>HB.init("photo-studio"))</script>
 </body>
