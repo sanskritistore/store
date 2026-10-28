@@ -123,7 +123,7 @@ canvas.pv{width:100%;border-radius:8px;background:#fff;display:block}
 <body>
 <script src="assets/js/cyber-gate.js?v=2"></script><script>SC.guard("photo-studio")</script>
 <div class="topbar">
-  <h1>🌸 संस्कृति फोटो स्टूडियो</h1><span class="freebadge">FREE v4.3 ✨</span>
+  <h1>🌸 संस्कृति फोटो स्टूडियो</h1><span class="freebadge">FREE v4.4 ✂️</span>
   <span style="color:var(--mut);font-size:12.5px">Batch Print • Retouch Pro • Passport/Stamp/Custom — सब एक जगह</span>
   <div class="sp"></div>
   <button id="btnQueue" class="btn btn-sec btn-sm">🗂️ Batch Queue <span class="badge" id="qBadge">0</span></button>
@@ -3073,6 +3073,137 @@ async function aiCutout(p,msg){
   return cc;
 }
 
+/* ===== PRO MATTE ENGINE (MODNet — Photoshop-स्तर बारीक़ cutting; पुराना u2netp fallback अछूत) ===== */
+S.ai.proSess=null; S.ai.proBytes=null;
+function aiProModel(){ // IndexedDB cache — model एक ही बार download
+  if(S.ai.proBytes) return Promise.resolve(S.ai.proBytes);
+  return new Promise((res,rej)=>{
+    const rq=indexedDB.open('sanskriti-ai',1);
+    rq.onupgradeneeded=()=>{ rq.result.createObjectStore('models'); };
+    rq.onerror=()=>rej(rq.error);
+    rq.onsuccess=()=>{ const db=rq.result;
+      const g=db.transaction('models','readonly').objectStore('models').get('modnet-v1');
+      g.onerror=()=>rej(g.error);
+      g.onsuccess=()=>{
+        if(g.result){ S.ai.proBytes=g.result; res(g.result); return; }
+        fetch('modnet.onnx').then(r=>{ if(!r.ok) throw new Error('dl '+r.status); return r.arrayBuffer(); })
+        .then(buf=>{
+          try{ db.transaction('models','readwrite').objectStore('models').put(buf,'modnet-v1'); }catch(_){}
+          S.ai.proBytes=buf; res(buf);
+        }).catch(rej);
+      };
+    };
+  });
+}
+async function aiInitPro(msg){
+  if(S.ai.proSess) return;
+  msg('Pro AI model खुल रहा… (पहली बार ~10 सेकंड)');
+  await new Promise(r=>setTimeout(r,30));
+  aiEnv();
+  const buf=await aiProModel();
+  S.ai.proSess=await ort.InferenceSession.create(new Uint8Array(buf),{executionProviders:['wasm']});
+}
+function _boxMean(src,W,H,r){ // integral-image box mean (float32)
+  const intg=new Float64Array((W+1)*(H+1));
+  for(let y=0;y<H;y++){ let rs=0; for(let x=0;x<W;x++){ rs+=src[y*W+x]; intg[(y+1)*(W+1)+x+1]=intg[y*(W+1)+x+1]+rs; } }
+  const out=new Float32Array(W*H);
+  for(let y=0;y<H;y++){ const y0=Math.max(0,y-r),y1=Math.min(H-1,y+r);
+    for(let x=0;x<W;x++){ const x0=Math.max(0,x-r),x1=Math.min(W-1,x+r);
+      const s=intg[(y1+1)*(W+1)+x1+1]-intg[y0*(W+1)+x1+1]-intg[(y1+1)*(W+1)+x0]+intg[y0*(W+1)+x0];
+      out[y*W+x]=s/((y1-y0+1)*(x1-x0+1)); } }
+  return out;
+}
+function _guided(guide,src,W,H,r,eps){ // guided filter — full-res photo की रहनुमाई में बाल-स्तर किनारा
+  const mI=_boxMean(guide,W,H,r), mP=_boxMean(src,W,H,r);
+  const Ip=new Float32Array(W*H), II=new Float32Array(W*H);
+  for(let i=0;i<W*H;i++){ Ip[i]=guide[i]*src[i]; II[i]=guide[i]*guide[i]; }
+  const mIp=_boxMean(Ip,W,H,r), mII=_boxMean(II,W,H,r);
+  const a=new Float32Array(W*H), b=new Float32Array(W*H);
+  for(let i=0;i<W*H;i++){ const va=mII[i]-mI[i]*mI[i]; a[i]=(mIp[i]-mI[i]*mP[i])/(va+eps); b[i]=mP[i]-a[i]*mI[i]; }
+  const mA=_boxMean(a,W,H,r), mB=_boxMean(b,W,H,r);
+  const q=new Float32Array(W*H);
+  for(let i=0;i<W*H;i++){ let v=mA[i]*guide[i]+mB[i]; q[i]=v<0?0:v>1?1:v; }
+  return q;
+}
+async function aiCutoutPro(p,msg){ // return contract = aiCutout जैसा: full-res RGBA canvas (नरम alpha)
+  await aiInitPro(msg);
+  msg('Pro AI photo पढ़ रहा…'); await new Promise(r=>setTimeout(r,30));
+  const W=p.img.naturalWidth||p.img.width, H=p.img.naturalHeight||p.img.height;
+  const sc=512/Math.min(W,H);
+  const W2=Math.ceil(W*sc/32)*32, H2=Math.ceil(H*sc/32)*32;
+  const tc=document.createElement('canvas'); tc.width=W2; tc.height=H2;
+  const tx=tc.getContext('2d'); tx.drawImage(p.img,0,0,W2,H2);
+  const td=tx.getImageData(0,0,W2,H2).data;
+  const N=W2*H2, f=new Float32Array(3*N);
+  for(let i=0;i<N;i++){ f[i]=td[i*4]/127.5-1; f[N+i]=td[i*4+1]/127.5-1; f[2*N+i]=td[i*4+2]/127.5-1; }
+  msg('Pro AI किनारे तराश रहा…'); await new Promise(r=>setTimeout(r,30));
+  const ses=S.ai.proSess;
+  const out=await ses.run({[ses.inputNames[0]]:new ort.Tensor('float32',f,[1,3,H2,W2])});
+  const o=out[ses.outputNames[0]].data;
+  let mn=1e9,mx=-1e9; for(let i=0;i<o.length;i++){ if(o[i]<mn)mn=o[i]; if(o[i]>mx)mx=o[i]; }
+  const rg=(mx-mn)||1;
+  const lc=document.createElement('canvas'); lc.width=W2; lc.height=H2;
+  const lid=lc.getContext('2d').createImageData(W2,H2);
+  for(let i=0;i<N;i++){ let v=Math.round((o[i]-mn)/rg*255); v=v<0?0:v>255?255:v;
+    lid.data[i*4]=lid.data[i*4+1]=lid.data[i*4+2]=v; lid.data[i*4+3]=255; }
+  lc.getContext('2d').putImageData(lid,0,0);
+  const up=document.createElement('canvas'); up.width=W; up.height=H;
+  const uc=up.getContext('2d'); uc.imageSmoothingEnabled=true; uc.imageSmoothingQuality='high';
+  uc.drawImage(lc,0,0,W,H);
+  const ud=uc.getImageData(0,0,W,H).data;
+  msg('बाल-स्तर किनारा polish…'); await new Promise(r=>setTimeout(r,30));
+  const M=W*H;
+  const src=new Float32Array(M); for(let i=0;i<M;i++) src[i]=ud[i*4]/255;
+  const cc=document.createElement('canvas'); cc.width=W; cc.height=H;
+  const cx=cc.getContext('2d'); cx.drawImage(p.img,0,0);
+  const cid=cx.getImageData(0,0,W,H), cd=cid.data;
+  const guide=new Float32Array(M);
+  for(let i=0;i<M;i++) guide[i]=(0.299*cd[i*4]+0.587*cd[i*4+1]+0.114*cd[i*4+2])/255;
+  const q=_guided(guide,src,W,H,Math.max(4,Math.round(Math.min(W,H)/200)),1e-3);
+  // ① anti-haze — solid हिस्से से दूर का धुंधलापन हटाओ
+  { const keep=new Uint8Array(M), st=[];
+    for(let i=0;i<M;i++) if(q[i]>0.6){ keep[i]=1; st.push(i); }
+    const R=Math.max(4,Math.round(Math.min(W,H)/150));
+    for(let d=0;d<R;d++){ const n=st.length;
+      for(let s=0;s<n;s++){ const i=st[s],x=i%W;
+        if(x>0&&!keep[i-1]){ keep[i-1]=1; st.push(i-1); }
+        if(x<W-1&&!keep[i+1]){ keep[i+1]=1; st.push(i+1); }
+        if(i>=W&&!keep[i-W]){ keep[i-W]=1; st.push(i-W); }
+        if(i<M-W&&!keep[i+W]){ keep[i+W]=1; st.push(i+W); } } }
+    for(let i=0;i<M;i++) if(!keep[i]&&q[i]<0.35) q[i]=0; }
+  // ② छेद-भराई — bg से कटे अंदरूनी soft हिस्से solid करो (baby face जैसे)
+  { const bgm=new Uint8Array(M), st=[];
+    for(let x=0;x<W;x++){ st.push(x); st.push((H-1)*W+x); }
+    for(let y=0;y<H;y++){ st.push(y*W); st.push(y*W+W-1); }
+    while(st.length){ const i=st.pop(); if(bgm[i]||q[i]>0.45) continue; bgm[i]=1;
+      const x=i%W;
+      if(x>0)st.push(i-1); if(x<W-1)st.push(i+1); if(i>=W)st.push(i-W); if(i<M-W)st.push(i+W); }
+    for(let i=0;i<M;i++) if(!bgm[i]&&q[i]<=0.45) q[i]=0.95; }
+  // ③ रंग-शुद्धिकरण — किनारे की पुरानी background छाँह हटाओ (Photoshop Decontaminate जैसा)
+  msg('किनारे का रंग शुद्ध…'); await new Promise(r=>setTimeout(r,30));
+  { const ring=[];
+    for(let y=2;y<H-2;y+=2)for(let x=2;x<W-2;x+=2){ const i=y*W+x;
+      if(q[i]<0.05){ let near=false;
+        for(let dy=-3;dy<=3&&!near;dy+=3)for(let dx=-3;dx<=3;dx+=3){ if(q[i+dy*W+dx]>0.4){ near=true; break; } }
+        if(near) ring.push(i); } }
+    let g0=0,g1=0,g2=0,gn=ring.length, ok=false;
+    if(gn>50){ const h0=[],h1=[],h2=[];
+      for(let k=0;k<gn;k++){ const i=ring[k]; h0.push(cd[i*4]); h1.push(cd[i*4+1]); h2.push(cd[i*4+2]); }
+      h0.sort((a,b)=>a-b); h1.sort((a,b)=>a-b); h2.sort((a,b)=>a-b);
+      g0=h0[gn>>1]; g1=h1[gn>>1]; g2=h2[gn>>1]; ok=true;
+    } else { let n2=0;
+      for(let i=0;i<M;i++) if(q[i]<0.02){ g0+=cd[i*4]; g1+=cd[i*4+1]; g2+=cd[i*4+2]; n2++; }
+      if(n2>50){ g0/=n2; g1/=n2; g2/=n2; ok=true; } }
+    for(let i=0;i<M;i++){ const a=q[i]; cd[i*4+3]=Math.round(a*255);
+      if(ok&&a>0.02&&a<0.98){ const ia=1-a;
+        let v=(cd[i*4]-ia*g0)/a;   cd[i*4]  =v<0?0:v>255?255:v;
+        v=(cd[i*4+1]-ia*g1)/a;     cd[i*4+1]=v<0?0:v>255?255:v;
+        v=(cd[i*4+2]-ia*g2)/a;     cd[i*4+2]=v<0?0:v>255?255:v; } }
+  }
+  cx.putImageData(cid,0,0);
+  return cc;
+}
+
 let lastAlpha=null;
 function refineCutout(img,lo){ // 🪄 edge-safai: grey fringe हटाओ (alpha curve)
   const cv=document.createElement('canvas');
@@ -3120,7 +3251,10 @@ $('aiGo').addEventListener('click',async()=>{
   try{
     await aiInit(msg);
     bgEdgeLo=+$('aiPow').value;
-    const cc=await aiCutout(p,msg);
+    let cc;
+    try{ cc=await aiCutoutPro(p,msg); }
+    catch(pe){ console.warn('Pro engine fail — पुराना engine',pe); msg('पुराने engine से किनारा…');
+      cc=await aiCutout(p,msg); }
     rawCutout=cc; origImg=p.img;
     refineAndApply();
     $('aiProg').style.display='none'; $('aiDone').style.display='inline-flex';
