@@ -123,7 +123,7 @@ canvas.pv{width:100%;border-radius:8px;background:#fff;display:block}
 <body>
 <script src="assets/js/cyber-gate.js?v=2"></script><script>SC.guard("photo-studio")</script>
 <div class="topbar">
-  <h1>🌸 संस्कृति फोटो स्टूडियो</h1><span class="freebadge">FREE v4.5 ✂️</span>
+  <h1>🌸 संस्कृति फोटो स्टूडियो</h1><span class="freebadge">FREE v4.6 ⚡</span>
   <span style="color:var(--mut);font-size:12.5px">Batch Print • Retouch Pro • Passport/Stamp/Custom — सब एक जगह</span>
   <div class="sp"></div>
   <button id="btnQueue" class="btn btn-sec btn-sm">🗂️ Batch Queue <span class="badge" id="qBadge">0</span></button>
@@ -3126,9 +3126,13 @@ function _guided(guide,src,W,H,r,eps){ // guided filter — full-res photo क�
   return q;
 }
 async function aiCutoutPro(p,msg){ // return contract = aiCutout जैसा: full-res RGBA canvas (नरम alpha)
-  await aiInitPro(msg);
+  const T={t0:performance.now()}; const mark=n=>{T[n]=Math.round(performance.now()-T.t0);};
+  await aiInitPro(msg); mark('init');
   msg('Pro AI photo पढ़ रहा…'); await new Promise(r=>setTimeout(r,30));
-  const W=p.img.naturalWidth||p.img.width, H=p.img.naturalHeight||p.img.height;
+  const FW=p.img.naturalWidth||p.img.width, FH=p.img.naturalHeight||p.img.height;
+  // ⚡ speed cap: बहुत बड़ी photo (12MP+) पर पूरा काम 3200px copy में, आख़िर में full-res upscale — print quality पर असर नहीं
+  const _cap=Math.min(1,3200/Math.max(FW,FH));
+  const W=Math.round(FW*_cap), H=Math.round(FH*_cap);
   const sc=512/Math.min(W,H);
   const W2=Math.ceil(W*sc/32)*32, H2=Math.ceil(H*sc/32)*32;
   const tc=document.createElement('canvas'); tc.width=W2; tc.height=H2;
@@ -3138,7 +3142,7 @@ async function aiCutoutPro(p,msg){ // return contract = aiCutout जैसा: f
   for(let i=0;i<N;i++){ f[i]=td[i*4]/127.5-1; f[N+i]=td[i*4+1]/127.5-1; f[2*N+i]=td[i*4+2]/127.5-1; }
   msg('Pro AI किनारे तराश रहा…'); await new Promise(r=>setTimeout(r,30));
   const ses=S.ai.proSess;
-  const out=await ses.run({[ses.inputNames[0]]:new ort.Tensor('float32',f,[1,3,H2,W2])});
+  const out=await ses.run({[ses.inputNames[0]]:new ort.Tensor('float32',f,[1,3,H2,W2])}); mark('infer');
   const o=out[ses.outputNames[0]].data;
   let mn=1e9,mx=-1e9; for(let i=0;i<o.length;i++){ if(o[i]<mn)mn=o[i]; if(o[i]>mx)mx=o[i]; }
   const rg=(mx-mn)||1;
@@ -3155,11 +3159,11 @@ async function aiCutoutPro(p,msg){ // return contract = aiCutout जैसा: f
   const M=W*H;
   const src=new Float32Array(M); for(let i=0;i<M;i++) src[i]=ud[i*4]/255;
   const cc=document.createElement('canvas'); cc.width=W; cc.height=H;
-  const cx=cc.getContext('2d'); cx.drawImage(p.img,0,0);
+  const cx=cc.getContext('2d'); cx.drawImage(p.img,0,0,W,H); // cap size में scale करके (crop नहीं!)
   const cid=cx.getImageData(0,0,W,H), cd=cid.data;
   const guide=new Float32Array(M);
   for(let i=0;i<M;i++) guide[i]=(0.299*cd[i*4]+0.587*cd[i*4+1]+0.114*cd[i*4+2])/255;
-  const q=_guided(guide,src,W,H,Math.max(4,Math.round(Math.min(W,H)/200)),1e-3);
+  const q=_guided(guide,src,W,H,Math.max(4,Math.round(Math.min(W,H)/200)),1e-3); mark('guided');
   // ① anti-haze — solid हिस्से से दूर का धुंधलापन हटाओ
   { const keep=new Uint8Array(M), st=[];
     for(let i=0;i<M;i++) if(q[i]>0.6){ keep[i]=1; st.push(i); }
@@ -3225,6 +3229,7 @@ async function aiCutoutPro(p,msg){ // return contract = aiCutout जैसा: f
       const soft=(k>0.80)?0.45:1.0;                 // हल्की परछाई = आधी ताक़त (सफ़ेद कमीज़ बचे, बाक़ी ताक़त slider ख़त्म करे)
       q[i]*=(1-s*soft);
     }
+    mark('peel');
   }
   // ⑤ रंग-शुद्धिकरण — किनारे की पुरानी background छाँह हटाओ (Photoshop Decontaminate जैसा)
   msg('किनारे का रंग शुद्ध…'); await new Promise(r=>setTimeout(r,30));
@@ -3235,6 +3240,15 @@ async function aiCutoutPro(p,msg){ // return contract = aiCutout जैसा: f
         v=(cd[i*4+2]-ia*g2)/a;     cd[i*4+2]=v<0?0:v>255?255:v; } }
   }
   cx.putImageData(cid,0,0);
+  mark('decontam');
+  if(_cap<1){ // full-res पर upscale (contract: full-res RGBA canvas)
+    const fc=document.createElement('canvas'); fc.width=FW; fc.height=FH;
+    const fx=fc.getContext('2d'); fx.imageSmoothingEnabled=true; fx.imageSmoothingQuality='high';
+    fx.drawImage(cc,0,0,FW,FH); mark('upscale');
+    S.ai.times=T; console.log('proTimes',T);
+    return fc;
+  }
+  S.ai.times=T; console.log('proTimes',T);
   return cc;
 }
 
@@ -3272,7 +3286,8 @@ function applyBg(color){
   // (snap pass हटाया — binary फ़ैसला speckle बनाता था; नरम alpha ही साफ़ किनारा है)
   const im=new Image();
   im.onload=()=>{ curPhoto().img=im; applyZoom(); renderAll(); }; // box+zoom preserve (dims same)
-  im.src=cv.toDataURL('image/png');
+  // ⚡ बड़ी photo (8MP+) पर WebP encode — PNG से 4-6 गुना तेज़, print quality बरक़रार; छोटी पर PNG ही
+  im.src=(cv.width*cv.height>8000000)?cv.toDataURL('image/webp',0.95):cv.toDataURL('image/png');
 }
 /* ===== aiBar wiring — photo के पास ही सब control ===== */
 $('aiGo').addEventListener('click',async()=>{
