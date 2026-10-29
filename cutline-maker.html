@@ -73,6 +73,8 @@ main{display:flex;flex:1;overflow:hidden}
     <div class="fld"><label><span id="lblBleed">Bleed (figure से बाहर, mm)</span> <b id="vBleed">2.0</b></label>
       <input type="range" id="bleed" min="0" max="60" value="20"><!-- ×0.1mm --></div>
     <div class="fld"><label><input type="checkbox" id="inset"> ↔️ अंदर की line (खास CO2 काम — figure के <b>अंदर</b> कटेगी)</label></div>
+    <div class="fld"><label><input type="checkbox" id="pickMode"> 🖱️ Click से अंदर line जोड़ें/हटाएँ (खाली gap या line पर click)</label></div>
+    <div class="fld" id="unpickWrap" style="display:none"><button id="btnUnpick" style="width:100%;padding:6px;border-radius:8px;border:1px solid #475569;background:#1e293b;color:#fbbf24;cursor:pointer;font-size:13px">↩️ आख़िरी click line हटाओ (0)</button></div>
     <div class="fld"><label>Smoothness <b id="vSm">90</b></label>
       <input type="range" id="smooth" min="0" max="120" value="90"></div>
     <div class="fld"><label>Detail (छोटे मोड़ पकड़ना) <b id="vDet">65</b></label>
@@ -104,7 +106,7 @@ const CFG={
   maxSide:4200,          // प्रोसेसिंग की अधिकतम side (px) — इससे बड़ा हो तो घटाकर
   blurAA:1.2,            // mask anti-alias blur (px, full-res)
   dirSteps:16,           // bleed dilation directions (जितना ज़्यादा, उतना गोल)
-  minHoleMM2:25,         // इससे छोटे holes नज़रअंदाज़ (mm²)
+  minHoleMM2:8,          // इससे छोटे holes नज़रअंदाज़ (mm²)
   minOuterMM2:200,
   dxfStepMM:0.3,         // DXF में point gap (छोटा = smooth)
   holeColor:'#38bdf8', outColor:'#ef4444'
@@ -122,6 +124,11 @@ let IMG=null,            // {im,w,h} मूल image
   VIEW={s:1,x:0,y:0},    // zoom/pan
   VMODE='design',        // 'design' | 'line'
   BUSY=false;
+let PICK=false,          // 🖱️ click-to-add-hole mode
+  PD=null,               // pick-mode pointerdown tracker
+  MANHOLES=[],           // mouse-click से जुड़ी manual hole lines (beziers)
+  AUTOHOLES=[],          // अपने-आप पकड़ी गई hole lines
+  SUPPRESS=new Set();    // click से हटाई गई auto holes (centroid keys)
 const $=id=>document.getElementById(id), cv=$('cv'), cx=cv.getContext('2d');
 const stage=$('stage');
 function toast(m,ms=2600){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(t._x);t._x=setTimeout(()=>t.style.display='none',ms)}
@@ -140,6 +147,9 @@ async function setImage(im){
   c.getContext('2d').drawImage(im,0,0,w,h);
   IMG={c,w,h};
   AIFIELD=null;AITRIED=false;$('btnAI').textContent='🤖 असली Photo? AI से BG हटाओ';
+  MANHOLES=[];AUTOHOLES=[];PICK=false;PD=null;
+  SUPPRESS.clear();
+  $('pickMode').checked=false;stage.style.cursor='default';updUnpick();
   $('empty').style.display='none';
   VIEW={s:1,x:0,y:0};fitView();
   await rebuild('field');
@@ -346,9 +356,19 @@ async function rebuild(stage2){
     const sgn=big.length?Math.sign(area(big[0])):1;
     const t=(+$('smooth').value)/100;
     const simp=l=>rdp(l,eps).map(p=>[p[0]-1,p[1]-1]); // padding हटाओ → असली px
+    // 🕳️ holes हमेशा असली (un-dilated) field से — bleed से अंदरूनी gaps भरकर गायब न हों
+    const FP=new Float32Array(pw*ph);
+    for(let y=0;y<IMG.h;y++)FP.set(FIELD.subarray(y*IMG.w,(y+1)*IMG.w),(y+1)*pw+1);
+    const segs2=marchingSquares(FP,pw,ph,0.5);await tick();
+    const raw2=chainLoops(segs2);await tick();
+    const big2=raw2.filter(l=>Math.abs(area(l))>Math.max(minH,30));
+    big2.sort((a,b)=>Math.abs(area(b))-Math.abs(area(a)));
+    // 🕳️ hole = सबसे बड़े loop के "अंदर" पड़ा loop (sign पर भरोसा नहीं — chainLoops सबको same sign देता है)
+    AUTOHOLES=big2.slice(1).filter(l=>big2.length&&inPoly(l[0],big2[0])).map(l=>beziers(simp(l),t))
+      .filter(hl=>!SUPPRESS.has(holeKey(hl)));
     LOOPS={
       outer:big.length&&Math.abs(area(big[0]))>minO?beziers(simp(big[0]),t):null,
-      holes:big.slice(1).filter(l=>Math.sign(area(l))!==sgn).map(l=>beziers(simp(l),t))
+      holes:AUTOHOLES.concat(MANHOLES)
     };
     draw();updateStats();
     ['btnSVG','btnDXF','btnPrint'].forEach(i=>$(i).disabled=!LOOPS.outer);
@@ -405,11 +425,86 @@ stage.addEventListener('wheel',e=>{
   VIEW.x=mx-(mx-VIEW.x)*(s2/VIEW.s);VIEW.y=my-(my-VIEW.y)*(s2/VIEW.s);VIEW.s=s2;draw();
 },{passive:false});
 let DR=null;
-stage.addEventListener('pointerdown',e=>{DR={x:e.clientX,y:e.clientY,vx:VIEW.x,vy:VIEW.y};stage.setPointerCapture(e.pointerId)});
-stage.addEventListener('pointermove',e=>{if(!DR)return;
+stage.addEventListener('pointerdown',e=>{if(PICK){PD={x:e.clientX,y:e.clientY,mv:false};return}
+  DR={x:e.clientX,y:e.clientY,vx:VIEW.x,vy:VIEW.y};stage.setPointerCapture(e.pointerId)});
+stage.addEventListener('pointermove',e=>{if(PICK){if(PD&&Math.abs(e.clientX-PD.x)+Math.abs(e.clientY-PD.y)>8)PD.mv=true;return}
+  if(!DR)return;
   VIEW.x=DR.vx+e.clientX-DR.x;VIEW.y=DR.vy+e.clientY-DR.y;draw()});
-stage.addEventListener('pointerup',()=>DR=null);
+stage.addEventListener('pointerup',e=>{if(PICK){if(PD&&!PD.mv){const r=stage.getBoundingClientRect();
+    addHoleAt(Math.round((e.clientX-r.left-VIEW.x)/VIEW.s),Math.round((e.clientY-r.top-VIEW.y)/VIEW.s))}PD=null;return}
+  DR=null});
 window.addEventListener('resize',()=>draw());
+
+/* ================= 🖱️ click-to-add hole (खाली gap पकड़ो) ================= */
+function updUnpick(){$('unpickWrap').style.display=MANHOLES.length?'':'none';$('btnUnpick').textContent='↩️ आख़िरी click line हटाओ ('+MANHOLES.length+')'}
+const inPoly=(pt,poly)=>{let c=false;   // ray-cast: point polygon के अंदर?
+  for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+    const xi=poly[i][0],yi=poly[i][1],xj=poly[j][0],yj=poly[j][1];
+    if(((yi>pt[1])!==(yj>pt[1]))&&(pt[0]<(xj-xi)*(pt[1]-yi)/(yj-yi)+xi))c=!c}
+  return c};
+const bzPoly=(hl,n=8)=>{const pts=[];   // bezier loop → polygon points
+  for(const[p0,c1,c2,p1]of hl)for(let i=0;i<n;i++){const t=i/n,u=1-t;
+    pts.push([u*u*u*p0[0]+3*u*u*t*c1[0]+3*u*t*t*c2[0]+t*t*t*p1[0],
+              u*u*u*p0[1]+3*u*u*t*c1[1]+3*u*t*t*c2[1]+t*t*t*p1[1]])}
+  return pts};
+const holeKey=hl=>{const p=bzPoly(hl,4);let sx=0,sy=0;
+  for(const q of p){sx+=q[0];sy+=q[1]}
+  return Math.round(sx/p.length/3)+','+Math.round(sy/p.length/3)};
+function seedRegion(px,py){ // click किए रंग जैसा जुड़ा इलाका (या transparent इलाका)
+  const w=IMG.w,h=IMG.h,d=IMG.c.getContext('2d').getImageData(0,0,w,h).data;
+  const si=(py*w+px)*4,sr=d[si],sg=d[si+1],sb=d[si+2],seedT=d[si+3]<128,TOL=46;
+  const mask=new Uint8Array(w*h);
+  const match=seedT?(i=>d[i*4+3]<128):(i=>{const o=i*4;if(d[o+3]<128)return false;
+    const dr=d[o]-sr,dg=d[o+1]-sg,db=d[o+2]-sb;
+    return (dr<0?-dr:dr)<=TOL&&(dg<0?-dg:dg)<=TOL&&(db<0?-db:db)<=TOL});
+  const st=[py*w+px];mask[py*w+px]=2;let touch=false;
+  while(st.length){const i=st.pop(),x=i%w,y=(i/w)|0;
+    mask[i]=1;
+    if(x===0||y===0||x===w-1||y===h-1){touch=true;break}
+    if(!mask[i-1]&&match(i-1)){mask[i-1]=2;st.push(i-1)}
+    if(!mask[i+1]&&match(i+1)){mask[i+1]=2;st.push(i+1)}
+    if(!mask[i-w]&&match(i-w)){mask[i-w]=2;st.push(i-w)}
+    if(!mask[i+w]&&match(i+w)){mask[i+w]=2;st.push(i+w)}
+  }
+  if(touch)return null; // बाहरी background तक पहुँच गया = अंदर का gap नहीं
+  const F=new Float32Array(w*h);
+  for(let j=0;j<F.length;j++)F[j]=mask[j]===1?1:0;
+  return F;
+}
+async function addHoleAt(px,py){
+  if(!IMG||BUSY||px<0||py<0||px>=IMG.w||py>=IMG.h)return;
+  BUSY=true;prog(true,'⏳ gap पकड़ा जा रहा…');await tick();
+  try{
+    // पहले देखो: यहाँ पहले से कोई अंदर की line है? → click से हटाओ
+    const pt=[px,py],hit=hl=>inPoly(pt,bzPoly(hl));
+    let idx=MANHOLES.findIndex(hit);
+    if(idx>=0){MANHOLES.splice(idx,1);
+      if(LOOPS)LOOPS.holes=AUTOHOLES.concat(MANHOLES);
+      draw();updateStats();updUnpick();toast('🗑️ click line हटाई — बची: '+MANHOLES.length);return}
+    idx=AUTOHOLES.findIndex(hit);
+    if(idx>=0){SUPPRESS.add(holeKey(AUTOHOLES[idx]));AUTOHOLES.splice(idx,1);
+      if(LOOPS)LOOPS.holes=AUTOHOLES.concat(MANHOLES);
+      draw();updateStats();toast('🗑️ अंदर की line हटाई');return}
+    const F=seedRegion(px,py);
+    if(!F){toast('⚠️ यह बाहर की जगह है — figure के अंदर के खाली gap पर click करो',4000);return}
+    const pw=IMG.w+2,ph=IMG.h+2,FP=new Float32Array(pw*ph);
+    for(let y=0;y<IMG.h;y++)FP.set(F.subarray(y*IMG.w,(y+1)*IMG.w),(y+1)*pw+1);
+    const segs=marchingSquares(FP,pw,ph,0.5);await tick();
+    const raw=chainLoops(segs);
+    if(!raw.length){toast('⚠️ यहाँ gap नहीं मिला');return}
+    raw.sort((a,b)=>Math.abs(area(b))-Math.abs(area(a)));
+    if(Math.abs(area(raw[0]))<20){toast('⚠️ gap बहुत छोटा है');return}
+    const eps=(1.6-(+$('detail').value)/100*1.5),t=(+$('smooth').value)/100;
+    MANHOLES.push(beziers(rdp(raw[0],eps).map(p=>[p[0]-1,p[1]-1]),t));
+    if(LOOPS)LOOPS.holes=AUTOHOLES.concat(MANHOLES);
+    draw();updateStats();updUnpick();
+    toast('✅ अंदर की line जुड़ी — कुल click lines: '+MANHOLES.length);
+  }finally{BUSY=false;prog(false)}
+}
+$('pickMode').onchange=e=>{PICK=e.target.checked;stage.style.cursor=PICK?'crosshair':'default';
+  if(PICK)toast('🖱️ figure के अंदर के खाली gap पर click करो — line बन जाएगी',4000)};
+$('btnUnpick').onclick=()=>{MANHOLES.pop();if(LOOPS)LOOPS.holes=AUTOHOLES.concat(MANHOLES);
+  draw();updateStats();updUnpick();toast('↩️ आख़िरी click line हटाई')};
 
 /* ================= exports ================= */
 function mmScale(){return (+$('pwin').value*25.4)/IMG.w}
