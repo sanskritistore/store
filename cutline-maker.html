@@ -73,6 +73,7 @@ main{display:flex;flex:1;overflow:hidden}
     <div class="fld"><label><span id="lblBleed">Bleed (figure से बाहर, mm)</span> <b id="vBleed">2.0</b></label>
       <input type="range" id="bleed" min="0" max="60" value="20"><!-- ×0.1mm --></div>
     <div class="fld"><label><input type="checkbox" id="inset"> ↔️ अंदर की line (खास CO2 काम — figure के <b>अंदर</b> कटेगी)</label></div>
+    <div class="fld"><label><input type="checkbox" id="autoHoles"> ⚙️ अंदरूनी gaps अपने-आप पकड़ो (आमतौर पर <b>बंद</b> रखो — design की white चमक पर गलत line आ सकती है)</label></div>
     <div class="fld"><button id="btnWand" type="button" style="width:100%;padding:9px;border-radius:10px;border:2px solid #a855f7;background:#2a1740;color:#e9d5ff;cursor:pointer;font-size:13px;font-weight:700">🪄 खुद चुनो: white gap पर click → outline</button></div>
     <div class="fld" id="unpickWrap" style="display:none"><button id="btnUnpick" style="width:100%;padding:6px;border-radius:8px;border:1px solid #475569;background:#1e293b;color:#fbbf24;cursor:pointer;font-size:13px">↩️ आख़िरी click line हटाओ (0)</button></div>
     <div class="fld"><label>Smoothness <b id="vSm">90</b></label>
@@ -356,16 +357,20 @@ async function rebuild(stage2){
     const sgn=big.length?Math.sign(area(big[0])):1;
     const t=(+$('smooth').value)/100;
     const simp=l=>rdp(l,eps).map(p=>[p[0]-1,p[1]-1]); // padding हटाओ → असली px
-    // 🕳️ holes हमेशा असली (un-dilated) field से — bleed से अंदरूनी gaps भरकर गायब न हों
-    const FP=new Float32Array(pw*ph);
-    for(let y=0;y<IMG.h;y++)FP.set(FIELD.subarray(y*IMG.w,(y+1)*IMG.w),(y+1)*pw+1);
-    const segs2=marchingSquares(FP,pw,ph,0.5);await tick();
-    const raw2=chainLoops(segs2);await tick();
-    const big2=raw2.filter(l=>Math.abs(area(l))>Math.max(minH,30));
-    big2.sort((a,b)=>Math.abs(area(b))-Math.abs(area(a)));
-    // 🕳️ hole = सबसे बड़े loop के "अंदर" पड़ा loop (sign पर भरोसा नहीं — chainLoops सबको same sign देता है)
-    AUTOHOLES=big2.slice(1).filter(l=>big2.length&&inPoly(l[0],big2[0])).map(l=>beziers(simp(l),t))
-      .filter(hl=>!SUPPRESS.has(holeKey(hl)));
+    // 🕳️ auto अंदरूनी lines — सिर्फ़ checkbox चालू हो तो (default बंद: design की white चमक पर गलत lines आती थीं)
+    AUTOHOLES=[];
+    if($('autoHoles').checked){
+      // holes हमेशा असली (un-dilated) field से — bleed से अंदरूनी gaps भरकर गायब न हों
+      const FP=new Float32Array(pw*ph);
+      for(let y=0;y<IMG.h;y++)FP.set(FIELD.subarray(y*IMG.w,(y+1)*IMG.w),(y+1)*pw+1);
+      const segs2=marchingSquares(FP,pw,ph,0.5);await tick();
+      const raw2=chainLoops(segs2);await tick();
+      const big2=raw2.filter(l=>Math.abs(area(l))>Math.max(minH,30));
+      big2.sort((a,b)=>Math.abs(area(b))-Math.abs(area(a)));
+      // hole = सबसे बड़े loop के "अंदर" पड़ा loop (sign पर भरोसा नहीं — chainLoops सबको same sign देता है)
+      AUTOHOLES=big2.slice(1).filter(l=>big2.length&&inPoly(l[0],big2[0])).map(l=>beziers(simp(l),t))
+        .filter(hl=>!SUPPRESS.has(holeKey(hl)));
+    }
     LOOPS={
       outer:big.length&&Math.abs(area(big[0]))>minO?beziers(simp(big[0]),t):null,
       holes:AUTOHOLES.concat(MANHOLES)
@@ -457,19 +462,15 @@ function seedRegion(px,py){ // click किए रंग जैसा जुड�
   const match=seedT?(i=>d[i*4+3]<128):(i=>{const o=i*4;if(d[o+3]<128)return false;
     const dr=d[o]-sr,dg=d[o+1]-sg,db=d[o+2]-sb;
     return (dr<0?-dr:dr)<=TOL&&(dg<0?-dg:dg)<=TOL&&(db<0?-db:db)<=TOL});
-  const st=[py*w+px];mask[py*w+px]=2;let touch=false;
-  while(st.length){const i=st.pop(),x=i%w,y=(i/w)|0;
+  const st=[py*w+px];mask[py*w+px]=2;
+  while(st.length){const i=st.pop(),x=i%w;
     mask[i]=1;
-    if(x===0||y===0||x===w-1||y===h-1){touch=true;break}
-    if(!mask[i-1]&&match(i-1)){mask[i-1]=2;st.push(i-1)}
-    if(!mask[i+1]&&match(i+1)){mask[i+1]=2;st.push(i+1)}
-    if(!mask[i-w]&&match(i-w)){mask[i-w]=2;st.push(i-w)}
-    if(!mask[i+w]&&match(i+w)){mask[i+w]=2;st.push(i+w)}
+    if(x>0&&!mask[i-1]&&match(i-1)){mask[i-1]=2;st.push(i-1)}
+    if(x<w-1&&!mask[i+1]&&match(i+1)){mask[i+1]=2;st.push(i+1)}
+    if(i>=w&&!mask[i-w]&&match(i-w)){mask[i-w]=2;st.push(i-w)}
+    if(i<w*h-w&&!mask[i+w]&&match(i+w)){mask[i+w]=2;st.push(i+w)}
   }
-  if(touch)return null; // बाहरी background तक पहुँच गया = अंदर का gap नहीं
-  const F=new Float32Array(w*h);
-  for(let j=0;j<F.length;j++)F[j]=mask[j]===1?1:0;
-  return F;
+  return mask;
 }
 async function addHoleAt(px,py){
   if(!IMG||BUSY||px<0||py<0||px>=IMG.w||py>=IMG.h)return;
@@ -485,8 +486,32 @@ async function addHoleAt(px,py){
     if(idx>=0){SUPPRESS.add(holeKey(AUTOHOLES[idx]));AUTOHOLES.splice(idx,1);
       if(LOOPS)LOOPS.holes=AUTOHOLES.concat(MANHOLES);
       draw();updateStats();toast('🗑️ अंदर की line हटाई');return}
-    const F=seedRegion(px,py);
-    if(!F){toast('⚠️ यह बाहर की जगह है — figure के अंदर के खाली gap पर click करो',4000);return}
+    // design के गाढ़े हिस्से पर click? रोको — WHITE gap पर ही line बनेगी
+    const id0=IMG.c.getContext('2d').getImageData(px,py,1,1).data;
+    const lum0=id0[0]*0.299+id0[1]*0.587+id0[2]*0.114;
+    if(id0[3]>=128&&lum0<190){toast('⚠️ यह design का हिस्सा है — WHITE gap पर click करो',4000);return}
+    const w=IMG.w,h=IMG.h,N=w*h;
+    const mask=seedRegion(px,py);           // click किए रंग जैसा इलाका (पतली गर्दन से बाहर leak भी हो सकता है)
+    // बाहर का असली bg: FIELD से border-flood (threshold वाली दीवार पतली गर्दन को रोकती है)
+    const out=new Uint8Array(N),st=[];
+    const push=i=>{if(!out[i]&&FIELD[i]<0.5){out[i]=1;st.push(i)}};
+    for(let x=0;x<w;x++){push(x);push((h-1)*w+x)}
+    for(let y=0;y<h;y++){push(y*w);push(y*w+w-1)}
+    while(st.length){const i=st.pop(),x=i%w;
+      if(x>0)push(i-1);if(x<w-1)push(i+1);
+      if(i>=w)push(i-w);if(i<N-w)push(i+w)}
+    // असली gap = color-इलाका − बाहरी bg → पतली गर्दन वाली जेब भी पकड़ में आती है
+    const P=new Uint8Array(N);let n=0;
+    for(let i=0;i<N;i++)if(mask[i]===1&&!out[i]){P[i]=1;n++}
+    if(!n||!P[py*w+px]){toast('⚠️ यह खुली/बाहरी जगह है — इसकी line red बाहरी line में पहले से बनी है। अंदर की बंद WHITE gap पर click करो',5000);return}
+    // click वाला component ही रखो
+    const comp=new Uint8Array(N),st2=[py*w+px];comp[py*w+px]=1;let cn=0;
+    while(st2.length){const i=st2.pop();cn++;const x=i%w;
+      const t=j=>{if(P[j]&&!comp[j]){comp[j]=1;st2.push(j)}};
+      if(x>0)t(i-1);if(x<w-1)t(i+1);if(i>=w)t(i-w);if(i<N-w)t(i+w)}
+    if(cn<20){toast('⚠️ gap बहुत छोटा है');return}
+    const F=new Float32Array(N);
+    for(let i=0;i<N;i++)F[i]=comp[i];
     const pw=IMG.w+2,ph=IMG.h+2,FP=new Float32Array(pw*ph);
     for(let y=0;y<IMG.h;y++)FP.set(F.subarray(y*IMG.w,(y+1)*IMG.w),(y+1)*pw+1);
     const segs=marchingSquares(FP,pw,ph,0.5);await tick();
@@ -510,6 +535,7 @@ $('btnWand').onclick=()=>{setPick(!PICK);
   if(PICK)toast('🪄 अब जिस WHITE gap पर outline चाहिए, उस पर CLICK करो • किसी मौजूदा line पर click करो तो वह line हट जाएगी',6000)};
 $('btnUnpick').onclick=()=>{MANHOLES.pop();if(LOOPS)LOOPS.holes=AUTOHOLES.concat(MANHOLES);
   draw();updateStats();updUnpick();toast('↩️ आख़िरी click line हटाई')};
+$('autoHoles').onchange=()=>{if(IMG)rebuild('offset')};
 
 /* ================= exports ================= */
 function mmScale(){return (+$('pwin').value*25.4)/IMG.w}
