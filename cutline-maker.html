@@ -325,7 +325,10 @@ async function rebuild(stage2){
   try{
     if(stage2==='field'){buildField();await tick();buildOffset();await tick()}
     else if(stage2==='bleed'){buildOffset();await tick()}
-    const segs=marchingSquares(OFF,IMG.w,IMG.h,0.5);await tick();
+    // 🖼️ 1px background-padding — figure photo के किनारे को छूती है तो भी contour बंद रहे
+    const pw=IMG.w+2,ph=IMG.h+2,OFFP=new Float32Array(pw*ph);
+    for(let y=0;y<IMG.h;y++)OFFP.set(OFF.subarray(y*IMG.w,(y+1)*IMG.w),(y+1)*pw+1);
+    const segs=marchingSquares(OFFP,pw,ph,0.5);await tick();
     const raw=chainLoops(segs);await tick();
     const mmp=mm2px(),eps=(1.6-(+$('detail').value)/100*1.5); // detail→epsilon px
     const minH=CFG.minHoleMM2*mmp*mmp, minO=CFG.minOuterMM2*mmp*mmp;
@@ -333,7 +336,7 @@ async function rebuild(stage2){
     big.sort((a,b)=>Math.abs(area(b))-Math.abs(area(a)));
     const sgn=big.length?Math.sign(area(big[0])):1;
     const t=(+$('smooth').value)/100;
-    const simp=l=>rdp(l,eps).map(p=>p);
+    const simp=l=>rdp(l,eps).map(p=>[p[0]-1,p[1]-1]); // padding हटाओ → असली px
     LOOPS={
       outer:big.length&&Math.abs(area(big[0]))>minO?beziers(simp(big[0]),t):null,
       holes:big.slice(1).filter(l=>Math.sign(area(l))!==sgn).map(l=>beziers(simp(l),t))
