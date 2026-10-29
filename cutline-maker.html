@@ -70,8 +70,9 @@ main{display:flex;flex:1;overflow:hidden}
       <input type="range" id="thr" min="180" max="254" value="245"></div>
     <div class="fld"><label><input type="checkbox" id="inv"> उल्टा (गहरे bg पर हल्का design)</label></div>
     <h3>3️⃣ Cut-line settings</h3>
-    <div class="fld"><label>Bleed (figure से बाहर, mm) <b id="vBleed">2.0</b></label>
+    <div class="fld"><label><span id="lblBleed">Bleed (figure से बाहर, mm)</span> <b id="vBleed">2.0</b></label>
       <input type="range" id="bleed" min="0" max="60" value="20"><!-- ×0.1mm --></div>
+    <div class="fld"><label><input type="checkbox" id="inset"> ↔️ अंदर की line (खास CO2 काम — figure के <b>अंदर</b> कटेगी)</label></div>
     <div class="fld"><label>Smoothness <b id="vSm">90</b></label>
       <input type="range" id="smooth" min="0" max="120" value="90"></div>
     <div class="fld"><label>Detail (छोटे मोड़ पकड़ना) <b id="vDet">65</b></label>
@@ -205,6 +206,7 @@ function buildField(){
 function mm2px(){return IMG.w/(+$('pwin').value*25.4)}
 function buildOffset(){
   const w=IMG.w,h=IMG.h, R=+$('bleed').value/10*mm2px();
+  const INSET=$('inset').checked;   // ↔️ अंदर की line: erosion (min) — बाहर bleed: dilation (max)
   const src=document.createElement('canvas');src.width=w;src.height=h;
   const sc=src.getContext('2d'), id=sc.createImageData(w,h);
   for(let j=0;j<FIELD.length;j++){const v=Math.round(FIELD[j]*255);
@@ -212,11 +214,18 @@ function buildOffset(){
   sc.putImageData(id,0,0);
   const out=document.createElement('canvas');out.width=w;out.height=h;
   const oc=out.getContext('2d');
-  oc.globalCompositeOperation='lighten';    // per-channel MAX = dilation
   const n=CFG.dirSteps;
-  if(R<0.05){oc.drawImage(src,0,0)}
-  else for(let k=0;k<n;k++){const a=k/n*2*Math.PI;
-    oc.drawImage(src,Math.cos(a)*R,Math.sin(a)*R)}
+  const dil=(ctx,from,rad)=>{ctx.globalCompositeOperation='lighten';
+    if(rad<0.05){ctx.drawImage(from,0,0)}
+    else for(let k=0;k<n;k++){const a=k/n*2*Math.PI;ctx.drawImage(from,Math.cos(a)*rad,Math.sin(a)*rad)}};
+  if(!INSET){dil(oc,src,R)}
+  else{ // silhouette पहले भरो (उजले अंदरूनी धब्बों से line न टूटे): dilate R → erode 2R = अंदर R
+    const t1=document.createElement('canvas');t1.width=w;t1.height=h;
+    dil(t1.getContext('2d'),src,R);
+    oc.globalCompositeOperation='darken';
+    if(R<0.05){oc.drawImage(t1,0,0)}
+    else for(let k=0;k<n;k++){const a=k/n*2*Math.PI;oc.drawImage(t1,Math.cos(a)*2*R,Math.sin(a)*2*R)}
+  }
   // हल्का AA blur → sub-pixel smooth
   const b=document.createElement('canvas');b.width=w;b.height=h;
   const bc=b.getContext('2d');bc.filter=`blur(${CFG.blurAA}px)`;bc.drawImage(out,0,0);
@@ -343,6 +352,7 @@ async function rebuild(stage2){
     };
     draw();updateStats();
     ['btnSVG','btnDXF','btnPrint'].forEach(i=>$(i).disabled=!LOOPS.outer);
+    if(!LOOPS.outer&&$('inset').checked)toast('⚠️ इतनी अंदर line नहीं बनी — "अंदर जाने की दूरी" घटाओ',4000);
   }finally{BUSY=false;prog(false)}
 }
 function updateStats(){
@@ -474,6 +484,7 @@ const reField=deb(()=>rebuild('field'),250), reBleed=deb(()=>rebuild('bleed'),25
 $('thr').oninput=e=>{$('vThr').textContent=e.target.value;reField()};
 $('inv').onchange=reField;
 $('bleed').oninput=e=>{$('vBleed').textContent=(e.target.value/10).toFixed(1);reBleed()};
+$('inset').onchange=e=>{$('lblBleed').textContent=e.target.checked?'अंदर जाने की दूरी (mm)':'Bleed (figure से बाहर, mm)';reBleed()};
 $('smooth').oninput=e=>{$('vSm').textContent=e.target.value;reVec()};
 $('detail').oninput=e=>{$('vDet').textContent=e.target.value;reVec()};
 $('pwin').onchange=deb(()=>{if(IMG)rebuild('bleed')},400);
