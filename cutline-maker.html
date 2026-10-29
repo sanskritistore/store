@@ -62,8 +62,10 @@ main{display:flex;flex:1;overflow:hidden}
     <h3>1️⃣ Design लोड करें</h3>
     <button class="sbtn" id="btnUp">📂 Photo / Design चुनें</button>
     <input type="file" id="file" accept="image/png,image/jpeg,image/webp" style="display:none">
-    <div class="note">सफ़ेद background वाला design या transparent PNG — दोनों चलेंगे। बड़ी file = बेहतर quality।</div>
+    <div class="note">सफ़ेद bg design, transparent PNG या <b>असली photo</b> — सब चलेगा। असली photo पर AI बटन खुद चल जाएगा। बड़ी file = बेहतर quality।</div>
     <h3>2️⃣ Figure पकड़ने की धार</h3>
+    <button class="sbtn" id="btnAI" style="width:100%;margin-bottom:8px;background:#065f46;border-color:#10b981">🤖 असली Photo? AI से BG हटाओ</button>
+    <div class="note" id="aiNote">असली photo (दीवार/घर/बाहर का bg) हो तो यह दबाओ — AI खुद figure पकड़ेगा। पहली बार ~10 सेकंड।</div>
     <div class="fld"><label>Background हटाना <b id="vThr">245</b></label>
       <input type="range" id="thr" min="180" max="254" value="245"></div>
     <div class="fld"><label><input type="checkbox" id="inv"> उल्टा (गहरे bg पर हल्का design)</label></div>
@@ -109,6 +111,11 @@ const CFG={
 /* ================= state ================= */
 let IMG=null,            // {im,w,h} मूल image
   FIELD=null,            // Float32Array 0..1 (figure=1)
+  AIFIELD=null,          // AI (MODNet) का soft mask — set हो तो buildField इसी से चलेगा
+  AITRIED=false,         // इस image पर AI try हो चुका? (loop-रोक)
+  FMEAN=0,               // FIELD का औसत (auto-AI + smart message के लिए)
+  FSRC='lum',            // field का स्रोत: 'alpha' | 'lum' | 'ai'
+  BMEAN=0,               // FIELD की 1px border-ring का औसत — असली photo पकड़ने का सबूत
   OFF=null,              // bleed के बाद field
   LOOPS=null,            // {outer:[[x,y]..], holes:[[..]..]}
   VIEW={s:1,x:0,y:0},    // zoom/pan
@@ -131,29 +138,67 @@ async function setImage(im){
   const c=document.createElement('canvas');c.width=w;c.height=h;
   c.getContext('2d').drawImage(im,0,0,w,h);
   IMG={c,w,h};
+  AIFIELD=null;AITRIED=false;$('btnAI').textContent='🤖 असली Photo? AI से BG हटाओ';
   $('empty').style.display='none';
   VIEW={s:1,x:0,y:0};fitView();
   await rebuild('field');
+  autoAI();
+}
+
+/* ---- 🤖 AI BG (MODNet) — असली photos के लिए ---- */
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('load fail'));document.head.appendChild(s)})}
+async function runAIBG(){
+  if(!IMG||BUSY)return;
+  if(AIFIELD){ // दोबारा दबाया → वापस धार-विधि
+    AIFIELD=null;$('btnAI').textContent='🤖 असली Photo? AI से BG हटाओ';
+    toast('AI हटाया — धार (threshold) विधि वापस');rebuild('field');return;
+  }
+  AITRIED=true;
+  try{
+    prog(true,'AI engine लोड हो रहा…');
+    if(!window.BGAI_READY) await loadScript('assets/js/bg-ai.js');
+    AIFIELD=await aiMaskField(IMG.c,m=>prog(true,m));
+    $('btnAI').textContent='↩️ AI हटाओ (धार-विधि वापस)';
+    toast('✅ AI ने background हटाया');
+    await rebuild('field');
+  }catch(e){console.error(e);toast('❌ AI नहीं चला — दोबारा दबाएँ ('+(e.message||'error')+')',5000);prog(false)}
+}
+function autoAI(){ // असली photo पकड़ो: धार से पूरा frame figure बन गया → AI ही सही रास्ता
+  if(!IMG||AIFIELD||AITRIED||!FIELD)return;
+  if(FSRC==='lum'&&(BMEAN>0.35||FMEAN>0.6)){
+    toast('असली photo मिली — AI खुद background हटाता है…',4000);
+    runAIBG();
+  }
 }
 
 /* ================= 2) field (figure mask, float) ================= */
 function buildField(){
   const {c,w,h}=IMG, thr=+$('thr').value, inv=$('inv').checked;
-  const d=c.getContext('2d').getImageData(0,0,w,h).data;
   const F=new Float32Array(w*h);
-  // पहले देखो: कहीं transparency है? → पूरा mask alpha से
-  let hasAlpha=false;
-  for(let i=3;i<d.length;i+=4)if(d[i]<250){hasAlpha=true;break}
-  for(let i=0,j=0;i<d.length;i+=4,j++){
-    const a=d[i+3]/255;
-    if(hasAlpha){F[j]=a}                    // transparent PNG → alpha ही mask
-    else{const lum=(d[i]*.299+d[i+1]*.587+d[i+2]*.114)/255;
-      F[j]=inv?lum:1-lum}                   // सफ़ेद bg → उल्टा
+  if(AIFIELD){                              // 🤖 AI mask → वही ईंधन
+    F.set(AIFIELD);
+    FSRC='ai';
+  }else{
+    const d=c.getContext('2d').getImageData(0,0,w,h).data;
+    // पहले देखो: कहीं transparency है? → पूरा mask alpha से
+    let hasAlpha=false;
+    for(let i=3;i<d.length;i+=4)if(d[i]<250){hasAlpha=true;break}
+    for(let i=0,j=0;i<d.length;i+=4,j++){
+      const a=d[i+3]/255;
+      if(hasAlpha){F[j]=a}                    // transparent PNG → alpha ही mask
+      else{const lum=(d[i]*.299+d[i+1]*.587+d[i+2]*.114)/255;
+        F[j]=inv?lum:1-lum}                   // सफ़ेद bg → उल्टा
+    }
+    FSRC=hasAlpha?'alpha':'lum';
   }
   // threshold से साफ़: iso 0.5 के आसपास soft रखो (sub-pixel के लिए)
   const t=(255-thr)/255*0.9+0.05;           // thr slider → iso mapping
   for(let j=0;j<F.length;j++){const v=(F[j]-t)*8+0.5;F[j]=v<0?0:v>1?1:v}
   FIELD=F;
+  let s=0;for(let j=0;j<F.length;j++)s+=F[j];FMEAN=s/F.length;
+  let bs=0;for(let x=0;x<w;x++)bs+=F[x]+F[(h-1)*w+x];
+  for(let y=0;y<h;y++)bs+=F[y*w]+F[y*w+w-1];
+  BMEAN=bs/(2*(w+h));
 }
 
 /* ================= 3) bleed offset (lighten max-filter, 16 दिशाएँ) ================= */
@@ -302,7 +347,11 @@ function updateStats(){
   const len=bz=>{let L=0;for(const[p0,c1,c2,p1]of(bz||[])){let pr=p0;
     for(let i=1;i<=12;i++){const q=cubic(p0,c1,c2,p1,i/12);L+=Math.hypot(q[0]-pr[0],q[1]-pr[1]);pr=q}}return mm(L)};
   const ol=len(LOOPS&&LOOPS.outer),hl=(LOOPS?LOOPS.holes:[]).map(len);
-  $('stats').innerHTML=!LOOPS||!LOOPS.outer?'कोई figure नहीं मिला — धार घटाएँ':
+  const noFig=!LOOPS||!LOOPS.outer?
+    (FMEAN>0.9?'⚠️ पूरा photo figure बन गया — 🤖 AI BG बटन दबाएँ (या धार घटाएँ)'
+    :FMEAN<0.05?'⚠️ सब कुछ background बन गया — धार बढ़ाएँ या ☑ उल्टा करें'
+    :'कोई figure नहीं मिला — धार घटाएँ'):'';
+  $('stats').innerHTML=noFig?noFig:
    `📏 बाहरी कट: <b>${(ol/10).toFixed(1)} cm</b><br>🔵 Holes: <b>${hl.length}</b>${hl.length?` (${hl.map(x=>(x/10).toFixed(1)+'cm').join(', ')})`:''}<br>📐 Size: <b>${$('pwin').value}in चौड़ा</b> • ${IMG.w}×${IMG.h}px`;
 }
 
@@ -408,8 +457,10 @@ $('btnPrint').onclick=()=>{
 
 /* ================= UI wiring ================= */
 $('btnUp').onclick=()=>$('file').click();
+$('btnAI').onclick=runAIBG;
 $('file').onchange=e=>{
   const f=e.target.files[0];if(!f)return;
+  e.target.value=''; // same file दोबारा चुनने पर भी change चले
   const r=new FileReader();
   r.onload=async ev=>{try{await setImage(await loadImage(ev.target.result));toast('✅ Design लोड — cut-line तैयार')}catch(x){toast('⚠️ image नहीं खुली')}};
   r.readAsDataURL(f);
