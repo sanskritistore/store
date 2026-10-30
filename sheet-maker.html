@@ -230,11 +230,19 @@ async function traceDesign(img,hIn,bleedMM){
   const loops=chainLoops(marchingSquares(OFF,w+2*pad,h+2*pad,0.5));
   if(!loops.length)return{err:'empty'};
   loops.sort((p,q)=>Math.abs(area(q))-Math.abs(area(p)));
-  const outerRaw=loops[0];
   const minA=CFG.minHoleMM2/(mmp*mmp);
-  const holes=loops.slice(1).filter(l=>Math.abs(area(l))>minA&&inPoly(l[0],outerRaw));
+  const outersRaw=[];
+  for(const l of loops){
+    if(Math.abs(area(l))<minA)continue; /* धूल-specks */
+    if(outersRaw.some(o=>inPoly(l[0],o)))continue; /* किसी island के अंदर → hole */
+    outersRaw.push(l);
+  }
+  if(!outersRaw.length)return{err:'empty'};
+  const outerRaw=outersRaw[0];
+  const holes=loops.filter(l=>outersRaw.indexOf(l)<0&&Math.abs(area(l))>minA&&outersRaw.some(o=>inPoly(l[0],o)));
   const toMM=pts=>pts.map(p=>[(p[0]-pad)*mmp,(p[1]-pad)*mmp]);
   return{outer:beziers(rdp(toMM(outerRaw),CFG.eps*mmp),CFG.smoothT),
+    outers:outersRaw.map(l=>beziers(rdp(toMM(l),CFG.eps*mmp),CFG.smoothT)),
          holes:holes.map(l=>beziers(rdp(toMM(l),CFG.eps*mmp),CFG.smoothT)),
          wmm:w*mmp,hmm:h*mmp};
 }
@@ -268,7 +276,7 @@ function bzLen(bz){let L=0,pr=bz[0][0];
 function updateStats(){
   if(!DESIGNS.length){$('stats').textContent='पहले designs जोड़ें…';return}
   let cut=0,usedA=0;
-  for(const p of LAYOUT){usedA+=p.d.wmm*p.d.hmm;cut+=bzLen(p.d.outer);for(const hl of p.d.holes)cut+=bzLen(hl)}
+  for(const p of LAYOUT){usedA+=p.d.wmm*p.d.hmm;for(const o of(p.d.outers||[p.d.outer]))cut+=bzLen(o);for(const hl of p.d.holes)cut+=bzLen(hl)}
   const sm=sheetMM();
   const bad=DESIGNS.filter(q=>!q.outer).length;
   $('stats').innerHTML=(bad?'<span style="color:#f87171">⚠️ '+bad+' design में figure नहीं मिली (सादा bg वाली file डालो)</span><br>':'')+
@@ -295,7 +303,7 @@ function draw(){
     const d=l.d;
     p.drawImage(d.img,(l.x-bl)*S,(l.y-bl)*S,(d.wmm+2*bl)*S,(d.hmm+2*bl)*S);
     p.strokeStyle='#dc2626';p.lineWidth=Math.max(1,0.25*S);
-    pathBz(p,d.outer,l.x*S,l.y*S,S);p.stroke();
+    for(const o of(d.outers||[d.outer])){p.beginPath();pathBz(p,o,l.x*S,l.y*S,S);p.stroke()}
     p.strokeStyle='#2563eb';
     for(let hi=0;hi<d.holes.length;hi++){pathBz(p,d.holes[hi],l.x*S,l.y*S,S);p.stroke()}
   }
@@ -331,7 +339,7 @@ $('btnSVG').onclick=()=>{
   svg+='<g id="CUT_HOLES_FIRST" fill="none" stroke="blue" stroke-width="0.1">\n';
   for(const l of LAYOUT)for(const hl of l.d.holes)svg+='<path d="'+svgPath(hl,l.x,l.y)+'"/>\n';
   svg+='</g>\n<g id="CUT_OUTER" fill="none" stroke="red" stroke-width="0.1">\n';
-  for(const l of LAYOUT)svg+='<path d="'+svgPath(l.d.outer,l.x,l.y)+'"/>\n';
+  for(const l of LAYOUT)for(const o of(l.d.outers||[l.d.outer]))svg+='<path d="'+svgPath(o,l.x,l.y)+'"/>\n';
   svg+='</g>\n</svg>';
   download(baseName()+'-cut.svg',svg,'image/svg+xml');
   toast('💾 SVG तैयार — पहले BORDER_CHECK हल्के power से चलाकर alignment जाँचें');
@@ -360,7 +368,7 @@ $('btnDXF').onclick=()=>{
   };
   poly([[0,0],[W,0],[W,H],[0,H]],'BORDER_CHECK');
   for(const l of LAYOUT)for(const hl of l.d.holes)poly(polyPts(hl,l.x,l.y),'CUT_HOLES_FIRST');
-  for(const l of LAYOUT)poly(polyPts(l.d.outer,l.x,l.y),'CUT_OUTER');
+  for(const l of LAYOUT)for(const o of(l.d.outers||[l.d.outer]))poly(polyPts(o,l.x,l.y),'CUT_OUTER');
   download(baseName()+'-cut.dxf',d+'0\nENDSEC\n0\nEOF','application/dxf');
   toast('💾 DXF (R12) तैयार — RDWorks में import करें, पहले BORDER_CHECK से align जाँचें');
 };
@@ -447,7 +455,7 @@ async function retrace(d){
       :'"'+d.name+'" में figure नहीं मिली — सादे background वाली/transparent PNG डालो';
     toast('⚠️ '+why,5000);
   }
-  else{d.outer=t.outer;d.holes=t.holes;d.wmm=t.wmm;d.hmm=t.hmm;d.err=null}
+  else{d.outer=t.outer;d.outers=t.outers;d.holes=t.holes;d.wmm=t.wmm;d.hmm=t.hmm;d.err=null}
   renderList();
 }
 $('btnAdd').onclick=()=>$('file').click();
