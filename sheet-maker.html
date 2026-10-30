@@ -213,25 +213,27 @@ async function traceDesign(img,hIn,bleedMM){
   if(sm/F.length>0.92)return{err:'full'};
   const mmp=hIn*IN/h; // mm per px
   const R=bleedMM/mmp;
-  const src=document.createElement('canvas');src.width=w;src.height=h;
+  // खाली padding ताकि bleed की dilated cutline canvas से बाहर न कटे (किनारे तक भरे designs के लिए ज़रूरी)
+  const pad=Math.ceil(R)+4;
+  const src=document.createElement('canvas');src.width=w+2*pad;src.height=h+2*pad;
   const sx=src.getContext('2d'),id=sx.createImageData(w,h);
   for(let j=0;j<F.length;j++){const v=Math.round(F[j]*255);id.data[j*4]=id.data[j*4+1]=id.data[j*4+2]=v;id.data[j*4+3]=255}
-  sx.putImageData(id,0,0);
-  const out=document.createElement('canvas');out.width=w;out.height=h;
+  sx.putImageData(id,pad,pad);
+  const out=document.createElement('canvas');out.width=w+2*pad;out.height=h+2*pad;
   const oc=out.getContext('2d');oc.globalCompositeOperation='lighten';
   if(R<0.05)oc.drawImage(src,0,0);
   else for(let k=0;k<CFG.dirSteps;k++){const a=k/CFG.dirSteps*2*Math.PI;oc.drawImage(src,Math.cos(a)*R,Math.sin(a)*R)}
-  const b=document.createElement('canvas');b.width=w;b.height=h;
+  const b=document.createElement('canvas');b.width=w+2*pad;b.height=h+2*pad;
   const bx=b.getContext('2d');bx.filter='blur('+CFG.blurAA+'px)';bx.drawImage(out,0,0);
-  const dd=bx.getImageData(0,0,w,h).data;
-  const OFF=new Float32Array(w*h);for(let j=0;j<OFF.length;j++)OFF[j]=dd[j*4]/255;
-  const loops=chainLoops(marchingSquares(OFF,w,h,0.5));
+  const dd=bx.getImageData(0,0,w+2*pad,h+2*pad).data;
+  const OFF=new Float32Array((w+2*pad)*(h+2*pad));for(let j=0;j<OFF.length;j++)OFF[j]=dd[j*4]/255;
+  const loops=chainLoops(marchingSquares(OFF,w+2*pad,h+2*pad,0.5));
   if(!loops.length)return{err:'empty'};
   loops.sort((p,q)=>Math.abs(area(q))-Math.abs(area(p)));
   const outerRaw=loops[0];
   const minA=CFG.minHoleMM2/(mmp*mmp);
   const holes=loops.slice(1).filter(l=>Math.abs(area(l))>minA&&inPoly(l[0],outerRaw));
-  const toMM=pts=>pts.map(p=>[p[0]*mmp,p[1]*mmp]);
+  const toMM=pts=>pts.map(p=>[(p[0]-pad)*mmp,(p[1]-pad)*mmp]);
   return{outer:beziers(rdp(toMM(outerRaw),CFG.eps*mmp),CFG.smoothT),
          holes:holes.map(l=>beziers(rdp(toMM(l),CFG.eps*mmp),CFG.smoothT)),
          wmm:w*mmp,hmm:h*mmp};
@@ -456,7 +458,7 @@ $('file').onchange=async e=>{
   for(const f of files){
     const ourl=URL.createObjectURL(f);
     const img=await new Promise(res=>{const i=new Image();i.onload=()=>res(i);i.src=ourl});
-    const d={id:UID++,name:f.name.replace(/\.\w+$/,''),img:img,url:ourl,hIn:6,qty:1,fill:DESIGNS.length===0,outer:null,holes:[],wmm:0,hmm:0};
+    const d={id:UID++,name:f.name.replace(/\.\w+$/,''),img:img,url:ourl,hIn:6,qty:1,fill:files.length===1&&DESIGNS.length===0,outer:null,holes:[],wmm:0,hmm:0};
     DESIGNS.push(d);
     await retrace(d);
   }
