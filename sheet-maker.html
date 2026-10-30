@@ -193,12 +193,24 @@ async function traceDesign(img,hIn,bleedMM){
   const px=x.getImageData(0,0,w,h).data;
   let hasAlpha=false;for(let i=3;i<px.length;i+=4)if(px[i]<250){hasAlpha=true;break}
   const F=new Float32Array(w*h);
-  for(let i=0,j=0;i<px.length;i+=4,j++){
-    const a=px[i+3]/255;
-    if(hasAlpha)F[j]=a;
-    else{const lum=(px[i]*.299+px[i+1]*.587+px[i+2]*.114)/255;F[j]=1-lum}
+  if(hasAlpha){
+    for(let i=0,j=0;i<px.length;i+=4,j++)F[j]=px[i+3]/255;
+  }else{
+    // border का रंग sample करो — figure = जो border से अलग रंग (सफ़ेद/काला/रंगीन सादा bg सब चलेगा)
+    const smp=[];
+    for(let xx=0;xx<w;xx+=2){for(const yy of[0,h-1]){const i=(yy*w+xx)*4;smp.push([px[i],px[i+1],px[i+2]])}}
+    for(let yy=0;yy<h;yy+=2){for(const xx of[0,w-1]){const i=(yy*w+xx)*4;smp.push([px[i],px[i+1],px[i+2]])}}
+    const med=ch=>{const a=smp.map(p=>p[ch]).sort((p,q)=>p-q);return a[a.length>>1]};
+    const br=med(0),bgc=med(1),bb=med(2);
+    for(let i=0,j=0;i<px.length;i+=4,j++){
+      const dr=px[i]-br,dg=px[i+1]-bgc,db=px[i+2]-bb;
+      F[j]=Math.sqrt(dr*dr+dg*dg+db*db)/255;
+    }
   }
   const t=0.17;for(let j=0;j<F.length;j++){const v=(F[j]-t)*8+0.5;F[j]=v<0?0:v>1?1:v}
+  // पूरी image ही figure लगे (bg सादा नहीं / full-bleed photo) → fail
+  let sm=0;for(let j=0;j<F.length;j++)sm+=F[j];
+  if(sm/F.length>0.92)return{err:'full'};
   const mmp=hIn*IN/h; // mm per px
   const R=bleedMM/mmp;
   const src=document.createElement('canvas');src.width=w;src.height=h;
@@ -214,7 +226,7 @@ async function traceDesign(img,hIn,bleedMM){
   const dd=bx.getImageData(0,0,w,h).data;
   const OFF=new Float32Array(w*h);for(let j=0;j<OFF.length;j++)OFF[j]=dd[j*4]/255;
   const loops=chainLoops(marchingSquares(OFF,w,h,0.5));
-  if(!loops.length)return null;
+  if(!loops.length)return{err:'empty'};
   loops.sort((p,q)=>Math.abs(area(q))-Math.abs(area(p)));
   const outerRaw=loops[0];
   const minA=CFG.minHoleMM2/(mmp*mmp);
@@ -256,7 +268,9 @@ function updateStats(){
   let cut=0,usedA=0;
   for(const p of LAYOUT){usedA+=p.d.wmm*p.d.hmm;cut+=bzLen(p.d.outer);for(const hl of p.d.holes)cut+=bzLen(hl)}
   const sm=sheetMM();
-  $('stats').innerHTML='✅ Pieces: <b>'+LAYOUT.length+'</b>'+(LEFT?' <span style="color:#f87171">('+LEFT+' नहीं बैठे — size/qty घटाओ)</span>':'')+'<br>'+
+  const bad=DESIGNS.filter(q=>!q.outer).length;
+  $('stats').innerHTML=(bad?'<span style="color:#f87171">⚠️ '+bad+' design में figure नहीं मिली (सादा bg वाली file डालो)</span><br>':'')+
+    '✅ Pieces: <b>'+LAYOUT.length+'</b>'+(LEFT?' <span style="color:#f87171">('+LEFT+' नहीं बैठे — size/qty घटाओ)</span>':'')+'<br>'+
     '📐 Sheet भरी: <b>'+(usedA/(sm.W*sm.H)*100).toFixed(0)+'%</b> • कुल cut: <b>'+(cut/1000).toFixed(1)+' m</b><br>'+
     '📄 Print: <b>'+$('shW').value+'×'+$('shH').value+' inch @ '+$('dpi').value+' DPI</b>';
 }
@@ -404,6 +418,7 @@ function renderList(){
     const r=document.createElement('div');r.className='drow';
     const url=d.url||'';
     r.innerHTML='<img src="'+url+'"><div style="flex:1;min-width:0"><div class="nm">'+d.name+'</div>'+
+      '<div style="font-size:10px;margin-top:2px">'+(d.outer?'<span style="color:#4ade80">✅ '+(d.wmm/25.4).toFixed(1)+'×'+(d.hmm/25.4).toFixed(1)+' in</span>':'<span style="color:#f87171">⚠️ figure नहीं मिली</span>')+'</div>'+
       '<div class="row" style="margin-top:3px">'+
       '<span><label>ऊँचाई in</label><input type="number" data-k="hIn" value="'+d.hIn+'" min="1" max="36" step="0.25"></span>'+
       '<span><label>qty</label><input type="number" data-k="qty" value="'+d.qty+'" min="0" max="999" '+(d.fill?'disabled':'')+'></span>'+
@@ -423,8 +438,15 @@ function renderList(){
 }
 async function retrace(d){
   const t=await traceDesign(d.img,d.hIn,+$('bleed').value);
-  if(!t){toast('⚠️ "'+d.name+'" में figure नहीं मिली — transparent PNG बेहतर रहेगी',4500)}
-  else{d.outer=t.outer;d.holes=t.holes;d.wmm=t.wmm;d.hmm=t.hmm}
+  if(!t||t.err){
+    d.outer=null;d.err=t?t.err:'empty';
+    const why=t&&t.err==='full'
+      ?'"'+d.name+'" का background सादा नहीं है — सादे (एक रंग) background वाली file डालो'
+      :'"'+d.name+'" में figure नहीं मिली — सादे background वाली/transparent PNG डालो';
+    toast('⚠️ '+why,5000);
+  }
+  else{d.outer=t.outer;d.holes=t.holes;d.wmm=t.wmm;d.hmm=t.hmm;d.err=null}
+  renderList();
 }
 $('btnAdd').onclick=()=>$('file').click();
 $('file').onchange=async e=>{
