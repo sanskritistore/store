@@ -84,6 +84,17 @@ main{display:flex;flex:1;overflow:hidden}
     <div class="fld"><label>छपाई की चौड़ाई (inch)</label>
       <input type="number" id="pwin" min="2" max="120" step="0.5" value="24"></div>
     <div class="note">SVG/DXF की असली mm size इसी से बनेगी — print जितनी चौड़ाई, cut उतनी ही।</div>
+    <div class="fld"><label><input type="checkbox" id="fitOn"> 📦 Sheet/MDF box में fit करो</label></div>
+    <div id="boxWrap" style="display:none">
+      <div class="fld"><label>Box चौड़ाई × लंबाई (inch)</label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="number" id="boxW" min="1" max="48" step="0.5" value="6" style="width:64px"> <b>×</b>
+          <input type="number" id="boxH" min="1" max="48" step="0.5" value="6" style="width:64px">
+        </div></div>
+      <div class="fld"><label>Margin (mm, हर तरफ़) <b id="vMarg">5</b></label>
+        <input type="range" id="boxMargin" min="0" max="25" step="1" value="5"></div>
+      <div class="note">Design अपनी shape बनाए रखकर box के बीच में fit होगी — SVG/DXF/Print सब box size में आएँगे।</div>
+    </div>
     <div class="fld"><label><input type="checkbox" id="reg" checked> Print में corner marks (alignment के लिए)</label></div>
     <h3>📊 परिणाम</h3>
     <div class="stat" id="stats">पहले design लोड करें…</div>
@@ -214,7 +225,17 @@ function buildField(){
 }
 
 /* ================= 3) bleed offset (lighten max-filter, 16 दिशाएँ) ================= */
-function mm2px(){return IMG.w/(+$('pwin').value*25.4)}
+// 📦 box fit: sheet size (mm) में design margin के साथ fit — null जब OFF
+function boxFit(){
+  if(!$('fitOn').checked||!IMG)return null;
+  const W=+$('boxW').value*25.4,H=+$('boxH').value*25.4;
+  const m=Math.max(0,Math.min(+$('boxMargin').value,W/2-1,H/2-1));
+  const avW=W-2*m,avH=H-2*m,ar=IMG.h/IMG.w;
+  let Wd,Hd;
+  if(avW*ar<=avH){Wd=avW;Hd=avW*ar}else{Hd=avH;Wd=avH/ar}
+  return {W,H,m,Wd,Hd,ox:(W-Wd)/2,oy:(H-Hd)/2};
+}
+function mm2px(){return 1/mmScale()}
 function buildOffset(){
   const w=IMG.w,h=IMG.h, R=+$('bleed').value/10*mm2px();
   const INSET=$('inset').checked;   // ↔️ अंदर की line: erosion (min) — बाहर bleed: dilation (max)
@@ -390,7 +411,7 @@ function updateStats(){
     :FMEAN<0.05?'⚠️ सब कुछ background बन गया — धार बढ़ाएँ या ☑ उल्टा करें'
     :'कोई figure नहीं मिला — धार घटाएँ'):'';
   $('stats').innerHTML=noFig?noFig:
-   `📏 बाहरी कट: <b>${(ol/10).toFixed(1)} cm</b><br>🔵 Holes: <b>${hl.length}</b>${hl.length?` (${hl.map(x=>(x/10).toFixed(1)+'cm').join(', ')})`:''}<br>📐 Size: <b>${$('pwin').value}in चौड़ा</b> • ${IMG.w}×${IMG.h}px`;
+   `📏 बाहरी कट: <b>${(ol/10).toFixed(1)} cm</b><br>🔵 Holes: <b>${hl.length}</b>${hl.length?` (${hl.map(x=>(x/10).toFixed(1)+'cm').join(', ')})`:''}<br>📐 Size: <b>${boxFit()?`${$('boxW').value}×${$('boxH').value}in box → design ${(boxFit().Wd/25.4).toFixed(1)}×${(boxFit().Hd/25.4).toFixed(1)}in`:`${$('pwin').value}in चौड़ा`}</b> • ${IMG.w}×${IMG.h}px`;
 }
 
 /* ================= draw ================= */
@@ -538,7 +559,8 @@ $('btnUnpick').onclick=()=>{MANHOLES.pop();if(LOOPS)LOOPS.holes=AUTOHOLES.concat
 $('autoHoles').onchange=()=>{if(IMG)rebuild('offset')};
 
 /* ================= exports ================= */
-function mmScale(){return (+$('pwin').value*25.4)/IMG.w}
+function mmScale(){const b=boxFit();return b?b.Wd/IMG.w:(+$('pwin').value*25.4)/IMG.w}
+function outName(base){const b=boxFit();return b?`${base}-${$('boxW').value}x${$('boxH').value}in`:base}
 function svgPath(bz,S){
   let d=`M${(bz[0][0][0]*S).toFixed(3)},${(bz[0][0][1]*S).toFixed(3)}`;
   for(const[p0,c1,c2,p1]of bz)
@@ -552,17 +574,20 @@ function download(name,text,type){
 }
 $('btnSVG').onclick=()=>{
   if(!LOOPS||!LOOPS.outer)return;
-  const S=mmScale(),W=IMG.w*S,H=IMG.h*S;
+  const S=mmScale(),b=boxFit();
+  const W=b?b.W:IMG.w*S,H=b?b.H:IMG.h*S,ox=b?b.ox:0,oy=b?b.oy:0;
   let svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W.toFixed(1)}mm" height="${H.toFixed(1)}mm" viewBox="0 0 ${W.toFixed(3)} ${H.toFixed(3)}">\n`;
+  svg+=`<g transform="translate(${ox.toFixed(3)},${oy.toFixed(3)})">\n`;
   svg+=`<g id="CUT_OUTER" fill="none" stroke="red" stroke-width="0.1"><path d="${svgPath(LOOPS.outer,S)}"/></g>\n`;
   if(LOOPS.holes.length){svg+=`<g id="CUT_HOLES_FIRST" fill="none" stroke="blue" stroke-width="0.1">`;
     for(const h of LOOPS.holes)svg+=`<path d="${svgPath(h,S)}"/>`;svg+=`</g>\n`}
-  download('cutline.svg',svg+'</svg>','image/svg+xml');
-  toast('💾 SVG download — LightBurn में सीधा खोलें');
+  svg+='</g>\n';
+  download(outName('cutline')+'.svg',svg+'</svg>','image/svg+xml');
+  toast(b?`💾 SVG — ${$('boxW').value}×${$('boxH').value}in box में design center में`:'💾 SVG download — LightBurn में सीधा खोलें');
 };
 $('btnDXF').onclick=()=>{
   if(!LOOPS||!LOOPS.outer)return;
-  const S=mmScale(),step=CFG.dxfStepMM;
+  const S=mmScale(),b=boxFit(),ox=b?b.ox:0,oy=b?b.oy:0,step=CFG.dxfStepMM;
   let d='0\nSECTION\n2\nENTITIES\n';
   const poly=(bz,layer)=>{
     const pts=[];
@@ -572,26 +597,33 @@ $('btnDXF').onclick=()=>{
       for(let i=0;i<N;i++)pts.push(cubic(p0,c1,c2,p1,i/N));
     }
     d+=`0\nLWPOLYLINE\n8\n${layer}\n90\n${pts.length}\n70\n1\n`;
-    for(const p of pts)d+=`10\n${(p[0]*S).toFixed(3)}\n20\n${(-p[1]*S).toFixed(3)}\n`;
+    for(const p of pts)d+=`10\n${(p[0]*S+ox).toFixed(3)}\n20\n${(-(p[1]*S+oy)).toFixed(3)}\n`;
   };
   if(LOOPS.holes.length)for(const h of LOOPS.holes)poly(h,'CUT_HOLES_FIRST');
   poly(LOOPS.outer,'CUT_OUTER');
-  download('cutline.dxf',d+'0\nENDSEC\n0\nEOF','application/dxf');
-  toast('💾 DXF download — RDWorks में import करें');
+  download(outName('cutline')+'.dxf',d+'0\nENDSEC\n0\nEOF','application/dxf');
+  toast(b?`💾 DXF — ${$('boxW').value}×${$('boxH').value}in box में design center में`:'💾 DXF download — RDWorks में import करें');
 };
 $('btnPrint').onclick=()=>{
   if(!IMG)return;
-  const c=document.createElement('canvas');c.width=IMG.w;c.height=IMG.h;
-  const p=c.getContext('2d');p.drawImage(IMG.c,0,0);
+  const b=boxFit();
+  const c=document.createElement('canvas');
+  if(b){ // box mode: canvas = sheet size, design margin के साथ center में
+    const pxmm=mm2px();
+    c.width=Math.round(b.W*pxmm);c.height=Math.round(b.H*pxmm);
+    const p2=c.getContext('2d');p2.fillStyle='#fff';p2.fillRect(0,0,c.width,c.height);
+    p2.drawImage(IMG.c,b.ox*pxmm,b.oy*pxmm,b.Wd*pxmm,b.Hd*pxmm);
+  }else{c.width=IMG.w;c.height=IMG.h;c.getContext('2d').drawImage(IMG.c,0,0)}
+  const p=c.getContext('2d');
   if($('reg').checked){ // corner alignment crosses (10mm अंदर)
     const m=10*mm2px(),a=6*mm2px();p.strokeStyle='#000';p.lineWidth=Math.max(2,mm2px()*0.35);
-    for(const[x,y]of[[m,m],[IMG.w-m,m],[m,IMG.h-m],[IMG.w-m,IMG.h-m]]){
+    for(const[x,y]of[[m,m],[c.width-m,m],[m,c.height-m],[c.width-m,c.height-m]]){
       p.beginPath();p.moveTo(x-a,y);p.lineTo(x+a,y);p.moveTo(x,y-a);p.lineTo(x,y+a);p.stroke();
       p.beginPath();p.arc(x,y,a*0.55,0,7);p.stroke();
     }
   }
-  const a=document.createElement('a');a.download='cutline-print.png';a.href=c.toDataURL('image/png');a.click();
-  toast('🖨 Print file download — laser bed corner से align करें');
+  const a=document.createElement('a');a.download=outName('cutline-print')+'.png';a.href=c.toDataURL('image/png');a.click();
+  toast(b?`🖨 Print — पूरा ${$('boxW').value}×${$('boxH').value}in sheet size, design center में`:'🖨 Print file download — laser bed corner से align करें');
 };
 
 /* ================= UI wiring ================= */
@@ -613,6 +645,15 @@ $('bleed').oninput=e=>{$('vBleed').textContent=(e.target.value/10).toFixed(1);re
 $('inset').onchange=e=>{$('lblBleed').textContent=e.target.checked?'अंदर जाने की दूरी (mm)':'Bleed (figure से बाहर, mm)';reBleed()};
 $('smooth').oninput=e=>{$('vSm').textContent=e.target.value;reVec()};
 $('detail').oninput=e=>{$('vDet').textContent=e.target.value;reVec()};
+$('fitOn').onchange=e=>{ // 📦 box mode toggle — mm scale बदलती है → bleed rebuild
+  $('boxWrap').style.display=e.target.checked?'':'none';
+  $('pwin').disabled=e.target.checked;
+  if(IMG)reBleed();
+};
+const reBox=deb(()=>{if(IMG)reBleed()},200);
+$('boxW').oninput=reBox;$('boxH').oninput=reBox;
+$('boxMargin').oninput=e=>{$('vMarg').textContent=e.target.value;reBox()};
+$('pwin').oninput=deb(()=>{if(IMG)reBleed()},300); // चौड़ाई बदलते ही bleed/size refresh
 $('pwin').onchange=deb(()=>{if(IMG)rebuild('bleed')},400);
 $('vDesign').onclick=()=>{VMODE='design';$('vDesign').classList.add('on');$('vLine').classList.remove('on');draw()};
 $('vLine').onclick=()=>{VMODE='line';$('vLine').classList.add('on');$('vDesign').classList.remove('on');draw()};
