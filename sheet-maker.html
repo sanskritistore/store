@@ -227,6 +227,11 @@ async function traceDesign(img,hIn,bleedMM){
   const bx=b.getContext('2d');bx.filter='blur('+CFG.blurAA+'px)';bx.drawImage(out,0,0);
   const dd=bx.getImageData(0,0,w+2*pad,h+2*pad).data;
   const OFF=new Float32Array((w+2*pad)*(h+2*pad));for(let j=0;j<OFF.length;j++)OFF[j]=dd[j*4]/255;
+  // holes के लिए बिना-dilate field — neeli line body से चिपके (dilated से hole सिकुड़ता, कटने के बाद सफ़ेद घेरा रह जाता)
+  const b0=document.createElement('canvas');b0.width=w+2*pad;b0.height=h+2*pad;
+  const b0x=b0.getContext('2d');b0x.filter='blur('+CFG.blurAA+'px)';b0x.drawImage(src,0,0);
+  const dd0=b0x.getImageData(0,0,w+2*pad,h+2*pad).data;
+  const OFF0=new Float32Array((w+2*pad)*(h+2*pad));for(let j=0;j<OFF0.length;j++)OFF0[j]=dd0[j*4]/255;
   const loops=chainLoops(marchingSquares(OFF,w+2*pad,h+2*pad,0.5));
   if(!loops.length)return{err:'empty'};
   loops.sort((p,q)=>Math.abs(area(q))-Math.abs(area(p)));
@@ -239,7 +244,10 @@ async function traceDesign(img,hIn,bleedMM){
   }
   if(!outersRaw.length)return{err:'empty'};
   const outerRaw=outersRaw[0];
-  const holes=loops.filter(l=>outersRaw.indexOf(l)<0&&Math.abs(area(l))>minA&&outersRaw.some(o=>inPoly(l[0],o)));
+  const loops0=chainLoops(marchingSquares(OFF0,w+2*pad,h+2*pad,0.5));
+  const isl0=[];
+  for(const l of loops0){if(Math.abs(area(l))<minA)continue;if(isl0.some(o=>inPoly(l[0],o)))continue;isl0.push(l)}
+  const holes=loops0.filter(l=>isl0.indexOf(l)<0&&Math.abs(area(l))>minA&&isl0.some(o=>inPoly(l[0],o)));
   const toMM=pts=>pts.map(p=>[(p[0]-pad)*mmp,(p[1]-pad)*mmp]);
   return{outer:beziers(rdp(toMM(outerRaw),CFG.eps*mmp),CFG.smoothT),
     outers:outersRaw.map(l=>beziers(rdp(toMM(l),CFG.eps*mmp),CFG.smoothT)),
