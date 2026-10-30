@@ -70,6 +70,15 @@
         <option value="200">200 (बड़ी sheet)</option>
         <option value="150">150 (bahut बड़ी sheet)</option>
       </select></div>
+    <div class="fld"><label><input type="checkbox" id="rollOn" onchange="$('rollOpts').style.display=this.checked?'':'none'"> Roll print — कई blocks एक साथ (36in roll)</label>
+    <div class="row" id="rollOpts" style="display:none;margin-top:4px">
+      <label style="display:flex;align-items:center;gap:4px">Roll चौड़ाई <input type="number" id="rollW" value="36" step="any" style="width:50px"> in</label>
+      <label style="display:flex;align-items:center;gap:4px">Gap <input type="number" id="rollGap" value="0" step="any" style="width:44px"> mm</label>
+      <label style="display:flex;align-items:center;gap:4px">किनारे <input type="number" id="rollEdge" value="0" step="any" style="width:44px"> mm</label>
+      <label style="display:flex;align-items:center;gap:4px">Blocks <input type="number" id="rollBlocks" min="1" placeholder="auto" style="width:46px"></label>
+      <label style="display:flex;align-items:center;gap:4px">दिशा <select id="rollDir"><option value="auto" selected>Auto</option><option value="rot">घुमाकर</option><option value="up">सीधी</option></select></label>
+    </div>
+    <div class="hint">Roll mode में सिर्फ़ Print PNG roll-चौड़ाई की बनती है (ज़्यादा blocks आएँ तो अपने-आप घुमा कर) — cutting DXF वही एक sheet का रहता है।</div></div>
     <div class="note">Gap = pieces के बीच • Edge = sheet किनारे से खाली • Bleed = design कितनी बाहर तक छपे (cut line उतनी ही बाहर) — सफ़ेद किनारा न दिखे</div>
 
     <h3>2️⃣ Designs जोड़ें</h3>
@@ -380,21 +389,14 @@ $('btnDXF').onclick=()=>{
   download(baseName()+'-cut.dxf',d+'0\nENDSEC\n0\nEOF','application/dxf');
   toast('💾 DXF (R12) तैयार — RDWorks में import करें, पहले BORDER_CHECK से align जाँचें');
 };
-async function renderPrint(){
-  const sm=sheetMM(),W=sm.W,H=sm.H,DPI=+$('dpi').value,px=DPI/IN;
-  const pw=Math.round(W*px),ph=Math.round(H*px);
-  if(pw*ph>90000000){toast('⚠️ Sheet बहुत बड़ी है इस DPI पर — DPI घटाकर 200/150 करें',5000);return null}
-  prog(true,'🖨 Print file बन रही ('+DPI+' DPI)…');
-  await new Promise(r=>setTimeout(r,60));
-  const c=document.createElement('canvas');
-  c.width=pw;c.height=ph;
+async function sheetBlockCanvas(W,H,DPI){
+  const px=DPI/IN,c=document.createElement('canvas');
+  c.width=Math.round(W*px);c.height=Math.round(H*px);
   const p=c.getContext('2d');
   p.fillStyle='#fff';p.fillRect(0,0,c.width,c.height);
   const bl=+$('bleed').value;
-  for(const l of LAYOUT){
-    const d=l.d;
-    p.drawImage(d.img,(l.x-bl)*px,(l.y-bl)*px,(d.wmm+2*bl)*px,(d.hmm+2*bl)*px);
-  }
+  for(const l of LAYOUT){const d=l.d;
+    p.drawImage(d.img,(l.x-bl)*px,(l.y-bl)*px,(d.wmm+2*bl)*px,(d.hmm+2*bl)*px);}
   p.strokeStyle='#000';p.lineWidth=Math.max(2,0.8*px);
   p.strokeRect(1*px,1*px,(W-2)*px,(H-2)*px);
   p.lineWidth=Math.max(2,0.35*px);
@@ -403,6 +405,51 @@ async function renderPrint(){
     p.beginPath();
     p.moveTo((mx-a)*px,my*px);p.lineTo((mx+a)*px,my*px);p.moveTo(mx*px,(my-a)*px);p.lineTo(mx*px,(my+a)*px);p.stroke();
     p.beginPath();p.arc(mx*px,my*px,a*0.55*px,0,7);p.stroke();
+  }
+  return c;
+}
+async function renderPrint(){
+  const sm=sheetMM(),W=sm.W,H=sm.H,DPI=+$('dpi').value,px=DPI/IN;
+  let fw=W,fh=H,cols=1,rot=false,gap=0,x0=0;
+  if($('rollOn').checked){
+    const roll=+$('rollW').value*IN;
+    if(!(roll>Math.min(W,H)+1)){toast('⚠️ Roll चौड़ाई sheet से ज़्यादा रखें',4000);return null}
+    gap=Math.max(0,+$('rollGap').value||0);
+    const edge=Math.max(0,+$('rollEdge').value||0);
+    const fit=bw=>Math.max(0,Math.floor((roll-2*edge+gap)/(bw+gap)+1e-9));
+    const c1=fit(W),c2=fit(H),opts=[];
+    if(c1>=1)opts.push({rot:false,cols:c1,len:H,per:H/c1});
+    if(c2>=1)opts.push({rot:true,cols:c2,len:W,per:W/c2});
+    if(!opts.length){toast('⚠️ '+$('rollW').value+'in roll में '+(W/IN)+'×'+(H/IN)+'in sheet नहीं आती — roll चौड़ाई बढ़ाएँ',5000);return null}
+    const mode=$('rollDir').value;
+    let pick=opts[0];
+    if(mode==='up')pick=opts.find(o=>!o.rot)||opts[0];
+    else if(mode==='rot')pick=opts.find(o=>o.rot)||opts[0];
+    else for(const o of opts)if(o.per<pick.per-1e-9||(Math.abs(o.per-pick.per)<1e-9&&o.len<pick.len))pick=o;
+    rot=pick.rot;cols=pick.cols;
+    const nb=parseInt($('rollBlocks').value)||0;
+    if(nb>0)cols=Math.min(cols,nb);
+    const bw=rot?H:W,bh=rot?W:H;
+    x0=Math.max(edge,(roll-(cols*bw+(cols-1)*gap))/2);
+    fw=roll;fh=bh;
+  }
+  const pw=Math.round(fw*px),ph=Math.round(fh*px);
+  if(pw*ph>90000000){toast('⚠️ Print बहुत बड़ी है इस DPI पर — DPI घटाकर 200/150 करें',5000);return null}
+  prog(true,'🖨 Print file बन रही ('+DPI+' DPI'+(cols>1?', '+cols+' blocks'+(rot?', घुमाकर':''):'')+')…');
+  await new Promise(r=>setTimeout(r,60));
+  const block=await sheetBlockCanvas(W,H,DPI);
+  const c=document.createElement('canvas');
+  c.width=pw;c.height=ph;
+  const p=c.getContext('2d');
+  if(cols===1){p.drawImage(block,0,0)}
+  else{
+    p.fillStyle='#fff';p.fillRect(0,0,pw,ph);
+    const bwpx=(rot?H:W)*px,bhpx=(rot?W:H)*px,gpx=gap*px;
+    for(let i=0;i<cols;i++){
+      const dx=(x0+i*((rot?H:W)+gap))*px;
+      if(!rot)p.drawImage(block,dx,0);
+      else{p.save();p.translate(dx+bwpx/2,bhpx/2);p.rotate(Math.PI/2);p.drawImage(block,-block.width/2,-block.height/2);p.restore()}
+    }
   }
   prog(false);
   return new Promise(res=>c.toBlob(res,'image/png'));
