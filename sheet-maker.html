@@ -48,7 +48,8 @@
   <span style="font-size:11px;color:#94a3b8">print (TM-5350, 36in तक) + cut (CO2, 48×48in तक) — एक ही file से</span>
   <a href="cutline-maker.html" class="hbtn" style="text-decoration:none;font-size:12px">✂️ Cutline Maker</a>
   <span style="flex:1"></span>
-  <button class="hbtn print" id="btnPrint" disabled>🖨 Print PNG</button>
+  <button class="hbtn print" id="btnDirect" disabled>🖨 सीधे छापें</button>
+  <button class="hbtn" id="btnPrint" disabled>⬇️ Print PNG</button>
   <button class="hbtn main" id="btnDXF" disabled>💾 DXF (RDWorks)</button>
   <button class="hbtn main" id="btnSVG" disabled>💾 SVG</button>
 </header>
@@ -244,7 +245,7 @@ function doLayout(){
   }
   updateStats();draw();
   const has=LAYOUT.length>0;
-  ['btnPrint','btnDXF','btnSVG'].forEach(i=>{$(i).disabled=!has});
+  ['btnPrint','btnDirect','btnDXF','btnSVG'].forEach(i=>{$(i).disabled=!has});
 }
 function bzLen(bz){let L=0,pr=bz[0][0];
   for(const sgm of bz){const p0=sgm[0],c1=sgm[1],c2=sgm[2],p1=sgm[3];
@@ -322,7 +323,10 @@ $('btnSVG').onclick=()=>{
 $('btnDXF').onclick=()=>{
   if(!LAYOUT.length)return;
   const sm=sheetMM(),W=sm.W,H=sm.H,step=CFG.dxfStepMM;
-  let d='0\nSECTION\n2\nENTITIES\n';
+  // R12 DXF (AC1009) + POLYLINE/VERTEX — हर laser software/viewer इसे पढ़ लेता है
+  let d='0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1009\n9\n$INSUNITS\n70\n4\n'+
+        '9\n$EXTMIN\n10\n0\n20\n'+(-H).toFixed(3)+'\n9\n$EXTMAX\n10\n'+W.toFixed(3)+'\n20\n0\n0\nENDSEC\n'+
+        '0\nSECTION\n2\nENTITIES\n';
   const polyPts=(bz,ox,oy)=>{
     const pts=[];
     for(let i=0;i<bz.length;i++){
@@ -334,20 +338,20 @@ $('btnDXF').onclick=()=>{
     return pts;
   };
   const poly=(pts,layer)=>{
-    d+='0\nLWPOLYLINE\n8\n'+layer+'\n90\n'+pts.length+'\n70\n1\n';
-    for(const p of pts)d+='10\n'+p[0].toFixed(3)+'\n20\n'+(-p[1]).toFixed(3)+'\n';
+    d+='0\nPOLYLINE\n8\n'+layer+'\n66\n1\n70\n1\n';
+    for(const p of pts)d+='0\nVERTEX\n8\n'+layer+'\n10\n'+p[0].toFixed(3)+'\n20\n'+(-p[1]).toFixed(3)+'\n30\n0\n';
+    d+='0\nSEQEND\n';
   };
   poly([[0,0],[W,0],[W,H],[0,H]],'BORDER_CHECK');
   for(const l of LAYOUT)for(const hl of l.d.holes)poly(polyPts(hl,l.x,l.y),'CUT_HOLES_FIRST');
   for(const l of LAYOUT)poly(polyPts(l.d.outer,l.x,l.y),'CUT_OUTER');
   download(baseName()+'-cut.dxf',d+'0\nENDSEC\n0\nEOF','application/dxf');
-  toast('💾 DXF तैयार — RDWorks में import करें, पहले BORDER_CHECK से align जाँचें');
+  toast('💾 DXF (R12) तैयार — RDWorks में import करें, पहले BORDER_CHECK से align जाँचें');
 };
-$('btnPrint').onclick=async()=>{
-  if(!LAYOUT.length)return;
+async function renderPrint(){
   const sm=sheetMM(),W=sm.W,H=sm.H,DPI=+$('dpi').value,px=DPI/IN;
   const pw=Math.round(W*px),ph=Math.round(H*px);
-  if(pw*ph>90000000){toast('⚠️ Sheet बहुत बड़ी है इस DPI पर — DPI घटाकर 200/150 करें',5000);return}
+  if(pw*ph>90000000){toast('⚠️ Sheet बहुत बड़ी है इस DPI पर — DPI घटाकर 200/150 करें',5000);return null}
   prog(true,'🖨 Print file बन रही ('+DPI+' DPI)…');
   await new Promise(r=>setTimeout(r,60));
   const c=document.createElement('canvas');
@@ -368,13 +372,29 @@ $('btnPrint').onclick=async()=>{
     p.moveTo((mx-a)*px,my*px);p.lineTo((mx+a)*px,my*px);p.moveTo(mx*px,(my-a)*px);p.lineTo(mx*px,(my+a)*px);p.stroke();
     p.beginPath();p.arc(mx*px,my*px,a*0.55*px,0,7);p.stroke();
   }
-  c.toBlob(b=>{ // toBlob = async, बड़ी sheet पर भी page नहीं अटकेगा
-    prog(false);
-    const a=document.createElement('a');a.download=baseName()+'-print.png';
-    a.href=URL.createObjectURL(b);a.click();
-    setTimeout(()=>URL.revokeObjectURL(a.href),8000);
-    toast('🖨 Print PNG तैयार — TM-5350 में 100% scale (Actual size) पर छापें, fit नहीं!');
-  },'image/png');
+  prog(false);
+  return new Promise(res=>c.toBlob(res,'image/png'));
+}
+$('btnPrint').onclick=async()=>{
+  if(!LAYOUT.length)return;
+  const b=await renderPrint();if(!b)return;
+  const a=document.createElement('a');a.download=baseName()+'-print.png';
+  a.href=URL.createObjectURL(b);a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),8000);
+  toast('⬇️ Print PNG तैयार — TM-5350 में 100% scale (Actual size) पर छापें, fit नहीं!');
+};
+$('btnDirect').onclick=async()=>{
+  if(!LAYOUT.length)return;
+  const b=await renderPrint();if(!b)return;
+  const sm=sheetMM();
+  const url=URL.createObjectURL(b);
+  const w=window.open('','_blank');
+  w.document.write('<html><head><title>Print '+baseName()+'</title><style>'+
+    '@page{size:'+sm.W.toFixed(1)+'mm '+sm.H.toFixed(1)+'mm;margin:0}'+
+    'html,body{margin:0;padding:0}img{width:'+sm.W.toFixed(1)+'mm;height:'+sm.H.toFixed(1)+'mm;display:block}'+
+    '</style></head><body><img src="'+url+'" onload="setTimeout(()=>{window.print()},300)"></body></html>');
+  w.document.close();
+  toast('🖨 Print dialog खुलेगा — Scale 100% / Actual size रखें!');
 };
 
 /* ============ designs list UI ============ */
