@@ -91,7 +91,7 @@
 'use strict';
 const $=i=>document.getElementById(i);
 const IN=25.4; // mm per inch
-const CFG={traceMax:1400,minHoleMM2:25,eps:0.9,smoothT:1.0,blurAA:0.6,dirSteps:16,dxfStepMM:0.6};
+const CFG={traceMax:1400,alphaThr:0.45,colorThr:0.17,minHoleMM2:25,eps:0.9,smoothT:1.0,blurAA:0.6,dirSteps:16,dxfStepMM:0.6};
 let DESIGNS=[];
 let LAYOUT=[];
 let LEFT=0,UID=1;
@@ -207,7 +207,7 @@ async function traceDesign(img,hIn,bleedMM){
       F[j]=Math.sqrt(dr*dr+dg*dg+db*db)/255;
     }
   }
-  const t=0.17;for(let j=0;j<F.length;j++){const v=(F[j]-t)*8+0.5;F[j]=v<0?0:v>1?1:v}
+  const t=hasAlpha?CFG.alphaThr:CFG.colorThr;for(let j=0;j<F.length;j++){const v=(F[j]-t)*8+0.5;F[j]=v<0?0:v>1?1:v}
   // पूरी image ही figure लगे (bg सादा नहीं / full-bleed photo) → fail
   let sm=0;for(let j=0;j<F.length;j++)sm+=F[j];
   if(sm/F.length>0.92)return{err:'full'};
@@ -447,7 +447,8 @@ function renderList(){
   }
 }
 async function retrace(d){
-  const t=await traceDesign(d.img,d.hIn,+$('bleed').value);
+  let t=null;
+  try{t=await traceDesign(d.img,d.hIn,+$('bleed').value)}catch(e){console.error(e);t=null}
   if(!t||t.err){
     d.outer=null;d.err=t?t.err:'empty';
     const why=t&&t.err==='full'
