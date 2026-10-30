@@ -341,7 +341,7 @@ $('btnDXF').onclick=()=>{
   const sm=sheetMM(),W=sm.W,H=sm.H,step=CFG.dxfStepMM;
   // R12 DXF (AC1009) + POLYLINE/VERTEX — हर laser software/viewer इसे पढ़ लेता है
   let d='0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1009\n9\n$INSUNITS\n70\n4\n'+
-        '9\n$EXTMIN\n10\n0\n20\n'+(-H).toFixed(3)+'\n9\n$EXTMAX\n10\n'+W.toFixed(3)+'\n20\n0\n0\nENDSEC\n'+
+        '9\n$EXTMIN\n10\n0\n20\n0\n9\n$EXTMAX\n10\n'+W.toFixed(3)+'\n20\n'+H.toFixed(3)+'\n0\nENDSEC\n'+
         '0\nSECTION\n2\nENTITIES\n';
   const polyPts=(bz,ox,oy)=>{
     const pts=[];
@@ -349,13 +349,13 @@ $('btnDXF').onclick=()=>{
       const p0=bz[i][0],c1=bz[i][1],c2=bz[i][2],p1=bz[i][3];
       const chord=Math.hypot(p1[0]-p0[0],p1[1]-p0[1]);
       const N=Math.max(4,Math.min(96,Math.ceil(chord/step)));
-      for(let j=0;j<N;j++)pts.push(cubic(p0,c1,c2,p1,j/N));
+      for(let j=0;j<N;j++){const q=cubic(p0,c1,c2,p1,j/N);pts.push([q[0]+ox,q[1]+oy])}
     }
     return pts;
   };
   const poly=(pts,layer)=>{
     d+='0\nPOLYLINE\n8\n'+layer+'\n66\n1\n70\n1\n';
-    for(const p of pts)d+='0\nVERTEX\n8\n'+layer+'\n10\n'+p[0].toFixed(3)+'\n20\n'+(-p[1]).toFixed(3)+'\n30\n0\n';
+    for(const p of pts)d+='0\nVERTEX\n8\n'+layer+'\n10\n'+p[0].toFixed(3)+'\n20\n'+(H-p[1]).toFixed(3)+'\n30\n0\n';
     d+='0\nSEQEND\n';
   };
   poly([[0,0],[W,0],[W,H],[0,H]],'BORDER_CHECK');
