@@ -103,7 +103,7 @@
 'use strict';
 const $=i=>document.getElementById(i);
 const IN=25.4; // mm per inch
-const CFG={traceMax:1400,alphaThr:0.45,colorThr:0.17,minHoleMM2:25,eps:0.9,smoothT:1.0,blurAA:0.6,dirSteps:16,dxfStepMM:0.6};
+const CFG={traceMax:1400,alphaThr:0.45,colorThr:0.17,minHoleMM2:25,minOuterPct:0.003,eps:0.9,smoothT:1.0,blurAA:0.6,dirSteps:16,dxfStepMM:0.6};
 let DESIGNS=[];
 let LAYOUT=[];
 let LEFT=0,UID=1;
@@ -255,6 +255,10 @@ async function traceDesign(img,hIn,bleedMM){
     outersRaw.push(l);
   }
   if(!outersRaw.length)return{err:'empty'};
+  // 🎯 धूल-specks हटाओ: सबसे बड़े figure की तुलना में बहुत छोटे अलग islands = noise (bleed dilation से फूले dots)
+  const bigA=Math.abs(area(outersRaw[0]));
+  const keepO=outersRaw.filter(l=>Math.abs(area(l))>=Math.max(minA,bigA*CFG.minOuterPct));
+  outersRaw.length=0;outersRaw.push(...keepO);
   const outerRaw=outersRaw[0];
   const loops0=chainLoops(marchingSquares(OFF0,w+2*pad,h+2*pad,0.5));
   const isl0=[];
