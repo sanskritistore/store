@@ -402,7 +402,7 @@ $('btnDXF').onclick=()=>{
     for(const p of pts)d+='0\nVERTEX\n8\n'+layer+'\n10\n'+(p[0]-bm.ox).toFixed(3)+'\n20\n'+(bm.H-(p[1]-bm.oy)).toFixed(3)+'\n30\n0\n';
     d+='0\nSEQEND\n';
   };
-  poly([[0,0],[bm.W,0],[bm.W,bm.H],[0,bm.H]],'BORDER_CHECK');
+  poly([[bm.ox,bm.oy],[bm.ox+bm.W,bm.oy],[bm.ox+bm.W,bm.oy+bm.H],[bm.ox,bm.oy+bm.H]],'BORDER_CHECK'); // poly() bm घटाता है → sheet coords भेजो ताकि rect exact 0,0→W,H आए (design के साथ align)
   for(const l of LAYOUT)for(const hl of l.d.holes)poly(polyPts(hl,l.x,l.y),'CUT_HOLES_FIRST');
   for(const l of LAYOUT)for(const o of(l.d.outers||[l.d.outer]))poly(polyPts(o,l.x,l.y),'CUT_OUTER');
   download(baseName()+'-cut.dxf',d+'0\nENDSEC\n0\nEOF','application/dxf');
