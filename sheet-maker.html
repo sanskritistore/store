@@ -367,23 +367,25 @@ $('btnSVG').onclick=()=>{
   if(!LAYOUT.length)return;
   const sm=sheetMM(),W=sm.W,H=sm.H;
   const bm=borderMM();
-  let svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+W.toFixed(1)+'mm" height="'+H.toFixed(1)+'mm" viewBox="0 0 '+W.toFixed(3)+' '+H.toFixed(3)+'">\n';
-  svg+='<rect id="BORDER_CHECK" x="'+bm.ox.toFixed(3)+'" y="'+bm.oy.toFixed(3)+'" width="'+bm.W.toFixed(3)+'" height="'+bm.H.toFixed(3)+'" fill="none" stroke="#000" stroke-width="0.1"/>\n';
+  // 🎯 coordinates BORDER से (0,0 = printed cross) — laser origin cross पर set करो, exact match
+  let svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+bm.W.toFixed(1)+'mm" height="'+bm.H.toFixed(1)+'mm" viewBox="0 0 '+bm.W.toFixed(3)+' '+bm.H.toFixed(3)+'">\n';
+  svg+='<rect id="BORDER_CHECK" x="0" y="0" width="'+bm.W.toFixed(3)+'" height="'+bm.H.toFixed(3)+'" fill="none" stroke="#000" stroke-width="0.1"/>\n';
   svg+='<g id="CUT_HOLES_FIRST" fill="none" stroke="blue" stroke-width="0.1">\n';
-  for(const l of LAYOUT)for(const hl of l.d.holes)svg+='<path d="'+svgPath(hl,l.x,l.y)+'"/>\n';
+  for(const l of LAYOUT)for(const hl of l.d.holes)svg+='<path d="'+svgPath(hl,l.x-bm.ox,l.y-bm.oy)+'"/>\n';
   svg+='</g>\n<g id="CUT_OUTER" fill="none" stroke="red" stroke-width="0.1">\n';
-  for(const l of LAYOUT)for(const o of(l.d.outers||[l.d.outer]))svg+='<path d="'+svgPath(o,l.x,l.y)+'"/>\n';
+  for(const l of LAYOUT)for(const o of(l.d.outers||[l.d.outer]))svg+='<path d="'+svgPath(o,l.x-bm.ox,l.y-bm.oy)+'"/>\n';
   svg+='</g>\n</svg>';
   download(baseName()+'-cut.svg',svg,'image/svg+xml');
-  toast('💾 SVG तैयार — पहले BORDER_CHECK हल्के power से चलाकर alignment जाँचें');
+  toast('💾 SVG (border से नापा) — laser origin printed cross पर set करें, फिर BORDER_CHECK से जाँचें');
 };
 $('btnDXF').onclick=()=>{
   if(!LAYOUT.length)return;
   const sm=sheetMM(),W=sm.W,H=sm.H,step=CFG.dxfStepMM;
   const bm=borderMM();
   // R12 DXF (AC1009) + POLYLINE/VERTEX — हर laser software/viewer इसे पढ़ लेता है
+  // 🎯 सारे coordinates BORDER से (0,0 = printed cross) — laser origin cross पर set करो तो exact match
   let d='0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1009\n9\n$INSUNITS\n70\n4\n'+
-        '9\n$EXTMIN\n10\n0\n20\n0\n9\n$EXTMAX\n10\n'+W.toFixed(3)+'\n20\n'+H.toFixed(3)+'\n0\nENDSEC\n'+
+        '9\n$EXTMIN\n10\n0\n20\n0\n9\n$EXTMAX\n10\n'+bm.W.toFixed(3)+'\n20\n'+bm.H.toFixed(3)+'\n0\nENDSEC\n'+
         '0\nSECTION\n2\nENTITIES\n';
   const polyPts=(bz,ox,oy)=>{
     const pts=[];
@@ -397,14 +399,14 @@ $('btnDXF').onclick=()=>{
   };
   const poly=(pts,layer)=>{
     d+='0\nPOLYLINE\n8\n'+layer+'\n66\n1\n70\n1\n';
-    for(const p of pts)d+='0\nVERTEX\n8\n'+layer+'\n10\n'+p[0].toFixed(3)+'\n20\n'+(H-p[1]).toFixed(3)+'\n30\n0\n';
+    for(const p of pts)d+='0\nVERTEX\n8\n'+layer+'\n10\n'+(p[0]-bm.ox).toFixed(3)+'\n20\n'+(bm.H-(p[1]-bm.oy)).toFixed(3)+'\n30\n0\n';
     d+='0\nSEQEND\n';
   };
-  poly([[bm.ox,bm.oy],[bm.ox+bm.W,bm.oy],[bm.ox+bm.W,bm.oy+bm.H],[bm.ox,bm.oy+bm.H]],'BORDER_CHECK');
+  poly([[0,0],[bm.W,0],[bm.W,bm.H],[0,bm.H]],'BORDER_CHECK');
   for(const l of LAYOUT)for(const hl of l.d.holes)poly(polyPts(hl,l.x,l.y),'CUT_HOLES_FIRST');
   for(const l of LAYOUT)for(const o of(l.d.outers||[l.d.outer]))poly(polyPts(o,l.x,l.y),'CUT_OUTER');
   download(baseName()+'-cut.dxf',d+'0\nENDSEC\n0\nEOF','application/dxf');
-  toast('💾 DXF (R12) तैयार — RDWorks में import करें, पहले BORDER_CHECK से align जाँचें');
+  toast('💾 DXF (border से नापा) — laser origin printed cross पर set करें, फिर BORDER_CHECK से जाँचें');
 };
 const _ct=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;_ct[n]=c>>>0}
 function _crc32(b){let c=~0;for(let i=0;i<b.length;i++)c=_ct[(c^b[i])&255]^(c>>>8);return(~c)>>>0}
