@@ -59,6 +59,9 @@
     <div class="fld"><label>Sheet चौड़ाई × लंबाई (inch)</label>
       <div class="row"><input type="number" id="shW" min="2" max="48" step="0.5" value="12"> <b>×</b>
       <input type="number" id="shH" min="2" max="96" step="0.5" value="18"></div></div>
+    <div class="fld"><label>🎯 Print border (inch) — printer margin के बाद असली area • laser align = इन्हीं 4 कोनों पर</label>
+      <div class="row"><input type="number" id="bdW" min="2" max="48" step="0.5" value="11.5"> <b>×</b>
+      <input type="number" id="bdH" min="2" max="96" step="0.5" value="17.5"></div></div>
     <div class="row">
       <div class="fld"><label>Gap (mm)</label><input type="number" id="gap" min="0" max="50" step="0.5" value="5" style="width:56px"></div>
       <div class="fld"><label>Edge (mm)</label><input type="number" id="edge" min="0" max="50" step="0.5" value="3" style="width:56px"></div>
@@ -266,8 +269,17 @@ async function traceDesign(img,hIn,bleedMM){
 
 /* ============ layout: shelf packing ============ */
 function sheetMM(){return{W:+$('shW').value*IN,H:+$('shH').value*IN}}
+// 🎯 printable border: printer margin के बाद का area — sheet के center में; laser alignment इन्हीं 4 कोनों से
+function borderMM(){
+  const sm=sheetMM();
+  let bw=+$('bdW').value*IN,bh=+$('bdH').value*IN;
+  if(!(bw>10)||bw>sm.W)bw=sm.W;
+  if(!(bh>10)||bh>sm.H)bh=sm.H;
+  return{W:bw,H:bh,ox:(sm.W-bw)/2,oy:(sm.H-bh)/2};
+}
 function doLayout(){
   const sm=sheetMM(),W=sm.W,H=sm.H,gap=+$('gap').value,edge=+$('edge').value;
+  const bm=borderMM(),X0=bm.ox+edge,Y0=bm.oy+edge,X1=bm.ox+bm.W-edge,Y1=bm.oy+bm.H-edge;
   let pieces=[];
   for(const d of DESIGNS){
     if(!d.outer)continue;
@@ -276,10 +288,10 @@ function doLayout(){
   }
   pieces.sort((a,b)=>b.hmm-a.hmm);
   LAYOUT=[];LEFT=0;
-  let x=edge,y=edge,shelfH=0;
+  let x=X0,y=Y0,shelfH=0;
   for(const d of pieces){
-    if(x+d.wmm>W-edge+0.01){y+=shelfH+gap;x=edge;shelfH=0}
-    if(y+d.hmm>H-edge+0.01){LEFT++;continue}
+    if(x+d.wmm>X1+0.01){y+=shelfH+gap;x=X0;shelfH=0}
+    if(y+d.hmm>Y1+0.01){LEFT++;continue}
     LAYOUT.push({d:d,x:x,y:y});x+=d.wmm+gap;if(d.hmm>shelfH)shelfH=d.hmm;
   }
   updateStats();draw();
@@ -299,7 +311,8 @@ function updateStats(){
   $('stats').innerHTML=(bad?'<span style="color:#f87171">⚠️ '+bad+' design में figure नहीं मिली (सादा bg वाली file डालो)</span><br>':'')+
     '✅ Pieces: <b>'+LAYOUT.length+'</b>'+(LEFT?' <span style="color:#f87171">('+LEFT+' नहीं बैठे — size/qty घटाओ)</span>':'')+'<br>'+
     '📐 Sheet भरी: <b>'+(usedA/(sm.W*sm.H)*100).toFixed(0)+'%</b> • कुल cut: <b>'+(cut/1000).toFixed(1)+' m</b><br>'+
-    '📄 Print: <b>'+$('shW').value+'×'+$('shH').value+' inch @ '+$('dpi').value+' DPI</b>';
+    '📄 Print: <b>'+$('shW').value+'×'+$('shH').value+' inch @ '+$('dpi').value+' DPI</b><br>'+
+    '🎯 Border: <b>'+$('bdW').value+'×'+$('bdH').value+' in</b> — 4 crosses = laser align points';
 }
 
 /* ============ preview ============ */
@@ -325,7 +338,8 @@ function draw(){
     for(let hi=0;hi<d.holes.length;hi++){pathBz(p,d.holes[hi],l.x*S,l.y*S,S);p.stroke()}
   }
   p.strokeStyle='#000';p.lineWidth=Math.max(1,0.35*S);
-  const cm=[[10,10],[W-10,10],[10,H-10],[W-10,H-10]];
+  const bm=borderMM();
+  const cm=[[bm.ox,bm.oy],[bm.ox+bm.W,bm.oy],[bm.ox,bm.oy+bm.H],[bm.ox+bm.W,bm.oy+bm.H]];
   for(let k=0;k<4;k++){const mx=cm[k][0],my=cm[k][1],a=6;
     p.beginPath();
     p.moveTo((mx-a)*S,my*S);p.lineTo((mx+a)*S,my*S);p.moveTo(mx*S,(my-a)*S);p.lineTo(mx*S,(my+a)*S);p.stroke();
@@ -333,6 +347,7 @@ function draw(){
   }
   p.lineWidth=Math.max(1,0.8*S);
   p.strokeRect(1*S,1*S,(W-2)*S,(H-2)*S);
+  p.setLineDash([4*S,3*S]);p.strokeRect(bm.ox*S,bm.oy*S,bm.W*S,bm.H*S);p.setLineDash([]);
 }
 
 /* ============ exports ============ */
@@ -351,8 +366,9 @@ const baseName=()=>'sheet-'+$('shW').value+'x'+$('shH').value+'in';
 $('btnSVG').onclick=()=>{
   if(!LAYOUT.length)return;
   const sm=sheetMM(),W=sm.W,H=sm.H;
+  const bm=borderMM();
   let svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+W.toFixed(1)+'mm" height="'+H.toFixed(1)+'mm" viewBox="0 0 '+W.toFixed(3)+' '+H.toFixed(3)+'">\n';
-  svg+='<rect id="BORDER_CHECK" x="0" y="0" width="'+W.toFixed(3)+'" height="'+H.toFixed(3)+'" fill="none" stroke="#000" stroke-width="0.1"/>\n';
+  svg+='<rect id="BORDER_CHECK" x="'+bm.ox.toFixed(3)+'" y="'+bm.oy.toFixed(3)+'" width="'+bm.W.toFixed(3)+'" height="'+bm.H.toFixed(3)+'" fill="none" stroke="#000" stroke-width="0.1"/>\n';
   svg+='<g id="CUT_HOLES_FIRST" fill="none" stroke="blue" stroke-width="0.1">\n';
   for(const l of LAYOUT)for(const hl of l.d.holes)svg+='<path d="'+svgPath(hl,l.x,l.y)+'"/>\n';
   svg+='</g>\n<g id="CUT_OUTER" fill="none" stroke="red" stroke-width="0.1">\n';
@@ -364,6 +380,7 @@ $('btnSVG').onclick=()=>{
 $('btnDXF').onclick=()=>{
   if(!LAYOUT.length)return;
   const sm=sheetMM(),W=sm.W,H=sm.H,step=CFG.dxfStepMM;
+  const bm=borderMM();
   // R12 DXF (AC1009) + POLYLINE/VERTEX — हर laser software/viewer इसे पढ़ लेता है
   let d='0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1009\n9\n$INSUNITS\n70\n4\n'+
         '9\n$EXTMIN\n10\n0\n20\n0\n9\n$EXTMAX\n10\n'+W.toFixed(3)+'\n20\n'+H.toFixed(3)+'\n0\nENDSEC\n'+
@@ -383,7 +400,7 @@ $('btnDXF').onclick=()=>{
     for(const p of pts)d+='0\nVERTEX\n8\n'+layer+'\n10\n'+p[0].toFixed(3)+'\n20\n'+(H-p[1]).toFixed(3)+'\n30\n0\n';
     d+='0\nSEQEND\n';
   };
-  poly([[0,0],[W,0],[W,H],[0,H]],'BORDER_CHECK');
+  poly([[bm.ox,bm.oy],[bm.ox+bm.W,bm.oy],[bm.ox+bm.W,bm.oy+bm.H],[bm.ox,bm.oy+bm.H]],'BORDER_CHECK');
   for(const l of LAYOUT)for(const hl of l.d.holes)poly(polyPts(hl,l.x,l.y),'CUT_HOLES_FIRST');
   for(const l of LAYOUT)for(const o of(l.d.outers||[l.d.outer]))poly(polyPts(o,l.x,l.y),'CUT_OUTER');
   download(baseName()+'-cut.dxf',d+'0\nENDSEC\n0\nEOF','application/dxf');
@@ -402,8 +419,10 @@ async function sheetBlockCanvas(W,H,DPI){
     p.drawImage(d.img,(l.x-bl)*px,(l.y-bl)*px,(d.wmm+2*bl)*px,(d.hmm+2*bl)*px);}
   p.strokeStyle='#000';p.lineWidth=Math.max(2,0.8*px);
   p.strokeRect(1*px,1*px,(W-2)*px,(H-2)*px);
+  const bm=borderMM();
+  p.setLineDash([4*px,3*px]);p.strokeRect(bm.ox*px,bm.oy*px,bm.W*px,bm.H*px);p.setLineDash([]);
   p.lineWidth=Math.max(2,0.35*px);
-  const cm=[[10,10],[W-10,10],[10,H-10],[W-10,H-10]];
+  const cm=[[bm.ox,bm.oy],[bm.ox+bm.W,bm.oy],[bm.ox,bm.oy+bm.H],[bm.ox+bm.W,bm.oy+bm.H]];
   for(let k=0;k<4;k++){const mx=cm[k][0],my=cm[k][1],a=6;
     p.beginPath();
     p.moveTo((mx-a)*px,my*px);p.lineTo((mx+a)*px,my*px);p.moveTo(mx*px,(my-a)*px);p.lineTo(mx*px,(my+a)*px);p.stroke();
@@ -533,7 +552,16 @@ $('file').onchange=async e=>{
   prog(false);renderList();doLayout();
   toast('✅ '+files.length+' design जुड़ी — ऊँचाई/qty set करें');
 };
-['shW','shH','gap','edge'].forEach(i=>{$(i).oninput=()=>{if(DESIGNS.length)doLayout()}});
+['gap','edge','bdW','bdH'].forEach(i=>{$(i).oninput=()=>{if(DESIGNS.length)doLayout()}});
+let bdDirty=false; // user ने border छुआ → auto-follow बंद
+['bdW','bdH'].forEach(i=>$(i).addEventListener('input',()=>{bdDirty=true}));
+['shW','shH'].forEach(i=>{$(i).oninput=()=>{
+  if(!bdDirty){ // border auto = sheet − 0.5in (printer margin)
+    $('bdW').value=Math.max(2,(+$('shW').value)-0.5);
+    $('bdH').value=Math.max(2,(+$('shH').value)-0.5);
+  }
+  if(DESIGNS.length)doLayout();
+}});
 $('dpi').onchange=()=>{if(DESIGNS.length)updateStats()};
 $('bleed').onchange=async()=>{
   if(!DESIGNS.length)return;
