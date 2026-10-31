@@ -65,7 +65,7 @@
     <div class="row">
       <div class="fld"><label>Gap (mm)</label><input type="number" id="gap" min="0" max="50" step="0.5" value="5" style="width:56px"></div>
       <div class="fld"><label>Edge (mm)</label><input type="number" id="edge" min="0" max="50" step="0.5" value="3" style="width:56px"></div>
-      <div class="fld"><label>Bleed (mm)</label><input type="number" id="bleed" min="0" max="5" step="0.1" value="1.5" style="width:56px"></div>
+      <div class="fld"><label>Bleed (mm)</label><input type="number" id="bleed" min="0" max="5" step="0.1" value="0" style="width:56px"></div>
     </div>
     <div class="fld"><label>Print quality (DPI)</label>
       <select id="dpi" style="background:#0f172a;border:1px solid #334155;border-radius:6px;color:#fbbf24;padding:5px 8px;font-size:13px">
@@ -103,7 +103,7 @@
 'use strict';
 const $=i=>document.getElementById(i);
 const IN=25.4; // mm per inch
-const CFG={traceMax:1400,alphaThr:0.45,colorThr:0.17,minHoleMM2:25,minOuterPct:0.003,eps:0.9,smoothT:1.0,blurAA:0.6,dirSteps:16,dxfStepMM:0.6};
+const CFG={traceMax:1400,alphaThr:0.12,colorThr:0.17,minHoleMM2:25,minOuterPct:0.003,eps:0.9,smoothT:1.0,blurAA:0.6,dirSteps:16,dxfStepMM:0.6};
 let DESIGNS=[];
 let LAYOUT=[];
 let LEFT=0,UID=1;
@@ -271,6 +271,71 @@ async function traceDesign(img,hIn,bleedMM){
          wmm:w*mmp,hmm:h*mmp};
 }
 
+/* ============ auto-clean: हर image proper transparent PNG ============ */
+// bg (flood-fill किनारों से — अंदर का same-रंग हिस्सा सुरक्षित) + धूल-dabbe हटाओ + खाली border crop
+function cleanDesignImage(img){
+  const MAXD=3200;
+  const iw=img.naturalWidth||img.width,ih=img.naturalHeight||img.height;
+  const sc=Math.min(1,MAXD/Math.max(iw,ih));
+  const w=Math.max(8,Math.round(iw*sc)),h=Math.max(8,Math.round(ih*sc));
+  const c=document.createElement('canvas');c.width=w;c.height=h;
+  const x=c.getContext('2d');x.drawImage(img,0,0,w,h);
+  const id=x.getImageData(0,0,w,h),px=id.data,N=w*h;
+  let hasA=false;for(let i=3;i<px.length;i+=4)if(px[i]<250){hasA=true;break}
+  let bgRemoved=false;
+  if(!hasA){
+    // border रंग median
+    const smp=[];
+    for(let xx=0;xx<w;xx+=2){for(const yy of[0,h-1]){const i=(yy*w+xx)*4;smp.push([px[i],px[i+1],px[i+2]])}}
+    for(let yy=0;yy<h;yy+=2){for(const xx of[0,w-1]){const i=(yy*w+xx)*4;smp.push([px[i],px[i+1],px[i+2]])}}
+    const med=ch=>{const a=smp.map(p=>p[ch]).sort((p,q)=>p-q);return a[a.length>>1]};
+    const br=med(0),bgc=med(1),bb=med(2),thr=CFG.colorThr*255;
+    const isBg=i=>{const dr=px[i]-br,dg=px[i+1]-bgc,db=px[i+2]-bb;return dr*dr+dg*dg+db*db<thr*thr};
+    // flood-fill सिर्फ़ किनारों से — figure के अंदर का same-रंग हिस्सा सुरक्षित रहेगा
+    const bg=new Uint8Array(N),st=[];
+    for(let xx=0;xx<w;xx++){for(const yy of[0,h-1]){const j=yy*w+xx;if(!bg[j]&&isBg(j*4)){bg[j]=1;st.push(j)}}}
+    for(let yy=0;yy<h;yy++){for(const xx of[0,w-1]){const j=yy*w+xx;if(!bg[j]&&isBg(j*4)){bg[j]=1;st.push(j)}}}
+    while(st.length){const j=st.pop(),jx=j%w,jy=(j-jx)/w;
+      if(jx>0&&!bg[j-1]&&isBg((j-1)*4)){bg[j-1]=1;st.push(j-1)}
+      if(jx<w-1&&!bg[j+1]&&isBg((j+1)*4)){bg[j+1]=1;st.push(j+1)}
+      if(jy>0&&!bg[j-w]&&isBg((j-w)*4)){bg[j-w]=1;st.push(j-w)}
+      if(jy<h-1&&!bg[j+w]&&isBg((j+w)*4)){bg[j+w]=1;st.push(j+w)}}
+    let bgN=0;for(let j=0;j<N;j++)if(bg[j])bgN++;
+    if(bgN>N*0.98||bgN<N*0.003)return{changed:false}; // गलत पहचान या हटाने को कुछ नहीं → original रखो
+    for(let j=0;j<N;j++)if(bg[j])px[j*4+3]=0;
+    bgRemoved=true;
+  }
+  // despeckle: सबसे बड़े हिस्से के 0.3% से छोटे अलग islands = धूल
+  const fg=new Uint8Array(N);let fgN=0;
+  for(let j=0;j<N;j++){if(px[j*4+3]>128){fg[j]=1;fgN++}}
+  if(!fgN)return{changed:false};
+  const lab=new Int32Array(N).fill(-1),sizes=[],st2=[];
+  for(let s=0;s<N;s++){
+    if(!fg[s]||lab[s]>=0)continue;
+    const k=sizes.length;let cnt=0;st2.push(s);lab[s]=k;
+    while(st2.length){const j=st2.pop();cnt++;const jx=j%w,jy=(j-jx)/w;
+      if(jx>0&&fg[j-1]&&lab[j-1]<0){lab[j-1]=k;st2.push(j-1)}
+      if(jx<w-1&&fg[j+1]&&lab[j+1]<0){lab[j+1]=k;st2.push(j+1)}
+      if(jy>0&&fg[j-w]&&lab[j-w]<0){lab[j-w]=k;st2.push(j-w)}
+      if(jy<h-1&&fg[j+w]&&lab[j+w]<0){lab[j+w]=k;st2.push(j+w)}}
+    sizes.push(cnt);
+  }
+  const big=Math.max.apply(null,sizes),minKeep=Math.max(big*CFG.minOuterPct,8);
+  let dust=0;for(let k=0;k<sizes.length;k++)if(sizes[k]<minKeep)dust++;
+  if(dust)for(let j=0;j<N;j++)if(fg[j]&&sizes[lab[j]]<minKeep)px[j*4+3]=0;
+  // खाली border crop (+4px margin)
+  let x0=w,y0=h,x1=0,y1=0;
+  for(let j=0;j<N;j++)if(px[j*4+3]>8){const jx=j%w,jy=(j-jx)/w;if(jx<x0)x0=jx;if(jx>x1)x1=jx;if(jy<y0)y0=jy;if(jy>y1)y1=jy}
+  if(x1<x0)return{changed:false};
+  const m=4;x0=Math.max(0,x0-m);y0=Math.max(0,y0-m);x1=Math.min(w-1,x1+m);y1=Math.min(h-1,y1+m);
+  const trimmed=x0>0||y0>0||x1<w-1||y1<h-1;
+  if(!bgRemoved&&!dust&&!trimmed)return{changed:false};
+  x.putImageData(id,0,0);
+  const out=document.createElement('canvas');out.width=x1-x0+1;out.height=y1-y0+1;
+  out.getContext('2d').drawImage(c,x0,y0,x1-x0+1,y1-y0+1,0,0,x1-x0+1,y1-y0+1);
+  return{changed:true,canvas:out,bgRemoved,dust};
+}
+
 /* ============ layout: shelf packing ============ */
 function sheetMM(){return{W:+$('shW').value*IN,H:+$('shH').value*IN}}
 // 🎯 printable border: printer margin के बाद का area — sheet के center में; laser alignment इन्हीं 4 कोनों से
@@ -336,10 +401,11 @@ function draw(){
   for(const l of LAYOUT){
     const d=l.d;
     p.drawImage(d.img,(l.x-bl)*S,(l.y-bl)*S,(d.wmm+2*bl)*S,(d.hmm+2*bl)*S);
-    p.strokeStyle='#dc2626';p.lineWidth=Math.max(1,0.25*S);
-    for(const o of(d.outers||[d.outer])){p.beginPath();pathBz(p,o,l.x*S,l.y*S,S);p.stroke()}
-    p.strokeStyle='#2563eb';
-    for(let hi=0;hi<d.holes.length;hi++){pathBz(p,d.holes[hi],l.x*S,l.y*S,S);p.stroke()}
+    const allP=[].concat(d.outers||[d.outer],d.holes);
+    p.strokeStyle='rgba(255,255,255,0.9)';p.lineWidth=Math.max(2,0.55*S); // सफ़ेद घेरा — line हर bg पर दिखे
+    for(const o of allP){p.beginPath();pathBz(p,o,l.x*S,l.y*S,S);p.stroke()}
+    p.strokeStyle='#111';p.lineWidth=Math.max(1,0.15*S); // बारीक़ dark black outline
+    for(const o of allP){p.beginPath();pathBz(p,o,l.x*S,l.y*S,S);p.stroke()}
   }
   p.strokeStyle='#000';p.lineWidth=Math.max(1,0.35*S);
   const bm=borderMM();
@@ -547,16 +613,21 @@ $('btnAdd').onclick=()=>$('file').click();
 $('file').onchange=async e=>{
   const files=[].slice.call(e.target.files);e.target.value='';
   if(!files.length)return;
-  prog(true,'⏳ cutlines बन रही…');
+  prog(true,'⏳ साफ़ PNG + cutlines बन रही…');
+  let bgCnt=0,dustCnt=0;
   for(const f of files){
     const ourl=URL.createObjectURL(f);
-    const img=await new Promise(res=>{const i=new Image();i.onload=()=>res(i);i.src=ourl});
+    let img=await new Promise(res=>{const i=new Image();i.onload=()=>res(i);i.src=ourl});
+    const cl=cleanDesignImage(img); // 🎯 auto-clean: proper transparent PNG
+    if(cl.changed){img=cl.canvas;if(cl.bgRemoved)bgCnt++;dustCnt+=cl.dust||0}
     const d={id:UID++,name:f.name.replace(/\.\w+$/,''),img:img,url:ourl,hIn:6,qty:1,fill:files.length===1&&DESIGNS.length===0,outer:null,holes:[],wmm:0,hmm:0};
     DESIGNS.push(d);
     await retrace(d);
   }
   prog(false);renderList();doLayout();
-  toast('✅ '+files.length+' design जुड़ी — ऊँचाई/qty set करें');
+  let msg='✅ '+files.length+' design जुड़ी — ऊँचाई/qty set करें';
+  if(bgCnt||dustCnt)msg='✅ साफ़ PNG तैयार! ('+(bgCnt?bgCnt+' bg हटा, ':'')+(dustCnt?dustCnt+' धूल-dabbe हटाए':'')+') — ऊँचाई/qty set करें';
+  toast(msg);
 };
 ['gap','edge','bdW','bdH'].forEach(i=>{$(i).oninput=()=>{if(DESIGNS.length)doLayout()}});
 let bdDirty=false; // user ने border छुआ → auto-follow बंद
