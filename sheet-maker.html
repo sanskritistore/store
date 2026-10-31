@@ -94,6 +94,23 @@
     <div class="stat" id="stats">पहले designs जोड़ें…</div>
     <div class="note">🔴 लाल = बाहरी कट • 🔵 नीली = अंदर holes • काला = sheet border<br>
     <b>RDWorks में:</b> पहले <b>BORDER_CHECK</b> layer हल्के power से चलाएँ — निशान छपे border के ऊपर बैठा तो alignment perfect, फिर cutting करें।</div>
+
+    <h3>🔄 टेढ़ा Fix (2-Point) — UV printer जैसा</h3>
+    <div class="hint">Sheet टेढ़ी पड़ी हो तो: head को <b>① ऊपर-दायाँ cross</b> पर ले जाकर RDWorks का X,Y नोट करो। फिर <b>② ऊपर-बायाँ cross</b> पर। दोनों यहाँ भरो — DXF sheet के हिसाब से अपने-आप घूमेगा, sheet छूनी नहीं पड़ेगी।</div>
+    <div class="row" style="flex-wrap:wrap;gap:4px">
+      <div class="fld"><label>① X</label><input type="number" id="rX1" step="any" style="width:64px"></div>
+      <div class="fld"><label>① Y</label><input type="number" id="rY1" step="any" style="width:64px"></div>
+      <div class="fld"><label>② X</label><input type="number" id="rX2" step="any" style="width:64px"></div>
+      <div class="fld"><label>② Y</label><input type="number" id="rY2" step="any" style="width:64px"></div>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <button class="hbtn" id="btnRotCalc" style="flex:1">🔄 Angle निकालो</button>
+      <button class="hbtn" id="btnRotFlip" style="width:64px" title="टेढ़ाई उल्टी दिखे तो">↩ उल्टा</button>
+    </div>
+    <div id="rotInfo" class="hint" style="display:none"></div>
+    <canvas id="rotPrev" style="width:100%;border:1px solid #334155;border-radius:8px;margin-top:6px;display:none"></canvas>
+    <button class="hbtn main" id="btnRotDXF" style="width:100%;margin-top:6px" disabled>💾 टेढ़ा DXF</button>
+    <div class="note">Origin फिर भी <b>① ऊपर-दायाँ cross</b> पर ही set करना। Designs बदलो तो दोबारा 🔄 दबाओ।</div>
   </div>
   <div id="stage"><canvas id="sheet"></canvas></div>
 </div>
@@ -106,6 +123,7 @@ const IN=25.4; // mm per inch
 const CFG={traceMax:1400,alphaThr:0.12,colorThr:0.17,minHoleMM2:25,minOuterPct:0.003,eps:0.9,smoothT:1.0,blurAA:0.6,dirSteps:16,dxfStepMM:0.6};
 let DESIGNS=[];
 let LAYOUT=[];
+let ROT={psi:null,ok:false}; // 🔄 टेढ़ा Fix (2-Point) का angle
 let LEFT=0,UID=1;
 function toast(m,ms=3200){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(t._x);t._x=setTimeout(()=>t.style.display='none',ms)}
 function prog(on,m){const p=$('prog');p.style.display=on?'block':'none';if(m)p.textContent=m}
@@ -366,6 +384,7 @@ function doLayout(){
   updateStats();draw();
   const has=LAYOUT.length>0;
   ['btnPrint','btnDirect','btnDXF','btnSVG'].forEach(i=>{$(i).disabled=!has});
+  $('btnRotDXF').disabled=!has||!ROT.ok;
 }
 function bzLen(bz){let L=0,pr=bz[0][0];
   for(const sgm of bz){const p0=sgm[0],c1=sgm[1],c2=sgm[2],p1=sgm[3];
@@ -448,14 +467,23 @@ $('btnSVG').onclick=()=>{
   download(baseName()+'-cut.svg',svg,'image/svg+xml');
   toast('💾 SVG (border से नापा) — laser origin printed cross पर set करें, फिर BORDER_CHECK से जाँचें');
 };
-$('btnDXF').onclick=()=>{
-  if(!LAYOUT.length)return;
+function rotPt(x,y,psi,cx,cy){const c=Math.cos(psi),s=Math.sin(psi),dx=x-cx,dy=y-cy;return[cx+dx*c-dy*s,cy+dx*s+dy*c]}
+/* DXF text बनाओ — psi=null → सीधा; psi=angle(rad) → ऊपर-दायाँ cross (W,0) के गिर्द घुमाकर (टेढ़ी sheet के हिसाब से) */
+function dxfText(psi){
+  if(!LAYOUT.length)return'';
   const sm=sheetMM(),W=sm.W,H=sm.H,step=CFG.dxfStepMM;
   const bm=borderMM();
+  let shx=0,shy=0,exX=0,exY=0,exW=bm.W,exH=bm.H;
+  if(psi!=null){ // घुमाव के बाद सब coordinates positive रखने के लिए shift (border rect के corners से bbox)
+    const cs=[[0,0],[bm.W,0],[bm.W,bm.H],[0,bm.H]].map(p=>rotPt(p[0],p[1],psi,bm.W,0));
+    const mnx=Math.min.apply(null,cs.map(p=>p[0])),mny=Math.min.apply(null,cs.map(p=>p[1]));
+    const mxx=Math.max.apply(null,cs.map(p=>p[0])),mxy=Math.max.apply(null,cs.map(p=>p[1]));
+    shx=1-mnx;shy=1-mny;exX=1;exY=1;exW=1+mxx-mnx;exH=1+mxy-mny;
+  }
   // R12 DXF (AC1009) + POLYLINE/VERTEX — हर laser software/viewer इसे पढ़ लेता है
   // 🎯 सारे coordinates BORDER से (0,0 = printed cross) — laser origin cross पर set करो तो exact match
   let d='0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1009\n9\n$INSUNITS\n70\n4\n'+
-        '9\n$EXTMIN\n10\n0\n20\n0\n9\n$EXTMAX\n10\n'+bm.W.toFixed(3)+'\n20\n'+bm.H.toFixed(3)+'\n0\nENDSEC\n'+
+        '9\n$EXTMIN\n10\n'+exX.toFixed(3)+'\n20\n'+exY.toFixed(3)+'\n9\n$EXTMAX\n10\n'+exW.toFixed(3)+'\n20\n'+exH.toFixed(3)+'\n0\nENDSEC\n'+
         '0\nSECTION\n2\nENTITIES\n';
   const polyPts=(bz,ox,oy)=>{
     const pts=[];
@@ -469,14 +497,85 @@ $('btnDXF').onclick=()=>{
   };
   const poly=(pts,layer)=>{
     d+='0\nPOLYLINE\n8\n'+layer+'\n66\n1\n70\n1\n';
-    for(const p of pts)d+='0\nVERTEX\n8\n'+layer+'\n10\n'+(p[0]-bm.ox).toFixed(3)+'\n20\n'+(bm.H-(p[1]-bm.oy)).toFixed(3)+'\n30\n0\n';
+    for(const p of pts){
+      let X=p[0]-bm.ox,Y=bm.H-(p[1]-bm.oy);
+      if(psi!=null){const q=rotPt(X,Y,psi,bm.W,0);X=q[0]+shx;Y=q[1]+shy}
+      d+='0\nVERTEX\n8\n'+layer+'\n10\n'+X.toFixed(3)+'\n20\n'+Y.toFixed(3)+'\n30\n0\n';
+    }
     d+='0\nSEQEND\n';
   };
   poly([[bm.ox,bm.oy],[bm.ox+bm.W,bm.oy],[bm.ox+bm.W,bm.oy+bm.H],[bm.ox,bm.oy+bm.H]],'BORDER_CHECK'); // poly() bm घटाता है → sheet coords भेजो ताकि rect exact 0,0→W,H आए (design के साथ align)
   for(const l of LAYOUT)for(const hl of l.d.holes)poly(polyPts(hl,l.x,l.y),'CUT_HOLES_FIRST');
   for(const l of LAYOUT)for(const o of(l.d.outers||[l.d.outer]))poly(polyPts(o,l.x,l.y),'CUT_OUTER');
-  download(baseName()+'-cut.dxf',d+'0\nENDSEC\n0\nEOF','application/dxf');
+  return d;
+}
+$('btnDXF').onclick=()=>{
+  if(!LAYOUT.length)return;
+  download(baseName()+'-cut.dxf',dxfText(null)+'0\nENDSEC\n0\nEOF','application/dxf');
   toast('💾 DXF (border से नापा) — laser origin printed cross पर set करें, फिर BORDER_CHECK से जाँचें');
+};
+
+/* ============ 🔄 टेढ़ा Fix (2-Point rotation) — camera नहीं, बस 2 नाप ============ */
+function updRotInfo(){
+  const el=$('rotInfo');el.style.display=ROT.ok?'':'none';
+  if(ROT.ok)el.innerHTML='टेढ़ाई: <b>'+(ROT.psi*180/Math.PI).toFixed(2)+'°</b> — preview में sheet bed पर जैसी है वैसी ही दिखनी चाहिए। उल्टी दिखे तो ↩ उल्टा।';
+}
+function drawRotPrev(){
+  const cv=$('rotPrev');
+  if(!ROT.ok||!LAYOUT.length){cv.style.display='none';return}
+  cv.style.display='block';
+  const bm=borderMM();
+  const cs=[[0,0],[bm.W,0],[bm.W,bm.H],[0,bm.H]].map(p=>rotPt(p[0],p[1],ROT.psi,bm.W,0));
+  const mnx=Math.min.apply(null,cs.map(p=>p[0])),mny=Math.min.apply(null,cs.map(p=>p[1]));
+  const mxx=Math.max.apply(null,cs.map(p=>p[0]))-mnx,mxy=Math.max.apply(null,cs.map(p=>p[1]))-mny;
+  const cw=Math.max(200,cv.clientWidth||280),ch=Math.round(cw*Math.min(3,mxy/Math.max(1,mxx)));
+  cv.width=cw*2;cv.height=ch*2;cv.style.height=ch+'px';
+  const p=cv.getContext('2d');p.scale(2,2);
+  p.fillStyle='#fff';p.fillRect(0,0,cw,ch);
+  const S=Math.min((cw-16)/(mxx+2),(ch-16)/(mxy+2));
+  const M=q=>{const r=rotPt(q[0],q[1],ROT.psi,bm.W,0);return[8+(r[0]-mnx+1)*S,8+(r[1]-mny+1)*S]};
+  p.strokeStyle='#000';p.lineWidth=1;p.setLineDash([5,4]); // घुमा border
+  p.beginPath();cs.forEach((c,i)=>{const x=8+(c[0]-mnx+1)*S,y=8+(c[1]-mny+1)*S;i?p.lineTo(x,y):p.moveTo(x,y)});p.closePath();p.stroke();p.setLineDash([]);
+  p.strokeStyle='#111';p.lineWidth=1.2; // designs की patli kali outlines
+  for(const l of LAYOUT){
+    const paths=[].concat(l.d.outers||[l.d.outer],l.d.holes);
+    for(const bz of paths){
+      p.beginPath();let first=true;
+      for(let i=0;i<bz.length;i++){const p0=bz[i][0],c1=bz[i][1],c2=bz[i][2],p1=bz[i][3];
+        for(let j=first?0:1;j<=8;j++){const q=cubic(p0,c1,c2,p1,j/8);const m=M([q[0]+l.x-bm.ox,q[1]+l.y-bm.oy]);
+          if(first){p.moveTo(m[0],m[1]);first=false}else p.lineTo(m[0],m[1])}
+      }
+      p.closePath();p.stroke();
+    }
+  }
+  const cr=[[bm.W,0,'#dc2626','1'],[0,0,'#2563eb','2']]; // crosses: 1=ऊपर-दायाँ(origin) 2=ऊपर-बायाँ
+  p.font='bold 11px sans-serif';
+  for(const c of cr){const m=M([c[0],c[1]]);
+    p.strokeStyle=c[2];p.lineWidth=1.6;
+    p.beginPath();p.moveTo(m[0]-6,m[1]);p.lineTo(m[0]+6,m[1]);p.moveTo(m[0],m[1]-6);p.lineTo(m[0],m[1]+6);p.stroke();
+    p.fillStyle=c[2];p.fillText(c[3],m[0]+7,m[1]-5);
+  }
+}
+$('btnRotCalc').onclick=()=>{
+  const x1=+$('rX1').value,y1=+$('rY1').value,x2=+$('rX2').value,y2=+$('rY2').value;
+  if([x1,y1,x2,y2].some(v=>!isFinite(v))){toast('⚠️ पहले दोनों crosses के X,Y भरो');return}
+  const bm=borderMM(),dx=x2-x1,dy=y2-y1,D=Math.hypot(dx,dy);
+  if(D<10){toast('⚠️ दोनों नाप एक जगह हैं — 2 cross पर head ले जाकर नापो');return}
+  let psi; // machine X दिशा auto-detect: dx<0 → DXF जैसी दिशा • dx>0 → mirrored (उल्टा button से fix)
+  if(dx<0)psi=Math.atan2(dy,dx)-Math.PI; else psi=-Math.atan2(dy,dx);
+  if(psi>Math.PI)psi-=2*Math.PI; if(psi<-Math.PI)psi+=2*Math.PI;
+  ROT={psi,ok:true};
+  updRotInfo();drawRotPrev();
+  $('btnRotDXF').disabled=!LAYOUT.length;
+  const dev=Math.abs(D-bm.W)/bm.W;
+  if(dev>0.05)toast('⚠️ दूरी '+D.toFixed(1)+'mm — border '+bm.W.toFixed(1)+'mm से मेल नहीं खाती, नाप जाँचो');
+  else toast('🔄 टेढ़ाई '+(psi*180/Math.PI).toFixed(2)+'° मिली — preview देखो');
+};
+$('btnRotFlip').onclick=()=>{if(!ROT.ok)return;ROT.psi=-ROT.psi;updRotInfo();drawRotPrev();};
+$('btnRotDXF').onclick=()=>{
+  if(!LAYOUT.length||!ROT.ok)return;
+  download(baseName()+'-tedha-'+(ROT.psi*180/Math.PI).toFixed(1)+'deg.dxf',dxfText(ROT.psi)+'0\nENDSEC\n0\nEOF','application/dxf');
+  toast('💾 टेढ़ा DXF — import करो, origin 1 ऊपर-दायाँ cross पर set करो, BORDER_CHECK से जाँचो');
 };
 const _ct=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;_ct[n]=c>>>0}
 function _crc32(b){let c=~0;for(let i=0;i<b.length;i++)c=_ct[(c^b[i])&255]^(c>>>8);return(~c)>>>0}
