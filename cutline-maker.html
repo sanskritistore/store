@@ -589,7 +589,8 @@ $('btnSVG').onclick=()=>{
 $('btnDXF').onclick=()=>{
   if(!LOOPS||!LOOPS.outer)return;
   const S=mmScale(),b=boxFit(),ox=b?b.ox:0,oy=b?b.oy:0,step=CFG.dxfStepMM;
-  let d='0\nSECTION\n2\nENTITIES\n';
+  // पहले सभी loops flatten → bounds निकालो (negative coords की समस्या खत्म)
+  const polys=[];
   const poly=(bz,layer)=>{
     const pts=[];
     for(const[p0,c1,c2,p1]of bz){
@@ -597,13 +598,35 @@ $('btnDXF').onclick=()=>{
       const N=Math.max(4,Math.min(96,Math.ceil(chord/step)));
       for(let i=0;i<N;i++)pts.push(cubic(p0,c1,c2,p1,i/N));
     }
-    d+=`0\nLWPOLYLINE\n8\n${layer}\n90\n${pts.length}\n70\n1\n`;
-    for(const p of pts)d+=`10\n${(p[0]*S+ox).toFixed(3)}\n20\n${(-(p[1]*S+oy)).toFixed(3)}\n`;
+    polys.push({layer,pts});
   };
   if(LOOPS.holes.length)for(const h of LOOPS.holes)poly(h,'CUT_HOLES_FIRST');
   poly(LOOPS.outer,'CUT_OUTER');
+  // bounds (mm में) — design को origin के अंदर positive quadrant में लाओ
+  let mx=1e18,my=1e18,MX=-1e18,MY=-1e18;
+  for(const{pts}of polys)for(const p of pts){
+    const X=p[0]*S+ox,Y=p[1]*S+oy;
+    if(X<mx)mx=X;if(X>MX)MX=X;if(Y<my)my=Y;if(Y>MY)MY=Y;
+  }
+  const W=(MX-mx)+10,H=(MY-my)+10; // 5mm margin हर तरफ़
+  const fx=x=>x-mx+5, fy=y=>(MY-y)+5; // +ve quadrant + Y-up flip (RDWorks-style)
+  // R12 DXF (AC1009) + HEADER (units mm + extents) + POLYLINE/VERTEX — हर laser software पढ़ लेता है
+  let d='0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1009\n9\n$INSUNITS\n70\n4\n'+
+        '9\n$EXTMIN\n10\n0\n20\n0\n9\n$EXTMAX\n10\n'+W.toFixed(3)+'\n20\n'+H.toFixed(3)+'\n0\nENDSEC\n'+
+        '0\nSECTION\n2\nENTITIES\n';
+  // BORDER_CHECK — पहले यह layer चलाकर position जाँचो (पुराना लेज़र routine)
+  d+='0\nPOLYLINE\n8\nBORDER_CHECK\n66\n1\n70\n1\n';
+  for(const[bx,by]of[[mx,my],[MX,my],[MX,MY],[mx,MY]])
+    d+='0\nVERTEX\n8\nBORDER_CHECK\n10\n'+fx(bx).toFixed(3)+'\n20\n'+fy(by).toFixed(3)+'\n30\n0\n';
+  d+='0\nSEQEND\n';
+  const wpoly=(pts,layer)=>{
+    d+='0\nPOLYLINE\n8\n'+layer+'\n66\n1\n70\n1\n';
+    for(const p of pts)d+='0\nVERTEX\n8\n'+layer+'\n10\n'+fx(p[0]*S+ox).toFixed(3)+'\n20\n'+fy(p[1]*S+oy).toFixed(3)+'\n30\n0\n';
+    d+='0\nSEQEND\n';
+  };
+  for(const{layer,pts}of polys)wpoly(pts,layer);
   download(outName('cutline')+'.dxf',d+'0\nENDSEC\n0\nEOF','application/dxf');
-  toast(b?`💾 DXF — ${$('boxW').value}×${$('boxH').value}in box में design center में`:'💾 DXF download — RDWorks में import करें');
+  toast(b?`💾 DXF (R12) — ${$('boxW').value}×${$('boxH').value}in box • RDWorks में पहले BORDER_CHECK चलाएँ`:'💾 DXF (R12) — RDWorks में bed के अंदर आएगा • पहले BORDER_CHECK से जाँचें');
 };
 $('btnPrint').onclick=()=>{
   if(!IMG)return;
