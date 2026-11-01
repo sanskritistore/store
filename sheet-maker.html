@@ -44,7 +44,7 @@
 </head>
 <body>
 <header>
-  <h1>📄 Sheet Maker</h1><span class="tag">FREE</span><span class="tag" style="background:#334155" id="verTag">v1-Nov-5</span>
+  <h1>📄 Sheet Maker</h1><span class="tag">FREE</span><span class="tag" style="background:#334155" id="verTag">v1-Nov-6</span>
   <span style="font-size:11px;color:#94a3b8">print (TM-5350, 36in तक) + cut (CO2, 48×48in तक) — एक ही file से</span>
   <a href="cutline-maker.html" class="hbtn" style="text-decoration:none;font-size:12px">✂️ Cutline Maker</a>
   <span style="flex:1"></span>
@@ -405,7 +405,7 @@ function borderMM(){
 function updBdInset(){ // 📏 border के नीचे live margin दिखाओ — "half inch ka border" = हर तरफ 12.7mm अंदर
   const sm=sheetMM(),bm=borderMM();
   const ix=(sm.W-bm.W)/2, iy=(sm.H-bm.H)/2;
-  $('bdInset').textContent='📏 हर तरफ से अंदर: '+ix.toFixed(1)+'mm × '+iy.toFixed(1)+'mm — cross X/Y = यही नंबर';
+  $('bdInset').textContent='📏 हर तरफ से अंदर: '+ix.toFixed(1)+'mm × '+iy.toFixed(1)+'mm — cross X/Y = यही नंबर (✂️ border line से trim करके लगाओ तो X/Y = 0)';
   if(Math.abs(ix-iy)<0.05)$('mg').value=ix.toFixed(1); // symmetric margin → field भी sync
 }
 function mgToBorder(){ // 📏 Margin (mm) → border = sheet − 2×margin — "half inch ka border" = 12.7 लिखो, बस!
@@ -510,7 +510,7 @@ $('btnSVG').onclick=()=>{
   const sm=sheetMM(),W=sm.W,H=sm.H;
   const bm=borderMM();
   const F=bleedJig()?{ox:0,oy:0,W:sm.W,H:sm.H}:bm; // borderless → sheet frame
-  const ti=bleedJig()?(CFG.jigTestInsetMM||3):0;
+  const ti=(bleedJig()||trimJig())?(CFG.jigTestInsetMM||3):0;
   // 🎯 coordinates BORDER से (0,0 = printed cross; borderless में पूरी sheet) — laser origin cross/corner पर set करो, exact match
   let svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+F.W.toFixed(1)+'mm" height="'+F.H.toFixed(1)+'mm" viewBox="0 0 '+F.W.toFixed(3)+' '+F.H.toFixed(3)+'">\n';
   svg+='<rect id="BORDER_CHECK" x="'+ti.toFixed(3)+'" y="'+ti.toFixed(3)+'" width="'+(F.W-2*ti).toFixed(3)+'" height="'+(F.H-2*ti).toFixed(3)+'" fill="none" stroke="#000" stroke-width="0.1"/>\n';
@@ -525,6 +525,7 @@ $('btnSVG').onclick=()=>{
 function rotPt(x,y,psi,cx,cy){const c=Math.cos(psi),s=Math.sin(psi),dx=x-cx,dy=y-cy;return[cx+dx*c-dy*s,cy+dx*s+dy*c]}
 /* DXF text बनाओ — psi=null → सीधा; psi=angle(rad) → top-right cross (W,0) के गिर्द घुमाकर (टेढ़ी sheet के हिसाब से) */
 function bleedJig(){return !!($('jigOn')&&$('jigOn').checked&&$('jigMode')&&$('jigMode').value==='bleed')} // 🖨 Borderless L-Jig: कोई cross/border नहीं छपेगा — frame = पूरी sheet
+function trimJig(){if(!$('jigOn')||!$('jigOn').checked||bleedJig())return false;const gx=parseFloat($('jigGx').value),gy=parseFloat($('jigGy').value);return gx===0&&gy===0} // ✂️ Trim mode: X/Y दोनों 0 = paper border line से कटा हुआ → notch = border corner (printer के टेढ़ेपन का इलाज)
 function dxfText(psi){
   if(!LAYOUT.length)return'';
   const sm=sheetMM(),W=sm.W,H=sm.H,step=CFG.dxfStepMM;
@@ -563,7 +564,7 @@ function dxfText(psi){
     }
     d+='0\nSEQEND\n';
   };
-  const ti=bleedJig()?(CFG.jigTestInsetMM||3):0; // borderless: test rect sheet edge से थोड़ा अंदर — कागज़ पर margin uniform दिखे
+  const ti=(bleedJig()||trimJig())?(CFG.jigTestInsetMM||3):0; // borderless: test rect sheet edge से थोड़ा अंदर — कागज़ पर margin uniform दिखे
   poly([[F.ox+ti,F.oy+ti],[F.ox+F.W-ti,F.oy+ti],[F.ox+F.W-ti,F.oy+F.H-ti],[F.ox+ti,F.oy+F.H-ti]],'BORDER_CHECK'); // poly() F घटाता है → sheet coords भेजो ताकि rect exact 0,0→W,H आए (design के साथ align)
   if(jig){ // 📐 ORIGIN_MARK tick — sheet के top-right corner पर (bbox top-right = यही = anchor = L का कोना)
     const tx=F.W+jig.x,ty=F.H+jig.y;
@@ -579,9 +580,10 @@ $('btnDXF').onclick=()=>{
   const jig=$('jigOn').checked;
   if(jig){const gx=+$('jigGx').value||0,gy=+$('jigGy').value||0;
     if(bleedJig()){if(gx<-15||gx>15||gy<-15||gy>15){toast('⚠️ shift X/Y fine-tune है — -15 से +15mm के बीच रखो (आमतौर पर 0। +X = artwork left, +Y = artwork down)');return}}
-    else if(gx<=0||gy<=0||gx>50||gy>50){toast('⚠️ cross X/Y गलत लग रहे ('+gx+','+gy+') — पैमाने से sheet के top-right corner से छपे top-right cross तक नापो (आमतौर पर 10-25mm)। Machine के X,Y नहीं डालने!');return}}
+    else if($('jigGx').value.trim()===''||$('jigGy').value.trim()===''){toast('⚠️ cross X/Y खाली है — पैमाने से sheet के top-right corner से छपे cross तक नापो (आमतौर पर 10-25mm)। ✂️ Trim method: paper को border line से काटकर L में लगाते हो तो दोनों में 0 डालो');return}
+    else if(!((gx===0&&gy===0)||(gx>0&&gy>0&&gx<=50&&gy<=50))){toast('⚠️ cross X/Y गलत लग रहे ('+gx+','+gy+') — या तो दोनों 0 (✂️ trimmed paper: border line से काटकर L में लगाओ, notch = border corner) या दोनों 0-50mm के बीच (पैमाने से नापे गए)। Machine के X,Y नहीं डालने!');return}}
   download(baseName()+(jig?'-jig':'')+'-cut.dxf',dxfText(null)+'0\nENDSEC\n0\nEOF','application/dxf');
-  toast(jig?(bleedJig()?'💾 L-Jig DXF (borderless) — origin L के notch पर, anchor top-right, sheet L में घिसाओ, BORDER_CHECK से जाँचो':'💾 L-Jig DXF — origin L के notch पर, anchor top-right (जैसे पहले), sheet L में घिसाओ, BORDER_CHECK से जाँचो'):'💾 DXF (border से नापा) — laser origin printed cross पर set करें, फिर BORDER_CHECK से जाँचें');
+  toast(jig?(bleedJig()?'💾 L-Jig DXF (borderless) — origin L के notch पर, anchor top-right, sheet L में घिसाओ, BORDER_CHECK से जाँचो':trimJig()?'💾 L-Jig DXF (✂️ trim mode) — trimmed paper को L में घिसाओ (notch = border corner)। BORDER_CHECK अब 3mm अंदर कटेगा — paper edge से 3mm अंदर uniform चले तो perfect':'💾 L-Jig DXF — origin L के notch पर, anchor top-right (जैसे पहले), sheet L में घिसाओ, BORDER_CHECK से जाँचो'):'💾 DXF (border से नापा) — laser origin printed cross पर set करें, फिर BORDER_CHECK से जाँचें');
 };
 
 /* ============ 🔄 टेढ़ा Fix (2-Point rotation) — camera नहीं, बस 2 नाप ============ */
@@ -671,7 +673,7 @@ $('btnJigDXF').onclick=()=>{
 };
 $('jigOn').onchange=()=>{
   jigAutoFill(); // ⚡ X/Y अपने आप border से (खाली/auto हो तो)
-  if($('jigOn').checked&&!+$('jigGx').value&&$('jigMode').value!=='bleed')toast('ℹ️ cross X/Y अभी खाली है — पहले एक बार print से नापकर भरो, तभी L-Jig DXF सही बनेगा');
+  if($('jigOn').checked&&$('jigGx').value.trim()===''&&$('jigMode').value!=='bleed')toast('ℹ️ cross X/Y अभी खाली है — पहले एक बार print से नापकर भरो (या ✂️ trimmed paper के लिए दोनों में 0), तभी L-Jig DXF सही बनेगा');
   $('btnRotDXF').disabled=!LAYOUT.length||!ROT.ok||$('jigOn').checked;
   saveJig();if(DESIGNS.length)draw();
 };
@@ -685,7 +687,7 @@ function jigAutoFill(){ // ⚡ Normal mode: X/Y = border inset — cross border 
   saveJig();
 }
 const JIG_HINTS={
-  cross:'L-shape MDF bed पर tape/screw से fix करो — <b>अंदर कोना top-right</b>, notch अंदर (नीचे button से cutting file)। Origin = L के notch पर = sheet का <b>top-right corner</b>। <b>X/Y अपने आप border से भरते हैं</b> — cross border के कोने पर ही छपता है: half inch border → <b>12.7</b>, 1 inch → <b>25.4</b>। नापने की ज़रूरत नहीं — बस कागज़ पर BORDER_CHECK करो: test rect printed border के साथ-साथ कटे तो सब perfect। Printer ने print गलत किया हो (rect offset में कटे) तभी पैमाने से नापकर असली X/Y डालो। Print उसी size की sheet पर, 100% scale पर।',
+  cross:'L-shape MDF bed पर tape/screw से fix करो — <b>अंदर कोना top-right</b>, notch अंदर (नीचे button से cutting file)। Origin = L के notch पर = sheet का <b>top-right corner</b>। <b>X/Y अपने आप border से भरते हैं</b> — cross border के कोने पर ही छपता है: half inch border → <b>12.7</b>, 1 inch → <b>25.4</b>। नापने की ज़रूरत नहीं — बस कागज़ पर BORDER_CHECK करो: test rect printed border के साथ-साथ कटे तो सब perfect। Printer ने print गलत किया हो (rect offset में कटे) तभी पैमाने से नापकर असली X/Y डालो। Print उसी size की sheet पर, 100% scale पर।<br><b>✂️ Trim method (printer टेढ़ा छापे तो सबसे सटीक):</b> print के बाद paper को <b>top + right border line से काट लो</b> (trimmer से, dashed line के center से) → कटा हुआ paper L में घिसाओ → <b>X/Y = 0</b>। अब L छपी हुई line को पकड़ता है, paper के कच्चे किनारे को नहीं — printer की तिरछाई का असर खत्म। Trim mode में BORDER_CHECK <b>3mm अंदर</b> कटता है (paper edge से 3mm अंदर uniform चले तो perfect)।',
   bleed:'<b>Borderless print</b> (जैसे TM-5355) — print किनार-से-किनार, <b>कोई cross/border नहीं छपेगा</b>। Reference = sheet का <b>top-right corner</b> सीधे। shift X/Y = fine-tune (आमतौर पर <b>0</b>) — पहले कागज़ पर BORDER_CHECK चलाओ, ज़रूरत पड़े तभी बदलो (+X = artwork left, +Y = artwork down)। हर printer का shift अपना — एक बार test करके set करो, फिर हमेशा वही।'
 };
 function syncJigUI(){
