@@ -44,7 +44,7 @@
 </head>
 <body>
 <header>
-  <h1>📄 Sheet Maker</h1><span class="tag">FREE</span><span class="tag" style="background:#334155" id="verTag">v1-Nov-4</span>
+  <h1>📄 Sheet Maker</h1><span class="tag">FREE</span><span class="tag" style="background:#334155" id="verTag">v1-Nov-5</span>
   <span style="font-size:11px;color:#94a3b8">print (TM-5350, 36in तक) + cut (CO2, 48×48in तक) — एक ही file से</span>
   <a href="cutline-maker.html" class="hbtn" style="text-decoration:none;font-size:12px">✂️ Cutline Maker</a>
   <span style="flex:1"></span>
@@ -69,6 +69,7 @@
       <div class="fld"><label>Gap (mm)</label><input type="number" id="gap" min="0" max="50" step="0.5" value="5" style="width:56px"></div>
       <div class="fld"><label>Edge (mm)</label><input type="number" id="edge" min="0" max="50" step="0.5" value="3" style="width:56px"></div>
       <div class="fld"><label>Bleed (mm)</label><input type="number" id="bleed" min="0" max="5" step="0.1" value="0" style="width:56px"></div>
+      <div class="fld"><label>Cut अंदर (mm) — outline art से chipkao (0 = जैसा है)</label><input type="number" id="cutOff" min="0" max="10" step="0.5" value="0" style="width:56px"></div>
     </div>
     <div class="fld"><label>Print quality (DPI)</label>
       <select id="dpi" style="background:#0f172a;border:1px solid #334155;border-radius:6px;color:#fbbf24;padding:5px 8px;font-size:13px">
@@ -241,7 +242,7 @@ function inPoly(pt,poly){let ins=false;
   return ins}
 
 /* ============ design → cutline (mm, design top-left origin) ============ */
-async function traceDesign(img,hIn,bleedMM){
+async function traceDesign(img,hIn,bleedMM,cutInMM){
   const sc=Math.min(1,CFG.traceMax/Math.max(img.width,img.height));
   const w=Math.max(8,Math.round(img.width*sc)),h=Math.max(8,Math.round(img.height*sc));
   const c=document.createElement('canvas');c.width=w;c.height=h;
@@ -268,17 +269,24 @@ async function traceDesign(img,hIn,bleedMM){
   let sm=0;for(let j=0;j<F.length;j++)sm+=F[j];
   if(sm/F.length>0.92)return{err:'full'};
   const mmp=hIn*IN/h; // mm per px
-  const R=bleedMM/mmp;
+  const R=((bleedMM||0)-(cutInMM||0))/mmp; // + = बाहर (bleed dilate), − = अंदर (Cut अंदर — shadow/feather काटकर outline art से chipkao)
   // खाली padding ताकि bleed की dilated cutline canvas से बाहर न कटे (किनारे तक भरे designs के लिए ज़रूरी)
-  const pad=Math.ceil(R)+4;
+  const pad=Math.ceil(Math.abs(R))+4;
   const src=document.createElement('canvas');src.width=w+2*pad;src.height=h+2*pad;
   const sx=src.getContext('2d'),id=sx.createImageData(w,h);
   for(let j=0;j<F.length;j++){const v=Math.round(F[j]*255);id.data[j*4]=id.data[j*4+1]=id.data[j*4+2]=v;id.data[j*4+3]=255}
   sx.putImageData(id,pad,pad);
   const out=document.createElement('canvas');out.width=w+2*pad;out.height=h+2*pad;
-  const oc=out.getContext('2d');oc.globalCompositeOperation='lighten';
-  if(R<0.05)oc.drawImage(src,0,0);
-  else for(let k=0;k<CFG.dirSteps;k++){const a=k/CFG.dirSteps*2*Math.PI;oc.drawImage(src,Math.cos(a)*R,Math.sin(a)*R)}
+  const oc=out.getContext('2d');
+  if(R>=-0.05){ // dilate (या 0) — max of shifted copies = figure बाहर फूलता है
+    oc.globalCompositeOperation='lighten';
+    if(R<0.05)oc.drawImage(src,0,0);
+    else for(let k=0;k<CFG.dirSteps;k++){const a=k/CFG.dirSteps*2*Math.PI;oc.drawImage(src,Math.cos(a)*R,Math.sin(a)*R)}
+  }else{ // erode — min of shifted copies = figure अंदर सिकुड़ता है (tight outline)
+    oc.globalCompositeOperation='source-over';oc.drawImage(src,0,0);
+    oc.globalCompositeOperation='darken';
+    const E=-R;for(let k=0;k<CFG.dirSteps;k++){const a=k/CFG.dirSteps*2*Math.PI;oc.drawImage(src,Math.cos(a)*E,Math.sin(a)*E)}
+  }
   const b=document.createElement('canvas');b.width=w+2*pad;b.height=h+2*pad;
   const bx=b.getContext('2d');bx.filter='blur('+CFG.blurAA+'px)';bx.drawImage(out,0,0);
   const dd=bx.getImageData(0,0,w+2*pad,h+2*pad).data;
@@ -307,7 +315,11 @@ async function traceDesign(img,hIn,bleedMM){
   const loops0=chainLoops(marchingSquares(OFF0,w+2*pad,h+2*pad,0.5));
   const isl0=[];
   for(const l of loops0){if(Math.abs(area(l))<minA)continue;if(isl0.some(o=>inPoly(l[0],o)))continue;isl0.push(l)}
-  const holes=loops0.filter(l=>isl0.indexOf(l)<0&&Math.abs(area(l))>minA&&isl0.some(o=>inPoly(l[0],o)));
+  const holes=loops0.filter(l=>isl0.indexOf(l)<0&&Math.abs(area(l))>minA&&isl0.some(o=>inPoly(l[0],o)))
+    .filter(l=>{ // Cut अंदर से outer सिकुड़ने पर जो hole art के बाहर रह जाए वो गिराओ (वरना खाली जगह पर stray cut!)
+      let cx=0,cy=0;for(const p of l){cx+=p[0];cy+=p[1]}cx/=l.length;cy/=l.length;
+      return outersRaw.some(o=>inPoly([cx,cy],o));
+    });
   const toMM=pts=>pts.map(p=>[(p[0]-pad)*mmp,(p[1]-pad)*mmp]);
   return{outer:beziers(rdp(toMM(outerRaw),CFG.eps*mmp),CFG.smoothT),
     outers:outersRaw.map(l=>beziers(rdp(toMM(l),CFG.eps*mmp),CFG.smoothT)),
@@ -816,7 +828,7 @@ function renderList(){
 }
 async function retrace(d){
   let t=null;
-  try{t=await traceDesign(d.img,d.hIn,+$('bleed').value)}catch(e){console.error(e);t=null}
+  try{t=await traceDesign(d.img,d.hIn,+$('bleed').value,+$('cutOff').value)}catch(e){console.error(e);t=null}
   if(!t||t.err){
     d.outer=null;d.err=t?t.err:'empty';
     const why=t&&t.err==='full'
@@ -865,6 +877,12 @@ $('dpi').onchange=()=>{if(DESIGNS.length)updateStats()};
 $('bleed').onchange=async()=>{
   if(!DESIGNS.length)return;
   prog(true,'⏳ bleed बदला — cutlines दोबारा…');
+  for(const d of DESIGNS)await retrace(d);
+  prog(false);doLayout();
+};
+$('cutOff').onchange=async()=>{
+  if(!DESIGNS.length)return;
+  prog(true,'⏳ Cut अंदर बदला — cutlines दोबारा…');
   for(const d of DESIGNS)await retrace(d);
   prog(false);doLayout();
 };
