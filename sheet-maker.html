@@ -113,20 +113,26 @@
     <div class="note">Origin फिर भी <b>① top-right cross</b> पर ही set करना। Designs बदलो तो दोबारा 🔄 दबाओ।</div>
 
     <h3>📐 L-Jig mode — एक बार fix, फिर हमेशा ready</h3>
-    <div class="hint">L-shape MDF bed पर tape/screw से fix करो — <b>अंदर कोना top-right</b>, notch अंदर (नीचे button से cutting file)। Origin = L के notch पर = sheet का <b>top-right corner</b>। एक बार नापो: print निकलने के बाद sheet के <b>top-right corner</b> से छपे <b>top-right cross</b> के केंद्र तक पैमाने से — X = कितना <b>left</b>, Y = कितना <b>down</b> (mm)। ⚠️ Machine panel के X,Y कभी नहीं — पैमाने से sheet पर! Print उसी size की sheet पर, 100% scale पर।</div>
+    <div class="hint" id="jigHint">L-shape MDF bed पर tape/screw से fix करो — <b>अंदर कोना top-right</b>, notch अंदर (नीचे button से cutting file)। Origin = L के notch पर = sheet का <b>top-right corner</b>। एक बार नापो: print निकलने के बाद sheet के <b>top-right corner</b> से छपे <b>top-right cross</b> के केंद्र तक पैमाने से — X = कितना <b>left</b>, Y = कितना <b>down</b> (mm)। ⚠️ Machine panel के X,Y कभी नहीं — पैमाने से sheet पर! Print उसी size की sheet पर, 100% scale पर।</div>
     <div class="row" style="align-items:center;gap:6px;margin-top:6px">
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="jigOn"> L-Jig mode ON</label>
     </div>
     <div class="row" style="flex-wrap:wrap;gap:4px;margin-top:4px">
-      <div class="fld"><label>cross X ←left (mm)</label><input type="number" id="jigGx" step="any" style="width:64px"></div>
-      <div class="fld"><label>cross Y ↓down (mm)</label><input type="number" id="jigGy" step="any" style="width:64px"></div>
+      <div class="fld"><label>Print mode</label><select id="jigMode" style="width:170px">
+        <option value="cross">Normal — cross छपेगा</option>
+        <option value="bleed">Borderless — कुछ नहीं छपेगा</option>
+      </select></div>
+    </div>
+    <div class="row" style="flex-wrap:wrap;gap:4px;margin-top:4px">
+      <div class="fld"><label id="jigGxLbl">cross X ←left (mm)</label><input type="number" id="jigGx" step="any" style="width:64px"></div>
+      <div class="fld"><label id="jigGyLbl">cross Y ↓down (mm)</label><input type="number" id="jigGy" step="any" style="width:64px"></div>
     </div>
     <div class="row" style="flex-wrap:wrap;gap:4px;margin-top:4px">
       <div class="fld"><label>L लंबाई (mm)</label><input type="number" id="jigLen" value="300" step="any" style="width:64px"></div>
       <div class="fld"><label>L मोटाई (mm)</label><input type="number" id="jigW" value="20" step="any" style="width:64px"></div>
     </div>
     <button class="hbtn main" id="btnJigDXF" style="width:100%;margin-top:6px">📐 L-Jig cutting DXF</button>
-    <div class="note">L-Jig ON पर DXF में छोटा tick (ORIGIN_MARK) sheet के top-right corner पर आएगा — anchor <b>top-right</b> ही रखना (जैसे पहले)। हर बार: sheet L में घिसाओ → import → cut। Sheet का size बदलो तो cross X/Y दोबारा नापना। (टेढ़ा Fix इस mode में बंद — L में sheet सीधी ही रहती है)</div>
+    <div class="note">L-Jig ON पर DXF में छोटा tick (ORIGIN_MARK) sheet के top-right corner पर आएगा — anchor <b>top-right</b> ही रखना (जैसे पहले)। हर बार: sheet L में घिसाओ → import → cut। <b>Normal mode:</b> sheet size बदलो तो cross X/Y दोबारा नापना। <b>Borderless:</b> size बदलो, shift वही रहता — कुछ नापना नहीं। Settings browser में save रहती हैं। (टेढ़ा Fix इस mode में बंद — L में sheet सीधी ही रहती है)</div>
   </div>
   <div id="stage"><canvas id="sheet"></canvas></div>
 </div>
@@ -136,7 +142,7 @@
 'use strict';
 const $=i=>document.getElementById(i);
 const IN=25.4; // mm per inch
-const CFG={traceMax:1400,alphaThr:0.12,colorThr:0.17,minHoleMM2:25,minOuterPct:0.003,eps:0.9,smoothT:1.0,blurAA:0.6,dirSteps:16,dxfStepMM:0.6};
+const CFG={traceMax:1400,alphaThr:0.12,colorThr:0.17,minHoleMM2:25,minOuterPct:0.003,eps:0.9,smoothT:1.0,blurAA:0.6,dirSteps:16,dxfStepMM:0.6,jigTestInsetMM:3};
 let DESIGNS=[];
 let LAYOUT=[];
 let ROT={psi:null,ok:false}; // 🔄 टेढ़ा Fix (2-Point) का angle
@@ -416,7 +422,7 @@ function updateStats(){
     '✅ Pieces: <b>'+LAYOUT.length+'</b>'+(LEFT?' <span style="color:#f87171">('+LEFT+' नहीं बैठे — size/qty घटाओ)</span>':'')+'<br>'+
     '📐 Sheet भरी: <b>'+(usedA/(sm.W*sm.H)*100).toFixed(0)+'%</b> • कुल cut: <b>'+(cut/1000).toFixed(1)+' m</b><br>'+
     '📄 Print: <b>'+$('shW').value+'×'+$('shH').value+' inch @ '+$('dpi').value+' DPI</b><br>'+
-    '🎯 Border: <b>'+$('bdW').value+'×'+$('bdH').value+' in</b> — 4 crosses = laser align points';
+    (bleedJig()?'🎯 Borderless: <b>कोई cross नहीं</b> — sheet का corner = reference':'🎯 Border: <b>'+$('bdW').value+'×'+$('bdH').value+' in</b> — 4 crosses = laser align points');
 }
 
 /* ============ preview ============ */
@@ -444,15 +450,17 @@ function draw(){
   }
   p.strokeStyle='#000';p.lineWidth=Math.max(1,0.35*S);
   const bm=borderMM();
-  const cm=[[bm.ox,bm.oy],[bm.ox+bm.W,bm.oy],[bm.ox,bm.oy+bm.H],[bm.ox+bm.W,bm.oy+bm.H]];
-  for(let k=0;k<4;k++){const mx=cm[k][0],my=cm[k][1],a=6;
-    p.beginPath();
-    p.moveTo((mx-a)*S,my*S);p.lineTo((mx+a)*S,my*S);p.moveTo(mx*S,(my-a)*S);p.lineTo(mx*S,(my+a)*S);p.stroke();
-    p.beginPath();p.arc(mx*S,my*S,a*0.55*S,0,7);p.stroke();
+  if(!bleedJig()){ // 🖨 borderless L-Jig में cross/border नहीं छपते
+    const cm=[[bm.ox,bm.oy],[bm.ox+bm.W,bm.oy],[bm.ox,bm.oy+bm.H],[bm.ox+bm.W,bm.oy+bm.H]];
+    for(let k=0;k<4;k++){const mx=cm[k][0],my=cm[k][1],a=6;
+      p.beginPath();
+      p.moveTo((mx-a)*S,my*S);p.lineTo((mx+a)*S,my*S);p.moveTo(mx*S,(my-a)*S);p.lineTo(mx*S,(my+a)*S);p.stroke();
+      p.beginPath();p.arc(mx*S,my*S,a*0.55*S,0,7);p.stroke();
+    }
+    p.lineWidth=Math.max(1,0.8*S);
+    p.strokeRect(1*S,1*S,(W-2)*S,(H-2)*S);
+    p.setLineDash([4*S,3*S]);p.strokeRect(bm.ox*S,bm.oy*S,bm.W*S,bm.H*S);p.setLineDash([]);
   }
-  p.lineWidth=Math.max(1,0.8*S);
-  p.strokeRect(1*S,1*S,(W-2)*S,(H-2)*S);
-  p.setLineDash([4*S,3*S]);p.strokeRect(bm.ox*S,bm.oy*S,bm.W*S,bm.H*S);p.setLineDash([]);
 }
 
 /* ============ exports ============ */
@@ -472,25 +480,29 @@ $('btnSVG').onclick=()=>{
   if(!LAYOUT.length)return;
   const sm=sheetMM(),W=sm.W,H=sm.H;
   const bm=borderMM();
-  // 🎯 coordinates BORDER से (0,0 = printed cross) — laser origin cross पर set करो, exact match
-  let svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+bm.W.toFixed(1)+'mm" height="'+bm.H.toFixed(1)+'mm" viewBox="0 0 '+bm.W.toFixed(3)+' '+bm.H.toFixed(3)+'">\n';
-  svg+='<rect id="BORDER_CHECK" x="0" y="0" width="'+bm.W.toFixed(3)+'" height="'+bm.H.toFixed(3)+'" fill="none" stroke="#000" stroke-width="0.1"/>\n';
+  const F=bleedJig()?{ox:0,oy:0,W:sm.W,H:sm.H}:bm; // borderless → sheet frame
+  const ti=bleedJig()?(CFG.jigTestInsetMM||3):0;
+  // 🎯 coordinates BORDER से (0,0 = printed cross; borderless में पूरी sheet) — laser origin cross/corner पर set करो, exact match
+  let svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+F.W.toFixed(1)+'mm" height="'+F.H.toFixed(1)+'mm" viewBox="0 0 '+F.W.toFixed(3)+' '+F.H.toFixed(3)+'">\n';
+  svg+='<rect id="BORDER_CHECK" x="'+ti.toFixed(3)+'" y="'+ti.toFixed(3)+'" width="'+(F.W-2*ti).toFixed(3)+'" height="'+(F.H-2*ti).toFixed(3)+'" fill="none" stroke="#000" stroke-width="0.1"/>\n';
   svg+='<g id="CUT_HOLES_FIRST" fill="none" stroke="blue" stroke-width="0.1">\n';
-  for(const l of LAYOUT)for(const hl of l.d.holes)svg+='<path d="'+svgPath(hl,l.x-bm.ox,l.y-bm.oy)+'"/>\n';
+  for(const l of LAYOUT)for(const hl of l.d.holes)svg+='<path d="'+svgPath(hl,l.x-F.ox,l.y-F.oy)+'"/>\n';
   svg+='</g>\n<g id="CUT_OUTER" fill="none" stroke="red" stroke-width="0.1">\n';
-  for(const l of LAYOUT)for(const o of(l.d.outers||[l.d.outer]))svg+='<path d="'+svgPath(o,l.x-bm.ox,l.y-bm.oy)+'"/>\n';
+  for(const l of LAYOUT)for(const o of(l.d.outers||[l.d.outer]))svg+='<path d="'+svgPath(o,l.x-F.ox,l.y-F.oy)+'"/>\n';
   svg+='</g>\n</svg>';
   download(baseName()+'-cut.svg',svg,'image/svg+xml');
   toast('💾 SVG (border से नापा) — laser origin printed cross पर set करें, फिर BORDER_CHECK से जाँचें');
 };
 function rotPt(x,y,psi,cx,cy){const c=Math.cos(psi),s=Math.sin(psi),dx=x-cx,dy=y-cy;return[cx+dx*c-dy*s,cy+dx*s+dy*c]}
 /* DXF text बनाओ — psi=null → सीधा; psi=angle(rad) → top-right cross (W,0) के गिर्द घुमाकर (टेढ़ी sheet के हिसाब से) */
+function bleedJig(){return !!($('jigOn')&&$('jigOn').checked&&$('jigMode')&&$('jigMode').value==='bleed')} // 🖨 Borderless L-Jig: कोई cross/border नहीं छपेगा — frame = पूरी sheet
 function dxfText(psi){
   if(!LAYOUT.length)return'';
   const sm=sheetMM(),W=sm.W,H=sm.H,step=CFG.dxfStepMM;
   const bm=borderMM();
-  const jig=$('jigOn')&&$('jigOn').checked?{x:+$('jigGx').value||0,y:+$('jigGy').value||0}:null; // 📐 L-Jig: origin = sheet का top-right corner (L का notch), cx/cy पैमाने से नापे गए
-  let shx=0,shy=0,exX=0,exY=0,exW=bm.W,exH=bm.H;
+  const jig=$('jigOn')&&$('jigOn').checked?{x:+$('jigGx').value||0,y:+$('jigGy').value||0}:null; // 📐 L-Jig: origin = sheet का top-right corner (L का notch), cx/cy पैमाने से नापे गए (borderless: shift fine-tune)
+  const F=bleedJig()?{ox:0,oy:0,W:sm.W,H:sm.H}:bm; // borderless → sheet frame, normal → border frame
+  let shx=0,shy=0,exX=0,exY=0,exW=F.W,exH=F.H;
   if(psi!=null){ // घुमाव के बाद सब coordinates positive रखने के लिए shift (border rect के corners से bbox)
     const cs=[[0,0],[bm.W,0],[bm.W,bm.H],[0,bm.H]].map(p=>rotPt(p[0],p[1],psi,bm.W,0));
     const mnx=Math.min.apply(null,cs.map(p=>p[0])),mny=Math.min.apply(null,cs.map(p=>p[1]));
@@ -516,15 +528,16 @@ function dxfText(psi){
   const poly=(pts,layer)=>{
     d+='0\nPOLYLINE\n8\n'+layer+'\n66\n1\n70\n1\n';
     for(const p of pts){
-      let X=p[0]-bm.ox,Y=bm.H-(p[1]-bm.oy);
+      let X=p[0]-F.ox,Y=F.H-(p[1]-F.oy);
       if(psi!=null){const q=rotPt(X,Y,psi,bm.W,0);X=q[0]+shx;Y=q[1]+shy}
       d+='0\nVERTEX\n8\n'+layer+'\n10\n'+X.toFixed(3)+'\n20\n'+Y.toFixed(3)+'\n30\n0\n';
     }
     d+='0\nSEQEND\n';
   };
-  poly([[bm.ox,bm.oy],[bm.ox+bm.W,bm.oy],[bm.ox+bm.W,bm.oy+bm.H],[bm.ox,bm.oy+bm.H]],'BORDER_CHECK'); // poly() bm घटाता है → sheet coords भेजो ताकि rect exact 0,0→W,H आए (design के साथ align)
+  const ti=bleedJig()?(CFG.jigTestInsetMM||3):0; // borderless: test rect sheet edge से थोड़ा अंदर — कागज़ पर margin uniform दिखे
+  poly([[F.ox+ti,F.oy+ti],[F.ox+F.W-ti,F.oy+ti],[F.ox+F.W-ti,F.oy+F.H-ti],[F.ox+ti,F.oy+F.H-ti]],'BORDER_CHECK'); // poly() F घटाता है → sheet coords भेजो ताकि rect exact 0,0→W,H आए (design के साथ align)
   if(jig){ // 📐 ORIGIN_MARK tick — sheet के top-right corner पर (bbox top-right = यही = anchor = L का कोना)
-    const tx=bm.W+jig.x,ty=bm.H+jig.y;
+    const tx=F.W+jig.x,ty=F.H+jig.y;
     d+='0\nPOLYLINE\n8\nORIGIN_MARK\n66\n1\n70\n0\n0\nVERTEX\n8\nORIGIN_MARK\n10\n'+(tx-4).toFixed(3)+'\n20\n'+ty.toFixed(3)+'\n30\n0\n0\nVERTEX\n8\nORIGIN_MARK\n10\n'+tx.toFixed(3)+'\n20\n'+ty.toFixed(3)+'\n30\n0\n0\nSEQEND\n';
     d+='0\nPOLYLINE\n8\nORIGIN_MARK\n66\n1\n70\n0\n0\nVERTEX\n8\nORIGIN_MARK\n10\n'+tx.toFixed(3)+'\n20\n'+ty.toFixed(3)+'\n30\n0\n0\nVERTEX\n8\nORIGIN_MARK\n10\n'+tx.toFixed(3)+'\n20\n'+(ty-4).toFixed(3)+'\n30\n0\n0\nSEQEND\n';
   }
@@ -536,9 +549,10 @@ $('btnDXF').onclick=()=>{
   if(!LAYOUT.length)return;
   const jig=$('jigOn').checked;
   if(jig){const gx=+$('jigGx').value||0,gy=+$('jigGy').value||0;
-    if(gx<=0||gy<=0||gx>50||gy>50){toast('⚠️ cross X/Y गलत लग रहे ('+gx+','+gy+') — पैमाने से sheet के top-right corner से छपे top-right cross तक नापो (आमतौर पर 10-25mm)। Machine के X,Y नहीं डालने!');return}}
+    if(bleedJig()){if(gx<-15||gx>15||gy<-15||gy>15){toast('⚠️ shift X/Y fine-tune है — -15 से +15mm के बीच रखो (आमतौर पर 0। +X = artwork left, +Y = artwork down)');return}}
+    else if(gx<=0||gy<=0||gx>50||gy>50){toast('⚠️ cross X/Y गलत लग रहे ('+gx+','+gy+') — पैमाने से sheet के top-right corner से छपे top-right cross तक नापो (आमतौर पर 10-25mm)। Machine के X,Y नहीं डालने!');return}}
   download(baseName()+(jig?'-jig':'')+'-cut.dxf',dxfText(null)+'0\nENDSEC\n0\nEOF','application/dxf');
-  toast(jig?'💾 L-Jig DXF — origin L के notch पर, anchor top-right (जैसे पहले), sheet L में घिसाओ, BORDER_CHECK से जाँचो':'💾 DXF (border से नापा) — laser origin printed cross पर set करें, फिर BORDER_CHECK से जाँचें');
+  toast(jig?(bleedJig()?'💾 L-Jig DXF (borderless) — origin L के notch पर, anchor top-right, sheet L में घिसाओ, BORDER_CHECK से जाँचो':'💾 L-Jig DXF — origin L के notch पर, anchor top-right (जैसे पहले), sheet L में घिसाओ, BORDER_CHECK से जाँचो'):'💾 DXF (border से नापा) — laser origin printed cross पर set करें, फिर BORDER_CHECK से जाँचें');
 };
 
 /* ============ 🔄 टेढ़ा Fix (2-Point rotation) — camera नहीं, बस 2 नाप ============ */
@@ -627,9 +641,30 @@ $('btnJigDXF').onclick=()=>{
   toast('📐 L-Jig DXF — कच्चे MDF पर काटो, bed पर tape/screw से fix करो (अंदर कोना top-right, notch अंदर), origin notch पर set करो');
 };
 $('jigOn').onchange=()=>{
-  if($('jigOn').checked&&!+$('jigGx').value)toast('ℹ️ cross X/Y अभी खाली है — पहले एक बार print से नापकर भरो, तभी L-Jig DXF सही बनेगा');
+  if($('jigOn').checked&&!+$('jigGx').value&&$('jigMode').value!=='bleed')toast('ℹ️ cross X/Y अभी खाली है — पहले एक बार print से नापकर भरो, तभी L-Jig DXF सही बनेगा');
   $('btnRotDXF').disabled=!LAYOUT.length||!ROT.ok||$('jigOn').checked;
+  saveJig();if(DESIGNS.length)draw();
 };
+/* ============ 🖨 Print mode (Normal/Borderless) + settings browser में save ============ */
+const JIG_HINTS={
+  cross:'L-shape MDF bed पर tape/screw से fix करो — <b>अंदर कोना top-right</b>, notch अंदर (नीचे button से cutting file)। Origin = L के notch पर = sheet का <b>top-right corner</b>। एक बार नापो: print निकलने के बाद sheet के <b>top-right corner</b> से छपे <b>top-right cross</b> के केंद्र तक पैमाने से — X = कितना <b>left</b>, Y = कितना <b>down</b> (mm)। ⚠️ Machine panel के X,Y कभी नहीं — पैमाने से sheet पर! Print उसी size की sheet पर, 100% scale पर।',
+  bleed:'<b>Borderless print</b> (जैसे TM-5355) — print किनार-से-किनार, <b>कोई cross/border नहीं छपेगा</b>। Reference = sheet का <b>top-right corner</b> सीधे। shift X/Y = fine-tune (आमतौर पर <b>0</b>) — पहले कागज़ पर BORDER_CHECK चलाओ, ज़रूरत पड़े तभी बदलो (+X = artwork left, +Y = artwork down)। हर printer का shift अपना — एक बार test करके set करो, फिर हमेशा वही।'
+};
+function syncJigUI(){
+  const b=$('jigMode').value==='bleed';
+  $('jigHint').innerHTML=JIG_HINTS[b?'bleed':'cross'];
+  $('jigGxLbl').textContent=b?'shift X ⇄ (mm)':'cross X ←left (mm)';
+  $('jigGyLbl').textContent=b?'shift Y ⇅ (mm)':'cross Y ↓down (mm)';
+}
+function saveJig(){try{localStorage.setItem('smJig',JSON.stringify({on:$('jigOn').checked,mode:$('jigMode').value,gx:$('jigGx').value,gy:$('jigGy').value,len:$('jigLen').value,w:$('jigW').value}))}catch(e){}}
+try{const sv=JSON.parse(localStorage.getItem('smJig')||'null');
+  if(sv){$('jigOn').checked=!!sv.on;if(sv.mode)$('jigMode').value=sv.mode;
+    const JF={gx:'jigGx',gy:'jigGy',len:'jigLen',w:'jigW'};
+    for(const k in JF)if(sv[k]!=null&&sv[k]!=='')$(JF[k]).value=sv[k]}
+}catch(e){}
+syncJigUI();
+$('jigMode').onchange=()=>{syncJigUI();saveJig();if(DESIGNS.length)draw()};
+['jigGx','jigGy','jigLen','jigW'].forEach(i=>$(i).oninput=saveJig);
 const _ct=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;_ct[n]=c>>>0}
 function _crc32(b){let c=~0;for(let i=0;i<b.length;i++)c=_ct[(c^b[i])&255]^(c>>>8);return(~c)>>>0}
 function pngSetDPI(blob,dpi){return new Promise(res=>{const fr=new FileReader();fr.onload=()=>{const u=new Uint8Array(fr.result),ppm=Math.round(dpi/0.0254),phy=new Uint8Array(21),dv=new DataView(phy.buffer);dv.setUint32(0,9);phy.set([0x70,0x48,0x59,0x73],4);dv.setUint32(8,ppm);dv.setUint32(12,ppm);phy[16]=1;dv.setUint32(17,_crc32(phy.subarray(4,17)));const out=new Uint8Array(u.length+21);out.set(u.subarray(0,33));out.set(phy,33);out.set(u.subarray(33),54);res(new Blob([out],{type:'image/png'}))};fr.readAsArrayBuffer(blob)})}
@@ -641,16 +676,18 @@ async function sheetBlockCanvas(W,H,DPI){
   const bl=+$('bleed').value;
   for(const l of LAYOUT){const d=l.d;
     p.drawImage(d.img,(l.x-bl)*px,(l.y-bl)*px,(d.wmm+2*bl)*px,(d.hmm+2*bl)*px);}
-  p.strokeStyle='#000';p.lineWidth=Math.max(2,0.8*px);
-  p.strokeRect(1*px,1*px,(W-2)*px,(H-2)*px);
-  const bm=borderMM();
-  p.setLineDash([4*px,3*px]);p.strokeRect(bm.ox*px,bm.oy*px,bm.W*px,bm.H*px);p.setLineDash([]);
-  p.lineWidth=Math.max(2,0.35*px);
-  const cm=[[bm.ox,bm.oy],[bm.ox+bm.W,bm.oy],[bm.ox,bm.oy+bm.H],[bm.ox+bm.W,bm.oy+bm.H]];
-  for(let k=0;k<4;k++){const mx=cm[k][0],my=cm[k][1],a=6;
-    p.beginPath();
-    p.moveTo((mx-a)*px,my*px);p.lineTo((mx+a)*px,my*px);p.moveTo(mx*px,(my-a)*px);p.lineTo(mx*px,(my+a)*px);p.stroke();
-    p.beginPath();p.arc(mx*px,my*px,a*0.55*px,0,7);p.stroke();
+  if(!bleedJig()){ // 🖨 borderless L-Jig: पूरी print साफ़ — कोई cross/border/frame नहीं, सिर्फ़ artwork
+    p.strokeStyle='#000';p.lineWidth=Math.max(2,0.8*px);
+    p.strokeRect(1*px,1*px,(W-2)*px,(H-2)*px);
+    const bm=borderMM();
+    p.setLineDash([4*px,3*px]);p.strokeRect(bm.ox*px,bm.oy*px,bm.W*px,bm.H*px);p.setLineDash([]);
+    p.lineWidth=Math.max(2,0.35*px);
+    const cm=[[bm.ox,bm.oy],[bm.ox+bm.W,bm.oy],[bm.ox,bm.oy+bm.H],[bm.ox+bm.W,bm.oy+bm.H]];
+    for(let k=0;k<4;k++){const mx=cm[k][0],my=cm[k][1],a=6;
+      p.beginPath();
+      p.moveTo((mx-a)*px,my*px);p.lineTo((mx+a)*px,my*px);p.moveTo(mx*px,(my-a)*px);p.lineTo(mx*px,(my+a)*px);p.stroke();
+      p.beginPath();p.arc(mx*px,my*px,a*0.55*px,0,7);p.stroke();
+    }
   }
   return c;
 }
