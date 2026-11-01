@@ -126,13 +126,14 @@
     <div class="row" style="flex-wrap:wrap;gap:4px;margin-top:4px">
       <div class="fld"><label id="jigGxLbl">cross X ←left (mm)</label><input type="number" id="jigGx" step="any" style="width:64px"></div>
       <div class="fld"><label id="jigGyLbl">cross Y ↓down (mm)</label><input type="number" id="jigGy" step="any" style="width:64px"></div>
+      <button class="hbtn" id="jigAutoBtn" style="align-self:flex-end" title="Border से अपने आप: half inch border → 12.7, 1 inch → 25.4">⚡ Auto</button>
     </div>
     <div class="row" style="flex-wrap:wrap;gap:4px;margin-top:4px">
       <div class="fld"><label>L लंबाई (mm)</label><input type="number" id="jigLen" value="300" step="any" style="width:64px"></div>
       <div class="fld"><label>L मोटाई (mm)</label><input type="number" id="jigW" value="20" step="any" style="width:64px"></div>
     </div>
     <button class="hbtn main" id="btnJigDXF" style="width:100%;margin-top:6px">📐 L-Jig cutting DXF</button>
-    <div class="note">L-Jig ON पर DXF में छोटा tick (ORIGIN_MARK) sheet के top-right corner पर आएगा — anchor <b>top-right</b> ही रखना (जैसे पहले)। हर बार: sheet L में घिसाओ → import → cut। <b>Normal mode:</b> sheet size बदलो तो cross X/Y दोबारा नापना। <b>Borderless:</b> size बदलो, shift वही रहता — कुछ नापना नहीं। Settings browser में save रहती हैं। (टेढ़ा Fix इस mode में बंद — L में sheet सीधी ही रहती है)</div>
+    <div class="note">L-Jig ON पर DXF में छोटा tick (ORIGIN_MARK) sheet के top-right corner पर आएगा — anchor <b>top-right</b> ही रखना (जैसे पहले)। हर बार: sheet L में घिसाओ → import → cut। <b>Normal mode:</b> border/sheet बदलो तो X/Y <b>अपने आप</b> update (⚡ Auto)। खुद नंबर डाला हो तो ⚡ Auto दबाकर वापस। <b>Borderless:</b> size बदलो, shift वही — कुछ नापना नहीं। Settings browser में save रहती हैं। (टेढ़ा Fix इस mode में बंद — L में sheet सीधी ही रहती है)</div>
   </div>
   <div id="stage"><canvas id="sheet"></canvas></div>
 </div>
@@ -641,13 +642,22 @@ $('btnJigDXF').onclick=()=>{
   toast('📐 L-Jig DXF — कच्चे MDF पर काटो, bed पर tape/screw से fix करो (अंदर कोना top-right, notch अंदर), origin notch पर set करो');
 };
 $('jigOn').onchange=()=>{
+  jigAutoFill(); // ⚡ X/Y अपने आप border से (खाली/auto हो तो)
   if($('jigOn').checked&&!+$('jigGx').value&&$('jigMode').value!=='bleed')toast('ℹ️ cross X/Y अभी खाली है — पहले एक बार print से नापकर भरो, तभी L-Jig DXF सही बनेगा');
   $('btnRotDXF').disabled=!LAYOUT.length||!ROT.ok||$('jigOn').checked;
   saveJig();if(DESIGNS.length)draw();
 };
 /* ============ 🖨 Print mode (Normal/Borderless) + settings browser में save ============ */
+let jigXYDirty=false; // user ने खुद X/Y डाला है → auto उन्हें न हिलाए (bdDirty जैसा)
+function jigAutoFill(){ // ⚡ Normal mode: X/Y = border inset — cross border के कोने पर ही छपता है (half inch → 12.7, 1 inch → 25.4)
+  if(jigXYDirty||bleedJig())return;
+  const sm=sheetMM(),bm=borderMM();
+  $('jigGx').value=((sm.W-bm.W)/2).toFixed(1);
+  $('jigGy').value=((sm.H-bm.H)/2).toFixed(1);
+  saveJig();
+}
 const JIG_HINTS={
-  cross:'L-shape MDF bed पर tape/screw से fix करो — <b>अंदर कोना top-right</b>, notch अंदर (नीचे button से cutting file)। Origin = L के notch पर = sheet का <b>top-right corner</b>। एक बार नापो: print निकलने के बाद sheet के <b>top-right corner</b> से छपे <b>top-right cross</b> के केंद्र तक पैमाने से — X = कितना <b>left</b>, Y = कितना <b>down</b> (mm)। ⚠️ Machine panel के X,Y कभी नहीं — पैमाने से sheet पर! Print उसी size की sheet पर, 100% scale पर।',
+  cross:'L-shape MDF bed पर tape/screw से fix करो — <b>अंदर कोना top-right</b>, notch अंदर (नीचे button से cutting file)। Origin = L के notch पर = sheet का <b>top-right corner</b>। <b>X/Y अपने आप border से भरते हैं</b> — cross border के कोने पर ही छपता है: half inch border → <b>12.7</b>, 1 inch → <b>25.4</b>। नापने की ज़रूरत नहीं — बस कागज़ पर BORDER_CHECK करो: test rect printed border के साथ-साथ कटे तो सब perfect। Printer ने print गलत किया हो (rect offset में कटे) तभी पैमाने से नापकर असली X/Y डालो। Print उसी size की sheet पर, 100% scale पर।',
   bleed:'<b>Borderless print</b> (जैसे TM-5355) — print किनार-से-किनार, <b>कोई cross/border नहीं छपेगा</b>। Reference = sheet का <b>top-right corner</b> सीधे। shift X/Y = fine-tune (आमतौर पर <b>0</b>) — पहले कागज़ पर BORDER_CHECK चलाओ, ज़रूरत पड़े तभी बदलो (+X = artwork left, +Y = artwork down)। हर printer का shift अपना — एक बार test करके set करो, फिर हमेशा वही।'
 };
 function syncJigUI(){
@@ -656,15 +666,18 @@ function syncJigUI(){
   $('jigGxLbl').textContent=b?'shift X ⇄ (mm)':'cross X ←left (mm)';
   $('jigGyLbl').textContent=b?'shift Y ⇅ (mm)':'cross Y ↓down (mm)';
 }
-function saveJig(){try{localStorage.setItem('smJig',JSON.stringify({on:$('jigOn').checked,mode:$('jigMode').value,gx:$('jigGx').value,gy:$('jigGy').value,len:$('jigLen').value,w:$('jigW').value}))}catch(e){}}
+function saveJig(){try{localStorage.setItem('smJig',JSON.stringify({on:$('jigOn').checked,mode:$('jigMode').value,gx:$('jigGx').value,gy:$('jigGy').value,len:$('jigLen').value,w:$('jigW').value,xyAuto:!jigXYDirty}))}catch(e){}}
 try{const sv=JSON.parse(localStorage.getItem('smJig')||'null');
   if(sv){$('jigOn').checked=!!sv.on;if(sv.mode)$('jigMode').value=sv.mode;
+    if(sv.xyAuto===false)jigXYDirty=true; // पुराना save / खुद डाले नंबर → auto न हिलाए
     const JF={gx:'jigGx',gy:'jigGy',len:'jigLen',w:'jigW'};
     for(const k in JF)if(sv[k]!=null&&sv[k]!=='')$(JF[k]).value=sv[k]}
 }catch(e){}
 syncJigUI();
-$('jigMode').onchange=()=>{syncJigUI();saveJig();if(DESIGNS.length)draw()};
-['jigGx','jigGy','jigLen','jigW'].forEach(i=>$(i).oninput=saveJig);
+$('jigMode').onchange=()=>{syncJigUI();jigAutoFill();saveJig();if(DESIGNS.length)draw()};
+['jigGx','jigGy'].forEach(i=>$(i).oninput=()=>{jigXYDirty=true;saveJig()});
+['jigLen','jigW'].forEach(i=>$(i).oninput=saveJig);
+$('jigAutoBtn').onclick=()=>{jigXYDirty=false;jigAutoFill();toast('⚡ X/Y auto = '+$('jigGx').value+' / '+$('jigGy').value+' mm (border से)')};
 const _ct=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;_ct[n]=c>>>0}
 function _crc32(b){let c=~0;for(let i=0;i<b.length;i++)c=_ct[(c^b[i])&255]^(c>>>8);return(~c)>>>0}
 function pngSetDPI(blob,dpi){return new Promise(res=>{const fr=new FileReader();fr.onload=()=>{const u=new Uint8Array(fr.result),ppm=Math.round(dpi/0.0254),phy=new Uint8Array(21),dv=new DataView(phy.buffer);dv.setUint32(0,9);phy.set([0x70,0x48,0x59,0x73],4);dv.setUint32(8,ppm);dv.setUint32(12,ppm);phy[16]=1;dv.setUint32(17,_crc32(phy.subarray(4,17)));const out=new Uint8Array(u.length+21);out.set(u.subarray(0,33));out.set(phy,33);out.set(u.subarray(33),54);res(new Blob([out],{type:'image/png'}))};fr.readAsArrayBuffer(blob)})}
@@ -818,7 +831,7 @@ $('file').onchange=async e=>{
   if(bgCnt||dustCnt)msg='✅ साफ़ PNG तैयार! ('+(bgCnt?bgCnt+' bg हटा, ':'')+(dustCnt?dustCnt+' धूल-dabbe हटाए':'')+') — ऊँचाई/qty set करें';
   toast(msg);
 };
-['gap','edge','bdW','bdH'].forEach(i=>{$(i).oninput=()=>{if(DESIGNS.length)doLayout()}});
+['gap','edge','bdW','bdH'].forEach(i=>{$(i).oninput=()=>{if(DESIGNS.length)doLayout();jigAutoFill()}});
 let bdDirty=false; // user ने border छुआ → auto-follow बंद
 ['bdW','bdH'].forEach(i=>$(i).addEventListener('input',()=>{bdDirty=true}));
 ['shW','shH'].forEach(i=>{$(i).oninput=()=>{
@@ -827,6 +840,7 @@ let bdDirty=false; // user ने border छुआ → auto-follow बंद
     $('bdH').value=Math.max(2,(+$('shH').value)-0.5);
   }
   if(DESIGNS.length)doLayout();
+  jigAutoFill(); // ⚡ border बदला → X/Y भी auto update
 }});
 $('dpi').onchange=()=>{if(DESIGNS.length)updateStats()};
 $('bleed').onchange=async()=>{
