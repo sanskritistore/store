@@ -60,8 +60,9 @@
       <div class="row"><input type="number" id="shW" min="2" max="48" step="0.5" value="12"> <b>×</b>
       <input type="number" id="shH" min="2" max="96" step="0.5" value="18"></div></div>
     <div class="fld"><label>🎯 Print border (inch) — printer margin के बाद असली area • laser align = इन्हीं 4 कोनों पर</label>
-      <div class="row"><input type="number" id="bdW" min="2" max="48" step="0.5" value="11.5"> <b>×</b>
-      <input type="number" id="bdH" min="2" max="96" step="0.5" value="17.5"></div></div>
+      <div class="row"><input type="number" id="bdW" min="2" max="48" step="0.5" value="11"> <b>×</b>
+      <input type="number" id="bdH" min="2" max="96" step="0.5" value="17"></div></div>
+    <div class="hint" id="bdInset" style="margin-top:2px"></div>
     <div class="row">
       <div class="fld"><label>Gap (mm)</label><input type="number" id="gap" min="0" max="50" step="0.5" value="5" style="width:56px"></div>
       <div class="fld"><label>Edge (mm)</label><input type="number" id="edge" min="0" max="50" step="0.5" value="3" style="width:56px"></div>
@@ -386,6 +387,10 @@ function borderMM(){
   if(!(bw>10)||bw>sm.W)bw=sm.W;
   if(!(bh>10)||bh>sm.H)bh=sm.H;
   return{W:bw,H:bh,ox:(sm.W-bw)/2,oy:(sm.H-bh)/2};
+}
+function updBdInset(){ // 📏 border के नीचे live margin दिखाओ — "half inch ka border" = हर तरफ 12.7mm अंदर
+  const sm=sheetMM(),bm=borderMM();
+  $('bdInset').textContent='📏 हर तरफ से अंदर (margin): '+((sm.W-bm.W)/2).toFixed(1)+'mm × '+((sm.H-bm.H)/2).toFixed(1)+'mm — cross X/Y = यही नंबर';
 }
 function doLayout(){
   const sm=sheetMM(),W=sm.W,H=sm.H,gap=+$('gap').value,edge=+$('edge').value;
@@ -831,17 +836,19 @@ $('file').onchange=async e=>{
   if(bgCnt||dustCnt)msg='✅ साफ़ PNG तैयार! ('+(bgCnt?bgCnt+' bg हटा, ':'')+(dustCnt?dustCnt+' धूल-dabbe हटाए':'')+') — ऊँचाई/qty set करें';
   toast(msg);
 };
-['gap','edge','bdW','bdH'].forEach(i=>{$(i).oninput=()=>{if(DESIGNS.length)doLayout();jigAutoFill()}});
+['gap','edge','bdW','bdH'].forEach(i=>{$(i).oninput=()=>{updBdInset();if(DESIGNS.length)doLayout();jigAutoFill()}});
 let bdDirty=false; // user ने border छुआ → auto-follow बंद
 ['bdW','bdH'].forEach(i=>$(i).addEventListener('input',()=>{bdDirty=true}));
 ['shW','shH'].forEach(i=>{$(i).oninput=()=>{
-  if(!bdDirty){ // border auto = sheet − 0.5in (printer margin)
-    $('bdW').value=Math.max(2,(+$('shW').value)-0.5);
-    $('bdH').value=Math.max(2,(+$('shH').value)-0.5);
+  if(!bdDirty){ // border auto = sheet − 1in = half inch margin हर तरफ (Dev standard: 12.7mm)
+    $('bdW').value=Math.max(2,(+$('shW').value)-1);
+    $('bdH').value=Math.max(2,(+$('shH').value)-1);
   }
   if(DESIGNS.length)doLayout();
+  updBdInset();
   jigAutoFill(); // ⚡ border बदला → X/Y भी auto update
 }});
+updBdInset();
 $('dpi').onchange=()=>{if(DESIGNS.length)updateStats()};
 $('bleed').onchange=async()=>{
   if(!DESIGNS.length)return;
