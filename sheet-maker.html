@@ -96,7 +96,7 @@
     <b>RDWorks में:</b> पहले <b>BORDER_CHECK</b> layer हल्के power से चलाएँ — निशान छपे border के ऊपर बैठा तो alignment perfect, फिर cutting करें।</div>
 
     <h3>🔄 टेढ़ा Fix (2-Point) — UV printer जैसा</h3>
-    <div class="hint">Sheet टेढ़ी पड़ी हो तो: head को <b>① ऊपर-दायाँ cross</b> पर ले जाकर RDWorks का X,Y नोट करो। फिर <b>② ऊपर-बायाँ cross</b> पर। दोनों यहाँ भरो — DXF sheet के हिसाब से अपने-आप घूमेगा, sheet छूनी नहीं पड़ेगी।</div>
+    <div class="hint">Sheet टेढ़ी पड़ी हो तो: head को <b>① top-right cross</b> पर ले जाकर RDWorks का X,Y नोट करो। फिर <b>② top-left cross</b> पर। दोनों यहाँ भरो — DXF sheet के हिसाब से अपने-आप घूमेगा, sheet छूनी नहीं पड़ेगी।</div>
     <div class="row" style="flex-wrap:wrap;gap:4px">
       <div class="fld"><label>① X</label><input type="number" id="rX1" step="any" style="width:64px"></div>
       <div class="fld"><label>① Y</label><input type="number" id="rY1" step="any" style="width:64px"></div>
@@ -110,23 +110,23 @@
     <div id="rotInfo" class="hint" style="display:none"></div>
     <canvas id="rotPrev" style="width:100%;border:1px solid #334155;border-radius:8px;margin-top:6px;display:none"></canvas>
     <button class="hbtn main" id="btnRotDXF" style="width:100%;margin-top:6px" disabled>💾 टेढ़ा DXF</button>
-    <div class="note">Origin फिर भी <b>① ऊपर-दायाँ cross</b> पर ही set करना। Designs बदलो तो दोबारा 🔄 दबाओ।</div>
+    <div class="note">Origin फिर भी <b>① top-right cross</b> पर ही set करना। Designs बदलो तो दोबारा 🔄 दबाओ।</div>
 
     <h3>📐 L-Jig mode — एक बार fix, फिर हमेशा ready</h3>
-    <div class="hint">L-shape MDF bed पर tape/screw से fix करो — <b>अंदर कोना ऊपर-दायाँ</b>, notch अंदर (नीचे button से cutting file)। Origin = L के notch पर = sheet का <b>ऊपर-दायाँ कोना</b>। एक बार नापो: print निकलने के बाद sheet के <b>ऊपर-दायें कोने</b> से छपे <b>ऊपर-दायें cross</b> के केंद्र तक पैमाने से — X = कितना <b>बायाँ</b>, Y = कितना <b>नीचे</b> (mm)। ⚠️ Machine panel के X,Y कभी नहीं — पैमाने से sheet पर! Print उसी size की sheet पर, 100% scale पर।</div>
+    <div class="hint">L-shape MDF bed पर tape/screw से fix करो — <b>अंदर कोना top-right</b>, notch अंदर (नीचे button से cutting file)। Origin = L के notch पर = sheet का <b>top-right corner</b>। एक बार नापो: print निकलने के बाद sheet के <b>top-right corner</b> से छपे <b>top-right cross</b> के केंद्र तक पैमाने से — X = कितना <b>left</b>, Y = कितना <b>down</b> (mm)। ⚠️ Machine panel के X,Y कभी नहीं — पैमाने से sheet पर! Print उसी size की sheet पर, 100% scale पर।</div>
     <div class="row" style="align-items:center;gap:6px;margin-top:6px">
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="jigOn"> L-Jig mode ON</label>
     </div>
     <div class="row" style="flex-wrap:wrap;gap:4px;margin-top:4px">
-      <div class="fld"><label>cross X ←बायाँ (mm)</label><input type="number" id="jigGx" step="any" style="width:64px"></div>
-      <div class="fld"><label>cross Y ↓नीचे (mm)</label><input type="number" id="jigGy" step="any" style="width:64px"></div>
+      <div class="fld"><label>cross X ←left (mm)</label><input type="number" id="jigGx" step="any" style="width:64px"></div>
+      <div class="fld"><label>cross Y ↓down (mm)</label><input type="number" id="jigGy" step="any" style="width:64px"></div>
     </div>
     <div class="row" style="flex-wrap:wrap;gap:4px;margin-top:4px">
       <div class="fld"><label>L लंबाई (mm)</label><input type="number" id="jigLen" value="300" step="any" style="width:64px"></div>
       <div class="fld"><label>L मोटाई (mm)</label><input type="number" id="jigW" value="20" step="any" style="width:64px"></div>
     </div>
     <button class="hbtn main" id="btnJigDXF" style="width:100%;margin-top:6px">📐 L-Jig cutting DXF</button>
-    <div class="note">L-Jig ON पर DXF में छोटा tick (ORIGIN_MARK) sheet के ऊपर-दायें कोने पर आएगा — anchor <b>ऊपर-दायाँ</b> ही रखना (जैसे पहले)। हर बार: sheet L में घिसाओ → import → cut। Sheet का size बदलो तो cross X/Y दोबारा नापना। (टेढ़ा Fix इस mode में बंद — L में sheet सीधी ही रहती है)</div>
+    <div class="note">L-Jig ON पर DXF में छोटा tick (ORIGIN_MARK) sheet के top-right corner पर आएगा — anchor <b>top-right</b> ही रखना (जैसे पहले)। हर बार: sheet L में घिसाओ → import → cut। Sheet का size बदलो तो cross X/Y दोबारा नापना। (टेढ़ा Fix इस mode में बंद — L में sheet सीधी ही रहती है)</div>
   </div>
   <div id="stage"><canvas id="sheet"></canvas></div>
 </div>
@@ -484,12 +484,12 @@ $('btnSVG').onclick=()=>{
   toast('💾 SVG (border से नापा) — laser origin printed cross पर set करें, फिर BORDER_CHECK से जाँचें');
 };
 function rotPt(x,y,psi,cx,cy){const c=Math.cos(psi),s=Math.sin(psi),dx=x-cx,dy=y-cy;return[cx+dx*c-dy*s,cy+dx*s+dy*c]}
-/* DXF text बनाओ — psi=null → सीधा; psi=angle(rad) → ऊपर-दायाँ cross (W,0) के गिर्द घुमाकर (टेढ़ी sheet के हिसाब से) */
+/* DXF text बनाओ — psi=null → सीधा; psi=angle(rad) → top-right cross (W,0) के गिर्द घुमाकर (टेढ़ी sheet के हिसाब से) */
 function dxfText(psi){
   if(!LAYOUT.length)return'';
   const sm=sheetMM(),W=sm.W,H=sm.H,step=CFG.dxfStepMM;
   const bm=borderMM();
-  const jig=$('jigOn')&&$('jigOn').checked?{x:+$('jigGx').value||0,y:+$('jigGy').value||0}:null; // 📐 L-Jig: origin = sheet का ऊपर-दायाँ कोना (L का notch), cx/cy पैमाने से नापे गए
+  const jig=$('jigOn')&&$('jigOn').checked?{x:+$('jigGx').value||0,y:+$('jigGy').value||0}:null; // 📐 L-Jig: origin = sheet का top-right corner (L का notch), cx/cy पैमाने से नापे गए
   let shx=0,shy=0,exX=0,exY=0,exW=bm.W,exH=bm.H;
   if(psi!=null){ // घुमाव के बाद सब coordinates positive रखने के लिए shift (border rect के corners से bbox)
     const cs=[[0,0],[bm.W,0],[bm.W,bm.H],[0,bm.H]].map(p=>rotPt(p[0],p[1],psi,bm.W,0));
@@ -499,7 +499,7 @@ function dxfText(psi){
   }
   // R12 DXF (AC1009) + POLYLINE/VERTEX — हर laser software/viewer इसे पढ़ लेता है
   // 🎯 सारे coordinates BORDER से (0,0 = printed cross) — laser origin cross पर set करो तो exact match
-  const jx=jig?jig.x:0,jy=jig?jig.y:0; // L-Jig: geometry border-frame में ही रहती है — सिर्फ़ ORIGIN_MARK tick sheet के ऊपर-दायें कोने पर जाता है (anchor = L कोना)
+  const jx=jig?jig.x:0,jy=jig?jig.y:0; // L-Jig: geometry border-frame में ही रहती है — सिर्फ़ ORIGIN_MARK tick sheet के top-right corner पर जाता है (anchor = L कोना)
   let d='0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1009\n9\n$INSUNITS\n70\n4\n'+
         '9\n$EXTMIN\n10\n'+exX.toFixed(3)+'\n20\n'+exY.toFixed(3)+'\n9\n$EXTMAX\n10\n'+(exW+jx).toFixed(3)+'\n20\n'+(exH+jy).toFixed(3)+'\n0\nENDSEC\n'+
         '0\nSECTION\n2\nENTITIES\n';
@@ -523,7 +523,7 @@ function dxfText(psi){
     d+='0\nSEQEND\n';
   };
   poly([[bm.ox,bm.oy],[bm.ox+bm.W,bm.oy],[bm.ox+bm.W,bm.oy+bm.H],[bm.ox,bm.oy+bm.H]],'BORDER_CHECK'); // poly() bm घटाता है → sheet coords भेजो ताकि rect exact 0,0→W,H आए (design के साथ align)
-  if(jig){ // 📐 ORIGIN_MARK tick — sheet के ऊपर-दायें कोने पर (bbox top-right = यही = anchor = L का कोना)
+  if(jig){ // 📐 ORIGIN_MARK tick — sheet के top-right corner पर (bbox top-right = यही = anchor = L का कोना)
     const tx=bm.W+jig.x,ty=bm.H+jig.y;
     d+='0\nPOLYLINE\n8\nORIGIN_MARK\n66\n1\n70\n0\n0\nVERTEX\n8\nORIGIN_MARK\n10\n'+(tx-4).toFixed(3)+'\n20\n'+ty.toFixed(3)+'\n30\n0\n0\nVERTEX\n8\nORIGIN_MARK\n10\n'+tx.toFixed(3)+'\n20\n'+ty.toFixed(3)+'\n30\n0\n0\nSEQEND\n';
     d+='0\nPOLYLINE\n8\nORIGIN_MARK\n66\n1\n70\n0\n0\nVERTEX\n8\nORIGIN_MARK\n10\n'+tx.toFixed(3)+'\n20\n'+ty.toFixed(3)+'\n30\n0\n0\nVERTEX\n8\nORIGIN_MARK\n10\n'+tx.toFixed(3)+'\n20\n'+(ty-4).toFixed(3)+'\n30\n0\n0\nSEQEND\n';
@@ -536,9 +536,9 @@ $('btnDXF').onclick=()=>{
   if(!LAYOUT.length)return;
   const jig=$('jigOn').checked;
   if(jig){const gx=+$('jigGx').value||0,gy=+$('jigGy').value||0;
-    if(gx<=0||gy<=0||gx>50||gy>50){toast('⚠️ cross X/Y गलत लग रहे ('+gx+','+gy+') — पैमाने से sheet के ऊपर-दायें कोने से छपे ऊपर-दायें cross तक नापो (आमतौर पर 10-25mm)। Machine के X,Y नहीं डालने!');return}}
+    if(gx<=0||gy<=0||gx>50||gy>50){toast('⚠️ cross X/Y गलत लग रहे ('+gx+','+gy+') — पैमाने से sheet के top-right corner से छपे top-right cross तक नापो (आमतौर पर 10-25mm)। Machine के X,Y नहीं डालने!');return}}
   download(baseName()+(jig?'-jig':'')+'-cut.dxf',dxfText(null)+'0\nENDSEC\n0\nEOF','application/dxf');
-  toast(jig?'💾 L-Jig DXF — origin L के notch पर, anchor ऊपर-दायाँ (जैसे पहले), sheet L में घिसाओ, BORDER_CHECK से जाँचो':'💾 DXF (border से नापा) — laser origin printed cross पर set करें, फिर BORDER_CHECK से जाँचें');
+  toast(jig?'💾 L-Jig DXF — origin L के notch पर, anchor top-right (जैसे पहले), sheet L में घिसाओ, BORDER_CHECK से जाँचो':'💾 DXF (border से नापा) — laser origin printed cross पर set करें, फिर BORDER_CHECK से जाँचें');
 };
 
 /* ============ 🔄 टेढ़ा Fix (2-Point rotation) — camera नहीं, बस 2 नाप ============ */
@@ -574,7 +574,7 @@ function drawRotPrev(){
       p.closePath();p.stroke();
     }
   }
-  const cr=[[bm.W,0,'#dc2626','1'],[0,0,'#2563eb','2']]; // crosses: 1=ऊपर-दायाँ(origin) 2=ऊपर-बायाँ
+  const cr=[[bm.W,0,'#dc2626','1'],[0,0,'#2563eb','2']]; // crosses: 1=top-right(origin) 2=top-left
   p.font='bold 11px sans-serif';
   for(const c of cr){const m=M([c[0],c[1]]);
     p.strokeStyle=c[2];p.lineWidth=1.6;
@@ -602,7 +602,7 @@ $('btnRotDXF').onclick=()=>{
   if(!LAYOUT.length||!ROT.ok)return;
   if($('jigOn').checked){toast('📐 L-Jig mode ON है — टेढ़ा Fix की ज़रूरत नहीं। L-Jig बंद करो तो यह चलेगा।');return}
   download(baseName()+'-tedha-'+(ROT.psi*180/Math.PI).toFixed(1)+'deg.dxf',dxfText(ROT.psi)+'0\nENDSEC\n0\nEOF','application/dxf');
-  toast('💾 टेढ़ा DXF — import करो, origin 1 ऊपर-दायाँ cross पर set करो, BORDER_CHECK से जाँचो');
+  toast('💾 टेढ़ा DXF — import करो, origin ① top-right cross पर set करो, BORDER_CHECK से जाँचो');
 };
 
 /* ============ 📐 L-Jig — bed पर fix रहने वाली guide (एक बार काटो, हमेशा इस्तेमाल) ============ */
@@ -613,7 +613,7 @@ function jigDXF(len,w){
   const poly=(pts,layer)=>{d+='0\nPOLYLINE\n8\n'+layer+'\n66\n1\n70\n'+(pts.length>2?1:0)+'\n';
     for(const p of pts)d+='0\nVERTEX\n8\n'+layer+'\n10\n'+p[0].toFixed(3)+'\n20\n'+p[1].toFixed(3)+'\n30\n0\n';
     d+='0\nSEQEND\n'};
-  // ┐ shape — कटकर सीधे ऐसा ही निकलेगा: अंदर कोना ऊपर-दायाँ, भुजाएँ बायाँ+नीचे; sheet बायें-नीचे से घिसेगी
+  // ┐ shape — कटकर सीधे ऐसा ही निकलेगा: अंदर कोना top-right, भुजाएँ left+down; sheet left-down से घिसेगी
   poly([[1,len+w+1],[len+1,len+w+1],[len+1,1],[len-w+1,1],[len-w+1,len+1],[1,len+1]],'CUT_L');
   const nx=len-w+1,ny=len+1; // अंदर कोना (notch) — origin यहीं set होगा
   poly([[nx-5,ny],[nx+5,ny]],'ORIGIN_MARK');poly([[nx,ny-5],[nx,ny+5]],'ORIGIN_MARK');
@@ -624,7 +624,7 @@ function jigDXF(len,w){
 $('btnJigDXF').onclick=()=>{
   const len=Math.max(50,+$('jigLen').value||300),w=Math.max(8,+$('jigW').value||20);
   download('L-jig-'+len+'x'+w+'mm.dxf',jigDXF(len,w)+'0\nENDSEC\n0\nEOF','application/dxf');
-  toast('📐 L-Jig DXF — कच्चे MDF पर काटो, bed पर tape/screw से fix करो (अंदर कोना ऊपर-दायाँ, notch अंदर), origin notch पर set करो');
+  toast('📐 L-Jig DXF — कच्चे MDF पर काटो, bed पर tape/screw से fix करो (अंदर कोना top-right, notch अंदर), origin notch पर set करो');
 };
 $('jigOn').onchange=()=>{
   if($('jigOn').checked&&!+$('jigGx').value)toast('ℹ️ cross X/Y अभी खाली है — पहले एक बार print से नापकर भरो, तभी L-Jig DXF सही बनेगा');
