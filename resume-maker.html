@@ -869,6 +869,8 @@ function renderStudio(){
   st.appendChild(bt);
 }
 $('btnStudio').onclick=()=>{ STU.open?closeStudio():openStudio(); };
+/* admin entry: ?template=1 → Template Studio सीधे खुले (maker mode) — customer mode बिल्कुल वैसा ही रहेगा */
+if(new URLSearchParams(location.search).get('template')==='1') openStudio();
 /* ---- 📄 resume भाषा chips (English default / हिंदी option) ---- */
 function buildDocLang(){
   const c=$('docLangChips'); c.innerHTML='';
