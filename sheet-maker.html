@@ -44,7 +44,7 @@
 </head>
 <body>
 <header>
-  <h1>📄 Sheet Maker</h1><span class="tag">FREE</span><span class="tag" style="background:#334155" id="verTag">v2-Nov-1</span>
+  <h1>📄 Sheet Maker</h1><span class="tag">FREE</span><span class="tag" style="background:#334155" id="verTag">v2-Nov-2</span>
   <span style="font-size:11px;color:#94a3b8">print (TM-5350, 36in तक) + cut (CO2, 48×48in तक) — एक ही file से</span>
   <a href="cutline-maker.html" class="hbtn" style="text-decoration:none;font-size:12px">✂️ Cutline Maker</a>
   <span style="flex:1"></span>
@@ -547,7 +547,7 @@ $('btnCorelSVG').onclick=async()=>{ // 🖼📐 Corel Check: image + outline अ
     }
     idx++;
     const nm=String(l.d.name).replace(/[^A-Za-z0-9_-]/g,'_');
-    svg+='<image id="art_'+idx+'_'+nm+'" x="'+(l.x-F.ox).toFixed(3)+'" y="'+(l.y-F.oy).toFixed(3)+'" width="'+l.d.wmm.toFixed(3)+'" height="'+l.d.hmm.toFixed(3)+'" xlink:href="'+l.d._corelUrl+'"/>\n';
+    svg+='<image preserveAspectRatio="none" id="art_'+idx+'_'+nm+'" x="'+(l.x-F.ox).toFixed(3)+'" y="'+(l.y-F.oy).toFixed(3)+'" width="'+l.d.wmm.toFixed(3)+'" height="'+l.d.hmm.toFixed(3)+'" xlink:href="'+l.d._corelUrl+'"/>\n';
   }
   svg+='</g>\n';
   svg+='<g id="CUT_HOLES_FIRST" fill="none" stroke="blue" stroke-width="0.15">\n';
