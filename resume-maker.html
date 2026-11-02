@@ -869,8 +869,9 @@ function renderStudio(){
   st.appendChild(bt);
 }
 $('btnStudio').onclick=()=>{ STU.open?closeStudio():openStudio(); };
-/* admin entry: ?template=1 → Template Studio सीधे खुले (maker mode) — customer mode बिल्कुल वैसा ही रहेगा */
-if(new URLSearchParams(location.search).get('template')==='1') openStudio();
+/* 👥 customer/maker split — default = customer (studio button छुपा) · ?template=1 = maker (studio खुला) */
+const MAKER=new URLSearchParams(location.search).get('template')==='1';
+if(!MAKER){ try{ $('btnStudio').style.display='none'; }catch(_){}} else openStudio();
 /* ---- 📄 resume भाषा chips (English default / हिंदी option) ---- */
 function buildDocLang(){
   const c=$('docLangChips'); c.innerHTML='';

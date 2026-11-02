@@ -233,6 +233,8 @@ const STR={
    galAll:'All', galPrem:'⭐ Premium', galPat:'🧩 Patterned', galPick:'✅ Design picked — now fill your details' }
 };
 const S={ ui:'hi', side:'front', tplFront:'blank', tplBack:'blank', sheet:'s1218L', cardSize:'logo', data:null };
+/* 👥 customer/maker split — default (no param) = CUSTOMER easy mode (gallery खुले, studio छुपा) · ?maker=1 = पूरा maker (admin) */
+const MAKER=new URLSearchParams(location.search).get('maker')==='1';
 function T(k){ return STR[S.ui][k]; }
 function activeTplId(){ return S.side==='front'?S.tplFront:S.tplBack; }
 function setActiveTpl(id){ if(S.side==='front') S.tplFront=id; else S.tplBack=id; }
@@ -1288,7 +1290,7 @@ function buildForm(){
   const gb=document.createElement('button'); gb.className='sbtn'; gb.style.cssText='width:100%;margin-top:6px;background:#f59e0b;color:#111;font-weight:800';
   gb.textContent=T('galBtn'); gb.onclick=()=>openGallery(); side.appendChild(gb);
   /* studio */
-  { const so=document.createElement('button'); so.className='sbtn'; so.style.cssText='width:100%;margin-top:6px;border:1px dashed #f59e0b;color:#fbbf24';
+  if(MAKER){ const so=document.createElement('button'); so.className='sbtn'; so.style.cssText='width:100%;margin-top:6px;border:1px dashed #f59e0b;color:#fbbf24';
     so.textContent=T('stOpen'); so.onclick=()=>openStudio(); side.appendChild(so); }
   /* schema sections */
   SCHEMA.forEach(sec=>{
@@ -1308,6 +1310,7 @@ function buildChips(){
   const isBack=t=>t.skin==='bBrand'||t.skin==='bServices'||t.skin==='bPlain';
   Object.keys(TEMPLATES).forEach(id=>{
     if(id==='_studio') return;
+    if(!MAKER&&id==='blank') return;   /* 👥 customer को खाली canvas न दिखे */
     const t=TEMPLATES[id];
     if(t.gen) return;                        /* 🖼️ library designs सिर्फ़ gallery में */
     if(isBack(t)!==(S.side==='back')) return;
@@ -2236,6 +2239,9 @@ $('btnLang').onclick=()=>{ S.ui=(S.ui==='hi')?'en':'hi'; applyLang(); };
 
 /* ================= 🚀 BOOT ================= */
 applyLang();
+/* 👥 customer mode: designs पहले (gallery खुली), maker file-ops छुपे */
+if(!MAKER){ try{ $('btnSave').style.display='none'; $('btnLoad').style.display='none'; }catch(_){}
+ openGallery(); }
 $('btnSample').click();
 </script>
 <div id='printArea'></div>
