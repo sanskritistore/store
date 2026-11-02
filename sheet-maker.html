@@ -44,7 +44,7 @@
 </head>
 <body>
 <header>
-  <h1>📄 Sheet Maker</h1><span class="tag">FREE</span><span class="tag" style="background:#334155" id="verTag">v1-Nov-6</span>
+  <h1>📄 Sheet Maker</h1><span class="tag">FREE</span><span class="tag" style="background:#334155" id="verTag">v2-Nov-1</span>
   <span style="font-size:11px;color:#94a3b8">print (TM-5350, 36in तक) + cut (CO2, 48×48in तक) — एक ही file से</span>
   <a href="cutline-maker.html" class="hbtn" style="text-decoration:none;font-size:12px">✂️ Cutline Maker</a>
   <span style="flex:1"></span>
@@ -52,6 +52,7 @@
   <button class="hbtn" id="btnPrint" disabled>⬇️ Print PNG</button>
   <button class="hbtn main" id="btnDXF" disabled>💾 DXF (RDWorks)</button>
   <button class="hbtn main" id="btnSVG" disabled>💾 SVG</button>
+  <button class="hbtn main" id="btnCorelSVG" disabled>🖼📐 Corel Check</button>
 </header>
 <div id="main">
   <div id="panel">
@@ -434,7 +435,7 @@ function doLayout(){
   }
   updateStats();draw();
   const has=LAYOUT.length>0;
-  ['btnPrint','btnDirect','btnDXF','btnSVG'].forEach(i=>{$(i).disabled=!has});
+  ['btnPrint','btnDirect','btnDXF','btnSVG','btnCorelSVG'].forEach(i=>{$(i).disabled=!has});
   $('btnRotDXF').disabled=!has||!ROT.ok||$('jigOn').checked;
 }
 function bzLen(bz){let L=0,pr=bz[0][0];
@@ -521,6 +522,44 @@ $('btnSVG').onclick=()=>{
   svg+='</g>\n</svg>';
   download(baseName()+'-cut.svg',svg,'image/svg+xml');
   toast('💾 SVG (border से नापा) — laser origin printed cross पर set करें, फिर BORDER_CHECK से जाँचें');
+};
+$('btnCorelSVG').onclick=async()=>{ // 🖼📐 Corel Check: image + outline अलग-अलग groups — Corel में खोलकर गलती आँखों से देखो
+  if(!LAYOUT.length)return;
+  prog(true,'⏳ Corel Check SVG बन रहा — images embed हो रही…');
+  await new Promise(r=>setTimeout(r,30));
+  const sm=sheetMM();
+  const bm=borderMM();
+  const F=bleedJig()?{ox:0,oy:0,W:sm.W,H:sm.H}:bm;
+  const ti=(bleedJig()||trimJig())?(CFG.jigTestInsetMM||3):0;
+  let svg='<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="'+F.W.toFixed(1)+'mm" height="'+F.H.toFixed(1)+'mm" viewBox="0 0 '+F.W.toFixed(3)+' '+F.H.toFixed(3)+'">\n';
+  svg+='<rect id="SHEET_WHITE" x="0" y="0" width="'+F.W.toFixed(3)+'" height="'+F.H.toFixed(3)+'" fill="#ffffff"/>\n';
+  svg+='<g id="IMAGES_art">\n'; // 🖼 छपी art — नीचे वाली layer (Corel में अलग select/hide कर सकते हो)
+  let idx=0;
+  for(const l of LAYOUT){
+    if(!l.d._corelUrl){ // हर design एक बार embed (cache)
+      const img=l.d.img,iw=img.width||img.naturalWidth,ih=img.height||img.naturalHeight;
+      const sc=Math.min(1,1200/Math.max(iw,ih));
+      const cw=Math.max(8,Math.round(iw*sc)),ch=Math.max(8,Math.round(ih*sc));
+      const cv=document.createElement('canvas');cv.width=cw;cv.height=ch;
+      const cx=cv.getContext('2d');cx.fillStyle='#ffffff';cx.fillRect(0,0,cw,ch); // white पर flatten = print जैसा
+      cx.drawImage(img,0,0,cw,ch);
+      l.d._corelUrl=cv.toDataURL('image/jpeg',0.88);
+    }
+    idx++;
+    const nm=String(l.d.name).replace(/[^A-Za-z0-9_-]/g,'_');
+    svg+='<image id="art_'+idx+'_'+nm+'" x="'+(l.x-F.ox).toFixed(3)+'" y="'+(l.y-F.oy).toFixed(3)+'" width="'+l.d.wmm.toFixed(3)+'" height="'+l.d.hmm.toFixed(3)+'" xlink:href="'+l.d._corelUrl+'"/>\n';
+  }
+  svg+='</g>\n';
+  svg+='<g id="CUT_HOLES_FIRST" fill="none" stroke="blue" stroke-width="0.15">\n';
+  for(const l of LAYOUT)for(const hl of l.d.holes)svg+='<path d="'+svgPath(hl,l.x-F.ox,l.y-F.oy)+'"/>\n';
+  svg+='</g>\n<g id="CUT_OUTER" fill="none" stroke="red" stroke-width="0.15">\n';
+  for(const l of LAYOUT)for(const o of(l.d.outers||[l.d.outer]))svg+='<path d="'+svgPath(o,l.x-F.ox,l.y-F.oy)+'"/>\n';
+  svg+='</g>\n';
+  svg+='<rect id="BORDER_CHECK" x="'+ti.toFixed(3)+'" y="'+ti.toFixed(3)+'" width="'+(F.W-2*ti).toFixed(3)+'" height="'+(F.H-2*ti).toFixed(3)+'" fill="none" stroke="#000000" stroke-width="0.15"/>\n';
+  svg+='</svg>';
+  download(baseName()+'-corel-check.svg',svg,'image/svg+xml');
+  prog(false);
+  toast('💾 Corel Check SVG — Corel में खोलो: <b>IMAGES_art</b> = छपी art, <b>CUT_OUTER (लाल)</b> = कटाई outline, <b>CUT_HOLES_FIRST (नीली)</b> = अंदर के holes। लाल line art से कितनी बाहर/अंदर — आँखों से दिखेगा!');
 };
 function rotPt(x,y,psi,cx,cy){const c=Math.cos(psi),s=Math.sin(psi),dx=x-cx,dy=y-cy;return[cx+dx*c-dy*s,cy+dx*s+dy*c]}
 /* DXF text बनाओ — psi=null → सीधा; psi=angle(rad) → top-right cross (W,0) के गिर्द घुमाकर (टेढ़ी sheet के हिसाब से) */
