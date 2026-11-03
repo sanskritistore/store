@@ -3014,8 +3014,7 @@ async function aiCutout(p,msg){
   // 🔧 320-level smoothing — staircase सीढ़ियाँ source पर ही घटाओ (full-res dots की जड़)
   const mk0=new Uint8ClampedArray(o.length);
   for(let i=0;i<o.length;i++){ let v=Math.round((o[i]-mn)/rg*255); mk0[i]=v<0?0:v>255?255:v; }
-  erodeMask(mk0,AI_IN,AI_IN,1);
-  blurMask(mk0,AI_IN,AI_IN); blurMask(mk0,AI_IN,AI_IN); blurMask(mk0,AI_IN,AI_IN);
+  blurMask(mk0,AI_IN,AI_IN); blurMask(mk0,AI_IN,AI_IN); // erode हटाया — बाल/कान काट खाता था
   // 🏝️ island sweep: मुख्य contour से अलग छोटे बाल-टुकड़े/dots हटाओ
   { const N2=AI_IN*AI_IN, comp=new Int32Array(N2).fill(-1), sizes=[];
     let nc=0;
@@ -3082,13 +3081,13 @@ function aiProModel(){ // IndexedDB cache — model एक ही बार down
     rq.onupgradeneeded=()=>{ rq.result.createObjectStore('models'); };
     rq.onerror=()=>rej(rq.error);
     rq.onsuccess=()=>{ const db=rq.result;
-      const g=db.transaction('models','readonly').objectStore('models').get('modnet-v1');
+      const g=db.transaction('models','readonly').objectStore('models').get('modnet-v3');
       g.onerror=()=>rej(g.error);
       g.onsuccess=()=>{
         if(g.result){ S.ai.proBytes=g.result; res(g.result); return; }
         fetch('modnet.onnx').then(r=>{ if(!r.ok) throw new Error('dl '+r.status); return r.arrayBuffer(); })
         .then(buf=>{
-          try{ db.transaction('models','readwrite').objectStore('models').put(buf,'modnet-v1'); }catch(_){}
+          try{ db.transaction('models','readwrite').objectStore('models').put(buf,'modnet-v3'); }catch(_){}
           S.ai.proBytes=buf; res(buf);
         }).catch(rej);
       };
@@ -3100,8 +3099,17 @@ async function aiInitPro(msg){
   msg('Pro AI model खुल रहा… (पहली बार ~10 सेकंड)');
   await new Promise(r=>setTimeout(r,30));
   aiEnv();
-  const buf=await aiProModel();
-  S.ai.proSess=await ort.InferenceSession.create(new Uint8Array(buf),{executionProviders:['wasm']});
+  let buf=await aiProModel();
+  try{
+    S.ai.proSess=await ort.InferenceSession.create(new Uint8Array(buf),{executionProviders:['wasm']});
+  }catch(e){ // cache खराब निकला → एक बार fresh download करके retry
+    console.warn('pro model cache corrupt — fresh download',e);
+    try{ indexedDB.deleteDatabase('sanskriti-ai'); }catch(_){}
+    S.ai.proBytes=null;
+    const r=await fetch('modnet.onnx'); if(!r.ok) throw new Error('dl '+r.status);
+    buf=await r.arrayBuffer(); S.ai.proBytes=buf;
+    S.ai.proSess=await ort.InferenceSession.create(new Uint8Array(buf),{executionProviders:['wasm']});
+  }
 }
 function _boxMean(src,W,H,r){ // integral-image box mean (float32)
   const intg=new Float64Array((W+1)*(H+1));
@@ -3146,9 +3154,10 @@ async function aiCutoutPro(p,msg){ // return contract = aiCutout जैसा: f
   const o=out[ses.outputNames[0]].data;
   let mn=1e9,mx=-1e9; for(let i=0;i<o.length;i++){ if(o[i]<mn)mn=o[i]; if(o[i]>mx)mx=o[i]; }
   const rg=(mx-mn)||1;
+  const _raw=(mn>=-0.02&&mx<=1.02); // MODNet पहले से [0,1] matte देता है — stretch करने से soft किनारे बिगड़ते हैं
   const lc=document.createElement('canvas'); lc.width=W2; lc.height=H2;
   const lid=lc.getContext('2d').createImageData(W2,H2);
-  for(let i=0;i<N;i++){ let v=Math.round((o[i]-mn)/rg*255); v=v<0?0:v>255?255:v;
+  for(let i=0;i<N;i++){ let v=Math.round(_raw?o[i]*255:(o[i]-mn)/rg*255); v=v<0?0:v>255?255:v;
     lid.data[i*4]=lid.data[i*4+1]=lid.data[i*4+2]=v; lid.data[i*4+3]=255; }
   lc.getContext('2d').putImageData(lid,0,0);
   const up=document.createElement('canvas'); up.width=W; up.height=H;
@@ -3163,7 +3172,13 @@ async function aiCutoutPro(p,msg){ // return contract = aiCutout जैसा: f
   const cid=cx.getImageData(0,0,W,H), cd=cid.data;
   const guide=new Float32Array(M);
   for(let i=0;i<M;i++) guide[i]=(0.299*cd[i*4]+0.587*cd[i*4+1]+0.114*cd[i*4+2])/255;
-  const q=_guided(guide,src,W,H,Math.max(4,Math.round(Math.min(W,H)/200)),1e-3); mark('guided');
+  const _gr=Math.max(4,Math.round(Math.min(W,H)/200));
+  const q=_guided(guide,src,W,H,_gr,1e-3); mark('guided');
+  // 🎯 guided सिर्फ़ किनारे की पट्टी में — solid अंदरूनी हिस्से (बाल/चेहरा) में photo की texture matte में न घुसे
+  { const bm=new Float32Array(M);
+    for(let i=0;i<M;i++) if(src[i]>0.05&&src[i]<0.95) bm[i]=1;
+    const bf=_boxMean(bm,W,H,Math.max(2,_gr>>1));
+    for(let i=0;i<M;i++) if(bf[i]<0.25) q[i]=src[i]; }
   // ① anti-haze — solid हिस्से से दूर का धुंधलापन हटाओ
   { const keep=new Uint8Array(M), st=[];
     for(let i=0;i<M;i++) if(q[i]>0.6){ keep[i]=1; st.push(i); }
@@ -3174,7 +3189,7 @@ async function aiCutoutPro(p,msg){ // return contract = aiCutout जैसा: f
         if(x<W-1&&!keep[i+1]){ keep[i+1]=1; st.push(i+1); }
         if(i>=W&&!keep[i-W]){ keep[i-W]=1; st.push(i-W); }
         if(i<M-W&&!keep[i+W]){ keep[i+W]=1; st.push(i+W); } } }
-    for(let i=0;i<M;i++) if(!keep[i]&&q[i]<0.35) q[i]=0; }
+    for(let i=0;i<M;i++) if(!keep[i]&&q[i]<0.35) q[i]*=0.3; } // haze fade (kill नहीं — पतले बाल बचे)
   // ② छेद-भराई — bg से कटे अंदरूनी soft हिस्से solid करो (baby face जैसे)
   { const bgm=new Uint8Array(M), st=[];
     for(let x=0;x<W;x++){ st.push(x); st.push((H-1)*W+x); }
@@ -3235,16 +3250,19 @@ async function aiCutoutPro(p,msg){ // return contract = aiCutout जैसा: f
   msg('किनारे का रंग शुद्ध…'); await new Promise(r=>setTimeout(r,30));
   { for(let i=0;i<M;i++){ const a=q[i]; cd[i*4+3]=Math.round(a*255);
       if(bgOk&&a>0.02&&a<0.98){ const ia=1-a;
-        let v=(cd[i*4]-ia*g0)/a;   cd[i*4]  =v<0?0:v>255?255:v;
-        v=(cd[i*4+1]-ia*g1)/a;     cd[i*4+1]=v<0?0:v>255?255:v;
-        v=(cd[i*4+2]-ia*g2)/a;     cd[i*4+2]=v<0?0:v>255?255:v; } }
+        let w=(a-0.15)/0.45; w=w<0?0:w>1?1:w; // alpha-confidence — छोटे alpha पर unmix blowup (काले धब्बे) रोको
+        let v=(cd[i*4]-ia*g0)/a;   v=v<0?0:v>255?255:v;   cd[i*4]  =w*v+(1-w)*cd[i*4];
+        v=(cd[i*4+1]-ia*g1)/a;     v=v<0?0:v>255?255:v;   cd[i*4+1]=w*v+(1-w)*cd[i*4+1];
+        v=(cd[i*4+2]-ia*g2)/a;     v=v<0?0:v>255?255:v;   cd[i*4+2]=w*v+(1-w)*cd[i*4+2]; } }
   }
   cx.putImageData(cid,0,0);
   mark('decontam');
+  cc.__pro=true;
   if(_cap<1){ // full-res पर upscale (contract: full-res RGBA canvas)
     const fc=document.createElement('canvas'); fc.width=FW; fc.height=FH;
     const fx=fc.getContext('2d'); fx.imageSmoothingEnabled=true; fx.imageSmoothingQuality='high';
     fx.drawImage(cc,0,0,FW,FH); mark('upscale');
+    fc.__pro=true;
     S.ai.times=T; console.log('proTimes',T);
     return fc;
   }
@@ -3252,7 +3270,7 @@ async function aiCutoutPro(p,msg){ // return contract = aiCutout जैसा: f
   return cc;
 }
 
-let lastAlpha=null;
+let lastAlpha=null, cutoutIsPro=false;
 function refineCutout(img,lo){ // 🪄 edge-safai: grey fringe हटाओ (alpha curve)
   const cv=document.createElement('canvas');
   cv.width=img.naturalWidth||img.width; cv.height=img.naturalHeight||img.height;
@@ -3261,10 +3279,19 @@ function refineCutout(img,lo){ // 🪄 edge-safai: grey fringe हटाओ (alp
   const id=c.getImageData(0,0,cv.width,cv.height), d=id.data;
   const hi=Math.min(250,lo+90), n=cv.width*cv.height;
   lastAlpha=new Uint8ClampedArray(n);
-  for(let p=0,i=3;p<n;p++,i+=4){
-    let t=(d[i]-lo)/(hi-lo); t=t<0?0:t>1?1:t;
-    const a=Math.round(t*t*(3-2*t)*255); // smoothstep
-    d[i]=a; lastAlpha[p]=a;
+  if(cutoutIsPro){ // Pro matte की नरमता बचाओ — आधा threshold + linear (बालों की softness कायम)
+    const l2=lo*0.5, span=255-l2;
+    for(let p=0,i=3;p<n;p++,i+=4){
+      let t=(d[i]-l2)/span; t=t<0?0:t>1?1:t;
+      const a=Math.round(t*255);
+      d[i]=a; lastAlpha[p]=a;
+    }
+  } else { // पुराना engine — मज़बूत smoothstep (rough mask साफ़ करने के लिए)
+    for(let p=0,i=3;p<n;p++,i+=4){
+      let t=(d[i]-lo)/(hi-lo); t=t<0?0:t>1?1:t;
+      const a=Math.round(t*t*(3-2*t)*255); // smoothstep
+      d[i]=a; lastAlpha[p]=a;
+    }
   }
   c.putImageData(id,0,0);
   return cv;
@@ -3304,6 +3331,7 @@ $('aiGo').addEventListener('click',async()=>{
     try{ cc=await aiCutoutPro(p,msg); }
     catch(pe){ console.warn('Pro engine fail — पुराना engine',pe); msg('पुराने engine से किनारा…');
       cc=await aiCutout(p,msg); }
+    cutoutIsPro=(cc&&cc.__pro===true);
     rawCutout=cc; origImg=p.img;
     refineAndApply();
     $('aiProg').style.display='none'; $('aiDone').style.display='inline-flex';
