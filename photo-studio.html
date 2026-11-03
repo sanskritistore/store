@@ -3291,6 +3291,22 @@ async function aiCutoutPro(p,msg){ // return contract = aiCutout जैसा: f
       const soft=(k>0.80)?0.45:1.0;                 // हल्की परछाई = आधी ताक़त (सफ़ेद कमीज़ बचे, बाक़ी ताक़त slider ख़त्म करे)
       q[i]*=(1-s*soft);
     }
+    // ④b halo fade — बाहरी छोर की bg-रंग की नरम धुंध (shadow-घेरा) fade करो; कपड़े/बाल नीचे restore से सुरक्षित
+    { const ext0=new Uint8Array(M), st3=[];
+      for(let x=0;x<W;x++){ st3.push(x); st3.push((H-1)*W+x); }
+      for(let y=0;y<H;y++){ st3.push(y*W); st3.push(y*W+W-1); }
+      while(st3.length){ const i=st3.pop(); if(ext0[i]||q[i]>0.70) continue; ext0[i]=1;
+        const x=i%W;
+        if(x>0)st3.push(i-1); if(x<W-1)st3.push(i+1); if(i>=W)st3.push(i-W); if(i<M-W)st3.push(i+W); }
+      for(let i=0;i<M;i++){
+        if(!ext0[i]||q[i]<0.10||q[i]>0.70) continue;   // सिर्फ़ बाहरी आधे-alpha घेरा
+        const li=lum[i]; if(li<1) continue;
+        const cdist=Math.abs(cd[i*4]/li-bn0)+Math.abs(cd[i*4+1]/li-bn1)+Math.abs(cd[i*4+2]/li-bn2);
+        if(cdist>0.15) continue;                       // रंग-दिशा bg से अलग (बाल/कपड़े) — सुरक्षित
+        const va=mL2[i]-mL[i]*mL[i]; if(va>70) continue; // बालों की बनावट — सुरक्षित
+        const f=q[i]<0.35?0.15:(q[i]-0.30)/0.40*0.85;  // कमज़ोर धुंध लगभग गायब, मज़बूत किनारा बचा
+        q[i]*=f;
+      } }
     // कपड़ा-बचाव — peel सिर्फ़ बाहरी (bg से जुड़ी) परछाई उड़ाए; अंदरूनी हिस्से (कपड़े!) में model का फैसला वापस
     { const ext=new Uint8Array(M), st2=[];
       for(let x=0;x<W;x++){ st2.push(x); st2.push((H-1)*W+x); }
