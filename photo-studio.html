@@ -182,6 +182,7 @@ canvas.pv{width:100%;border-radius:8px;background:#fff;display:block}
         <button id="rtAI" class="rtT" data-fx="ai">🤖 AI Enhance</button>
         <button id="rtWarm" class="rtT" data-fx="warm">🌅 Warm Tone</button>
         <button id="rtCool" class="rtT" data-fx="cool">❄️ Cool Tone</button>
+        <button id="rtDeshadow" class="rtT" data-fx="deshadow">🌗 Shadow हटाओ</button>
       </div>
       <span class="lbl">चमक <span class="val" id="vBri">100%</span></span>
       <input type="range" id="sBri" min="40" max="180" value="100">
@@ -2216,7 +2217,7 @@ const S={
   sizeMM:{w:35,h:45},
   straighten:0,
   adj:{bri:100,con:100,sat:100},
-  rt:{smooth:false,light:false,detail:false,ai:false,warm:false,cool:false},
+  rt:{smooth:false,light:false,detail:false,ai:false,warm:false,cool:false,deshadow:false},
   coat:{id:-1,x:0,y:0.52,scale:1.0}, // formal suit overlay
   coatImgs:[], coatSel:false,
   erase:{on:false,brush:34}, eraseMaskCv:null,
@@ -2498,6 +2499,20 @@ function pxOp(cv,fn){
   fn(d.data,d.width,d.height);
   c.putImageData(d,0,0);
 }
+function boxBlurF(src,w,h,r,mul){ // separable box blur Float32; mul=optional 0/1 mask (horizontal pass में लागू)
+  const tmp=new Float32Array(w*h), out=new Float32Array(w*h), n2=2*r+1;
+  for(let y=0;y<h;y++){ let acc=0; const row=y*w;
+    for(let x=-r;x<=r;x++){ const xx=x<0?0:x>=w?w-1:x, j=row+xx; acc+=src[j]*(mul?mul[j]:1); }
+    for(let x=0;x<w;x++){ tmp[row+x]=acc/n2;
+      const xa=x-r<0?0:x-r, xb=x+r+1>=w?w-1:x+r+1, ja=row+xa, jb=row+xb;
+      acc+=src[jb]*(mul?mul[jb]:1)-src[ja]*(mul?mul[ja]:1); } }
+  for(let x=0;x<w;x++){ let acc=0;
+    for(let y=-r;y<=r;y++){ const yy=y<0?0:y>=h?h-1:y; acc+=tmp[yy*w+x]; }
+    for(let y=0;y<h;y++){ out[y*w+x]=acc/n2;
+      const ya=y-r<0?0:y-r, yb=y+r+1>=h?h-1:y+r+1;
+      acc+=tmp[yb*w+x]-tmp[ya*w+x]; } }
+  return out;
+}
 function applyRetouch(cv){
   const R=S.rt;
   // 1) AI ENHANCE: auto-levels per channel
@@ -2520,6 +2535,37 @@ function applyRetouch(cv){
         }
       }
     });
+  }
+  // 2.5) SHADOW हटाओ: चेहरे/गर्दन की काली परछाई हल्की (skin-masked dodge — Photoshop dodge जैसा)
+  if(R.deshadow){
+    const w=cv.width,h=cv.height,n=w*h;
+    const ctx=cv.getContext('2d');
+    const id=ctx.getImageData(0,0,w,h), d=id.data;
+    const Y=new Float32Array(n), sk=new Float32Array(n);
+    for(let p=0,i=0;p<n;p++,i+=4){
+      const r=d[i],g=d[i+1],b=d[i+2];
+      const y=0.299*r+0.587*g+0.114*b; Y[p]=y;
+      const cb=128-0.168736*r-0.331264*g+0.5*b;
+      const cr=128+0.5*r-0.418688*g-0.081312*b;
+      sk[p]=(cr>=133&&cr<=180&&cb>=77&&cb<=135&&y>30)?1:0; // skin पहचान (हर रंग/गहरे रंग की skin)
+    }
+    const rad=Math.max(6,Math.round(Math.min(w,h)/30));
+    const num=boxBlurF(Y,w,h,rad,sk), den=boxBlurF(sk,w,h,rad,null); // ref = आसपास के skin का औसत चमक
+    const sm=new Float32Array(n);
+    for(let p=0;p<n;p++){
+      if(den[p]<0.15) continue;
+      const ref=num[p]/Math.max(den[p],1e-3);
+      let t=(ref*0.95-Y[p])/(ref*0.55); sm[p]=t<0?0:t>1?1:t; // जितना गहरा, उतनी ताक़त
+    }
+    const sm2=boxBlurF(sm,w,h,Math.max(3,rad>>2),null); // soft किनारे
+    for(let p=0,i=0;p<n;p++,i+=4){
+      const m=sm2[p]; if(m<0.02) continue;
+      const ref=num[p]/Math.max(den[p],1e-3);
+      const lift=Math.min(Math.max(ref*0.92-Y[p],0),ref*0.7)*m; // ref के 92% तक — natural shading बची रहे
+      if(lift<=0) continue;
+      d[i]=clamp(d[i]+lift,0,255); d[i+1]=clamp(d[i+1]+lift,0,255); d[i+2]=clamp(d[i+2]+lift,0,255);
+    }
+    ctx.putImageData(id,0,0);
   }
   // 3) SKIN SMOOTH: downsample-upsample blend 55%
   if(R.smooth){
