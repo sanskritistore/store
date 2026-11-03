@@ -2549,19 +2549,19 @@ function applyRetouch(cv){
       const cr=128+0.5*r-0.418688*g-0.081312*b;
       sk[p]=(cr>=133&&cr<=180&&cb>=77&&cb<=135&&y>30)?1:0; // skin पहचान (हर रंग/गहरे रंग की skin)
     }
-    const rad=Math.max(6,Math.round(Math.min(w,h)/30));
+    const rad=Math.max(6,Math.round(Math.min(w,h)/16));
     const num=boxBlurF(Y,w,h,rad,sk), den=boxBlurF(sk,w,h,rad,null); // ref = आसपास के skin का औसत चमक
     const sm=new Float32Array(n);
     for(let p=0;p<n;p++){
       if(den[p]<0.15) continue;
       const ref=num[p]/Math.max(den[p],1e-3);
-      let t=(ref*0.95-Y[p])/(ref*0.55); sm[p]=t<0?0:t>1?1:t; // जितना गहरा, उतनी ताक़त
+      let t=(ref*1.0-Y[p])/(ref*0.6); sm[p]=t<0?0:t>1?1:t; // जितना गहरा, उतनी ताक़त
     }
-    const sm2=boxBlurF(sm,w,h,Math.max(3,rad>>2),null); // soft किनारे
+    const sm2=boxBlurF(sm,w,h,Math.max(3,Math.round(rad/3)),null); // soft किनारे
     for(let p=0,i=0;p<n;p++,i+=4){
       const m=sm2[p]; if(m<0.02) continue;
       const ref=num[p]/Math.max(den[p],1e-3);
-      const lift=Math.min(Math.max(ref*0.92-Y[p],0),ref*0.7)*m; // ref के 92% तक — natural shading बची रहे
+      const lift=Math.min(Math.max(ref-Y[p],0),ref*0.9)*m; // ref तक पूरा — line ख़त्म, cap से overshoot नहीं
       if(lift<=0) continue;
       d[i]=clamp(d[i]+lift,0,255); d[i+1]=clamp(d[i+1]+lift,0,255); d[i+2]=clamp(d[i+2]+lift,0,255);
     }
@@ -3262,6 +3262,7 @@ async function aiCutoutPro(p,msg){ // return contract = aiCutout जैसा: f
   // ④ shadow peel — किनारे की परछाई (bg रंग का चिकना गहरा रूप) alpha से उड़ाओ
   if(bgOk){
     msg('परछाई साफ़ हो रही…'); await new Promise(r=>setTimeout(r,30));
+    const qPre=q.slice(); // peel से पहले का matte — कपड़ा-बचाव restore के लिए
     const band=Math.max(12,Math.round(Math.min(W,H)/20));
     const dist=new Int16Array(M).fill(-1); const st=[];
     for(let i=0;i<M;i++) if(q[i]>0.5){ const x=i%W;
@@ -3290,6 +3291,16 @@ async function aiCutoutPro(p,msg){ // return contract = aiCutout जैसा: f
       const soft=(k>0.80)?0.45:1.0;                 // हल्की परछाई = आधी ताक़त (सफ़ेद कमीज़ बचे, बाक़ी ताक़त slider ख़त्म करे)
       q[i]*=(1-s*soft);
     }
+    // कपड़ा-बचाव — peel सिर्फ़ बाहरी (bg से जुड़ी) परछाई उड़ाए; अंदरूनी हिस्से (कपड़े!) में model का फैसला वापस
+    { const ext=new Uint8Array(M), st2=[];
+      for(let x=0;x<W;x++){ st2.push(x); st2.push((H-1)*W+x); }
+      for(let y=0;y<H;y++){ st2.push(y*W); st2.push(y*W+W-1); }
+      while(st2.length){ const i=st2.pop(); if(ext[i]||q[i]>0.45) continue; ext[i]=1;
+        const x=i%W;
+        if(x>0)st2.push(i-1); if(x<W-1)st2.push(i+1); if(i>=W)st2.push(i-W); if(i<M-W)st2.push(i+W); }
+      let restored=0;
+      for(let i=0;i<M;i++) if(!ext[i]&&q[i]<qPre[i]){ q[i]=qPre[i]; restored++; }
+      if(restored) console.log('कपड़ा-बचाव: '+restored+' px restore'); }
     mark('peel');
   }
   // ⑤ रंग-शुद्धिकरण — किनारे की पुरानी background छाँह हटाओ (Photoshop Decontaminate जैसा)
