@@ -3280,7 +3280,7 @@ async function aiCutoutPro(p,msg){ // return contract = aiCutout जैसा: f
     for(let i=0;i<M;i++){
       if(dist[i]<=0||q[i]<=0.02) continue;
       const k=lum[i]/bgL;
-      if(k<0.30||k>0.90) continue;                  // बहुत गहरा (बाल) या bg-जितना उज्ज्वल — सुरक्षित
+      if(k<0.30||k>0.93) continue;                  // बहुत गहरा (बाल) या bg-जैसी उज्ज्वल चीज़ (सफ़ेद कपड़ा/वस्तु) — सुरक्षित
       const li=lum[i]; if(li<1) continue;
       const cdist=Math.abs(cd[i*4]/li-bn0)+Math.abs(cd[i*4+1]/li-bn1)+Math.abs(cd[i*4+2]/li-bn2);
       if(cdist>0.13) continue;                      // रंग-दिशा bg से अलग (त्वचा/कपड़े) — सुरक्षित
@@ -3288,7 +3288,7 @@ async function aiCutoutPro(p,msg){ // return contract = aiCutout जैसा: f
       if(va>70) continue;                           // rough बनावट (बाल/दाढ़ी) — सुरक्षित
       const s=1-cdist/0.13;                         // परछाई-विश्वास
       if(dist[i]>(s>0.75?band*3:band)) continue;    // पक्की परछाई गहराई तक, कच्ची सिर्फ़ किनारे तक
-      const soft=(k>0.80)?0.45:1.0;                 // हल्की परछाई = आधी ताक़त (सफ़ेद कमीज़ बचे, बाक़ी ताक़त slider ख़त्म करे)
+      const soft=(k>0.80)?0.45:1.0;                 // उज्ज्वल zone = आधी ताक़त (परछाई में भी सफ़ेद कपड़ा बचे)
       q[i]*=(1-s*soft);
     }
     // ④b halo fade — बाहरी छोर की bg-रंग की नरम धुंध (shadow-घेरा) fade करो; कपड़े/बाल नीचे restore से सुरक्षित
@@ -3315,7 +3315,19 @@ async function aiCutoutPro(p,msg){ // return contract = aiCutout जैसा: f
         const x=i%W;
         if(x>0)st2.push(i-1); if(x<W-1)st2.push(i+1); if(i>=W)st2.push(i-W); if(i<M-W)st2.push(i+W); }
       let restored=0;
-      for(let i=0;i<M;i++) if(!ext[i]&&q[i]<qPre[i]){ q[i]=qPre[i]; restored++; }
+      for(let i=0;i<M;i++){
+        if(ext[i]||q[i]>=qPre[i]) continue;
+        // बंद जेब (कान-पीछे/बाजू-गैप) की परछाई वापस मत लाओ — किनारे के पास bg-रंग की चिकनी गहरी चीज़ = परछाई ही;
+        // गहराई में (band*1.5 से आगे) हर चीज़ restore — grey कपड़े भी सुरक्षित
+        if(dist[i]>0&&dist[i]<=Math.round(band*1.5)&&qPre[i]<0.75){
+          const li=lum[i], k2=li/bgL;
+          if(li>=1&&k2>=0.30&&k2<=0.80){
+            const cd2=Math.abs(cd[i*4]/li-bn0)+Math.abs(cd[i*4+1]/li-bn1)+Math.abs(cd[i*4+2]/li-bn2);
+            if(cd2<0.13&&(mL2[i]-mL[i]*mL[i])<=70) continue; // परछाई-सिग्नेचर — restore नहीं
+          }
+        }
+        q[i]=qPre[i]; restored++;
+      }
       if(restored) console.log('कपड़ा-बचाव: '+restored+' px restore'); }
     mark('peel');
   }
