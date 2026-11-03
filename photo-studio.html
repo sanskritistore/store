@@ -266,7 +266,7 @@ canvas.pv{width:100%;border-radius:8px;background:#fff;display:block}
     <div class="thumbStrip" id="thumbs" style="display:none"></div>
     <div class="stageWrap" id="stageWrap"><div id="stage"><canvas id="srcCv"></canvas><canvas id="penCv" style="position:absolute;left:0;top:0;pointer-events:none;z-index:6;display:none"></canvas>
       <div id="aiBar" style="position:absolute;left:50%;bottom:12px;transform:translateX(-50%);z-index:9;display:none;align-items:center;gap:8px;background:rgba(16,20,34,.94);border:1px solid #4a5570;border-radius:14px;padding:9px 12px;box-shadow:0 6px 24px rgba(0,0,0,.5);flex-wrap:wrap;justify-content:center;max-width:96%">
-        <button id="aiGo" class="btn btn-pri" style="padding:10px 16px;font-size:15px;font-weight:800">✨ BG हटाओ — offline AI</button>
+        <button id="aiGo" class="btn btn-pri" style="padding:10px 16px;font-size:15px;font-weight:800">✨ BG हटाओ — offline AI</button> <span style="font-size:10px;opacity:.45;vertical-align:middle" title="BG engine version">v7</span>
         <span id="aiProg" style="display:none;color:#ffd76a;font-size:13px;font-weight:700">AI…</span>
         <span id="aiDone" style="display:none;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center">
           <span style="color:#ffd76a;font-size:13px;font-weight:700;white-space:nowrap">ताक़त <b id="aiPowV">60</b></span>
@@ -3285,7 +3285,7 @@ async function aiCutoutPro(p,msg){ // return contract = aiCutout जैसा: f
     for(let i=0;i<M;i++){
       if(dist[i]<=0||q[i]<=0.02) continue;
       const k=lum[i]/bgL;
-      if(k<0.30||k>0.93) continue;                  // बहुत गहरा (बाल) या bg-जैसी उज्ज्वल चीज़ (सफ़ेद कपड़ा/वस्तु) — सुरक्षित
+      if(k<0.55||k>0.93) continue;                  // गहरी चीज़ (दाढ़ी/बाल/कपड़े k<0.55) या bg-जैसी उज्ज्वल (k>0.93) — सुरक्षित; peel सिर्फ़ हल्की परछाई
       const li=lum[i]; if(li<1) continue;
       const cdist=Math.abs(cd[i*4]/li-bn0)+Math.abs(cd[i*4+1]/li-bn1)+Math.abs(cd[i*4+2]/li-bn2);
       if(cdist>0.13) continue;                      // रंग-दिशा bg से अलग (त्वचा/कपड़े) — सुरक्षित
@@ -3307,6 +3307,7 @@ async function aiCutoutPro(p,msg){ // return contract = aiCutout जैसा: f
       for(let i=0;i<M;i++){
         if(!ext0[i]||q[i]<0.10||q[i]>0.70) continue;   // सिर्फ़ बाहरी आधे-alpha घेरा
         const li=lum[i]; if(li<1) continue;
+        if(li/bgL<0.55) continue;                      // गहरा (दाढ़ी/बाल/कपड़े) — fade नहीं, सिर्फ़ हल्की धुंध
         const cdist=Math.abs(cd[i*4]/li-bn0)+Math.abs(cd[i*4+1]/li-bn1)+Math.abs(cd[i*4+2]/li-bn2);
         if(cdist>0.15) continue;                       // रंग-दिशा bg से अलग (बाल/कपड़े) — सुरक्षित
         const va=mL2[i]-mL[i]*mL[i]; if(va>70) continue; // बालों की बनावट — सुरक्षित
@@ -3327,7 +3328,7 @@ async function aiCutoutPro(p,msg){ // return contract = aiCutout जैसा: f
         // गहराई में (band*1.5 से आगे) हर चीज़ restore — grey कपड़े भी सुरक्षित
         if(dist[i]>0&&dist[i]<=Math.round(band*1.5)&&qPre[i]<0.75&&skinNbr[i]<=0.02){
           const li=lum[i], k2=li/bgL;
-          if(li>=1&&k2>=0.30&&k2<=0.80){
+          if(li>=1&&k2>=0.55&&k2<=0.80){
             const cd2=Math.abs(cd[i*4]/li-bn0)+Math.abs(cd[i*4+1]/li-bn1)+Math.abs(cd[i*4+2]/li-bn2);
             if(cd2<0.13&&(mL2[i]-mL[i]*mL[i])<=70) continue; // परछाई-सिग्नेचर — restore नहीं
           }
