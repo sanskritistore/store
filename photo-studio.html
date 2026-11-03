@@ -3277,6 +3277,11 @@ async function aiCutoutPro(p,msg){ // return contract = aiCutout जैसा: f
     const l2=new Float32Array(M); for(let i=0;i<M;i++) l2[i]=lum[i]*lum[i];
     const mL2=_boxMean(l2,W,H,3);
     const bn0=g0/bgL, bn1=g1/bgL, bn2=g2/bgL;
+    const skM=new Float32Array(M); // त्वचा-पड़ोस नक्शा — दाढ़ी/बाल/skin-पास की चीज़ें peel से सुरक्षित
+    for(let i=0;i<M;i++){ const r=cd[i*4],gg=cd[i*4+1],b=cd[i*4+2];
+      const cr=128+0.5*r-0.418688*gg-0.081312*b, cb=128-0.168736*r-0.331264*gg+0.5*b;
+      if(lum[i]>30&&cr>=133&&cr<=180&&cb>=77&&cb<=135) skM[i]=1; }
+    const skinNbr=_boxMean(skM,W,H,6);
     for(let i=0;i<M;i++){
       if(dist[i]<=0||q[i]<=0.02) continue;
       const k=lum[i]/bgL;
@@ -3286,6 +3291,7 @@ async function aiCutoutPro(p,msg){ // return contract = aiCutout जैसा: f
       if(cdist>0.13) continue;                      // रंग-दिशा bg से अलग (त्वचा/कपड़े) — सुरक्षित
       const va=mL2[i]-mL[i]*mL[i];
       if(va>70) continue;                           // rough बनावट (बाल/दाढ़ी) — सुरक्षित
+      if(skinNbr[i]>0.02) continue;                 // त्वचा के पड़ोस में (दाढ़ी/stubble/चेहरा-किनारा) — peel नहीं
       const s=1-cdist/0.13;                         // परछाई-विश्वास
       if(dist[i]>(s>0.75?band*3:band)) continue;    // पक्की परछाई गहराई तक, कच्ची सिर्फ़ किनारे तक
       const soft=(k>0.80)?0.45:1.0;                 // उज्ज्वल zone = आधी ताक़त (परछाई में भी सफ़ेद कपड़ा बचे)
@@ -3319,7 +3325,7 @@ async function aiCutoutPro(p,msg){ // return contract = aiCutout जैसा: f
         if(ext[i]||q[i]>=qPre[i]) continue;
         // बंद जेब (कान-पीछे/बाजू-गैप) की परछाई वापस मत लाओ — किनारे के पास bg-रंग की चिकनी गहरी चीज़ = परछाई ही;
         // गहराई में (band*1.5 से आगे) हर चीज़ restore — grey कपड़े भी सुरक्षित
-        if(dist[i]>0&&dist[i]<=Math.round(band*1.5)&&qPre[i]<0.75){
+        if(dist[i]>0&&dist[i]<=Math.round(band*1.5)&&qPre[i]<0.75&&skinNbr[i]<=0.02){
           const li=lum[i], k2=li/bgL;
           if(li>=1&&k2>=0.30&&k2<=0.80){
             const cd2=Math.abs(cd[i*4]/li-bn0)+Math.abs(cd[i*4+1]/li-bn1)+Math.abs(cd[i*4+2]/li-bn2);
