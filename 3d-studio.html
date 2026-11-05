@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>संस्कृति — 🧊 3D Studio (AI + Manual)</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f172a;color:#e2e8f0;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+  header{background:#1e293b;border-bottom:2px solid #b45309;padding:8px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  header h1{font-size:17px;color:#fbbf24}
+  .tag{font-size:10px;background:#16a34a;color:#fff;padding:2px 8px;border-radius:99px}
+  .hbtn{background:#334155;color:#e2e8f0;border:1px solid #475569;border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer}
+  .hbtn:hover{background:#475569}
+  .hbtn.main{background:#ea580c;border-color:#ea580c;color:#fff;font-weight:700}
+  .hbtn.go{background:#16a34a;border-color:#16a34a;color:#fff;font-weight:800;font-size:15px;padding:10px 18px;width:100%}
+  .hbtn.go:disabled{opacity:.4}
+  #main{flex:1;display:flex;min-height:0}
+  #panel{width:310px;min-width:310px;background:#1e293b;border-right:1px solid #334155;overflow-y:auto;padding:12px;font-size:13px}
+  #panel h3{font-size:13px;color:#fbbf24;margin:14px 0 8px;padding-top:10px;border-top:1px solid #334155}
+  #panel h3:first-child{border-top:none;margin-top:0;padding-top:0}
+  .note{font-size:11px;color:#64748b;line-height:1.5;margin:6px 0}
+  .row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+  .seg{display:flex;background:#0f172a;border:1px solid #334155;border-radius:8px;overflow:hidden;flex:1}
+  .seg button{flex:1;background:none;border:none;color:#94a3b8;padding:8px 4px;font-size:12.5px;cursor:pointer;font-weight:600}
+  .seg button.on{background:#b45309;color:#fff}
+  .chip{background:#0f172a;border:1.5px solid #475569;border-radius:8px;padding:7px 9px;font-size:12px;cursor:pointer;color:#cbd5e1}
+  .chip.on{border-color:#fbbf24;background:#451a03;color:#fbbf24;font-weight:700}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+  input[type=color]{width:42px;height:34px;border:2px solid #475569;border-radius:8px;background:#0f172a;cursor:pointer;padding:2px}
+  input[type=range]{flex:1;accent-color:#f59e0b}
+  .fld{margin-bottom:10px}
+  .fld label{display:flex;justify-content:space-between;font-size:12px;color:#94a3b8;margin-bottom:3px}
+  .fld label b{color:#fbbf24}
+  #stage{flex:1;display:flex;align-items:center;justify-content:center;background:#0b1120;position:relative;overflow:hidden}
+  #stage canvas{max-width:96%;max-height:96%;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.6)}
+  #dropmsg{position:absolute;inset:20px;border:3px dashed #334155;border-radius:16px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:#64748b;font-size:15px;pointer-events:none;text-align:center}
+  #status{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:#1e293bd9;border:1px solid #fbbf24;color:#fbbf24;padding:8px 18px;border-radius:99px;font-size:13px;font-weight:700;display:none;white-space:nowrap}
+  .spin{display:inline-block;animation:sp 1s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  #drawbar{display:none;flex-wrap:wrap;gap:6px;align-items:center}
+  .dbtn{background:#0f172a;border:1.5px solid #475569;border-radius:8px;padding:6px 9px;font-size:12px;cursor:pointer;color:#cbd5e1}
+  .dbtn.on{border-color:#fbbf24;color:#fbbf24}
+  @media(max-width:820px){
+    body{overflow:auto}
+    #main{flex-direction:column;overflow:visible}
+    #panel{width:100%;min-width:0;border-right:none;border-bottom:1px solid #334155;max-height:none}
+    #stage{min-height:52vh}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>🧊 संस्कृति 3D Studio</h1><span class="tag">v1</span>
+  <span style="flex:1"></span>
+  <button class="hbtn" id="btnBefore">👁️ Before/After</button>
+  <button class="hbtn" id="btnPng">⬇️ PNG</button>
+  <button class="hbtn main" id="btn4k">⬇️ 4K Print</button>
+</header>
+<div id="main">
+  <div id="panel">
+    <h3>1️⃣ Image कहाँ से?</h3>
+    <div class="row"><div class="seg">
+      <button id="tabUp" class="on">📤 Upload</button>
+      <button id="tabDraw">✏️ खुद बनाएँ</button>
+    </div></div>
+    <div class="row"><button class="hbtn" id="btnFile" style="width:100%">🖼️ Photo/Design चुनें</button>
+      <input type="file" id="file" accept="image/*" style="display:none"></div>
+    <div id="drawbar">
+      <button class="dbtn on" data-t="brush">🖌️ Brush</button>
+      <button class="dbtn" data-t="rect">▭ Box</button>
+      <button class="dbtn" data-t="circle">⭕ Circle</button>
+      <button class="dbtn" data-t="line">📏 Line</button>
+      <input type="color" id="drawCol" value="#d4a017">
+      <input type="range" id="drawSize" min="2" max="60" value="14" style="width:70px">
+      <button class="dbtn" id="drawUndo">↩️</button>
+      <button class="dbtn" id="drawClear">🗑️</button>
+    </div>
+    <div class="note">💡 Krishna/भगवान की simple photo डालें → 3D/7D में बदलें। या खुद rough shape बनाएँ, AI उसे real बना देगा!</div>
+
+    <h3>2️⃣ तरीका चुनें</h3>
+    <div class="row"><div class="seg">
+      <button id="tabAi" class="on">🤖 AI 3D/7D</button>
+      <button id="tabMan">🖐️ Manual (बिना AI)</button>
+    </div></div>
+
+    <div id="aiPanel">
+      <h3>🎨 Style (लुक)</h3>
+      <div class="chips" id="styles">
+        <button class="chip on" data-s="gold">🏆 शाही Gold</button>
+        <button class="chip" data-s="marble">⚪ White Marble</button>
+        <button class="chip" data-s="wood">🪵 Wood नक्काशी</button>
+        <button class="chip" data-s="clay">🏺 मिट्टी (Clay)</button>
+        <button class="chip" data-s="bronze">🥉 Bronze</button>
+        <button class="chip" data-s="crystal">💎 Crystal</button>
+      </div>
+      <h3>📐 Depth</h3>
+      <div class="row"><div class="seg">
+        <button id="d3">🧊 3D</button>
+        <button id="d7" class="on">✨ 7D (ज़्यादा चमक)</button>
+      </div></div>
+      <h3>🎨 Colors (1-3)</h3>
+      <div class="row"><div class="seg" id="cCount">
+        <button data-n="1">1 color</button>
+        <button data-n="2">2 mix</button>
+        <button data-n="3" class="on">3 mix</button>
+      </div></div>
+      <div class="row" id="colorRow">
+        <input type="color" id="c1" value="#d4a017" title="मुख्य color">
+        <input type="color" id="c2" value="#1a1a1a" title="दूसरा">
+        <input type="color" id="c3" value="#f5f0e6" title="तीसरा">
+        <span class="note" style="margin:0">पहला color = हीरो (ज़्यादा दिखेगा)</span>
+      </div>
+      <h3>🔀 Mix या Split?</h3>
+      <div class="row"><div class="seg" id="splitSeg">
+        <button data-v="mix" class="on">🌀 Mix (घुले-मिले)</button>
+        <button data-v="tb">⬍ Split ऊपर-नीचे</button>
+        <button data-v="lr">⬌ Split left-right</button>
+      </div></div>
+      <div class="fld" id="codeFld" style="display:none">
+        <label>🔑 AI Code (पहली बार एक बार)</label>
+        <input type="password" id="aiCode" placeholder="code डालें" style="width:100%;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#fbbf24;padding:8px;font-size:14px">
+      </div>
+      <button class="hbtn go" id="btnAi">🚀 AI से बनाओ</button>
+      <div class="note">⏱️ 30-60 सेकंड लगते हैं · हर convert ~₹1-2</div>
+    </div>
+
+    <div id="manPanel" style="display:none">
+      <h3>🗿 Relief (उभार)</h3>
+      <div class="fld"><label>नक्काशी गहराई <b id="vRel">50</b></label>
+        <div class="row"><input type="range" id="rRel" min="0" max="100" value="50"></div></div>
+      <div class="fld"><label>किनारों की चमक (bevel) <b id="vBev">30</b></label>
+        <div class="row"><input type="range" id="rBev" min="0" max="100" value="30"></div></div>
+      <h3>🎨 Color Mix (Gradient Map)</h3>
+      <div class="row"><div class="seg" id="mCount">
+        <button data-n="0">Original</button>
+        <button data-n="1">1</button>
+        <button data-n="2">2</button>
+        <button data-n="3" class="on">3</button>
+      </div></div>
+      <div class="row">
+        <input type="color" id="m1" value="#1a1a1a" title="गहरे हिस्से">
+        <input type="color" id="m2" value="#d4a017" title="बीच के">
+        <input type="color" id="m3" value="#fff8e7" title="उजले हिस्से">
+      </div>
+      <div class="note">काला→पहला color · बीच→दूसरा · उजला→तीसरा</div>
+      <div class="fld"><label>रोशनी <b id="vBri">0</b></label>
+        <div class="row"><input type="range" id="rBri" min="-50" max="50" value="0"></div></div>
+      <div class="fld"><label>Contrast <b id="vCon">0</b></label>
+        <div class="row"><input type="range" id="rCon" min="-50" max="50" value="0"></div></div>
+      <button class="hbtn go" id="btnMan">✨ Effect लगाओ</button>
+      <div class="note">⚡ Free + instant — बार-बार आज़माएँ, जब तक मन भर जाए!</div>
+    </div>
+  </div>
+
+  <div id="stage">
+    <canvas id="cv" width="900" height="600"></canvas>
+    <div id="dropmsg"><div style="font-size:44px">🖼️</div><div>Photo यहाँ drag करें या<br><b style="color:#fbbf24">"Photo/Design चुनें"</b> दबाएँ</div></div>
+    <div id="status"></div>
+  </div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const API='https://sanskriti-ai-proxy.netlify.app/.netlify/functions/';
+const cv=$('#cv'), ctx=cv.getContext('2d');
+let srcImg=null, srcHiRes=null, showingBefore=false;
+
+/* ---------- helpers ---------- */
+function status(t,spin){ const s=$('#status'); if(!t){s.style.display='none';return} s.style.display='block'; s.innerHTML=(spin?'<span class="spin">⏳</span> ':'')+t; }
+function segInit(id,cb){ const seg=$(id); seg.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b)return; seg.querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); cb(b); }); }
+function hex2rgb(h){ h=h.replace('#',''); return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]; }
+const CNAMES=[['#d4a017','gold'],['#f5f0e6','white'],['#1a1a1a','black'],['#c0c0c0','silver'],['#b87333','copper'],['#8b0000','deep red'],['#1e3a8a','royal blue'],['#14532d','emerald green'],['#7c2d12','rust brown']];
+function colorName(hex){ let best='gold',bd=1e9; const [r,g,b]=hex2rgb(hex); for(const [h,n] of CNAMES){ const [r2,g2,b2]=hex2rgb(h); const d=(r-r2)**2+(g-g2)**2+(b-b2)**2; if(d<bd){bd=d;best=n} } return best; }
+
+/* ---------- image load ---------- */
+function setSource(img){
+  srcImg=img; $('#dropmsg').style.display='none';
+  const max=1600, s=Math.min(1,max/Math.max(img.width,img.height));
+  cv.width=Math.round(img.width*s); cv.height=Math.round(img.height*s);
+  ctx.drawImage(img,0,0,cv.width,cv.height);
+  srcHiRes=img;
+}
+function loadFile(f){
+  if(!f||!f.type.startsWith('image/'))return;
+  const img=new Image();
+  img.onload=()=>setSource(img);
+  img.src=URL.createObjectURL(f);
+}
+$('#btnFile').onclick=()=>$('#file').click();
+$('#file').onchange=e=>loadFile(e.target.files[0]);
+const stage=$('#stage');
+stage.addEventListener('dragover',e=>e.preventDefault());
+stage.addEventListener('drop',e=>{e.preventDefault();loadFile(e.dataTransfer.files[0])});
+
+/* ---------- draw pad ---------- */
+let drawMode=false, drawTool='brush', drawing=false, startPt=null, snapshot=null, strokes=[];
+function blankCanvas(){ cv.width=1200; cv.height=800; ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,cv.width,cv.height); srcHiRes=null; srcImg=null; }
+$('#tabDraw').onclick=()=>{ $('#tabDraw').classList.add('on'); $('#tabUp').classList.remove('on'); drawMode=true; $('#drawbar').style.display='flex'; if(!srcImg&&!strokes.length) blankCanvas(); $('#dropmsg').style.display='none'; };
+$('#tabUp').onclick=()=>{ $('#tabUp').classList.add('on'); $('#tabDraw').classList.remove('on'); drawMode=false; $('#drawbar').style.display='none'; };
+$$('#drawbar .dbtn[data-t]').forEach(b=>b.onclick=()=>{ $$('#drawbar .dbtn[data-t]').forEach(x=>x.classList.remove('on')); b.classList.add('on'); drawTool=b.dataset.t; });
+$('#drawClear').onclick=()=>{ strokes=[]; blankCanvas(); };
+$('#drawUndo').onclick=()=>{ strokes.pop(); redrawStrokes(); };
+function redrawStrokes(){ const w=cv.width,h=cv.height; ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,w,h); for(const st of strokes){ ctx.save(); ctx.strokeStyle=st.col; ctx.fillStyle=st.col; ctx.lineWidth=st.size; ctx.lineCap='round';
+  if(st.tool==='brush'){ ctx.beginPath(); st.pts.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])); ctx.stroke(); }
+  else if(st.tool==='rect'){ ctx.strokeRect(st.x,st.y,st.w,st.h); }
+  else if(st.tool==='circle'){ ctx.beginPath(); ctx.ellipse(st.x+st.w/2,st.y+st.h/2,Math.abs(st.w/2),Math.abs(st.h/2),0,0,7); ctx.stroke(); }
+  else if(st.tool==='line'){ ctx.beginPath(); ctx.moveTo(st.x,st.y); ctx.lineTo(st.x+st.w,st.y+st.h); ctx.stroke(); }
+  ctx.restore(); } }
+function pos(e){ const r=cv.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return [(t.clientX-r.left)*cv.width/r.width,(t.clientY-r.top)*cv.height/r.height]; }
+cv.addEventListener('pointerdown',e=>{ if(!drawMode)return; drawing=true; const p=pos(e); startPt=p;
+  if(drawTool==='brush'){ strokes.push({tool:'brush',col:$('#drawCol').value,size:+$('#drawSize').value,pts:[p]}); }
+  else snapshot=ctx.getImageData(0,0,cv.width,cv.height); });
+cv.addEventListener('pointermove',e=>{ if(!drawing||!drawMode)return; const p=pos(e);
+  if(drawTool==='brush'){ const st=strokes[strokes.length-1]; st.pts.push(p); ctx.strokeStyle=st.col; ctx.lineWidth=st.size; ctx.lineCap='round'; ctx.beginPath(); const q=st.pts[st.pts.length-2]; ctx.moveTo(q[0],q[1]); ctx.lineTo(p[0],p[1]); ctx.stroke(); }
+  else{ ctx.putImageData(snapshot,0,0); ctx.strokeStyle=$('#drawCol').value; ctx.lineWidth=+$('#drawSize').value;
+    const x=startPt[0],y=startPt[1],w=p[0]-x,h=p[1]-y;
+    if(drawTool==='rect')ctx.strokeRect(x,y,w,h);
+    else if(drawTool==='line'){ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(p[0],p[1]);ctx.stroke();}
+    else{ctx.beginPath();ctx.ellipse(x+w/2,y+h/2,Math.abs(w/2),Math.abs(h/2),0,0,7);ctx.stroke();} } });
+window.addEventListener('pointerup',e=>{ if(!drawing||!drawMode)return; drawing=false;
+  if(drawTool!=='brush'){ const p=pos(e); strokes.push({tool:drawTool,col:$('#drawCol').value,size:+$('#drawSize').value,x:startPt[0],y:startPt[1],w:p[0]-startPt[0],h:p[1]-startPt[1]}); redrawStrokes(); }
+  srcImg=null; });
+
+/* ---------- tabs AI / Manual ---------- */
+$('#tabAi').onclick=()=>{ $('#tabAi').classList.add('on'); $('#tabMan').classList.remove('on'); $('#aiPanel').style.display='block'; $('#manPanel').style.display='none'; };
+$('#tabMan').onclick=()=>{ $('#tabMan').classList.add('on'); $('#tabAi').classList.remove('on'); $('#manPanel').style.display='block'; $('#aiPanel').style.display='none'; };
+
+/* ---------- AI mode ---------- */
+let style='gold', depth7=true, nColors=3, splitMode='mix';
+$('#styles').addEventListener('click',e=>{ const b=e.target.closest('.chip'); if(!b)return; $$('#styles .chip').forEach(x=>x.classList.remove('on')); b.classList.add('on'); style=b.dataset.s; });
+$('#d3').onclick=()=>{depth7=false;$('#d3').classList.add('on');$('#d7').classList.remove('on')};
+$('#d7').onclick=()=>{depth7=true;$('#d7').classList.add('on');$('#d3').classList.remove('on')};
+segInit('#cCount',b=>{ nColors=+b.dataset.n; $('#c2').style.display=nColors>=2?'':'none'; $('#c3').style.display=nColors>=3?'':'none'; });
+segInit('#splitSeg',b=>{ splitMode=b.dataset.v; $('#splitSeg').style.display=nColors>=2?'flex':'none'; });
+const STYLES={
+ gold:'luxurious GOLDEN sculpted relief, rich gold tones with warm LED-style golden glow, royal premium look',
+ marble:'pure WHITE MARBLE carved relief sculpture, elegant stone carving with soft shadows',
+ wood:'deep TEAK WOOD hand-carved relief, rich brown wooden texture, traditional Indian woodcraft',
+ clay:'terracotta CLAY relief sculpture, earthy handmade texture, warm rustic tones',
+ bronze:'antique BRONZE metal relief sculpture, dark bronze with golden highlights',
+ crystal:'clear CRYSTAL GLASS relief with glowing light refraction, sparkling premium look'};
+function buildPrompt(){
+  const cols=[$('#c1').value,$('#c2').value,$('#c3').value].slice(0,nColors).map(colorName);
+  let colDesc;
+  if(nColors===1)colDesc=`single dominant ${cols[0]} color theme, monochrome ${cols[0]} with natural light and shade`;
+  else if(splitMode==='mix')colDesc=`${cols[0]} as the dominant hero color (about 70%), with subtle touches of ${cols.slice(1).join(' and ')} blended in naturally — colors mix softly like the reference luxury products`;
+  else colDesc=`SPLIT color layout like dual-tone cars: ${splitMode==='tb'?'TOP half':'LEFT half'} mostly ${cols[0]}, ${splitMode==='tb'?'BOTTOM half':'RIGHT half'} mostly ${cols[1]}, with a soft elegant transition`;
+  const depth=depth7?'ultra-premium 7D glossy depth (extra shine, strong dimensional pop, light bloom on edges)':'realistic 3D sculpted depth';
+  return `Transform this flat image into a REAL physical ${STYLES[style]} wall art piece with ${depth} — raised sculpted surfaces, real light and shadow, genuine depth visible like a photograph of a physical product. COLOR PALETTE: ${colDesc}. The result must look like a professional photograph of a real handcrafted object in a showroom, NOT an illustration, NOT flat digital art. Keep the subject and composition recognizable. No text, no watermark.`;
+}
+function getCode(){ let c=localStorage.getItem('studio_code')||''; if(!c){ $('#codeFld').style.display='block'; c=$('#aiCode').value.trim(); } return c; }
+$('#btnAi').onclick=async()=>{
+  if(!srcImg&&!strokes.length){status('पहले photo upload करें या कुछ बनाएँ!');setTimeout(()=>status(''),2500);return}
+  const code=getCode(); if(!code){status('🔑 पहले AI code डालें');return}
+  const btn=$('#btnAi'); btn.disabled=true;
+  try{
+    const tmp=document.createElement('canvas'); const s=Math.min(1,1024/Math.max(cv.width,cv.height));
+    tmp.width=Math.round(cv.width*s); tmp.height=Math.round(cv.height*s);
+    tmp.getContext('2d').drawImage(cv,0,0,tmp.width,tmp.height);
+    const dataURI=tmp.toDataURL('image/png');
+    const jobId='j'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+    status('🚀 AI को भेजा गया...',true);
+    const r=await fetch(API+'studio-background',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({jobId,image:dataURI,prompt:buildPrompt(),code})});
+    if(r.status!==202&&r.status!==200) throw new Error('start '+r.status);
+    localStorage.setItem('studio_code',code);
+    let tries=0;
+    while(tries<40){
+      await new Promise(res=>setTimeout(res,4000)); tries++;
+      status(`⏳ AI काम कर रहा है... ${tries*4}s (30-60s लगते हैं)`,true);
+      const jr=await fetch(API+'studio-result?job='+jobId);
+      const j=await jr.json();
+      if(j.ok===1){ const img=new Image(); img.onload=()=>{ const max=1600,sc=Math.min(1,max/Math.max(img.width,img.height)); cv.width=Math.round(img.width*sc); cv.height=Math.round(img.height*sc); ctx.drawImage(img,0,0,cv.width,cv.height); status('✅ तैयार! ⬇️ 4K Print से download करें'); setTimeout(()=>status(''),4000); }; img.src=j.img; return; }
+      if(j.ok===0) throw new Error(j.err||'AI busy');
+    }
+    throw new Error('बहुत देर लगी — फिर कोशिश करें');
+  }catch(e){ status('❌ '+e.message+' — फिर कोशिश करें'); setTimeout(()=>status(''),4000); }
+  finally{ btn.disabled=false; }
+};
+
+/* ---------- Manual mode ---------- */
+function manualApply(){
+  if(!srcImg&&!strokes.length){status('पहले photo upload करें या कुछ बनाएँ!');setTimeout(()=>status(''),2500);return}
+  /* base = original redraw (if srcImg) else current (drawings) */
+  let base=document.createElement('canvas'); base.width=cv.width; base.height=cv.height;
+  const bx=base.getContext('2d');
+  if(srcImg){ bx.drawImage(srcImg,0,0,base.width,base.height); } else { bx.drawImage(cv,0,0); }
+  const w=base.width,h=base.height;
+  let img=bx.getImageData(0,0,w,h), d=img.data;
+  /* brightness/contrast */
+  const bri=+$('#rBri').value*2.5, con=(+$('#rCon').value)/50;
+  if(bri||con){ for(let p=0;p<d.length;p+=4){ for(let k=0;k<3;k++){ let v=d[p+k]+bri; if(con){ v=(v-128)*(1+con)+128; } d[p+k]=v<0?0:v>255?255:v; } } }
+  /* emboss relief */
+  const rel=+$('#rRel').value/100;
+  if(rel>0.02){
+    const src=new Uint8ClampedArray(d);
+    const amt=rel*2.2;
+    for(let y=1;y<h-1;y++){ for(let x=1;x<w-1;x++){
+      const i=(y*w+x)*4, i2=(y*w+x-1)*4;
+      for(let k=0;k<3;k++){ const g=src[i2+k]-src[i+4+k-4+ (k?0:0)]; /* left-top diff */
+        const e=src[i2+k]-src[((y-1)*w+x)*4+k];
+        let v=src[i+k]+ (g+e)*amt*0.5; d[i+k]=v<0?0:v>255?255:v; }
+    } }
+  }
+  /* gradient map colors */
+  const nc=+($('#mCount .on')?.dataset.n||3);
+  if(nc>0){
+    const stops=[$('#m1').value,$('#m2').value,$('#m3').value].slice(0,nc===1?1:(nc===2?2:3)).map(hex2rgb);
+    const lut=new Uint8ClampedArray(256*3);
+    for(let i=0;i<256;i++){
+      let rgb;
+      if(stops.length===1){ const t=i/255; rgb=stops[0].map(c=>c*t); }
+      else if(stops.length===2){ const t=i/255; rgb=stops[0].map((c,k)=>c+(stops[1][k]-c)*t); }
+      else{ const t=i/255; if(t<0.5){ const u=t*2; rgb=stops[0].map((c,k)=>c+(stops[1][k]-c)*u); } else { const u=(t-0.5)*2; rgb=stops[1].map((c,k)=>c+(stops[2][k]-c)*u); } }
+      lut[i*3]=rgb[0]; lut[i*3+1]=rgb[1]; lut[i*3+2]=rgb[2];
+    }
+    for(let p=0;p<d.length;p+=4){ const l=(d[p]*0.299+d[p+1]*0.587+d[p+2]*0.114)|0; const keep=0.25; /* 75% map + 25% original = natural */
+      d[p]=d[p]*keep+lut[l*3]*(1-keep); d[p+1]=d[p+1]*keep+lut[l*3+1]*(1-keep); d[p+2]=d[p+2]*keep+lut[l*3+2]*(1-keep); }
+  }
+  bx.putImageData(img,0,0);
+  /* bevel = soft inner glow via shadow copy */
+  const bev=+$('#rBev').value/100;
+  if(bev>0.02){ bx.save(); bx.globalAlpha=bev*0.5; bx.globalCompositeOperation='overlay'; bx.filter=`blur(${Math.round(bev*6)}px)`; bx.drawImage(base,bev*6,bev*6); bx.restore(); }
+  ctx.clearRect(0,0,cv.width,cv.height); ctx.drawImage(base,0,0);
+  status('✅ लग गया!'); setTimeout(()=>status(''),1500);
+}
+$('#btnMan').onclick=manualApply;
+['rRel','rBev','rBri','rCon'].forEach(id=>$('#'+id).addEventListener('input',()=>{ const map={rRel:'vRel',rBev:'vBev',rBri:'vBri',rCon:'vCon'}; $('#'+map[id]).textContent=$('#'+id).value; }));
+segInit('#mCount',()=>{});
+
+/* ---------- export ---------- */
+function download(scaleTo,label){
+  const out=document.createElement('canvas');
+  let w=cv.width,h=cv.height;
+  if(scaleTo){ /* 2-step upscale = better quality */
+    const s=scaleTo/Math.max(w,h);
+    const mid=document.createElement('canvas'); const ms=Math.sqrt(s);
+    mid.width=Math.round(w*ms); mid.height=Math.round(h*ms);
+    mid.getContext('2d').drawImage(cv,0,0,mid.width,mid.height);
+    out.width=Math.round(w*s); out.height=Math.round(h*s);
+    const ox=out.getContext('2d'); ox.imageSmoothingEnabled=true; ox.imageSmoothingQuality='high';
+    ox.drawImage(mid,0,0,out.width,out.height);
+  } else { out.width=w; out.height=h; out.getContext('2d').drawImage(cv,0,0); }
+  const a=document.createElement('a'); a.download=`sanskriti-3d-${label}.png`; a.href=out.toDataURL('image/png'); a.click();
+}
+$('#btnPng').onclick=()=>download(0,'hd');
+$('#btn4k').onclick=()=>download(3840,'4k-print');
+let beforeSnap=null;
+$('#btnBefore').onclick=()=>{ status('💡 Before/After: नया result आने पर दबाकर देखें'); setTimeout(()=>status(''),2000); };
+</script>
+</body>
+</html>
