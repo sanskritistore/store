@@ -33,7 +33,7 @@
   .fld label{display:flex;justify-content:space-between;font-size:12px;color:#94a3b8;margin-bottom:3px}
   .fld label b{color:#fbbf24}
   #stage{flex:1;display:flex;align-items:center;justify-content:center;background:#0b1120;position:relative;overflow:hidden}
-  #stage canvas{max-width:96%;max-height:96%;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.6)}
+  #stage canvas{max-width:96%;max-height:96%;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.6);touch-action:none}
   #dropmsg{position:absolute;inset:20px;border:3px dashed #334155;border-radius:16px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:#64748b;font-size:15px;pointer-events:none;text-align:center}
   #status{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:#1e293bd9;border:1px solid #fbbf24;color:#fbbf24;padding:8px 18px;border-radius:99px;font-size:13px;font-weight:700;display:none;white-space:nowrap}
   .spin{display:inline-block;animation:sp 1s linear infinite}
@@ -97,6 +97,7 @@
         <button class="chip" data-s="clay">🏺 मिट्टी (Clay)</button>
         <button class="chip" data-s="bronze">🥉 Bronze</button>
         <button class="chip" data-s="crystal">💎 Crystal</button>
+        <button class="chip" data-s="glitter">✨ Glitter</button>
       </div>
       <h3>📐 Depth</h3>
       <div class="row"><div class="seg">
@@ -152,6 +153,15 @@
         <div class="row"><input type="range" id="rBri" min="-50" max="50" value="0"></div></div>
       <div class="fld"><label>Contrast <b id="vCon">0</b></label>
         <div class="row"><input type="range" id="rCon" min="-50" max="50" value="0"></div></div>
+      <h3>✨ Glitter (चमक) — हर color!</h3>
+      <div class="row">
+        <input type="color" id="gCol" value="#ffd700" title="Glitter color">
+        <span class="note" style="margin:0;flex:1">कोई भी color चुनें — सोना, चांदी, लाल, नीला...</span>
+      </div>
+      <div class="fld"><label>चमक कितनी <b id="vGlit">40</b></label>
+        <div class="row"><input type="range" id="rGlit" min="5" max="100" value="40"></div></div>
+      <button class="hbtn go" id="btnGlit" style="background:#b45309;border-color:#b45309">✨ Glitter छिड़को</button>
+      <div class="note">Effect लगाने के बाद ऊपर से glitter छिड़कें — हर बार दबाने से और चमक बढ़ेगी!</div>
       <button class="hbtn go" id="btnMan">✨ Effect लगाओ</button>
       <div class="note">⚡ Free + instant — बार-बार आज़माएँ, जब तक मन भर जाए!</div>
     </div>
@@ -223,10 +233,10 @@ function drawShape(c,st){ c.save(); c.strokeStyle=st.col; c.fillStyle=st.col; c.
   c.restore(); }
 function redrawStrokes(){ const w=cv.width,h=cv.height; ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,w,h); for(const st of strokes) drawShape(ctx,st); }
 function pos(e){ const r=cv.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return [(t.clientX-r.left)*cv.width/r.width,(t.clientY-r.top)*cv.height/r.height]; }
-cv.addEventListener('pointerdown',e=>{ if(!drawMode)return; drawing=true; const p=pos(e); startPt=p;
+cv.addEventListener('pointerdown',e=>{ if(!drawMode)return; e.preventDefault(); drawing=true; const p=pos(e); startPt=p;
   if(drawTool==='brush'){ strokes.push({tool:'brush',col:$('#drawCol').value,size:+$('#drawSize').value,pts:[p]}); }
   else snapshot=ctx.getImageData(0,0,cv.width,cv.height); });
-cv.addEventListener('pointermove',e=>{ if(!drawing||!drawMode)return; const p=pos(e);
+cv.addEventListener('pointermove',e=>{ if(!drawing||!drawMode)return; e.preventDefault(); const p=pos(e);
   if(drawTool==='brush'){ const st=strokes[strokes.length-1]; st.pts.push(p); ctx.strokeStyle=st.col; ctx.lineWidth=st.size; ctx.lineCap='round'; ctx.beginPath(); const q=st.pts[st.pts.length-2]; ctx.moveTo(q[0],q[1]); ctx.lineTo(p[0],p[1]); ctx.stroke(); }
   else{ ctx.putImageData(snapshot,0,0); drawShape(ctx,mkStroke(drawTool,startPt[0],startPt[1],p)); } });
 window.addEventListener('pointerup',e=>{ if(!drawing||!drawMode)return; drawing=false;
@@ -250,7 +260,8 @@ const STYLES={
  wood:'deep TEAK WOOD hand-carved relief, rich brown wooden texture, traditional Indian woodcraft',
  clay:'terracotta CLAY relief sculpture, earthy handmade texture, warm rustic tones',
  bronze:'antique BRONZE metal relief sculpture, dark bronze with golden highlights',
- crystal:'clear CRYSTAL GLASS relief with glowing light refraction, sparkling premium look'};
+ crystal:'clear CRYSTAL GLASS relief with glowing light refraction, sparkling premium look',
+ glitter:'dazzling GLITTER-covered surface, thousands of sparkling glitter particles shimmering like luxury glitter wall art, rich sparkle texture'};
 function buildPrompt(){
   const cols=[$('#c1').value,$('#c2').value,$('#c3').value].slice(0,nColors).map(colorName);
   let colDesc;
@@ -339,6 +350,29 @@ function manualApply(){
 $('#btnMan').onclick=manualApply;
 ['rRel','rBev','rBri','rCon'].forEach(id=>$('#'+id).addEventListener('input',()=>{ const map={rRel:'vRel',rBev:'vBev',rBri:'vBri',rCon:'vCon'}; $('#'+map[id]).textContent=$('#'+id).value; }));
 segInit('#mCount',()=>{});
+
+/* ---------- glitter engine (किसी भी color की चमक) ---------- */
+$('#rGlit').addEventListener('input',()=>$('#vGlit').textContent=$('#rGlit').value);
+function sprinkleGlitter(){
+  const [r,g,b]=hex2rgb($('#gCol').value);
+  const den=+$('#rGlit').value/100, w=cv.width, h=cv.height;
+  const n=Math.round(w*h/140*den);
+  ctx.save();
+  for(let i=0;i<n;i++){
+    const x=Math.random()*w, y=Math.random()*h;
+    const big=Math.random()<0.08;
+    const sz=big? 1.6+Math.random()*2.6 : 0.5+Math.random()*1.6;
+    const br=0.5+Math.random()*0.5, a=0.45+Math.random()*0.55;
+    const rr=Math.min(255,r*br+120*Math.random()), gg=Math.min(255,g*br+120*Math.random()), bb=Math.min(255,b*br+120*Math.random());
+    ctx.fillStyle=`rgba(${rr|0},${gg|0},${bb|0},${a})`;
+    ctx.beginPath(); ctx.arc(x,y,sz,0,7); ctx.fill();
+    if(big){ ctx.strokeStyle=`rgba(255,255,255,${0.35+Math.random()*0.4})`; ctx.lineWidth=0.7;
+      ctx.beginPath(); ctx.moveTo(x-sz*2.2,y); ctx.lineTo(x+sz*2.2,y); ctx.moveTo(x,y-sz*2.2); ctx.lineTo(x,y+sz*2.2); ctx.stroke(); }
+  }
+  ctx.restore();
+  status('✨ Glitter लग गई!'); setTimeout(()=>status(''),1500);
+}
+$('#btnGlit').onclick=()=>{ if(!srcImg&&!strokes.length){status('पहले photo upload करें या कुछ बनाएँ!');setTimeout(()=>status(''),2500);return} sprinkleGlitter(); };
 
 /* ---------- export ---------- */
 function download(scaleTo,label){
