@@ -261,7 +261,7 @@ $('#btnAi').onclick=async()=>{
     const dataURI=tmp.toDataURL('image/png');
     const jobId='j'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
     status('🚀 AI को भेजा गया...',true);
-    const r=await fetch(API+'studio-background',{method:'POST',headers:{'Content-Type':'application/json'},
+    const r=await fetch(API+'studio-start',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({jobId,image:dataURI,prompt:buildPrompt(),code})});
     if(r.status!==202&&r.status!==200) throw new Error('start '+r.status);
     localStorage.setItem('studio_code',code);
