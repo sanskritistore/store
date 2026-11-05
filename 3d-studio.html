@@ -67,14 +67,18 @@
     <div class="row"><button class="hbtn" id="btnFile" style="width:100%">🖼️ Photo/Design चुनें</button>
       <input type="file" id="file" accept="image/*" style="display:none"></div>
     <div id="drawbar">
-      <button class="dbtn on" data-t="brush">🖌️ Brush</button>
-      <button class="dbtn" data-t="rect">▭ Box</button>
-      <button class="dbtn" data-t="circle">⭕ Circle</button>
-      <button class="dbtn" data-t="line">📏 Line</button>
-      <input type="color" id="drawCol" value="#d4a017">
-      <input type="range" id="drawSize" min="2" max="60" value="14" style="width:70px">
-      <button class="dbtn" id="drawUndo">↩️</button>
-      <button class="dbtn" id="drawClear">🗑️</button>
+      <button class="dbtn on" data-t="brush" title="Brush">🖌️ Brush</button>
+      <button class="dbtn" data-t="rect" title="Rectangle">▭ Rect</button>
+      <button class="dbtn" data-t="square" title="Square">⬜ Square</button>
+      <button class="dbtn" data-t="circle" title="Circle/Ellipse">⭕ Circle</button>
+      <button class="dbtn" data-t="triangle" title="Triangle">🔺 Tri</button>
+      <button class="dbtn" data-t="star" title="Star">⭐ Star</button>
+      <button class="dbtn" data-t="line" title="Single Line">📏 Line</button>
+      <input type="color" id="drawCol" value="#d4a017" title="Color">
+      <input type="range" id="drawSize" min="2" max="60" value="14" style="width:60px" title="मोटाई">
+      <button class="dbtn on" id="fillTog" title="भरा हुआ / सिर्फ़ outline">⬛ Fill</button>
+      <button class="dbtn" id="drawUndo" title="Undo">↩️</button>
+      <button class="dbtn" id="drawClear" title="सब साफ़">🗑️</button>
     </div>
     <div class="note">💡 Krishna/भगवान की simple photo डालें → 3D/7D में बदलें। या खुद rough shape बनाएँ, AI उसे real बना देगा!</div>
 
@@ -201,25 +205,32 @@ $('#tabUp').onclick=()=>{ $('#tabUp').classList.add('on'); $('#tabDraw').classLi
 $$('#drawbar .dbtn[data-t]').forEach(b=>b.onclick=()=>{ $$('#drawbar .dbtn[data-t]').forEach(x=>x.classList.remove('on')); b.classList.add('on'); drawTool=b.dataset.t; });
 $('#drawClear').onclick=()=>{ strokes=[]; blankCanvas(); };
 $('#drawUndo').onclick=()=>{ strokes.pop(); redrawStrokes(); };
-function redrawStrokes(){ const w=cv.width,h=cv.height; ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,w,h); for(const st of strokes){ ctx.save(); ctx.strokeStyle=st.col; ctx.fillStyle=st.col; ctx.lineWidth=st.size; ctx.lineCap='round';
-  if(st.tool==='brush'){ ctx.beginPath(); st.pts.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])); ctx.stroke(); }
-  else if(st.tool==='rect'){ ctx.strokeRect(st.x,st.y,st.w,st.h); }
-  else if(st.tool==='circle'){ ctx.beginPath(); ctx.ellipse(st.x+st.w/2,st.y+st.h/2,Math.abs(st.w/2),Math.abs(st.h/2),0,0,7); ctx.stroke(); }
-  else if(st.tool==='line'){ ctx.beginPath(); ctx.moveTo(st.x,st.y); ctx.lineTo(st.x+st.w,st.y+st.h); ctx.stroke(); }
-  ctx.restore(); } }
+let fillShape=true;
+$('#fillTog').onclick=()=>{ fillShape=!fillShape; $('#fillTog').classList.toggle('on',fillShape); };
+function mkStroke(tool,x,y,p){ let w=p[0]-x,h=p[1]-y;
+  if(tool==='square'){ const m=Math.max(Math.abs(w),Math.abs(h)); w=(w<0?-1:1)*m; h=(h<0?-1:1)*m; }
+  return {tool,col:$('#drawCol').value,size:+$('#drawSize').value,x,y,w,h,fill:fillShape}; }
+function shapePath(c,st){ const x=st.x,y=st.y,w=st.w,h=st.h; c.beginPath();
+  if(st.tool==='rect'||st.tool==='square') c.rect(x,y,w,h);
+  else if(st.tool==='circle') c.ellipse(x+w/2,y+h/2,Math.abs(w/2),Math.abs(h/2),0,0,7);
+  else if(st.tool==='triangle'){ c.moveTo(x+w/2,y); c.lineTo(x+w,y+h); c.lineTo(x,y+h); c.closePath(); }
+  else if(st.tool==='star'){ const cx=x+w/2,cy=y+h/2,R=Math.max(4,Math.min(Math.abs(w),Math.abs(h))/2),r=R*0.45;
+    for(let i=0;i<10;i++){ const a=-Math.PI/2+i*Math.PI/5, rad=i%2?r:R; const px=cx+Math.cos(a)*rad, py=cy+Math.sin(a)*rad; i?c.lineTo(px,py):c.moveTo(px,py); } c.closePath(); }
+  else if(st.tool==='line'){ c.moveTo(x,y); c.lineTo(x+w,y+h); } }
+function drawShape(c,st){ c.save(); c.strokeStyle=st.col; c.fillStyle=st.col; c.lineWidth=st.size; c.lineCap='round'; c.lineJoin='round';
+  if(st.tool==='brush'){ c.beginPath(); st.pts.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1])); c.stroke(); }
+  else{ shapePath(c,st); (st.fill&&st.tool!=='line')?c.fill():c.stroke(); }
+  c.restore(); }
+function redrawStrokes(){ const w=cv.width,h=cv.height; ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,w,h); for(const st of strokes) drawShape(ctx,st); }
 function pos(e){ const r=cv.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return [(t.clientX-r.left)*cv.width/r.width,(t.clientY-r.top)*cv.height/r.height]; }
 cv.addEventListener('pointerdown',e=>{ if(!drawMode)return; drawing=true; const p=pos(e); startPt=p;
   if(drawTool==='brush'){ strokes.push({tool:'brush',col:$('#drawCol').value,size:+$('#drawSize').value,pts:[p]}); }
   else snapshot=ctx.getImageData(0,0,cv.width,cv.height); });
 cv.addEventListener('pointermove',e=>{ if(!drawing||!drawMode)return; const p=pos(e);
   if(drawTool==='brush'){ const st=strokes[strokes.length-1]; st.pts.push(p); ctx.strokeStyle=st.col; ctx.lineWidth=st.size; ctx.lineCap='round'; ctx.beginPath(); const q=st.pts[st.pts.length-2]; ctx.moveTo(q[0],q[1]); ctx.lineTo(p[0],p[1]); ctx.stroke(); }
-  else{ ctx.putImageData(snapshot,0,0); ctx.strokeStyle=$('#drawCol').value; ctx.lineWidth=+$('#drawSize').value;
-    const x=startPt[0],y=startPt[1],w=p[0]-x,h=p[1]-y;
-    if(drawTool==='rect')ctx.strokeRect(x,y,w,h);
-    else if(drawTool==='line'){ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(p[0],p[1]);ctx.stroke();}
-    else{ctx.beginPath();ctx.ellipse(x+w/2,y+h/2,Math.abs(w/2),Math.abs(h/2),0,0,7);ctx.stroke();} } });
+  else{ ctx.putImageData(snapshot,0,0); drawShape(ctx,mkStroke(drawTool,startPt[0],startPt[1],p)); } });
 window.addEventListener('pointerup',e=>{ if(!drawing||!drawMode)return; drawing=false;
-  if(drawTool!=='brush'){ const p=pos(e); strokes.push({tool:drawTool,col:$('#drawCol').value,size:+$('#drawSize').value,x:startPt[0],y:startPt[1],w:p[0]-startPt[0],h:p[1]-startPt[1]}); redrawStrokes(); }
+  if(drawTool!=='brush'){ const p=pos(e); strokes.push(mkStroke(drawTool,startPt[0],startPt[1],p)); redrawStrokes(); }
   srcImg=null; });
 
 /* ---------- tabs AI / Manual ---------- */
