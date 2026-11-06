@@ -183,7 +183,10 @@
         <div class="row"><input type="range" id="rGsz" min="0.5" max="4" step="0.5" value="1"></div></div>
       <div class="fld"><label>चमक कितनी <b id="vGlit">40</b></label>
         <div class="row"><input type="range" id="rGlit" min="5" max="100" value="40"></div></div>
-      <button class="hbtn go" id="btnGlit" style="background:#b45309;border-color:#b45309">✨ Glitter छिड़को</button>
+      <div class="row" style="gap:6px">
+        <button class="hbtn go" id="btnGlit" style="background:#b45309;border-color:#b45309;flex:1">✨ Glitter छिड़को</button>
+        <button class="hbtn" id="btnGlitOff" title="Selected shape से glitter हटाएँ">🚫 हटाओ</button>
+      </div>
       <div class="note">Effect लगाने के बाद ऊपर से glitter छिड़कें — हर बार दबाने से और चमक बढ़ेगी!</div>
       <button class="hbtn go" id="btnMan">✨ Effect लगाओ</button>
       <div class="note">⚡ Free + instant — बार-बार आज़माएँ, जब तक मन भर जाए!</div>
@@ -253,6 +256,11 @@ function shapePath(c,st){ const x=st.x,y=st.y,w=st.w,h=st.h; c.beginPath();
 function drawShape(c,st){ c.save(); c.strokeStyle=st.col; c.fillStyle=st.col; c.lineWidth=st.size; c.lineCap='round'; c.lineJoin='round';
   if(st.tool==='brush'){ c.beginPath(); st.pts.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1])); c.stroke(); }
   else{ shapePath(c,st); (st.fill&&st.tool!=='line')?c.fill():c.stroke(); }
+  if(st.glitter){ try{ c.beginPath();
+    if(st.tool==='brush'){ const r=Math.max(st.size||3,3)/2; st.pts.forEach(p2=>{ c.moveTo(p2[0]+r,p2[1]); c.arc(p2[0],p2[1],r,0,7); }); }
+    else if(st.tool==='line'){ const bb=stBBox(st); c.rect(bb.x-4,bb.y-4,bb.w+8,bb.h+8); }
+    else shapePath(c,st);
+    c.clip(); sprinkleInto(c,stBBox(st),st.glitter,st.seed||1); }catch(e){} }
   c.restore(); }
 let redoStack=[], clip=[], moving=false, moveStart=null, moveOrig=[];
 function deepClone(o){ return JSON.parse(JSON.stringify(o)); }
@@ -486,6 +494,16 @@ GSW.forEach(([c,nm])=>{ const b=document.createElement('button'); b.className='d
   $('#gSw').appendChild(b); });
 $('#gCol').addEventListener('input',()=>{ gMix=false; $$('#gSw .dbtn').forEach(x=>x.style.outline=''); });
 $('#rGsz').addEventListener('input',()=>$('#vGsz').textContent=((+$('#rGsz').value)*0.2).toFixed(1)+'mm');
+let seedCtr=1;
+function rng32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; } }
+function sprinkleInto(gtx,b,gl,seed){ const rnd=rng32(seed||1);
+  const [r,g2,b2]=hex2rgb(gl.col); const n=Math.round(b.w*b.h/90*gl.den);
+  for(let i=0;i<n;i++){ const x=b.x+rnd()*b.w, y=b.y+rnd()*b.h;
+    const sz=(0.45+rnd()*0.95)*gl.sz, br=0.5+rnd()*0.5, a=0.5+rnd()*0.5;
+    if(gl.mix){ gtx.fillStyle=`hsla(${rnd()*360|0},95%,${50+rnd()*30|0}%,${a})`; }
+    else{ const rr=Math.min(255,r*br+120*rnd()), gg=Math.min(255,g2*br+120*rnd()), bb=Math.min(255,b2*br+120*rnd());
+      gtx.fillStyle=`rgba(${rr|0},${gg|0},${bb|0},${a})`; }
+    gtx.beginPath(); gtx.arc(x,y,sz,0,7); gtx.fill(); } }
 function sprinkleGlitter(){
   const [r,g,b]=hex2rgb($('#gCol').value);
   const gsz=+($('#rGsz')?.value||1);
@@ -510,7 +528,15 @@ function sprinkleGlitter(){
   ctx.restore();
   status('✨ Glitter लग गई!'); setTimeout(()=>status(''),1500);
 }
-$('#btnGlit').onclick=()=>{ if(!srcImg&&!strokes.length){status('पहले photo upload करें या कुछ बनाएँ!');setTimeout(()=>status(''),2500);return} sprinkleGlitter(); };
+$('#btnGlit').onclick=()=>{ if(!srcImg&&!strokes.length){status('पहले photo upload करें या कुछ बनाएँ!');setTimeout(()=>status(''),2500);return}
+  if(!srcImg&&strokes.length){ const list=maskStrokes();
+    const gl={col:$('#gCol').value,mix:gMix,sz:+($('#rGsz')?.value||1),den:+$('#rGlit').value/100};
+    list.forEach(st=>{ st.glitter=gl; if(st.seed==null)st.seed=seedCtr++; });
+    redrawStrokes(); status('✨ Glitter चिपक गई — shape के साथ चलेगी!'); setTimeout(()=>status(''),1800); return; }
+  sprinkleGlitter(); };
+$('#btnGlitOff').onclick=()=>{ const list=maskStrokes(); let n=0;
+  list.forEach(st=>{ if(st.glitter){ delete st.glitter; n++; } });
+  redrawStrokes(); status(n?'🚫 Glitter हट गई':'पहले glitter वाली shape select करें'); setTimeout(()=>status(''),1800); };
 
 /* ---------- export ---------- */
 function download(scaleTo,label){
