@@ -67,6 +67,7 @@
     <div class="row"><button class="hbtn" id="btnFile" style="width:100%">🖼️ Photo/Design चुनें</button>
       <input type="file" id="file" accept="image/*" style="display:none"></div>
     <div id="drawbar">
+      <button class="dbtn" data-t="select" title="Select करके खिसकाएँ / delete करें">☝️ Select</button>
       <button class="dbtn on" data-t="brush" title="Brush">🖌️ Brush</button>
       <button class="dbtn" data-t="rect" title="Rectangle">▭ Rect</button>
       <button class="dbtn" data-t="square" title="Square">⬜ Square</button>
@@ -87,6 +88,18 @@
       <select id="szU" title="96 px = 1 inch" style="background:#1e293b;color:#fff;border:1px solid #475569;border-radius:6px;padding:3px"><option value="px">px</option><option value="in">inch</option><option value="mm">mm</option></select>
       <button class="dbtn" id="szGo" title="बीच में exact size की shape बनाएँ">✔️ बनाओ</button>
     </div>
+    <div id="lwrap" style="margin-top:8px">
+      <div class="row" style="justify-content:space-between">
+        <span class="note" style="margin:0">🧱 Layers (click=select, Shift+click=कई)</span>
+        <span style="display:flex;gap:4px">
+          <button class="dbtn" id="lUp" title="ऊपर लाएँ">▲</button>
+          <button class="dbtn" id="lDn" title="नीचे भेजें">▼</button>
+          <button class="dbtn" id="lDel" title="Selected मिटाएँ (Delete key भी)">🗑️</button>
+        </span>
+      </div>
+      <div id="lList" style="max-height:120px;overflow:auto"></div>
+    </div>
+    <div class="note" style="margin-top:4px">⌨️ Ctrl+Z undo • Ctrl+A सब select • Ctrl+C/V copy • Delete मिटाएँ • Arrow = खिसकाना</div>
     <div class="note">💡 Krishna/भगवान की simple photo डालें → 3D/7D में बदलें। या खुद rough shape बनाएँ, AI उसे real बना देगा!</div>
 
     <h3>2️⃣ तरीका चुनें</h3>
@@ -222,9 +235,9 @@ let drawMode=false, drawTool='brush', drawing=false, startPt=null, snapshot=null
 function blankCanvas(){ cv.width=1200; cv.height=800; ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,cv.width,cv.height); srcHiRes=null; srcImg=null; }
 $('#tabDraw').onclick=()=>{ $('#tabDraw').classList.add('on'); $('#tabUp').classList.remove('on'); drawMode=true; $('#drawbar').style.display='flex'; if(!srcImg&&!strokes.length) blankCanvas(); $('#dropmsg').style.display='none'; };
 $('#tabUp').onclick=()=>{ $('#tabUp').classList.add('on'); $('#tabDraw').classList.remove('on'); drawMode=false; $('#drawbar').style.display='none'; };
-$$('#drawbar .dbtn[data-t]').forEach(b=>b.onclick=()=>{ $$('#drawbar .dbtn[data-t]').forEach(x=>x.classList.remove('on')); b.classList.add('on'); drawTool=b.dataset.t; $('#drawsize').style.display=(drawTool==='brush')?'none':'flex'; });
-$('#drawClear').onclick=()=>{ strokes=[]; blankCanvas(); };
-$('#drawUndo').onclick=()=>{ strokes.pop(); redrawStrokes(); };
+$$('#drawbar .dbtn[data-t]').forEach(b=>b.onclick=()=>{ $$('#drawbar .dbtn[data-t]').forEach(x=>x.classList.remove('on')); b.classList.add('on'); drawTool=b.dataset.t; $('#drawsize').style.display=(drawTool==='brush'||drawTool==='select')?'none':'flex'; cv.style.cursor=(drawTool==='select')?'default':'crosshair'; });
+$('#drawClear').onclick=()=>{ strokes=[]; redoStack=[]; clip=[]; blankCanvas(); refreshLayers(); };
+$('#drawUndo').onclick=()=>{ const s=strokes.pop(); if(s)redoStack.push(s); redrawStrokes(); refreshLayers(); };
 let fillShape=true;
 $('#fillTog').onclick=()=>{ fillShape=!fillShape; $('#fillTog').classList.toggle('on',fillShape); };
 function mkStroke(tool,x,y,p){ let w=p[0]-x,h=p[1]-y;
@@ -241,17 +254,91 @@ function drawShape(c,st){ c.save(); c.strokeStyle=st.col; c.fillStyle=st.col; c.
   if(st.tool==='brush'){ c.beginPath(); st.pts.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1])); c.stroke(); }
   else{ shapePath(c,st); (st.fill&&st.tool!=='line')?c.fill():c.stroke(); }
   c.restore(); }
-function redrawStrokes(){ const w=cv.width,h=cv.height; ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,w,h); for(const st of strokes) drawShape(ctx,st); }
+let redoStack=[], clip=[], moving=false, moveStart=null, moveOrig=[];
+function deepClone(o){ return JSON.parse(JSON.stringify(o)); }
+function stBBox(st){ if(st.tool==='brush'){ let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9; st.pts.forEach(q=>{x0=Math.min(x0,q[0]);y0=Math.min(y0,q[1]);x1=Math.max(x1,q[0]);y1=Math.max(y1,q[1]);}); return {x:x0,y:y0,w:x1-x0,h:y1-y0}; }
+  return {x:Math.min(st.x,st.x+st.w),y:Math.min(st.y,st.y+st.h),w:Math.abs(st.w),h:Math.abs(st.h)}; }
+function hitStroke(st,px,py){ const lw=Math.max(st.size||3,3)+5;
+  if(st.tool==='brush'){ return st.pts.some(q=>Math.hypot(q[0]-px,q[1]-py)<=lw); }
+  if(st.tool==='line'){ const x1=st.x,y1=st.y,x2=st.x+st.w,y2=st.y+st.h,L=Math.hypot(x2-x1,y2-y1)||1;
+    const t=Math.max(0,Math.min(1,((px-x1)*(x2-x1)+(py-y1)*(y2-y1))/(L*L)));
+    return Math.hypot(px-(x1+t*(x2-x1)),py-(y1+t*(y2-y1)))<=lw; }
+  if(st.tool==='circle'){ const cx=st.x+st.w/2,cy=st.y+st.h/2,rx=Math.abs(st.w/2)+lw,ry=Math.abs(st.h/2)+lw;
+    return ((px-cx)/rx)**2+((py-cy)/ry)**2<=1; }
+  const x0=Math.min(st.x,st.x+st.w)-lw,x1=Math.max(st.x,st.x+st.w)+lw,y0=Math.min(st.y,st.y+st.h)-lw,y1=Math.max(st.y,st.y+st.h)+lw;
+  return px>=x0&&px<=x1&&py>=y0&&py<=y1; }
+function redrawStrokes(){ const w=cv.width,h=cv.height; ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,w,h);
+  for(const st of strokes){ if(st.hidden)continue; drawShape(ctx,st); }
+  const sel=strokes.filter(s=>s.selected&&!s.hidden);
+  if(sel.length){ ctx.save();
+    for(const st of sel){ const b=stBBox(st);
+      ctx.strokeStyle='#f59e0b'; ctx.lineWidth=2; ctx.setLineDash([6,4]); ctx.strokeRect(b.x-6,b.y-6,b.w+12,b.h+12);
+      if(st.tool!=='brush'){ const lbl=`${Math.abs(Math.round(st.w))} × ${Math.abs(Math.round(st.h))} px`;
+        ctx.font='bold 12px system-ui'; const tw=ctx.measureText(lbl).width;
+        ctx.setLineDash([]); ctx.fillStyle='rgba(15,23,42,.9)'; ctx.fillRect(b.x-6,b.y-26,tw+10,18);
+        ctx.fillStyle='#fbbf24'; ctx.fillText(lbl,b.x-1,b.y-12); } }
+    ctx.restore(); } }
+function refreshLayers(){ const el=$('#lList'); if(!el)return; el.innerHTML='';
+  const ICON={brush:'🖌️',rect:'▭',square:'⬜',circle:'⭕',triangle:'🔺',star:'⭐',line:'📏'};
+  const NM={brush:'Brush',rect:'Rect',square:'Square',circle:'Circle',triangle:'Triangle',star:'Star',line:'Line'};
+  for(let i=strokes.length-1;i>=0;i--){ const st=strokes[i]; if(st.hidden)continue; const d=document.createElement('div');
+    d.style.cssText=`padding:3px 6px;border-radius:6px;cursor:pointer;font-size:12px;display:flex;justify-content:space-between;margin-bottom:2px;${st.selected?'background:#7c2d12;color:#fde68a':'color:#cbd5e1'}`;
+    d.innerHTML=`<span>${ICON[st.tool]} ${NM[st.tool]}</span><span>${Math.abs(Math.round(st.w||0))}×${Math.abs(Math.round(st.h||0))}</span>`;
+    d.onclick=(ev)=>{ if(ev.shiftKey){ st.selected=!st.selected; } else { strokes.forEach(x=>x.selected=false); st.selected=true; } redrawStrokes(); refreshLayers(); };
+    el.appendChild(d); } }
+$('#lDel').onclick=()=>{ for(let i=strokes.length-1;i>=0;i--)if(strokes[i].selected)strokes.splice(i,1); redrawStrokes(); refreshLayers(); };
+$('#lUp').onclick=()=>{ for(let i=strokes.length-1;i>=0;i--)if(strokes[i].selected&&i<strokes.length-1&&!strokes[i+1].selected){ [strokes[i],strokes[i+1]]=[strokes[i+1],strokes[i]]; } redrawStrokes(); refreshLayers(); };
+$('#lDn').onclick=()=>{ for(let i=0;i<strokes.length;i++)if(strokes[i].selected&&i>0&&!strokes[i-1].selected){ [strokes[i],strokes[i-1]]=[strokes[i-1],strokes[i]]; } redrawStrokes(); refreshLayers(); };
+
+/* ---------- keyboard shortcuts (Photoshop style) ---------- */
+window.addEventListener('keydown',e=>{ const tag=(e.target.tagName||'').toLowerCase();
+  if(tag==='input'||tag==='textarea'||tag==='select')return;
+  const k=e.key.toLowerCase(), C=e.ctrlKey||e.metaKey;
+  if(C&&k==='z'&&!e.shiftKey){ e.preventDefault(); const s2=strokes.pop(); if(s2)redoStack.push(s2); redrawStrokes(); refreshLayers(); }
+  else if(C&&(k==='y'||(k==='z'&&e.shiftKey))){ e.preventDefault(); const s2=redoStack.pop(); if(s2)strokes.push(s2); redrawStrokes(); refreshLayers(); }
+  else if(C&&k==='a'){ e.preventDefault(); strokes.forEach(x=>x.selected=true); redrawStrokes(); refreshLayers(); }
+  else if(C&&k==='d'){ e.preventDefault(); strokes.forEach(x=>x.selected=false); redrawStrokes(); refreshLayers(); }
+  else if(C&&k==='c'){ clip=strokes.filter(x=>x.selected).map(deepClone); }
+  else if(C&&k==='v'){ if(clip.length){ strokes.forEach(x=>x.selected=false);
+      clip.forEach(c2=>{ const c3=deepClone(c2); c3.x=(c3.x||0)+24; c3.y=(c3.y||0)+24; if(c3.pts)c3.pts=c3.pts.map(q=>[q[0]+24,q[1]+24]); c3.selected=true; strokes.push(c3); });
+      clip=strokes.filter(x=>x.selected).map(deepClone); redrawStrokes(); refreshLayers(); } }
+  else if(k==='delete'||k==='backspace'){ if(strokes.some(x=>x.selected)){ e.preventDefault();
+      for(let i=strokes.length-1;i>=0;i--)if(strokes[i].selected)redoStack.push(strokes[i]),strokes.splice(i,1);
+      redrawStrokes(); refreshLayers(); } }
+  else if(k==='escape'){ strokes.forEach(x=>x.selected=false); redrawStrokes(); refreshLayers(); }
+  else if(k.startsWith('arrow')){ const sel=strokes.filter(x=>x.selected); if(sel.length){ e.preventDefault();
+      const st=e.shiftKey?10:1, dx=k==='arrowleft'?-st:k==='arrowright'?st:0, dy=k==='arrowup'?-st:k==='arrowdown'?st:0;
+      sel.forEach(s2=>{ s2.x=(s2.x||0)+dx; s2.y=(s2.y||0)+dy; if(s2.pts)s2.pts.forEach(q=>{q[0]+=dx;q[1]+=dy;}); });
+      redrawStrokes(); } } });
 function pos(e){ const r=cv.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return [(t.clientX-r.left)*cv.width/r.width,(t.clientY-r.top)*cv.height/r.height]; }
-cv.addEventListener('pointerdown',e=>{ if(!drawMode)return; e.preventDefault(); drawing=true; const p=pos(e); startPt=p;
+cv.addEventListener('pointerdown',e=>{ if(!drawMode)return; e.preventDefault(); const p=pos(e);
+  if(drawTool==='select'){
+    let hit=-1; for(let i=strokes.length-1;i>=0;i--){ if(!strokes[i].hidden&&hitStroke(strokes[i],p[0],p[1])){ hit=i; break; } }
+    if(hit>=0){ const st=strokes[hit];
+      if(e.shiftKey){ st.selected=!st.selected; }
+      else{ if(!st.selected){ strokes.forEach(x=>x.selected=false); st.selected=true; }
+        moving=true; moveStart=p;
+        moveOrig=strokes.filter(x=>x.selected).map(x=>({s:x,x:x.x||0,y:x.y||0,pts:x.pts?x.pts.map(q=>[q[0],q[1]]):null})); } }
+    else if(!e.shiftKey){ strokes.forEach(x=>x.selected=false); }
+    redrawStrokes(); refreshLayers(); return; }
+  drawing=true; startPt=p;
   if(drawTool==='brush'){ strokes.push({tool:'brush',col:$('#drawCol').value,size:+$('#drawSize').value,pts:[p]}); }
   else snapshot=ctx.getImageData(0,0,cv.width,cv.height); });
-cv.addEventListener('pointermove',e=>{ if(!drawing||!drawMode)return; e.preventDefault(); const p=pos(e);
+cv.addEventListener('pointermove',e=>{ if(!drawMode)return; const p=pos(e);
+  if(moving){ e.preventDefault(); const dx=p[0]-moveStart[0], dy=p[1]-moveStart[1];
+    moveOrig.forEach(o=>{ o.s.x=o.x+dx; o.s.y=o.y+dy; if(o.pts)o.s.pts=o.pts.map(q=>[q[0]+dx,q[1]+dy]); });
+    redrawStrokes(); return; }
+  if(!drawing)return; e.preventDefault();
   if(drawTool==='brush'){ const st=strokes[strokes.length-1]; st.pts.push(p); ctx.strokeStyle=st.col; ctx.lineWidth=st.size; ctx.lineCap='round'; ctx.beginPath(); const q=st.pts[st.pts.length-2]; ctx.moveTo(q[0],q[1]); ctx.lineTo(p[0],p[1]); ctx.stroke(); }
-  else{ ctx.putImageData(snapshot,0,0); drawShape(ctx,mkStroke(drawTool,startPt[0],startPt[1],p)); } });
-window.addEventListener('pointerup',e=>{ if(!drawing||!drawMode)return; drawing=false;
-  if(drawTool!=='brush'){ const p=pos(e); strokes.push(mkStroke(drawTool,startPt[0],startPt[1],p)); redrawStrokes(); }
-  srcImg=null; });
+  else{ ctx.putImageData(snapshot,0,0); const st2=mkStroke(drawTool,startPt[0],startPt[1],p); drawShape(ctx,st2);
+    const lbl=`${Math.abs(Math.round(st2.w))} × ${Math.abs(Math.round(st2.h))} px • ${(Math.abs(st2.w)/96).toFixed(1)} × ${(Math.abs(st2.h)/96).toFixed(1)} in`;
+    ctx.save(); ctx.font='bold 13px system-ui'; const tw=ctx.measureText(lbl).width;
+    let lx=p[0]+14, ly=p[1]+14; if(lx+tw+14>cv.width)lx=p[0]-tw-26; if(ly+26>cv.height)ly=p[1]-34;
+    ctx.fillStyle='rgba(15,23,42,.88)'; ctx.fillRect(lx,ly,tw+12,22); ctx.fillStyle='#fbbf24'; ctx.fillText(lbl,lx+6,ly+16); ctx.restore(); } });
+window.addEventListener('pointerup',e=>{ if(moving){ moving=false; refreshLayers(); return; }
+  if(!drawing||!drawMode)return; drawing=false;
+  if(drawTool!=='brush'){ const p=pos(e); strokes.push(mkStroke(drawTool,startPt[0],startPt[1],p)); }
+  srcImg=null; redoStack=[]; redrawStrokes(); refreshLayers(); });
 
 /* ---------- tabs AI / Manual ---------- */
 $('#tabAi').onclick=()=>{ $('#tabAi').classList.add('on'); $('#tabMan').classList.remove('on'); $('#aiPanel').style.display='block'; $('#manPanel').style.display='none'; };
@@ -368,9 +455,10 @@ $('#btnMan').onclick=manualApply;
 segInit('#mCount',()=>{});
 
 /* ---------- strokes mask: effect सिर्फ़ drawing पर ---------- */
+function maskStrokes(){ const sel=strokes.filter(x=>x.selected&&!x.hidden); return sel.length?sel:strokes.filter(x=>!x.hidden); }
 function strokesMaskCanvas(){ const m=document.createElement('canvas'); m.width=cv.width; m.height=cv.height; const mc=m.getContext('2d');
   mc.fillStyle='#000'; mc.strokeStyle='#000';
-  for(const st of strokes){ const lw=Math.max(st.size||3,3);
+  for(const st of maskStrokes()){ const lw=Math.max(st.size||3,3);
     if(st.tool==='brush'){ mc.lineWidth=lw; mc.lineCap='round'; mc.lineJoin='round'; mc.beginPath(); st.pts.forEach((p,i)=>i?mc.lineTo(p[0],p[1]):mc.moveTo(p[0],p[1])); mc.stroke(); }
     else if(st.tool==='line'){ mc.lineWidth=lw; mc.lineCap='round'; mc.beginPath(); mc.moveTo(st.x,st.y); mc.lineTo(st.x+st.w,st.y+st.h); mc.stroke(); }
     else if(st.fill){ shapePath(mc,st); mc.fill(); }
@@ -385,7 +473,7 @@ $('#szGo').onclick=()=>{ if(drawTool==='brush'){status('पहले कोई s
   if(w<4||h<4){status('size बहुत छोटा है');setTimeout(()=>status(''),2000);return}
   const x=Math.round((cv.width-w)/2), y=Math.round((cv.height-h)/2);
   strokes.push({tool:drawTool,col:$('#drawCol').value,size:+$('#drawSize').value,x,y,w,h,fill:fillShape});
-  srcImg=null; redrawStrokes(); status('✅ जुड़ गई!'); setTimeout(()=>status(''),1500); };
+  srcImg=null; redoStack=[]; redrawStrokes(); refreshLayers(); status('✅ जुड़ गई!'); setTimeout(()=>status(''),1500); };
 
 /* ---------- glitter engine (किसी भी color की चमक) ---------- */
 $('#rGlit').addEventListener('input',()=>$('#vGlit').textContent=$('#rGlit').value);
