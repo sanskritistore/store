@@ -32,8 +32,11 @@
   .fld{margin-bottom:10px}
   .fld label{display:flex;justify-content:space-between;font-size:12px;color:#94a3b8;margin-bottom:3px}
   .fld label b{color:#fbbf24}
-  #stage{flex:1;display:flex;align-items:center;justify-content:center;background:#0b1120;position:relative;overflow:hidden}
-  #stage canvas{max-width:96%;max-height:96%;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.6);touch-action:none}
+  #stage{flex:1;display:flex;background:#0b1120;position:relative;overflow:auto}
+  #stage canvas{margin:auto;flex:none;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.6);touch-action:none}
+  #zoombar{position:absolute;right:12px;bottom:12px;display:flex;align-items:center;gap:6px;background:rgba(15,23,42,.85);border:1px solid #475569;border-radius:999px;padding:4px 10px;z-index:5}
+  #zoombar button{background:#1e293b;color:#fde68a;border:1px solid #475569;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px;line-height:1}
+  #zoombar span{color:#fde68a;font-size:12px;min-width:42px;text-align:center;font-weight:700}
   #dropmsg{position:absolute;inset:20px;border:3px dashed #334155;border-radius:16px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:#64748b;font-size:15px;pointer-events:none;text-align:center}
   #status{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:#1e293bd9;border:1px solid #fbbf24;color:#fbbf24;padding:8px 18px;border-radius:99px;font-size:13px;font-weight:700;display:none;white-space:nowrap}
   .spin{display:inline-block;animation:sp 1s linear infinite}
@@ -212,6 +215,7 @@
   <div id="stage">
     <canvas id="cv" width="900" height="600"></canvas>
     <div id="dropmsg"><div style="font-size:44px">🖼️</div><div>Photo यहाँ drag करें या<br><b style="color:#fbbf24">"Photo/Design चुनें"</b> दबाएँ</div></div>
+    <div id="zoombar"><button id="zOut" title="Zoom out (Ctrl+wheel)">➖</button><span id="zoomLbl">100%</span><button id="zIn" title="Zoom in (Ctrl+wheel)">➕</button><button id="zFit" title="Fit करें (Ctrl+0)">⤢</button></div>
     <div id="status"></div>
   </div>
 </div>
@@ -234,7 +238,7 @@ function setSource(img){
   srcImg=img; $('#dropmsg').style.display='none';
   const max=1600, s=Math.min(1,max/Math.max(img.width,img.height));
   cv.width=Math.round(img.width*s); cv.height=Math.round(img.height*s);
-  ctx.drawImage(img,0,0,cv.width,cv.height); cvSyncInputs();
+  ctx.drawImage(img,0,0,cv.width,cv.height); cvSyncInputs(); zoomFit();
   srcHiRes=img;
 }
 function loadFile(f){
@@ -246,12 +250,27 @@ function loadFile(f){
 $('#btnFile').onclick=()=>$('#file').click();
 $('#file').onchange=e=>loadFile(e.target.files[0]);
 const stage=$('#stage');
+/* ---------- canvas zoom (Ctrl+wheel, Photoshop style) ---------- */
+let zoom=1, fitMode=true;
+function setZoom(z){ fitMode=false; zoom=Math.min(5,Math.max(0.05,z));
+  cv.style.width=(cv.width*zoom)+'px'; cv.style.height=(cv.height*zoom)+'px';
+  $('#zoomLbl').textContent=Math.round(zoom*100)+'%'; }
+function zoomFit(){ const pad=28; if(!stage.clientWidth)return;
+  const z=Math.min((stage.clientWidth-pad)/cv.width,(stage.clientHeight-pad)/cv.height);
+  fitMode=true; setZoomFit(Math.min(Math.max(z,0.05),5)); }
+function setZoomFit(z){ fitMode=true; zoom=z; cv.style.width=(cv.width*zoom)+'px'; cv.style.height=(cv.height*zoom)+'px';
+  $('#zoomLbl').textContent=Math.round(zoom*100)+'%'; }
+$('#zIn').onclick=()=>setZoom(zoom*1.25);
+$('#zOut').onclick=()=>setZoom(zoom/1.25);
+$('#zFit').onclick=()=>zoomFit();
+stage.addEventListener('wheel',e=>{ if(e.ctrlKey||e.metaKey){ e.preventDefault(); setZoom(zoom*(e.deltaY<0?1.15:1/1.15)); } },{passive:false});
+window.addEventListener('resize',()=>{ if(fitMode)zoomFit(); });
 stage.addEventListener('dragover',e=>e.preventDefault());
 stage.addEventListener('drop',e=>{e.preventDefault();loadFile(e.dataTransfer.files[0])});
 
 /* ---------- draw pad ---------- */
 let drawMode=false, drawTool='brush', drawing=false, startPt=null, snapshot=null, strokes=[];
-function blankCanvas(){ cv.width=1200; cv.height=800; ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,cv.width,cv.height); srcHiRes=null; srcImg=null; cvSyncInputs(); }
+function blankCanvas(){ cv.width=1200; cv.height=800; ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,cv.width,cv.height); srcHiRes=null; srcImg=null; cvSyncInputs(); zoomFit(); }
 /* ---------- canvas size (जितना चाहे उतना) ---------- */
 function cvUnitPx(){ const u=$('#cvU').value; return u==='in'?96:u==='mm'?96/25.4:1; }
 function cvSyncInputs(){ const f=cvUnitPx();
@@ -266,7 +285,7 @@ function cvResize(wpx,hpx){ wpx=Math.round(wpx); hpx=Math.round(hpx);
     const sc=Math.min(wpx/old.width,hpx/old.height), dw=old.width*sc, dh=old.height*sc;
     ctx.drawImage(old,(wpx-dw)/2,(hpx-dh)/2,dw,dh); }
   else redrawStrokes();
-  cvSyncInputs(); status(`✅ Canvas ${wpx}×${hpx} px (${(wpx/96).toFixed(1)}×${(hpx/96).toFixed(1)} inch)`); setTimeout(()=>status(''),2500); }
+  cvSyncInputs(); zoomFit(); status(`✅ Canvas ${wpx}×${hpx} px (${(wpx/96).toFixed(1)}×${(hpx/96).toFixed(1)} inch)`); setTimeout(()=>status(''),2500); }
 $('#cvGo').onclick=()=>{ const f=cvUnitPx(); cvResize((+$('#cvW').value||0)*f,(+$('#cvH').value||0)*f); };
 $$('.cvpre').forEach(b=>b.onclick=()=>{ $('#cvU').value='in'; cvResize(+b.dataset.w*96,+b.dataset.h*96); });
 $('#tabDraw').onclick=()=>{ $('#tabDraw').classList.add('on'); $('#tabUp').classList.remove('on'); drawMode=true; $('#drawbar').style.display='flex'; if(!srcImg&&!strokes.length) blankCanvas(); $('#dropmsg').style.display='none'; };
@@ -335,6 +354,9 @@ $('#lDn').onclick=()=>{ for(let i=0;i<strokes.length;i++)if(strokes[i].selected&
 window.addEventListener('keydown',e=>{ const tag=(e.target.tagName||'').toLowerCase();
   if(tag==='input'||tag==='textarea'||tag==='select')return;
   const k=e.key.toLowerCase(), C=e.ctrlKey||e.metaKey;
+  if(C&&(k==='+'||k==='=')){ e.preventDefault(); setZoom(zoom*1.25); return; }
+  if(C&&k==='-'){ e.preventDefault(); setZoom(zoom/1.25); return; }
+  if(C&&k==='0'){ e.preventDefault(); zoomFit(); return; }
   if(C&&k==='z'&&!e.shiftKey){ e.preventDefault(); const s2=strokes.pop(); if(s2)redoStack.push(s2); redrawStrokes(); refreshLayers(); }
   else if(C&&(k==='y'||(k==='z'&&e.shiftKey))){ e.preventDefault(); const s2=redoStack.pop(); if(s2)strokes.push(s2); redrawStrokes(); refreshLayers(); }
   else if(C&&k==='a'){ e.preventDefault(); strokes.forEach(x=>x.selected=true); redrawStrokes(); refreshLayers(); }
@@ -431,7 +453,7 @@ $('#btnAi').onclick=async()=>{
       status(`AI काम कर रहा है... ${tries*4}s (30-60s लगते हैं)`,true);
       const jr=await fetch(API+'studio-result?job='+jobId);
       const j=await jr.json();
-      if(j.ok===1){ const img=new Image(); img.onload=()=>{ const max=1600,sc=Math.min(1,max/Math.max(img.width,img.height)); cv.width=Math.round(img.width*sc); cv.height=Math.round(img.height*sc); ctx.drawImage(img,0,0,cv.width,cv.height); srcImg=null; cvSyncInputs(); status('✅ तैयार! ⬇️ 4K Print से download करें'); setTimeout(()=>status(''),4000); }; img.src=j.img; return; }
+      if(j.ok===1){ const img=new Image(); img.onload=()=>{ const max=1600,sc=Math.min(1,max/Math.max(img.width,img.height)); cv.width=Math.round(img.width*sc); cv.height=Math.round(img.height*sc); ctx.drawImage(img,0,0,cv.width,cv.height); srcImg=null; cvSyncInputs(); zoomFit(); status('✅ तैयार! ⬇️ 4K Print से download करें'); setTimeout(()=>status(''),4000); }; img.src=j.img; return; }
       if(j.ok===0) throw new Error(j.err||'AI busy');
     }
     throw new Error('बहुत देर लगी — फिर कोशिश करें');
