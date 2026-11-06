@@ -88,6 +88,22 @@
       <select id="szU" title="96 px = 1 inch" style="background:#1e293b;color:#fff;border:1px solid #475569;border-radius:6px;padding:3px"><option value="px">px</option><option value="in">inch</option><option value="mm">mm</option></select>
       <button class="dbtn" id="szGo" title="बीच में exact size की shape बनाएँ">✔️ बनाओ</button>
     </div>
+    <div class="row" style="margin-top:6px;flex-wrap:wrap">
+      <span class="note" style="margin:0">🖼️ Canvas:</span>
+      <input type="number" id="cvW" style="width:64px;background:#1e293b;color:#fff;border:1px solid #475569;border-radius:6px;padding:3px 6px"> ×
+      <input type="number" id="cvH" style="width:64px;background:#1e293b;color:#fff;border:1px solid #475569;border-radius:6px;padding:3px 6px">
+      <select id="cvU" title="96 px = 1 inch" style="background:#1e293b;color:#fff;border:1px solid #475569;border-radius:6px;padding:3px"><option value="px">px</option><option value="in">inch</option><option value="mm">mm</option></select>
+      <button class="dbtn" id="cvGo" title="Canvas का size बदलें">✔️ बदलो</button>
+    </div>
+    <div class="row" style="margin-top:4px;gap:4px;flex-wrap:wrap">
+      <button class="dbtn cvpre" data-w="8.27" data-h="11.69" title="A4 portrait">A4</button>
+      <button class="dbtn cvpre" data-w="11.69" data-h="8.27" title="A4 landscape">A4↔️</button>
+      <button class="dbtn cvpre" data-w="12" data-h="12">12×12″</button>
+      <button class="dbtn cvpre" data-w="4" data-h="6">4×6″</button>
+      <button class="dbtn cvpre" data-w="6" data-h="4">6×4″</button>
+      <button class="dbtn cvpre" data-w="24" data-h="36">24×36″</button>
+      <button class="dbtn cvpre" data-w="36" data-h="48">36×48″</button>
+    </div>
     <div id="lwrap" style="margin-top:8px">
       <div class="row" style="justify-content:space-between">
         <span class="note" style="margin:0">🧱 Layers (click=select, Shift+click=कई)</span>
@@ -218,7 +234,7 @@ function setSource(img){
   srcImg=img; $('#dropmsg').style.display='none';
   const max=1600, s=Math.min(1,max/Math.max(img.width,img.height));
   cv.width=Math.round(img.width*s); cv.height=Math.round(img.height*s);
-  ctx.drawImage(img,0,0,cv.width,cv.height);
+  ctx.drawImage(img,0,0,cv.width,cv.height); cvSyncInputs();
   srcHiRes=img;
 }
 function loadFile(f){
@@ -235,7 +251,24 @@ stage.addEventListener('drop',e=>{e.preventDefault();loadFile(e.dataTransfer.fil
 
 /* ---------- draw pad ---------- */
 let drawMode=false, drawTool='brush', drawing=false, startPt=null, snapshot=null, strokes=[];
-function blankCanvas(){ cv.width=1200; cv.height=800; ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,cv.width,cv.height); srcHiRes=null; srcImg=null; }
+function blankCanvas(){ cv.width=1200; cv.height=800; ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,cv.width,cv.height); srcHiRes=null; srcImg=null; cvSyncInputs(); }
+/* ---------- canvas size (जितना चाहे उतना) ---------- */
+function cvUnitPx(){ const u=$('#cvU').value; return u==='in'?96:u==='mm'?96/25.4:1; }
+function cvSyncInputs(){ const f=cvUnitPx();
+  $('#cvW').value=+(cv.width/f).toFixed(2); $('#cvH').value=+(cv.height/f).toFixed(2); }
+$('#cvU').onchange=cvSyncInputs;
+function cvResize(wpx,hpx){ wpx=Math.round(wpx); hpx=Math.round(hpx);
+  if(!(wpx>=50&&hpx>=50&&wpx<=8000&&hpx<=8000)){ status('Size 50–8000 px के बीच रखें'); setTimeout(()=>status(''),2200); return; }
+  let old=null;
+  if(srcImg){ old=document.createElement('canvas'); old.width=cv.width; old.height=cv.height; old.getContext('2d').drawImage(cv,0,0); }
+  cv.width=wpx; cv.height=hpx;
+  if(old){ ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,wpx,hpx);
+    const sc=Math.min(wpx/old.width,hpx/old.height), dw=old.width*sc, dh=old.height*sc;
+    ctx.drawImage(old,(wpx-dw)/2,(hpx-dh)/2,dw,dh); }
+  else redrawStrokes();
+  cvSyncInputs(); status(`✅ Canvas ${wpx}×${hpx} px (${(wpx/96).toFixed(1)}×${(hpx/96).toFixed(1)} inch)`); setTimeout(()=>status(''),2500); }
+$('#cvGo').onclick=()=>{ const f=cvUnitPx(); cvResize((+$('#cvW').value||0)*f,(+$('#cvH').value||0)*f); };
+$$('.cvpre').forEach(b=>b.onclick=()=>{ $('#cvU').value='in'; cvResize(+b.dataset.w*96,+b.dataset.h*96); });
 $('#tabDraw').onclick=()=>{ $('#tabDraw').classList.add('on'); $('#tabUp').classList.remove('on'); drawMode=true; $('#drawbar').style.display='flex'; if(!srcImg&&!strokes.length) blankCanvas(); $('#dropmsg').style.display='none'; };
 $('#tabUp').onclick=()=>{ $('#tabUp').classList.add('on'); $('#tabDraw').classList.remove('on'); drawMode=false; $('#drawbar').style.display='none'; };
 $$('#drawbar .dbtn[data-t]').forEach(b=>b.onclick=()=>{ $$('#drawbar .dbtn[data-t]').forEach(x=>x.classList.remove('on')); b.classList.add('on'); drawTool=b.dataset.t; $('#drawsize').style.display=(drawTool==='brush'||drawTool==='select')?'none':'flex'; cv.style.cursor=(drawTool==='select')?'default':'crosshair'; });
@@ -398,7 +431,7 @@ $('#btnAi').onclick=async()=>{
       status(`AI काम कर रहा है... ${tries*4}s (30-60s लगते हैं)`,true);
       const jr=await fetch(API+'studio-result?job='+jobId);
       const j=await jr.json();
-      if(j.ok===1){ const img=new Image(); img.onload=()=>{ const max=1600,sc=Math.min(1,max/Math.max(img.width,img.height)); cv.width=Math.round(img.width*sc); cv.height=Math.round(img.height*sc); ctx.drawImage(img,0,0,cv.width,cv.height); srcImg=null; status('✅ तैयार! ⬇️ 4K Print से download करें'); setTimeout(()=>status(''),4000); }; img.src=j.img; return; }
+      if(j.ok===1){ const img=new Image(); img.onload=()=>{ const max=1600,sc=Math.min(1,max/Math.max(img.width,img.height)); cv.width=Math.round(img.width*sc); cv.height=Math.round(img.height*sc); ctx.drawImage(img,0,0,cv.width,cv.height); srcImg=null; cvSyncInputs(); status('✅ तैयार! ⬇️ 4K Print से download करें'); setTimeout(()=>status(''),4000); }; img.src=j.img; return; }
       if(j.ok===0) throw new Error(j.err||'AI busy');
     }
     throw new Error('बहुत देर लगी — फिर कोशिश करें');
